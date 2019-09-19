@@ -1,6 +1,6 @@
-# Nombre del Lenguaje.
+# Chask.
 
-Hay que decidir un nombre para el lenguaje. Recomiendo dejar para el final.
+Chask es un lenguaje imperativo creado por estudiantes de la Universidad Simón Bolívar en el transcurso de la cadena de Lenguajes de Programación.
 
 ## Estructura de un programa.
 
