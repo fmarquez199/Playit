@@ -1,10 +1,10 @@
-# Chask.
+# CHask.
 
-Chask es un lenguaje imperativo creado por estudiantes de la Universidad Simón Bolívar en el transcurso de la cadena de Lenguajes de Programación.
+CHask (C & Haskell) es un lenguaje imperativo de propósito general diseñado e implementado por estudiantes de Ingeniería de Computación de la Universidad Simón Bolívar en el transcurso de la cadena de Lenguajes de Programación.
 
 ## Estructura de un programa.
 
-Un programa en el lenguaje tiene la siguiente estructura:
+Un programa en CHask tiene la siguiente estructura:
 
 ```
 <Lista de Instrucciones>
@@ -14,7 +14,7 @@ Un programa en el lenguaje tiene la siguiente estructura:
 
 ### Selección.
 
-La selección en el lenguaje es `if/elif/else` de la forma siguiente.
+La selección en CHask es `if/elif/else` de la forma siguiente.
 
 ```
 if <Expresion Booleana> {
@@ -42,7 +42,7 @@ for <variable> in <arreglo> {
 }
 ```
 
-En cada iteración, `<variable>` tendrá a un elemento de `<arreglo>`.
+En cada iteración, `<variable>` tendrá a un elemento de `<arreglo>` y las iteraciones culminarán cuando ya no haya más elementos en `<arreglo>` sobre los cuales iterar.
 
 #### Indeterminada.
 
@@ -66,23 +66,54 @@ Los procedimientos son funciones que siempre retornan el valor unit, el cual no 
 
 La sintaxis de una función es:
 
-`<nombre>(<tipo> <parámetro formal>, <tipo> <parámetro formal>, ..., <tipo> <parámetro formal>) <tipo>`
+```
+<nombre>(<tipo> <parámetro formal>, <tipo> <parámetro formal>, ..., <tipo> <parámetro formal>) <tipo> {
+  <Lista de instrucciones>
+}
+```
 
 La sintaxis de un procedimiento es:
 
-`<nombre>(<tipo> <parámetro formal>, <tipo> <parámetro formal>, ..., <tipo> <parámetro formal>)` 
+```
+<nombre>(<tipo> <parámetro formal>, <tipo> <parámetro formal>, ..., <tipo> <parámetro formal>) {
+  <Lista de instrucciones>
+}
+``` 
 
 ##### Pasaje de parámetros.
 
-Se admite el paso de parámetros por valor y por referencia. Se diferencia el pase por referencia por el ampersand prefijo a uno de los parámetros. El pase por valor no requiere ninguna sintaxis adicional.
+Se admite el paso de parámetros por valor y por referencia. Se diferencia el pase por referencia por el ampersand (`&`) prefijo a uno de los parámetros. El pase por valor no requiere ninguna sintaxis adicional.
 
 Ejemplo:
+
+```
+<funcion>(<tipo> <parámetro por valor>, <tipo> &<parámetro por referencia>)<tipo de retorno> {
+  <Lista de instrucciones>
+}
+```
 
 #### Recursión.
 
-El lenguaje admite la invocación recursiva de funciones en cualquier momento.
+CHask admite la invocación recursiva de funciones en cualquier momento.
 
 Ejemplo:
+
+```
+<procedimiento>(<tipo> <parámetro>) {
+  <Lista de instrucciones>
+  <Llamada recursiva>
+  <Llamada a funcion>
+}
+
+<funcion>(<tipo> <parámetro>)<tipo> {
+  <Lista de instrucciones>
+  <Llamada a prodecimiento>
+}
+
+<Llamada a funcion>
+```
+
+Un código de esta forma es posible en CHask.
 
 ## Tipos de datos
 
@@ -117,7 +148,7 @@ La palabra reservada para las variables de tipo entero es `int`.
 
 Son datos de 64 bit (8 B) en memoria representados según el estándar **IEEE 754 de precisión doble**. Se construyen como:
 
-`Entero . Entero`
+`<Entero>.<Entero>`
 
 La palabra reservada para las variables de tipo punto flotante es `float`.
 
@@ -154,7 +185,7 @@ register <nombre> {
 }
 ```
 
-Su tamaño en memoria corresponde a la suma de los tamaños individuales de cada campo que posea. Los tipos que acepta un registro son todos aquellos tipos que están presentes en el lenguaje. `register` es la palabra reservada para identificar a una variable de tipo registro.
+Su tamaño en memoria corresponde a la suma de los tamaños individuales de cada campo que posea. Los tipos que acepta un registro son todos aquellos tipos que están definidos en CHask. `register` es la palabra reservada para identificar a una variable de tipo registro.
 
 Ejemplo:
 
@@ -171,7 +202,7 @@ union <nombre> {
 }
 ```
 
-Su tamaño en memoria corresponde al tamaño del campo que tenga mayor tamaño. Los tipos que acepta un registro variante son todos aquellos tipos que están presentes en el lenguaje. `union` es la palabra reservada para identificar a una variable de tipo registro.
+Su tamaño en memoria corresponde al tamaño del campo que tenga mayor tamaño. Los tipos que acepta un registro variante son todos aquellos tipos que están definidos en CHask. `union` es la palabra reservada para identificar a una variable de tipo registro.
 
 #### Apuntadores.
 
@@ -203,11 +234,11 @@ Estas asignaciones son equivalentes cada una a realizar `<variable> = <variable>
 
 #### Identificadores de variables.
 
-Un identificador válido para una variable en un programa del lenguaje cumple con las siguientes condiciones:
+Un identificador válido para una variable en un programa de CHask cumple con las siguientes condiciones:
 
 1. No empieza con números.
 2. Posee solo caracteres alfanuméricos y los caracteres especiales `'_'` y `'''`.
-3. No corresponde a ninguna palabra reservada del lenguaje.
+3. No corresponde a ninguna palabra reservada de CHask.
 
 ##### Declaración e inicialización de variables.
 
@@ -233,6 +264,10 @@ write <variable>
 
 Esto toma el contenido de la entrada estándar y lo almacena en `<variable>` y posteriormente el contenido de `<variable>` es mostrado por la salida estándar, respectivamente.
 
+La instrucción `read` toma una variable en la cual almacenará lo que lea de la entrada estándar. Su ejecución consiste en una interrupción para leer de la entrada estándar y almacenar en el destino indicado por el programador, si no se indica el destino la ejecución continua su curso y no se almacena la información. Se levanta una advertencia al programador al compilar.
+
+La instrucción `write` toma una variable o una constante de tipo `char` o `string` y muestra en la salida estándar el contenido de la variable o el valor de la constante.
+
 ### Expresiones Aritméticas.
 
 Corresponden a las expresiones que devuelven valores numéricos después de evaluarse. Los valores numéricos pueden ser indiferentemente enteros o punto flotante. Las expresiones aritméticas son aquellas que involucren los operadores de:
@@ -244,6 +279,7 @@ Corresponden a las expresiones que devuelven valores numéricos después de eval
 * División entera (`//`): toma dos enteros y regresa un entero que corresponde al cociente de la división.
 * Residuo (`%`): toma dos enteros y regresa un entero que corresponde al resto de la división.
 * Menos unario (`-`): toma un entero y lo multiplica por `-1`.
+* Longitud (`#`): toma un arreglo y devuelve la cantidad de elementos que contiene.
 
 ### Expresiones Booleanas.
 
@@ -279,6 +315,7 @@ Corresponden a las expresiones que devuelven un caracter después de su evaluaci
 
 Corresponden a las expresiones que devuelven un arreglo después de su evaluación. Son aquellas en las cuales están invoucrados los operadores de:
 
+* Indexación (`[]`): toma un arreglo y un entero `i` en el rango `[0..#<arreglo> - 1]` y devuelve el elemento contenido en la posición `i`.
 * Concatenación (`::`): toma dos arreglos y concatena el segundo a la cola del primero.
 * Anexo (`:`): toma un elemento cualquiera y lo agrega a la cabeza del arreglo.
 
@@ -292,21 +329,21 @@ Un bloque dentro del programa está delimitado por llaves `{` y `}` y se obtiene
 
 En orden descendente, la precedencia de los operadores es:
 
-|     Tipo   | Primer Nivel |      Segundo nivel     |       Tercer nivel       |     Cuarto nivel     |
-| ---------- | -------------| ---------------------- | ------------------------ | -------------------- |
-| Aritmético | Menos Unario | División Entera, Resto | Multiplicación, División | Adición, sustracción |
-|  Booleano  |   Negación   | Conjunción, Disyunción |                          |     Comparadores     |
-|  Carácter  |   Mayúscula  |        Minúscula       |                          |                      |
-|  Arreglos  |     Anexo    |      Concatenación     |                          |                      |
+|     Tipo   |      Primer Nivel      |      Segundo nivel     |       Tercer nivel       |     Cuarto nivel     |
+| ---------- | ---------------------- | ---------------------- | ------------------------ | -------------------- |
+| Aritmético | Menos Unario, Longitud | División Entera, Resto | Multiplicación, División | Adición, sustracción |
+|  Booleano  |        Negación        | Conjunción, Disyunción |                          |     Comparadores     |
+|  Carácter  |        Mayúscula       |        Minúscula       |                          |                      |
+|  Arreglos  |    Indexación, Anexo   |      Concatenación     |                          |                      |
 
 ### Asociatividad de los operadores.
 
-|     Tipo   |                     Izquierda                    |               Derecha              |   No asocia  |
-| ---------- | ------------------------------------------------ | ---------------------------------- | ------------ |
-| Aritmético | División, División Entera, Resto, Multiplicación | Adición, sustracción, Menos Unario |              |
-|  Booleano  |              Conjunción, Disyunción              |              Negación              | Comparadores |
-|  Carácter  |                                                  |       Mayúsculas, Minúsculas       |              |
-|  Arreglos  |               Anexo, Concatenación               |                                    |              |
+|     Tipo   |                     Izquierda                    |                     Derecha                  |   No asocia  |
+| ---------- | ------------------------------------------------ | -------------------------------------------- | ------------ |
+| Aritmético | División, División Entera, Resto, Multiplicación | Adición, sustracción, Menos Unario, Longitud |              |
+|  Booleano  |              Conjunción, Disyunción              |                   Negación                   | Comparadores |
+|  Carácter  |                                                  |            Mayúsculas, Minúsculas            |              |
+|  Arreglos  |        Indexación, Anexo, Concatenación          |                                              |              |
 
 ### Orden de evaluación de las expresiones.
 
@@ -314,6 +351,31 @@ Las expresiones se evaluan de izquierda a derecha.
 
 ## Comentarios y espacios en blanco.
 
-En el lenguaje se pueden escribir comentarios de una línea o de varias lineas. Al escribir `@` se ignorarán todos los caracteres hasta el siguiente salto de línea. El texto escrito entre `{-` y `-}` será ignorado. Los espacios en blanco también son ignorados.
+En CHask se pueden escribir comentarios de una línea o de varias lineas. Al escribir `@` se ignorarán todos los caracteres hasta el siguiente salto de línea. El texto escrito entre `{-` y `-}` será ignorado. Los espacios en blanco también son ignorados.
 
-## Ejemplo de un programa en el lenguaje.
+## Ejemplo de un programa en CHask.
+```
+@ Esto es un comentario de una línea.
+
+{-
+Este es un comentario
+de varias líneas.
+-}
+
+int cardinal = 3
+char[3] conjunto
+int partes = 1
+int contador = 0
+
+while contador < cardinal {
+  write "Ingrese un carácter: "
+  read conjunto[contador]
+  partes = partes * 2
+  contador++
+}
+
+for elemento in conjunto {
+  write "Los elementos del conjunto son: "
+  write elemento : ", "
+}
+```
