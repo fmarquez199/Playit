@@ -1,10 +1,10 @@
-# CHask.
+# CH*.
 
-CHask (C & Haskell) es un lenguaje imperativo de propósito general diseñado e implementado por estudiantes de Ingeniería de Computación de la Universidad Simón Bolívar en el transcurso de la cadena de Lenguajes de Programación.
+CH* (C & C ++ & Haskell) es un lenguaje imperativo de propósito general diseñado e implementado por estudiantes de Ingeniería de Computación de la Universidad Simón Bolívar en el transcurso de la cadena de Lenguajes de Programación.
 
 ## Estructura de un programa.
 
-Un programa en CHask tiene la siguiente estructura:
+Un programa en CH* tiene la siguiente estructura:
 
 ```
 <Lista de Instrucciones>
@@ -14,20 +14,19 @@ Un programa en CHask tiene la siguiente estructura:
 
 ### Selección.
 
-La selección en CHask es `if/elif/else` de la forma siguiente.
+La selección en CH* es de la forma siguiente.
 
 ```
-if <Expresion Booleana> {
+| <Expresion Booleana>:
   <Lista de Instrucciones>
-} elif <Expresion Booleana> {
+| <Expresion Booleana>:
   <Lista de Instrucciones>
-} elif <Expresion Booleana> {
+...
+| else:
   <Lista de Instrucciones>
-}... {
-  <Lista de Instrucciones>
-} else {
-  <Lista de Instrucciones>
-}
+
+O también:
+<Expresion Booleana> ? <Lista de Instrucciones> : <Lista de Instrucciones>
 ```
 
 ### Repetición.
@@ -37,9 +36,10 @@ if <Expresion Booleana> {
 La repetición determinada es un ciclo `for` como se sigue:
 
 ```
-for <variable> in <arreglo> {
+<
+for <variable> in <arreglo>:
   <Lista de Instrucciones>
-}
+>
 ```
 
 En cada iteración, `<variable>` tendrá a un elemento de `<arreglo>` y las iteraciones culminarán cuando ya no haya más elementos en `<arreglo>` sobre los cuales iterar.
@@ -49,9 +49,10 @@ En cada iteración, `<variable>` tendrá a un elemento de `<arreglo>` y las iter
 La repetición indeterminada es un ciclo `while` como se sigue:
 
 ```
-while <Expresion Booleana> {
+<
+while <Expresion Booleana>:
   <Lista de Instrucciones>
-}
+>
 ```
 
 ### Subrutinas.
@@ -67,53 +68,58 @@ Los procedimientos son funciones que siempre retornan el valor unit, el cual no 
 La sintaxis de una función es:
 
 ```
-<nombre>(<tipo> <parámetro formal>, <tipo> <parámetro formal>, ..., <tipo> <parámetro formal>) <tipo> {
+<
+nombre(<tipo> <parámetro formal>, <tipo> <parámetro formal>, ..., <tipo> <parámetro formal>) <tipo>:
   <Lista de instrucciones>
-}
+>
 ```
 
 La sintaxis de un procedimiento es:
 
 ```
-<nombre>(<tipo> <parámetro formal>, <tipo> <parámetro formal>, ..., <tipo> <parámetro formal>) {
+<
+nombre(<tipo> <parámetro formal>, <tipo> <parámetro formal>, ..., <tipo> <parámetro formal>):
   <Lista de instrucciones>
-}
+>
 ``` 
 
 ##### Pasaje de parámetros.
 
-Se admite el paso de parámetros por valor y por referencia. Se diferencia el pase por referencia por el ampersand (`&`) prefijo a uno de los parámetros. El pase por valor no requiere ninguna sintaxis adicional.
+Se admite el paso de parámetros por valor y por referencia. Se diferencia el pase por referencia por el signo de interrogación (`?`) prefijo a uno de los parámetros. El pase por valor no requiere ninguna sintaxis adicional.
 
 Ejemplo:
 
 ```
-<funcion>(<tipo> <parámetro por valor>, <tipo> &<parámetro por referencia>)<tipo de retorno> {
+<
+funcion(<tipo> <parámetro por valor>, <tipo> ?<parámetro por referencia>)<tipo de retorno>:
   <Lista de instrucciones>
-}
+>
 ```
 
 #### Recursión.
 
-CHask admite la invocación recursiva de funciones en cualquier momento.
+CH* admite la invocación recursiva de funciones en cualquier momento.
 
 Ejemplo:
 
 ```
-<procedimiento>(<tipo> <parámetro>) {
+<
+procedimiento(<tipo> <parámetro>):
   <Lista de instrucciones>
   <Llamada recursiva>
-  <Llamada a funcion>
+  <Llamada a>funcion>
 }
 
-<funcion>(<tipo> <parámetro>)<tipo> {
+<
+funcion(<tipo> <parámetro>)<tipo>:
   <Lista de instrucciones>
   <Llamada a prodecimiento>
-}
+>
 
 <Llamada a funcion>
 ```
 
-Un código de esta forma es posible en CHask.
+Un código de esta forma es posible en CH*.
 
 ## Tipos de datos
 
@@ -130,19 +136,19 @@ Se distinguen las secuencias de escape por ser aquellos precedidos por un backsl
 * `\"` (comillas dobles).
 * `\'` (comilla simple).
 
-La palabra reservada para las variables de tipo carácter es `char`.
+La palabra reservada para las variables de tipo carácter es `Cr`.
 
 #### Booleanos.
 
-Son datos de 8 bit (1 B) en memoria y se caracterizan por ser `True` o `False` sin estar encerrados entre comillas. `False` corresponde en memoria a los ocho bit en 0 y `True` a cualquier otra combinación.
+Son datos de 8 bit (1 B) en memoria y se caracterizan por ser `T` o `F` sin estar encerrados entre comillas. `F` corresponde en memoria a los ocho bit en 0 y `T` a cualquier otra combinación.
 
-La palabra reservada para las variables de tipo booleano es `bool`.
+La palabra reservada para las variables de tipo booleano es `Bl`.
 
 #### Enteros.
 
 Son datos de 32 bit (4 B) en memoria que pueden ser cualquier cadena no vacía de números de la base decimal. Su representación es **complemento a 2**, por lo tanto los enteros están acotados en el rango: `[-2 147 483 648..2 147 483 647]`.
 
-La palabra reservada para las variables de tipo entero es `int`.
+La palabra reservada para las variables de tipo entero es `In`.
 
 #### Números de punto flotante.
 
@@ -150,7 +156,7 @@ Son datos de 64 bit (8 B) en memoria representados según el estándar **IEEE 75
 
 `<Entero>.<Entero>`
 
-La palabra reservada para las variables de tipo punto flotante es `float`.
+La palabra reservada para las variables de tipo punto flotante es `Fl`.
 
 ### Compuestos.
 
@@ -160,7 +166,7 @@ Son estructuras de datos homogéneas de cualquier tipo, es decir, se admite arre
 
 Para variables de tipo arreglo la construcción reservada que lo identifica es `<tipo>[<entero>]`, donde `<tipo>` puede ser otro arreglo.
 
-Ejemplo:
+Ejemplo: ``` Cr[2] arreglo ```
 
 #### Strings.
 
@@ -170,14 +176,14 @@ Son arreglos de carácteres. Corresponden a un grupo particular de arreglos por 
 ['s', 't', 'r', 'i', 'n', 'g', 's'] == "strings"
 ```
 
-Para variables de tipo string, puede utilizarse `char[<entero>]` o `string`.
+Para variables de tipo Str, puede utilizarse `Cr[<entero>]` o `Str`.
 
 #### Registros.
 
 Son estructuras de la forma 
 
 ```
-register <nombre> {
+Reg <nombre> {
   <tipo> <nombre>
   <tipo> <nombre>
   ...
@@ -185,7 +191,7 @@ register <nombre> {
 }
 ```
 
-Su tamaño en memoria corresponde a la suma de los tamaños individuales de cada campo que posea. Los tipos que acepta un registro son todos aquellos tipos que están definidos en CHask. `register` es la palabra reservada para identificar a una variable de tipo registro.
+Su tamaño en memoria corresponde a la suma de los tamaños individuales de cada campo que posea. Los tipos que acepta un registro son todos aquellos tipos que están definidos en CH*. `Reg` es la palabra reservada para identificar a una variable de tipo registro.
 
 Ejemplo:
 
@@ -194,7 +200,7 @@ Ejemplo:
 Son estructuras de la forma:
 
 ```
-union <nombre> {
+U <nombre> {
   <tipo> <nombre>
   <tipo> <nombre>
   ...
@@ -202,11 +208,11 @@ union <nombre> {
 }
 ```
 
-Su tamaño en memoria corresponde al tamaño del campo que tenga mayor tamaño. Los tipos que acepta un registro variante son todos aquellos tipos que están definidos en CHask. `union` es la palabra reservada para identificar a una variable de tipo registro.
+Su tamaño en memoria corresponde al tamaño del campo que tenga mayor tamaño. Los tipos que acepta un registro variante son todos aquellos tipos que están definidos en CH*. `U` es la palabra reservada para identificar a una variable de tipo registro.
 
 #### Apuntadores.
 
-Son un tipo de dato especial que guarda la dirección de memoria dinámica donde comienza el objeto apuntado. En memoria son una palabra del procesador. Su sintaxis es: `<tipo> * <nombre>`
+Son un tipo de dato especial que guarda la dirección de memoria dinámica donde comienza el objeto apuntado. En memoria son una palabra del procesador. Su sintaxis es: `<tipo> $<nombre>`. Para obtener la dirección del objeto apuntado se usa `?`.
 
 ## Instrucciones y Expresiones.
 
@@ -234,11 +240,11 @@ Estas asignaciones son equivalentes cada una a realizar `<variable> = <variable>
 
 #### Identificadores de variables.
 
-Un identificador válido para una variable en un programa de CHask cumple con las siguientes condiciones:
+Un identificador válido para una variable en un programa de CH* cumple con las siguientes condiciones:
 
 1. No empieza con números.
 2. Posee solo caracteres alfanuméricos y los caracteres especiales `'_'` y `'''`.
-3. No corresponde a ninguna palabra reservada de CHask.
+3. No corresponde a ninguna palabra reservada de CH*.
 
 ##### Declaración e inicialización de variables.
 
@@ -254,19 +260,19 @@ Ver sección **Estructuras de Datos. Repetición**.
 
 ### Entrada/Salida.
 
-Las operaciones de entrada/salida serán realizadas con las instrucciones `read` y `write` como se sigue:
+Las operaciones de entrada/salida serán realizadas con las instrucciones `in` y `out` como se sigue:
 
 ```
-read <variable>
+in <variable>
 
-write <variable>
+out <variable>
 ```
 
 Esto toma el contenido de la entrada estándar y lo almacena en `<variable>` y posteriormente el contenido de `<variable>` es mostrado por la salida estándar, respectivamente.
 
-La instrucción `read` toma una variable en la cual almacenará lo que lea de la entrada estándar. Su ejecución consiste en una interrupción para leer de la entrada estándar y almacenar en el destino indicado por el programador, si no se indica el destino la ejecución continua su curso y no se almacena la información. Se levanta una advertencia al programador al compilar.
+La instrucción `in` toma una variable en la cual almacenará lo que lea de la entrada estándar. Su ejecución consiste en una interrupción para leer de la entrada estándar y almacenar en el destino indicado por el programador, si no se indica el destino la ejecución continua su curso y no se almacena la información. Se levanta una advertencia al programador al compilar.
 
-La instrucción `write` toma una variable o una constante de tipo `char` o `string` y muestra en la salida estándar el contenido de la variable o el valor de la constante.
+La instrucción `out` toma una variable o una constante de tipo `Cr` o `Str` y muestra en la salida estándar el contenido de la variable o el valor de la constante.
 
 ### Expresiones Aritméticas.
 
@@ -296,13 +302,13 @@ Las expresiones booleanas que reciben cualquier tipo escalar son aquellas que in
 * Igualdad (`==`): definida tradicionalmente.
 * Desigualdad (`!=`): definida tradicionalmente.
 * Mayor que (`>`): defnida tradicionalmente para enteros y punto flotante.
-  `True > Flase == True` para booleanos. Para caracteres se sigue el orden léxico normal.
+  `T > F == T` para booleanos. Para caracteres se sigue el orden léxico normal.
 * Mayor o igual que (`>=`): definida tradicionalmente para enteros y punto flotante.
-  `True > Flase == True` para booleanos. Para caracteres se sigue el orden léxico normal.
+  `T > F == T` para booleanos. Para caracteres se sigue el orden léxico normal.
 * Menor que (`<`): defnida tradicionalmente para enteros y punto flotante.
-  `False < True == True` para booleanos. Para caracteres se sigue el orden léxico normal.
+  `F < T == T` para booleanos. Para caracteres se sigue el orden léxico normal.
 * Menor o igual que (`<=`): definida tradicionalmente para enteros y punto flotante.
-  `False < True == True` para booleanos. Para caracteres se sigue el orden léxico normal.
+  `F < T == T` para booleanos. Para caracteres se sigue el orden léxico normal.
   
 ### Expresiones de Carácteres.
 
@@ -321,7 +327,7 @@ Corresponden a las expresiones que devuelven un arreglo después de su evaluaci�
 
 ## Bloques y Alcance de bloques.
 
-Un bloque dentro del programa está delimitado por llaves `{` y `}` y se obtiene al estar dentro de instrucciones condicionales, de repetición y funciones. El alcance es estático (o léxico).
+Un bloque dentro del programa está delimitado por llaves `<` y `>` y se obtiene al estar dentro de instrucciones condicionales, de repetición y funciones. El alcance es estático (o léxico).
 
 ## Evaluación.
 
@@ -351,9 +357,9 @@ Las expresiones se evaluan de izquierda a derecha.
 
 ## Comentarios y espacios en blanco.
 
-En CHask se pueden escribir comentarios de una línea o de varias lineas. Al escribir `@` se ignorarán todos los caracteres hasta el siguiente salto de línea. El texto escrito entre `{-` y `-}` será ignorado. Los espacios en blanco también son ignorados.
+En CH* se pueden escribir comentarios de una línea o de varias lineas. Al escribir `@` se ignorarán todos los caracteres hasta el siguiente salto de línea. El texto escrito entre `{-` y `-}` será ignorado. Los espacios en blanco también son ignorados.
 
-## Ejemplo de un programa en CHask.
+## Ejemplo de un programa en CH*.
 ```
 @ Esto es un comentario de una línea.
 
@@ -362,20 +368,22 @@ Este es un comentario
 de varias líneas.
 -}
 
-int cardinal = 3
-char[3] conjunto
-int partes = 1
-int contador = 0
+In cardinal = 3
+Cr[3] conjunto
+In partes = 1
+In contador = 0
 
-while contador < cardinal {
-  write "Ingrese un carácter: "
-  read conjunto[contador]
-  partes = partes * 2
+<
+while contador < cardinal:
+  out "Ingrese un carácter: "
+  in conjunto[contador]
+ partes = partes * 2
   contador++
-}
+>
 
-for elemento in conjunto {
-  write "Los elementos del conjunto son: "
-  write elemento : ", "
-}
+<
+for elemento in conjunto:
+  out "Los elementos del conjunto son: "
+  out elemento : ", "
+>
 ```
