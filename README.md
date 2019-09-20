@@ -1,63 +1,109 @@
-# CH*.
+[![N|Solid](http://www.usb.ve/conocer/corporativa/archivos/logos/emblema/emblema.png)](http://www.usb.ve)
+# EL Lenguaje de Programación CH*
 
-CH* (C & C ++ & Haskell) es un lenguaje imperativo de propósito general diseñado e implementado por estudiantes de Ingeniería de Computación de la Universidad Simón Bolívar en el transcurso de la cadena de Lenguajes de Programación.
+CH* (C & C ++ & Haskell) es un **lenguaje imperativo** de propósito general diseñado e implementado por estudiantes de Ingeniería de Computación de la Universidad Simón Bolívar en el transcurso de la cadena de **Lenguajes de Programación (CI-4721 , CI-4722 )**.
 
-## Estructura de un programa.
+CH* cuenta con.
+  - Tipos de datos primitivos (Integer, Character, Flotantes, Booleanos)
+  - Apuntadores a memoria en el Heap
+  - Arreglos, Registros, Registros variantes
+  - Lectura y Escritura desde la entrada estándar a la salida estándar
+  - Amor! :kissing_closed_eyes:
 
+# Estructura de un programa
 Un programa en CH* tiene la siguiente estructura:
-
 ```
-<Lista de Instrucciones>
+< Lista instrucciones>
 ```
 
-## Estructuras de control de flujo.
+Simple *Hola Mundo!*:
+```
+out "Hello World!"
+```
 
-### Selección.
+Ver ejemplo de un programa completo al final
+
+# Estructuras de control de flujo.
+
+## Selección
 
 La selección en CH* es de la forma siguiente.
 
-```
-| <Expresion Booleana>:
+```sh
+| <Expresión Booleana>:
   <Lista de Instrucciones>
-| <Expresion Booleana>:
+| <Expresión Booleana>:
   <Lista de Instrucciones>
 ...
 | else:
   <Lista de Instrucciones>
 
 O también:
-<Expresion Booleana> ? <Lista de Instrucciones> : <Lista de Instrucciones>
+<Expresión Booleana> ? <Lista de Instrucciones> : <Lista de Instrucciones>
+```
+Solo es necesaria una condición las demás son opcionales y se evaluarán si la condición anterior es falsa. Si todas son falsas se ejecuta el contenido de la condición `| else:` en caso de existir. 
+
+**Ejemplo (una sola condición)**:
+```sh
+    BL puede_conducir = F
+    In edad = 18
+    | edad >= 18:
+        puede_conducir = T
+```
+**Ejemplo (utilizando el operador ternario):**
+```sh
+    In edad = 18
+    out edad >= 18? "Ya puedes conducir!" : "Todavía no puedes conducir!"
 ```
 
-### Repetición.
+### Repetición
 
-#### Determinada.
+### Determinada
 
 La repetición determinada es un ciclo `for` como se sigue:
-
-```
+```sh
 <
-for <variable> in <arreglo>:
+for <variable>[<Nombre Índice para el arreglo>] in <arreglo>:
   <Lista de Instrucciones>
 >
 ```
-
 En cada iteración, `<variable>` tendrá a un elemento de `<arreglo>` y las iteraciones culminarán cuando ya no haya más elementos en `<arreglo>` sobre los cuales iterar.
 
-#### Indeterminada.
+Ejemplo:
+```sh
+In[5] edades = [12,23,15,40,15] 
+Str[5] nombres = ["Natasha","Francisco","Manuel","Ricardo","Haskell"] 
+<
+for edad,i in edades:
+  out "Hola "::nombres[i]::" tienes "::edad::" años!"
+>
+```
+### Indeterminada
 
 La repetición indeterminada es un ciclo `while` como se sigue:
 
-```
+```sh
 <
-while <Expresion Booleana>:
+while <Expresión Booleana>:
   <Lista de Instrucciones>
 >
 ```
+`<Lista de Instrucciones>` se seguirá ejecutando hasta que `<Expresión Booleana>` sea `False`
 
-### Subrutinas.
+**Ejemplo:**
+```sh
+In i = 0
+In[5] edades = [12,23,15,40,15] 
+Str[5] nombres = ["Natasha","Francisco","Manuel","Ricardo","Haskell"] 
+<
+while i < 5:
+  out "Hola "::nombres[i]::" tienes "::edad::" años!"
+  i++
+>
+```
 
-#### Funciones y procedimientos.
+## Subrutinas
+### Funciones y procedimientos
 
 Las funciones se definen son estructuras de control de flujo que toman una cantidad arbitraria de argumentos definidos por el programador, pudiendo incluso no tomar argumento alguno.
 
@@ -65,67 +111,95 @@ Las funciones toman cualquier tipo de dato y retornan un tipo de dato escalar (v
 
 Los procedimientos son funciones que siempre retornan el valor unit, el cual no tiene más uso que este.
 
+Para retornar o salir de una función se utiliza `return [<valor de retorno>]`
 La sintaxis de una función es:
-
-```
+```sh
 <
 nombre(<tipo> <parámetro formal>, <tipo> <parámetro formal>, ..., <tipo> <parámetro formal>) <tipo>:
   <Lista de instrucciones>
 >
 ```
 
-La sintaxis de un procedimiento es:
-
-```
+**Ejemplo**
+```sh
 <
-nombre(<tipo> <parámetro formal>, <tipo> <parámetro formal>, ..., <tipo> <parámetro formal>):
-  <Lista de instrucciones>
+calcularGanancia(In precioComprado,In precioVendido) In:
+    return precioComprado - precioVendido
 >
-``` 
-
-##### Pasaje de parámetros.
+out "Ganancia de "::calcularGanancia(1500,2000)
+```
+##### Pasaje de parámetros
 
 Se admite el paso de parámetros por valor y por referencia. Se diferencia el pase por referencia por el signo de interrogación (`?`) prefijo a uno de los parámetros. El pase por valor no requiere ninguna sintaxis adicional.
 
-Ejemplo:
-
-```
+La sintaxis es:
+```sh
 <
-funcion(<tipo> <parámetro por valor>, <tipo> ?<parámetro por referencia>)<tipo de retorno>:
+función(<tipo> <parámetro por valor>, <tipo> ?<parámetro por referencia>)<tipo de retorno>:
   <Lista de instrucciones>
 >
 ```
+**Ejemplo (Paso por valor y referencia):**
+```sh
+<
+calcularGanancia(Rg ?producto,In precioVendido) In:
+    return producto.precioReal - precioVendido
+>
+<
+Rg producto 
+    In precioReal;
+>
+
+producto p
+p.precioReal = 1500
+out "Ganancia de "::calcularGanancia(p,2000)
+```
+
+**Nota:** Caso particular es cuando se pasa un puntero a una función que espera un argumento por referencia, en este caso se pasaría el valor del puntero.
 
 #### Recursión.
 
 CH* admite la invocación recursiva de funciones en cualquier momento.
 
-Ejemplo:
+Ejemplo de sintaxis:
 
 ```
 <
 procedimiento(<tipo> <parámetro>):
   <Lista de instrucciones>
   <Llamada recursiva>
-  <Llamada a>funcion>
+  <Llamada a función>
 }
 
 <
-funcion(<tipo> <parámetro>)<tipo>:
+función(<tipo> <parámetro>)<tipo>:
   <Lista de instrucciones>
-  <Llamada a prodecimiento>
+  <Llamada a procedimiento>
 >
-
-<Llamada a funcion>
+<Llamada a función>
 ```
 
-Un código de esta forma es posible en CH*.
+**Ejemplo factorial:**
+
+```sh
+<
+factorial(In n) In:
+   | n < 0: return 0;
+   | n > 1: return n*factorial(n-1);
+   return 1;
+>
+In numero;
+out "ingresa un numero: "
+input numero
+out "Factorial de "::numero::" es "::numero;
+
+```
 
 ## Tipos de datos
 
 ### Escalares.
 
-#### Carácteres.
+#### Caracteres.
 
 Son datos de 8 bit (1 B) en memoria y se caracterizan por ser un carácter ASCII Extendido entre comillas simples.
 
@@ -170,7 +244,7 @@ Ejemplo: ``` Cr[2] arreglo ```
 
 #### Strings.
 
-Son arreglos de carácteres. Corresponden a un grupo particular de arreglos por su representación, estos admiten la representación de arreglo y de cadena de carácteres como en los lenguajes tradicionales, encerrados entre comillas dobles (`"`), es decir,
+Son arreglos de caracteres. Corresponden a un grupo particular de arreglos por su representación, estos admiten la representación de arreglo y de cadena de caracteres como en los lenguajes tradicionales, encerrados entre comillas dobles (`"`), es decir,
 
 ```
 ['s', 't', 'r', 'i', 'n', 'g', 's'] == "strings"
@@ -301,25 +375,25 @@ Las expresiones booleanas que reciben cualquier tipo escalar son aquellas que in
 
 * Igualdad (`==`): definida tradicionalmente.
 * Desigualdad (`!=`): definida tradicionalmente.
-* Mayor que (`>`): defnida tradicionalmente para enteros y punto flotante.
+* Mayor que (`>`): definida tradicionalmente para enteros y punto flotante.
   `T > F == T` para booleanos. Para caracteres se sigue el orden léxico normal.
 * Mayor o igual que (`>=`): definida tradicionalmente para enteros y punto flotante.
   `T > F == T` para booleanos. Para caracteres se sigue el orden léxico normal.
-* Menor que (`<`): defnida tradicionalmente para enteros y punto flotante.
+* Menor que (`<`): definida tradicionalmente para enteros y punto flotante.
   `F < T == T` para booleanos. Para caracteres se sigue el orden léxico normal.
 * Menor o igual que (`<=`): definida tradicionalmente para enteros y punto flotante.
   `F < T == T` para booleanos. Para caracteres se sigue el orden léxico normal.
   
-### Expresiones de Carácteres.
+### Expresiones de Caracteres.
 
-Corresponden a las expresiones que devuelven un caracter después de su evaluación. Son aquellas en las cuales están involucrados los operadores unarios prefijos de:
+Corresponden a las expresiones que devuelven un carácter después de su evaluación. Son aquellas en las cuales están involucrados los operadores unarios prefijos de:
 
 * Mayúscula (`^`): convierte el carácter alfabético dado a su representación en mayúscula.
 * Minúscula (`~`): convierte el carácter alfabético dado a su representación en minúscula.
 
 ### Expresiones para Arreglos.
 
-Corresponden a las expresiones que devuelven un arreglo después de su evaluación. Son aquellas en las cuales están invoucrados los operadores de:
+Corresponden a las expresiones que devuelven un arreglo después de su evaluación. Son aquellas en las cuales están involucrados los operadores de:
 
 * Indexación (`[]`): toma un arreglo y un entero `i` en el rango `[0..#<arreglo> - 1]` y devuelve el elemento contenido en la posición `i`.
 * Concatenación (`::`): toma dos arreglos y concatena el segundo a la cola del primero.
@@ -353,11 +427,11 @@ En orden descendente, la precedencia de los operadores es:
 
 ### Orden de evaluación de las expresiones.
 
-Las expresiones se evaluan de izquierda a derecha.
+Las expresiones se evalúan de izquierda a derecha.
 
 ## Comentarios y espacios en blanco.
 
-En CH* se pueden escribir comentarios de una línea o de varias lineas. Al escribir `@` se ignorarán todos los caracteres hasta el siguiente salto de línea. El texto escrito entre `{-` y `-}` será ignorado. Los espacios en blanco también son ignorados.
+En CH* se pueden escribir comentarios de una línea o de varias líneas. Al escribir `@` se ignorarán todos los caracteres hasta el siguiente salto de línea. El texto escrito entre `{-` y `-}` será ignorado. Los espacios en blanco también son ignorados.
 
 ## Ejemplo de un programa en CH*.
 ```
