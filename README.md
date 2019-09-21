@@ -535,7 +535,7 @@ En CH* se pueden escribir comentarios de una línea o de varias líneas. Al escr
 
 ## Ejemplos en CH*.
 
-*Calcular el volumen de un Cubo*
+**Calcular el volumen de un Cubo**
 ```sh
 {- Calcula el volumen de un Cubo -}
 Fl arista, volumen;
@@ -545,10 +545,52 @@ arista = convertFromStringToFloat(input "Introduzca arista: ")
 volumen = arista*arista*arista;
 
 out "El volumen del cubo es: ",volumen
-input
+```
+**Dice si un número es par o impar**
+```sh
+{- Dice si un número es par o impar -}
+In numero
+numero = convertFromStringToInt(input "Introduzca un numero entero: ")
+|numero % 2 == 0 :
+    out "ES PAR"
+| else:
+    out "ES IMPAR"
+
+```
+**Dice si un número es par o impar**
+```sh
+{- Dice si un número es par o impar -}
+In numero
+numero = convertFromStringToInt(input "Introduzca un numero entero: ")
+|numero % 2 == 0 :
+    out "ES PAR"
+| else:
+    out "ES IMPAR"
 ```
 
+**Tablas de multiplicar**
+```sh
+Ch seguir = 's';
+In i, numero;
+<
+while seguir != 'n':
+    numero = convertFromStringToInt(input "Introduzca un numero entero: ")
+
+    out "La tabla de multiplicar del ",numero," es:"
+
+    @ Inicio del anidamiento
+    <
+    i = 1 
+    while i <= 10:
+        out numero," * ",i," = ",i*numero
+        i++
+    >
+    @ Fin del anidamiento
+
+    seguir = convertFromStringToChar( input "Desea ver otra tabla (s/n)?: ")
+>
+```
 ## Estudiantes
-- Natasha
-- Francisco
-- Manuel
+- Natasha Gamboa
+- Francisco Javier
+- Manuel Gonzalez
