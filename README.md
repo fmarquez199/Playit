@@ -97,7 +97,7 @@ Str[5] nombres = ["Natasha","Francisco","Manuel","Ricardo","Haskell"]
 In i = 0
 <
 while i < 5:
-  out "Hola "",nombres[i]," tienes ",edades[i]," años!"
+  out "Hola ",nombres[i]," tienes ",edades[i]," años!"
   i++
 >
 ```
@@ -143,15 +143,15 @@ función(<tipo> <parámetro por valor>, <tipo> ?<parámetro por referencia>)<tip
 **Ejemplo (Paso por valor y referencia):**
 ```sh
 <
-calcularGanancia(Rg ?producto,In precioVendido) In:
+calcularGanancia(Producto ?producto,In precioVendido) In:
     return precioVendido - producto.precioReal
 >
 <
-Rg producto 
+Rg Producto 
     In precioReal;
 >
 
-producto p
+Producto p
 p.precioReal = 1500
 out "Ganancia de ",calcularGanancia(p,2000)
 ```
@@ -269,6 +269,21 @@ Cr[3] abc
 Str[3] nombres = ["Natasha","Francisco","Manuel"]
 Fl[3] indices = [3.67,3.20,3.0]
 ```
+Los arreglos se pasan por referencia por default.
+```sh 
+<
+asignarIndice(Fl[] indices,In nEstudiantes,In indexEstudiante,Fl nuevoIndice) bool:
+    | nEstudiantes <= 0 : return F
+    | indexEstudiante >= nEstudiantes : return F
+    | nuevoIndice < 1 | return F
+    indices[indexEstudiante] = nuevoIndice
+    return T
+>
+
+Fl[3] indices = [3,4,5]
+asignarIndices(indices,3,2,2.9) @ El estudiante #3 está en PP
+```
+El array `indices` se pasa por referencia, se indica que es un array con los corchetes.
 
 #### Strings.
 
@@ -372,9 +387,9 @@ Son un tipo de dato especial que guarda la dirección de memoria dinámica donde
 Su sintaxis es: `<tipo al que apunta> $<nombre>`. Para obtener la dirección del objeto apuntado se usa `?`.
 Por default son inicializados con `nullpointer`.
 ```sh
-In $ a = (In $)malloc(typeof In)
+In $ a = new In
 $a = 13
-free(a)
+free a
 ```
 Se pueden utilizar los operadores `==` y `!=` para apuntadores.
 ## Instrucciones y Expresiones.
