@@ -329,7 +329,7 @@ U <nombre>
   <tipo> <nombre>
 >
 ```
-
+**Ejemplo**
 ```sh
 
 <
@@ -387,7 +387,7 @@ La asignación se realiza mediante el operador `=`. Puede realizarse al momento 
 <tipo> <variable1>
 <tipo> <variable2> = <expresión de tipo>
 
-<variable1> = <variable2>
+<variable1> = <variable2 del mismo tipo>
 ```
 
 Esto declara dos variables `<variable1>` y `<variable2>`, a la segunda se le asigna el resultado de `<expresión de tipo>` y luego a la primera, que no fue inicializada por el programador, se le asigna el contenido de la segunda.
@@ -411,8 +411,10 @@ n2++ @ equivalente a n2 = n2 + 1
 Un identificador válido para una variable en un programa de CH* cumple con las siguientes condiciones:
 
 1. No empieza con números.
-2. Posee solo caracteres alfanuméricos y los caracteres especiales `'_'` y `'''`.
+2. Posee solo caracteres `A` hasta la `Z` mayuscula o minuscula sin incluir la ñ o caracteres acentuados , números del `0` al `9` y los caracteres especiales `_` y `'`.
 3. No corresponde a ninguna palabra reservada de CH*.
+
+Se diferencian mayusculas de minusculas.
 
 **Nombres válidos:**  `test1` , `yes_we_can` , `maybe'not`
 
