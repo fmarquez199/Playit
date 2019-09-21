@@ -1,7 +1,7 @@
 [![N|Solid](http://www.usb.ve/conocer/corporativa/archivos/logos/emblema/emblema.png)](http://www.usb.ve)
 # EL Lenguaje de Programación CH*
 
-CH* (C & C ++ & Haskell) es un **lenguaje imperativo** de propósito general diseñado e implementado por estudiantes de Ingeniería de Computación de la Universidad Simón Bolívar en el transcurso de la cadena de **Lenguajes de Programación (CI-4721 , CI-4722 )**.
+CH* (C & C ++ & Haskell) es un **lenguaje imperativo** de propósito general diseñado e implementado por estudiantes de Ingeniería de Computación de la **Universidad Simón Bolívar** en el transcurso de la cadena de **Lenguajes de Programación (CI-4721 , CI-4722 )**.
 
 CH* cuenta con.
   - Tipos de datos primitivos (Integer, Character, Flotantes, Booleanos)
@@ -45,10 +45,10 @@ Solo es necesaria una condición las demás son opcionales y se evaluarán si la
 
 **Ejemplo (una sola condición)**:
 ```sh
-    BL puede_conducir = F
+    Bl puedeConducir = F
     In edad = 18
     | edad >= 18:
-        puede_conducir = T
+        puedeConducir = T
 ```
 **Ejemplo (utilizando el operador ternario):**
 ```sh
@@ -69,9 +69,9 @@ for <variable>[<Nombre Índice para el arreglo>] in <arreglo>:
 ```
 En cada iteración, `<variable>` tendrá a un elemento de `<arreglo>` y las iteraciones culminarán cuando ya no haya más elementos en `<arreglo>` sobre los cuales iterar.
 
-Ejemplo:
+**Ejemplo:**
 ```sh
-In[5] edades = [12,23,15,40,15] 
+Str[5] edades = ["12","23","15","40","15"] 
 Str[5] nombres = ["Natasha","Francisco","Manuel","Ricardo","Haskell"] 
 <
 for edad,i in edades:
@@ -92,12 +92,12 @@ while <Expresión Booleana>:
 
 **Ejemplo:**
 ```sh
-In i = 0
-In[5] edades = [12,23,15,40,15] 
+Str[5] edades = ["12","23","15","40","15"] 
 Str[5] nombres = ["Natasha","Francisco","Manuel","Ricardo","Haskell"] 
+In i = 0
 <
 while i < 5:
-  out "Hola "::nombres[i]::" tienes "::edad::" años!"
+  out "Hola "::nombres[i]::" tienes "::edades[i]::" años!"
   i++
 >
 ```
@@ -124,9 +124,10 @@ nombre(<tipo> <parámetro formal>, <tipo> <parámetro formal>, ..., <tipo> <par�
 ```sh
 <
 calcularGanancia(In precioComprado,In precioVendido) In:
-    return precioComprado - precioVendido
+    return precioVendido - precioComprado
 >
-out "Ganancia de "::calcularGanancia(1500,2000)
+
+out "Ganancia de "::convertIntToString(calcularGanancia(1500,2000))
 ```
 ##### Pasaje de parámetros
 
@@ -143,7 +144,7 @@ función(<tipo> <parámetro por valor>, <tipo> ?<parámetro por referencia>)<tip
 ```sh
 <
 calcularGanancia(Rg ?producto,In precioVendido) In:
-    return producto.precioReal - precioVendido
+    return precioVendido - producto.precioReal
 >
 <
 Rg producto 
@@ -152,7 +153,7 @@ Rg producto
 
 producto p
 p.precioReal = 1500
-out "Ganancia de "::calcularGanancia(p,2000)
+out "Ganancia de "::convertIntToString(calcularGanancia(p,2000))
 ```
 
 **Nota:** Caso particular es cuando se pasa un puntero a una función que espera un argumento por referencia, en este caso se pasaría el valor del puntero.
@@ -163,7 +164,7 @@ CH* admite la invocación recursiva de funciones en cualquier momento.
 
 Ejemplo de sintaxis:
 
-```
+```sh
 <
 procedimiento(<tipo> <parámetro>):
   <Lista de instrucciones>
@@ -184,14 +185,15 @@ función(<tipo> <parámetro>)<tipo>:
 ```sh
 <
 factorial(In n) In:
-   | n < 0: return 0;
-   | n > 1: return n*factorial(n-1);
-   return 1;
+   | n < 0: return 0
+   | n == 0: return 1
+   | n > 1: return n*factorial(n-1)
+   return 1
 >
 In numero;
 out "ingresa un numero: "
 input numero
-out "Factorial de "::numero::" es "::numero;
+out "Factorial de "::toString(numero)::" es "::convertIntToString(factorial(numero));
 
 ```
 
@@ -201,7 +203,7 @@ out "Factorial de "::numero::" es "::numero;
 
 #### Caracteres.
 
-Son datos de 8 bit (1 B) en memoria y se caracterizan por ser un carácter ASCII Extendido entre comillas simples.
+Son datos de **8 bit (1 B)** en memoria y se caracterizan por ser un carácter *ASCII Extendido* entre comillas simples.
 
 Se distinguen las secuencias de escape por ser aquellos precedidos por un backslash (`\`):
 * `\n` (salto de espacio).
@@ -211,18 +213,22 @@ Se distinguen las secuencias de escape por ser aquellos precedidos por un backsl
 * `\'` (comilla simple).
 
 La palabra reservada para las variables de tipo carácter es `Cr`.
+Si no se inicializan al declararse se le establece el caracter nulo `''`.
 
 #### Booleanos.
 
-Son datos de 8 bit (1 B) en memoria y se caracterizan por ser `T` o `F` sin estar encerrados entre comillas. `F` corresponde en memoria a los ocho bit en 0 y `T` a cualquier otra combinación.
+Son datos de **8 bit (1 B)** en memoria y solo admiten  `T` o `F` como valor. 
+Nota:`F` corresponde en memoria a los ocho bit en 0 y `T` a cualquier otra combinación.
 
 La palabra reservada para las variables de tipo booleano es `Bl`.
+Si no se inicializan al declararse se le establece el valor  `F`.
 
 #### Enteros.
 
-Son datos de 32 bit (4 B) en memoria que pueden ser cualquier cadena no vacía de números de la base decimal. Su representación es **complemento a 2**, por lo tanto los enteros están acotados en el rango: `[-2 147 483 648..2 147 483 647]`.
+Son datos de 32 bit (4 B) en memoria que pueden ser cualquier cadena no vacía de números de la base decimal. Su representación es **complemento a 2**, por lo tanto los enteros están acotados en el rango: `[-2.147.483.648 , 2.147.483.647]`.
 
 La palabra reservada para las variables de tipo entero es `In`.
+Si no se inicializan al declararse se le establece el valor  `0`.
 
 #### Números de punto flotante.
 
@@ -231,77 +237,161 @@ Son datos de 64 bit (8 B) en memoria representados según el estándar **IEEE 75
 `<Entero>.<Entero>`
 
 La palabra reservada para las variables de tipo punto flotante es `Fl`.
+Si no se inicializan al declararse se le establece el valor  `0`.
+
+**Ejemplo escalares**
+
+```sh
+In a                @ Inicializado en 0 por default
+Char c              @ Inicializado en '' por default
+Bl esMayor = F
+In b = 2
+a = 1
+Fl r = a / b        @ r <- 0.5 
+a++                 @ a <- 2
+````
 
 ### Compuestos.
 
 #### Arreglos.
 
-Son estructuras de datos homogéneas de cualquier tipo, es decir, se admite arreglos multidimensionales de algún tipo escalar. Su representación en un programa es `[elemento0, elemento1, ..., elementoN]`, siendo todos los elementos del mismo tipo. Son estructuras estáticas y su tamaño debe ser definido en su declaración.
+Son estructuras de datos homogéneas de cualquier tipo, es decir, se admite arreglos multidimensionales de algún tipo escalar. Su representación en un programa es `[elemento0, elemento1, ..., elementoN]`, siendo todos los elementos del mismo tipo. Son estructuras estáticas y su tamaño debe ser definido en su declaración. 
+
+Para acceder al contenido de un arreglo se utiliza `<nombre_arreglo>[<indice>]` . Los indices van desde el 0 hasta la longitud del arreglo menos 1.
 
 Para variables de tipo arreglo la construcción reservada que lo identifica es `<tipo>[<entero>]`, donde `<tipo>` puede ser otro arreglo.
 
-Ejemplo: ``` Cr[2] arreglo ```
+Los arrays no se inicializan por default.
+
+**Ejemplo:** 
+```sh 
+Cr[3] abc
+Str[3] nombres = ["Natasha","Francisco","Manuel"]
+Fl[3] indices = [3.67,3.20,3.0]
+```
 
 #### Strings.
 
-Son arreglos de caracteres. Corresponden a un grupo particular de arreglos por su representación, estos admiten la representación de arreglo y de cadena de caracteres como en los lenguajes tradicionales, encerrados entre comillas dobles (`"`), es decir,
+Son arreglos de caracteres. Corresponden a un grupo particular de arreglos por su representación, estos admiten la representación de arreglo y de cadena de caracteres como en los lenguajes tradicionales, encerrados entre comillas dobles `""`, es decir,
 
-```
+```sh
 ['s', 't', 'r', 'i', 'n', 'g', 's'] == "strings"
 ```
 
 Para variables de tipo Str, puede utilizarse `Cr[<entero>]` o `Str`.
+Son inicializados con la cadena vacía `""` por default
 
 #### Registros.
 
 Son estructuras de la forma 
 
 ```
-Reg <nombre> {
+<
+Reg <nombre> 
   <tipo> <nombre>
   <tipo> <nombre>
   ...
   <tipo> <nombre>
-}
+>
 ```
-
+Para acceder a un miembro del registro se utiliza `.`
 Su tamaño en memoria corresponde a la suma de los tamaños individuales de cada campo que posea. Los tipos que acepta un registro son todos aquellos tipos que están definidos en CH*. `Reg` es la palabra reservada para identificar a una variable de tipo registro.
 
-Ejemplo:
+Para iniciarse en la declaración se puede pasar un array con exactamente el mismo número de argumentos.
+Por default los tipos escalares y Str serán iniciados.
+**Ejemplo:**
+```sh
+<
+Reg Contacto 
+  Str nombre
+  In edad
+  Bl tieneTrabajo
+>
 
+Contacto Alex = ["Alex",15,F]
+Contacto sofia
+sofia.nombre = "Sofia"
+sofia.edad = 29
+sofia.tieneTrabajo = T
+
+out "Hola "::sofia.nombre
+```
 #### Registros variantes.
 
 Son estructuras de la forma:
 
-```
-U <nombre> {
+```sh
+<
+U <nombre> 
   <tipo> <nombre>
   <tipo> <nombre>
   ...
   <tipo> <nombre>
-}
+>
 ```
 
-Su tamaño en memoria corresponde al tamaño del campo que tenga mayor tamaño. Los tipos que acepta un registro variante son todos aquellos tipos que están definidos en CH*. `U` es la palabra reservada para identificar a una variable de tipo registro.
+```sh
+
+<
+Reg Circle 
+  Fl centerX
+  Fl centerY
+  Fl radius
+>
+<
+Reg Rectangle
+  Fl topLeftX
+  Fl topLeftY
+  Fl bottomRightX
+  Fl bottomRightY
+>
+
+<
+U Shape 
+  Circle c
+  Rectangle r
+>
+<
+areaCirculo(Circle & c) Fl :
+    return 3.14 * c.radius* c.radius
+>
+
+Shape sh
+sh.c.centerX = 2.1
+sh.c.centerY = 5.0
+sh.c.radius = 15
+out "El area del circulo es ":: toString(areaCirculo(sh.c))
+```
+
+Para acceder a un miembro de la union se utiliza `.`
+Su tamaño en memoria corresponde al campo de mayor tamaño. Los tipos que acepta un registro variante son todos aquellos tipos que están definidos en CH*. `U` es la palabra reservada para identificar a una variable de tipo registro.
 
 #### Apuntadores.
 
-Son un tipo de dato especial que guarda la dirección de memoria dinámica donde comienza el objeto apuntado. En memoria son una palabra del procesador. Su sintaxis es: `<tipo> $<nombre>`. Para obtener la dirección del objeto apuntado se usa `?`.
-
+Son un tipo de dato especial que guarda la dirección de memoria dinámica donde comienza el objeto apuntado. En memoria son una palabra del procesador. 
+Su sintaxis es: `<tipo al que apunta> $<nombre>`. Para obtener la dirección del objeto apuntado se usa `?`.
+Por default son inicializados con `nullpointer`.
+```sh
+In $ a = (In *)malloc(typeof In)
+a = 13
+free(a)
+```
+Se pueden utilizar los operadores `==` y `!=` para apuntadores.
 ## Instrucciones y Expresiones.
 
-### Asignación.
+### Asignación
 
 La asignación se realiza mediante el operador `=`. Puede realizarse al momento de declarar una variable o posterior a su declaración, como se sigue:
 
-```
-<tipo> <variable>
-<tipo> <variable1> = <expresión de tipo>
+```sh
+<tipo> <variable1>
+<tipo> <variable2> = <expresión de tipo>
 
-<variable> = <variable1>
+<variable1> = <variable2>
 ```
 
-Esto declara dos variables `<variable>` y `<variable1>`, a la segunda se le asigna el resultado de `<expresión de tipo>` y luego a la primera, que no fue inicializada por el programador, se le asigna el contenido de la segunda.
+Esto declara dos variables `<variable1>` y `<variable2>`, a la segunda se le asigna el resultado de `<expresión de tipo>` y luego a la primera, que no fue inicializada por el programador, se le asigna el contenido de la segunda.
+Si variables son del mismo tipo se pueden declarar en la misma linea.
 
 #### Asignaciones especiales: Incremento (`++`) y Decremento (`--`).
 
@@ -311,7 +401,11 @@ Son asignaciones que funcionan exclusivamente sobre variables de tipo entero y f
 * Decremento (`--`): Disminuye el valor de la variable en 1.
 
 Estas asignaciones son equivalentes cada una a realizar `<variable> = <variable> ± 1` según corresponda.
-
+```sh
+In n1 = 15, n2 = 13
+n1++ @ equivalente a n1 = n1 + 1
+n2++ @ equivalente a n2 = n2 + 1
+```
 #### Identificadores de variables.
 
 Un identificador válido para una variable en un programa de CH* cumple con las siguientes condiciones:
@@ -319,6 +413,8 @@ Un identificador válido para una variable en un programa de CH* cumple con las 
 1. No empieza con números.
 2. Posee solo caracteres alfanuméricos y los caracteres especiales `'_'` y `'''`.
 3. No corresponde a ninguna palabra reservada de CH*.
+
+**Nombres válidos:**  `test1` , `yes_we_can` , `maybe'not`
 
 ##### Declaración e inicialización de variables.
 
@@ -334,20 +430,25 @@ Ver sección **Estructuras de Datos. Repetición**.
 
 ### Entrada/Salida.
 
-Las operaciones de entrada/salida serán realizadas con las instrucciones `in` y `out` como se sigue:
+Las operaciones de entrada/salida serán realizadas con las instrucciones `input` y `out` como se sigue:
 
+```sh
+Str cadena
+input cadena
+out cadena
 ```
-in <variable>
 
-out <variable>
-```
+Esto toma el contenido de la entrada estándar y lo almacena en el `Str` `cadena` y posteriormente el contenido de `cadena` es mostrado por la salida estándar, respectivamente.
 
-Esto toma el contenido de la entrada estándar y lo almacena en `<variable>` y posteriormente el contenido de `<variable>` es mostrado por la salida estándar, respectivamente.
+La función `input` toma un `Str` en la cual almacenará lo que lea de la entrada estándar. Su ejecución consiste en una interrupción para leer de la entrada estándar y retorna lo obtenido sin el caracter de retorno de linea.
 
-La instrucción `in` toma una variable en la cual almacenará lo que lea de la entrada estándar. Su ejecución consiste en una interrupción para leer de la entrada estándar y almacenar en el destino indicado por el programador, si no se indica el destino la ejecución continua su curso y no se almacena la información. Se levanta una advertencia al programador al compilar.
+La función `out` toma una variable de tipo `Str` y lo muestra en la salida estándar.
+Estas funciones se pueden llamar sin utilizar parentesis.
 
-La instrucción `out` toma una variable o una constante de tipo `Cr` o `Str` y muestra en la salida estándar el contenido de la variable o el valor de la constante.
-
+En CH* existen las siguientes funciones utiles:
+-   `convertIntToString` : Recive un Int `In` regresa un String
+-   `convertCharToString` : Recive un Char `Cr` regresa un String
+-   `convertFloatToString` : Recive un Float `Fl` regresa un String
 ### Expresiones Aritméticas.
 
 Corresponden a las expresiones que devuelven valores numéricos después de evaluarse. Los valores numéricos pueden ser indiferentemente enteros o punto flotante. Las expresiones aritméticas son aquellas que involucren los operadores de:
@@ -363,7 +464,7 @@ Corresponden a las expresiones que devuelven valores numéricos después de eval
 
 ### Expresiones Booleanas.
 
-Corresponden a las expresiones que devuelven valores booleanos después de evaluarse.
+Corresponden a las expresiones que devuelven valores booleanos `T` o `F` después de evaluarse.
 
 Las expresiones booleanas que reciben booleanos son aquellas que involucran a los operadores de:
 
@@ -375,14 +476,10 @@ Las expresiones booleanas que reciben cualquier tipo escalar son aquellas que in
 
 * Igualdad (`==`): definida tradicionalmente.
 * Desigualdad (`!=`): definida tradicionalmente.
-* Mayor que (`>`): definida tradicionalmente para enteros y punto flotante.
-  `T > F == T` para booleanos. Para caracteres se sigue el orden léxico normal.
-* Mayor o igual que (`>=`): definida tradicionalmente para enteros y punto flotante.
-  `T > F == T` para booleanos. Para caracteres se sigue el orden léxico normal.
-* Menor que (`<`): definida tradicionalmente para enteros y punto flotante.
-  `F < T == T` para booleanos. Para caracteres se sigue el orden léxico normal.
-* Menor o igual que (`<=`): definida tradicionalmente para enteros y punto flotante.
-  `F < T == T` para booleanos. Para caracteres se sigue el orden léxico normal.
+* Mayor que (`>`): definida tradicionalmente para enteros y punto flotante. Para caracteres se sigue el orden léxico normal.
+* Mayor o igual que (`>=`): definida tradicionalmente para enteros y punto flotante.Para caracteres se sigue el orden léxico normal.
+* Menor que (`<`): definida tradicionalmente para enteros y punto flotante.Para caracteres se sigue el orden léxico normal.
+* Menor o igual que (`<=`): definida tradicionalmente para enteros y punto flotante.Para caracteres se sigue el orden léxico normal.
   
 ### Expresiones de Caracteres.
 
