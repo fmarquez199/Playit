@@ -75,7 +75,7 @@ Str[5] edades = ["12","23","15","40","15"]
 Str[5] nombres = ["Natasha","Francisco","Manuel","Ricardo","Haskell"] 
 <
 for edad,i in edades:
-  out "Hola "::nombres[i]::" tienes "::edad::" años!"
+  out "Hola ",nombres[i]," tienes ",edad," años!"
 >
 ```
 ### Indeterminada
@@ -97,7 +97,7 @@ Str[5] nombres = ["Natasha","Francisco","Manuel","Ricardo","Haskell"]
 In i = 0
 <
 while i < 5:
-  out "Hola "::nombres[i]::" tienes "::edades[i]::" años!"
+  out "Hola "",nombres[i]," tienes ",edades[i]," años!"
   i++
 >
 ```
@@ -127,7 +127,7 @@ calcularGanancia(In precioComprado,In precioVendido) In:
     return precioVendido - precioComprado
 >
 
-out "Ganancia de "::convertIntToString(calcularGanancia(1500,2000))
+out "Ganancia de ",calcularGanancia(1500,2000)
 ```
 ##### Pasaje de parámetros
 
@@ -153,7 +153,7 @@ Rg producto
 
 producto p
 p.precioReal = 1500
-out "Ganancia de "::convertIntToString(calcularGanancia(p,2000))
+out "Ganancia de ",calcularGanancia(p,2000)
 ```
 
 **Nota:** Caso particular es cuando se pasa un puntero a una función que espera un argumento por referencia, en este caso se pasaría el valor del puntero.
@@ -193,7 +193,7 @@ factorial(In n) In:
 In numero;
 out "ingresa un numero: "
 input numero
-out "Factorial de "::toString(numero)::" es "::convertIntToString(factorial(numero));
+out "Factorial de ",numero," es ",factorial(numero);
 
 ```
 
@@ -314,7 +314,7 @@ sofia.nombre = "Sofia"
 sofia.edad = 29
 sofia.tieneTrabajo = T
 
-out "Hola "::sofia.nombre
+out "Hola ",sofia.nombre
 ```
 #### Registros variantes.
 
@@ -360,7 +360,7 @@ Shape sh
 sh.c.centerX = 2.1
 sh.c.centerY = 5.0
 sh.c.radius = 15
-out "El area del circulo es ":: toString(areaCirculo(sh.c))
+out "El area del circulo es ",areaCirculo(sh.c)
 ```
 
 Para acceder a un miembro de la union se utiliza `.`
@@ -433,22 +433,25 @@ Ver sección **Estructuras de Datos. Repetición**.
 Las operaciones de entrada/salida serán realizadas con las instrucciones `input` y `out` como se sigue:
 
 ```sh
-Str cadena
-input cadena
-out cadena
+<variable> = input [<prompt>]
+out <variable>
 ```
+La función `input` recibe un `Str` opcional como `prompt` para el usuario y lee un `Str` del usuario. Su ejecución consiste en una interrupción para leer de la entrada estándar y retorna lo obtenido sin el caracter de retorno de linea.
 
-Esto toma el contenido de la entrada estándar y lo almacena en el `Str` `cadena` y posteriormente el contenido de `cadena` es mostrado por la salida estándar, respectivamente.
-
-La función `input` toma un `Str` en la cual almacenará lo que lea de la entrada estándar. Su ejecución consiste en una interrupción para leer de la entrada estándar y retorna lo obtenido sin el caracter de retorno de linea.
-
-La función `out` toma una variable de tipo `Str` y lo muestra en la salida estándar.
+La función `out` toma una variable de tipo `In`, `Str`,`Chr` o `Fl` y lo muestra en la salida estándar puede recibir varios argumentos separados por coma.
 Estas funciones se pueden llamar sin utilizar parentesis.
 
 En CH* existen las siguientes funciones utiles:
--   `convertIntToString` : Recive un Int `In` regresa un String
--   `convertCharToString` : Recive un Char `Cr` regresa un String
--   `convertFloatToString` : Recive un Float `Fl` regresa un String
+
+convertIntToString : Recibe un Int `In` regresa un String
+convertCharToString : Recibe un Char `Cr` regresa un String
+convertFloatToString : Recibe un Float `Fl` regresa un String
+
+convertFromStringToInt :  Recibe un String y regresa un Int `In` 
+convertFromStringToChar : Recibe un String y regresa un Char `Cr`
+convertFromStringToFloat :Recibe un String y regresa unFloat `Fl` 
+
+
 ### Expresiones Aritméticas.
 
 Corresponden a las expresiones que devuelven valores numéricos después de evaluarse. Los valores numéricos pueden ser indiferentemente enteros o punto flotante. Las expresiones aritméticas son aquellas que involucren los operadores de:
@@ -530,31 +533,22 @@ Las expresiones se evalúan de izquierda a derecha.
 
 En CH* se pueden escribir comentarios de una línea o de varias líneas. Al escribir `@` se ignorarán todos los caracteres hasta el siguiente salto de línea. El texto escrito entre `{-` y `-}` será ignorado. Los espacios en blanco también son ignorados.
 
-## Ejemplo de un programa en CH*.
+## Ejemplos en CH*.
+
+*Calcular el volumen de un Cubo*
+```sh
+{- Calcula el volumen de un Cubo -}
+Fl arista, volumen;
+
+arista = convertFromStringToFloat(input "Introduzca arista: ")
+
+volumen = arista*arista*arista;
+
+out "El volumen del cubo es: ",volumen
+input
 ```
-@ Esto es un comentario de una línea.
 
-{-
-Este es un comentario
-de varias líneas.
--}
-
-In cardinal = 3
-Cr[3] conjunto
-In partes = 1
-In contador = 0
-
-<
-while contador < cardinal:
-  out "Ingrese un carácter: "
-  in conjunto[contador]
- partes = partes * 2
-  contador++
->
-
-<
-for elemento in conjunto:
-  out "Los elementos del conjunto son: "
-  out elemento : ", "
->
-```
+## Estudiantes
+- Natasha
+- Francisco
+- Manuel
