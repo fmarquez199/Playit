@@ -243,7 +243,7 @@ Si no se inicializan al declararse se le establece el valor  `0`.
 
 ```sh
 In a                @ Inicializado en 0 por default
-Char c              @ Inicializado en '' por default
+Cr c              @ Inicializado en '' por default
 Bl esMayor = F
 In b = 2
 a = 1
@@ -372,8 +372,8 @@ Son un tipo de dato especial que guarda la dirección de memoria dinámica donde
 Su sintaxis es: `<tipo al que apunta> $<nombre>`. Para obtener la dirección del objeto apuntado se usa `?`.
 Por default son inicializados con `nullpointer`.
 ```sh
-In $ a = (In *)malloc(typeof In)
-a = 13
+In $ a = (In $)malloc(typeof In)
+$a = 13
 free(a)
 ```
 Se pueden utilizar los operadores `==` y `!=` para apuntadores.
@@ -440,8 +440,9 @@ out <variable>
 ```
 La función `input` recibe un `Str` opcional como `prompt` para el usuario y lee un `Str` del usuario. Su ejecución consiste en una interrupción para leer de la entrada estándar y retorna lo obtenido sin el caracter de retorno de linea.
 
-La función `out` toma una variable de tipo `In`, `Str`,`Chr` o `Fl` y lo muestra en la salida estándar puede recibir varios argumentos separados por coma.
+La función `out` toma una variable de tipo `In`, `Str`,`Cr` o `Fl` y lo muestra en la salida estándar puede recibir varios argumentos separados por coma.
 Estas funciones se pueden llamar sin utilizar parentesis.
+Las cadenas de caracteres deben estar encerradas entre comillas dobles (") y sólo debe contener caracteres imprimibles. No se permite que tenga saltos de línea, comillas dobles o backslashes (\) a menos que sean escapados. Las secuencias de escape correspondientes son \n, \" y \\, respectivamente.
 
 En CH* existen las siguientes funciones utiles:
 
