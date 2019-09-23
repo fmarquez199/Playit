@@ -345,7 +345,7 @@ son identificadores diferentes.
 ##### Declaración e inicialización de variables.
 
 Se permite la declaración de variables sin previa
-inicialización. Si la variable es de tipo escalar será
+inicialización. Si la variable es de tipo escalar o puntero será
 inicializada automáticamente según se indicó en cada tipo
 escalar.
 
@@ -368,12 +368,11 @@ out <variable>
 ```
 
 La función `input` recibe un `Str` opcional como `prompt` para el
-usuario y lee un `Str` del usuario. Su ejecución consiste en una
-interrupción para leer de la entrada estándar y retorna lo obtenido
-sin el carácter de retorno de línea.
+usuario y lee un `Str` del usuario. Si la variable `lvalue` que recibe el resultado de `input` es de tipo `In` , `Fl` el lenguaje te convierte el `Str` resultado a dicho tipo.  
+Su ejecución consiste en una interrupción para leer de la entrada estándar y retorna lo obtenido sin el carácter de retorno de línea en caso de un `Str`.
 
 La función `out` toma una variable de tipo `In`, `Str`,`Cr` o `Fl` y
-lo muestra en la salida estándar puede recibir varios argumentos
+lo muestra en la salida estándar, puede recibir varios argumentos
 separados por coma. Las cadenas de carácteres deben estar encerradas
 entre comillas dobles (") y sólo debe contener carácteres imprimibles.
 
@@ -399,8 +398,7 @@ dependiendo de si `<Expresión Booleana>` evalúa `T` o `F`.
 
 ### Interrupción de evaluación (`break`).
 
-Es una instrucción que permite interrumpir la evaluación de un bloque cuando es
-alcanzada. Sólo permite interrumpir un bloque a la vez.
+Es una instrucción que permite interrumpir la ejecución de una repetición `for` o `while` cuando es alcanzada. Sólo interrumpe el bucle más cercano.
 
 ### Expresiones Aritméticas.
 
@@ -742,8 +740,7 @@ factorial(In n) In:
   | n > 0: return n * factorial(n-1)
 >
 In numero;
-out "Ingresa un numero: "
-input convertFromStringToInt(numero)
+numero = input "Ingresa un numero: "
 out "Factorial de ", numero, " es ", factorial(numero)
 ```
 
@@ -798,7 +795,7 @@ blanco también son ignorados.
 {- Calcula el volumen de un Cubo -}
 Fl arista, volumen;
 
-arista = convertStrToFl(input "Introduzca arista: ")
+arista = input "Introduzca arista: "
 
 volumen = arista*arista*arista;
 
@@ -810,7 +807,7 @@ out "El volumen del cubo es: ",volumen
 ```sh
 {- Dice si un número es par o impar -}
 In numero
-numero = convertStrToIn(input "Introduzca un numero entero: ")
+numero = input "Introduzca un numero entero: "
 |numero % 2 == 0 :
     out "ES PAR"
 | else:
@@ -824,7 +821,7 @@ Ch seguir = 's';
 In i, numero;
 <
 while seguir != 'n':
-    numero = convertStrToIn(input "Introduzca un numero entero: ")
+    numero = input "Introduzca un numero entero: "
 
     out "La tabla de multiplicar del ",numero," es:"
 
