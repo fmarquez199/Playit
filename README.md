@@ -101,22 +101,22 @@ En este fragmento de código ocurre lo siguiente:
 1. Las variable `a` y `c` de tipo entero y carácter, respectivamente, se declaran
 y son inicializadas por default en `0` y `''`, respectivamente.
 2. Las variables `esMayor` y `b` de tipo booleano y entero, respectivamente, son declaradas
-e inicializadas directamente en `F` y `2`, respectivamente.
-3. A la variable `a` se le asgina el valor `1`.
-4. A la variable `r` de tipo punto flotante se declara e inicializa en el valor `0.5`.
-5. A la variable `a` se le asgina el valor `2`.
+e inicializadas directamente en `F` y `2`.
+3. A la variable `a` se le asigna el valor `1`.
+4. A la variable `r` de tipo punto flotante se declara e inicializa con el valor `0.5`.
+5. A la variable `a` se le asigna el valor `2`.
 
 ### Compuestos.
 
 #### Arreglos.
 
-Son estructuras de datos homogéneas de cualquier tipo, es decir, se admite arreglos
-multidimensionales de algún tipo escalar. Su representación en un programa es
+Es una estructura de datos homogéneos de cualquier tipo escalar que se encuentran ubicados de forma consecutiva en memoria,se admiten arreglos multidimensionales. 
+La representación de un arreglo unidimensional en un programa es
 `[elemento0, elemento1, ..., elementoN]`, siendo todos los elementos del mismo tipo.
 Son estructuras estáticas y su tamaño debe ser definido en su declaración. 
 
 Para variables de tipo arreglo la construcción reservada que lo identifica es
-`<tipo>[<entero>]`, donde `<tipo>` puede ser otro arreglo.
+`<tipo>[<entero>] <nombre arreglo>`, donde `<tipo>` puede ser otro arreglo.
 
 Los arrays declarados como `<tipo>[<entero>]` no se inicializan por default.
 
@@ -144,7 +144,7 @@ while i < 3:
   out "El nuevo índice de ", nombres[i], "es ", indices[i]
   
   <
-  if indices[i] < 3.0:
+  | indices[i] < 3.0:
     out nombres[i], " está en PP."
   >
   
@@ -164,9 +164,8 @@ Manuel está en PP.
 
 #### Strings.
 
-Son arreglos de caracteres. Corresponden a un grupo particular de arreglos
-por su representación, estos admiten la representación de arreglo y de
-cadena de caracteres como en los lenguajes tradicionales, encerrados entre
+Son arreglos de caracteres. Son un grupo particular que admiten la representación de arreglo y de
+cadena de caracteres, encerrados entre
 comillas dobles `""`, es decir,
 
 ```sh
@@ -249,9 +248,9 @@ U <nombre>
 ```
 
 Su tamaño en memoria corresponde al campo de mayor tamaño. Los tipos
-que acepta un registro variante son todos aquellos tipos que están
+que acepta son todos aquellos que están
 definidos en CHask*. `U` es la palabra reservada para identificar a una
-variable de tipo registro.
+variable de tipo registro variante.
 
 **Ejemplo:**
 
@@ -294,24 +293,44 @@ out "El area del circulo es ", areaCirculo(sh.c)
 Son un tipo de dato especial que guarda la dirección de memoria
 dinámica donde comienza el objeto apuntado. En memoria son una
 palabra del procesador. Su sintaxis es:
-`<tipo al que apunta> $<nombre>`. Para obtener la dirección del
-objeto apuntado se usa `?`. Por default son inicializados con
+`<tipo al que apunta> $ <nombre>`. Por default son inicializados con
 `Nullpointer`.
 
+**Ejemplo puntero a entero**
 ```sh
-In $a = new In
-$a = 13
-free a
+In $ p = new In
+$p = 13
+free p
 ```
+**Ejemplo puntero a array de enteros**
+```sh
+In $ p = new In[20]
+$p[1] = 15
+free[] p
+```
+Para cambiar la dirección que apunta un apuntador se establece utilizando el nombre de la variable en el `lvalue` sin el `$`.
+Utilizar solo el nombre de la variable en el `rvalue` obtiene la dirección a la que apunta el apuntador.
+
+**Ejemplo cambiar variable apuntada**
+```sh
+In $ p = new In
+$p = 15
+free p
+p = new In
+$p = 18
+free p
+```
+La función `free` y `free[]` liberan al puntero p y les asigna `Nullpointer`.
 
 ## Instrucciones y Expresiones.
 
 ### Asignación
 
-La asignación se realiza mediante el operador `=`. Puede realizarse al
-momento de declarar una variable o posterior a su declaración. Dos
-variables pueden asignarse entre sí, si y solo si son del mismo tipo
+La asignación se realiza mediante el operador `=`. 
+Puede realizarse al momento de declarar una variable o posterior a su declaración. 
+Dos variables pueden asignarse entre sí, si y solo si son del mismo tipo.
 Si variables son del mismo tipo se pueden declarar en la misma línea.
+
 La sintaxis de la declaración de varias variables en la misma línea es:
 
 ```sh
