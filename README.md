@@ -6,7 +6,7 @@
 
 * Manuel Gonzalez 11-10390
 * Francisco Javier 12-11163
-* Natasha Gamboa 12-11250
+* Natascha Gamboa 12-11250
 
 CHask* (C & C ++ & Haskell) es un **lenguaje imperativo** de propósito general
 diseñado e implementado por estudiantes de Ingeniería de Computación de la
@@ -126,53 +126,20 @@ Los arrays declarados como `<tipo>[<entero>]` no se inicializan por default.
 Cr[3]  abc
 Str[3] nombres = ["Natascha", "Francisco", "Manuel"]
 Fl[3]  indices = [3.67, 3.20, 3.0]
-
-<
-asignarIndice(Fl[] indices, In nEstudiantes, In indexEstudiante, Fl nuevoIndice) Bl:
-    | nEstudiantes <= 0: return F
-    | indexEstudiante >= nEstudiantes: return F
-    | nuevoIndice < 1: return F
-    indices[indexEstudiante] = nuevoIndice
-    return T
->
-
-asignarIndices(&indices, 3, 2, 2.9)
-In i = 0
-
-<
-while i < 3:
-  out "El nuevo índice de ", nombres[i], "es ", indices[i]
-  
-  <
-  | indices[i] < 3.0:
-    out nombres[i], " está en PP."
-  >
-  
-  i++
->
 ```
 
 El arreglo `indices` se pasa por referencia, se indica que es un array
-con los corchetes. Al ejecutar este código se muesta en pantalla:
-
-```sh
-El nuevo índice de Natascha es 3.67
-El nuevo índice de Francisco es 3.20
-El nuevo índice de Manuel es 2.9
-Manuel está en PP.
-```
+con los corchetes.
 
 #### Strings.
 
-Son arreglos de caracteres. Son un grupo particular que admiten la representación de arreglo y de
-cadena de caracteres, encerrados entre
-comillas dobles `""`, es decir,
+Son arreglos de caracteres. Son un grupo particular que admiten la representación de arreglo y de cadena de caracteres, encerrados entre comillas dobles `""`, es decir,
 
 ```sh
 ['s', 't', 'r', 'i', 'n', 'g', 's'] == "strings"
 ```
 
-Para variables de tipo Str, puede utilizarse `Cr[<entero>]` o `Str`.
+Para variables de tipo `string`, puede utilizarse `Cr[<entero>]` o `Str`.
 De ser declarados como `Str` serán inicializados con la cadena vacía
 `""` por default.
 
@@ -248,9 +215,7 @@ U <nombre>
 ```
 
 Su tamaño en memoria corresponde al campo de mayor tamaño. Los tipos
-que acepta son todos aquellos que están
-definidos en CHask*. `U` es la palabra reservada para identificar a una
-variable de tipo registro variante.
+que acepta son todos aquellos que están definidos en CHask*. `U` es la palabra reservada para identificarlos.
 
 **Ejemplo:**
 
@@ -269,15 +234,13 @@ Reg Rectangle
   Fl bottomRightX
   Fl bottomRightY
 >
-
 <
 U Shape 
   Circle c
   Rectangle r
 >
-
 <
-areaCirculo(Circle & c) Fl:
+areaCirculo(Circle ?c) Fl:
     return 3.14 * c.radius * c.radius
 >
 
@@ -293,8 +256,7 @@ out "El area del circulo es ", areaCirculo(sh.c)
 Son un tipo de dato especial que guarda la dirección de memoria
 dinámica donde comienza el objeto apuntado. En memoria son una
 palabra del procesador. Su sintaxis es:
-`<tipo al que apunta> $ <nombre>`. Por default son inicializados con
-`Nullpointer`.
+`<tipo al que apunta> $ <nombre>`. Por default son inicializados con `Nullpointer`.
 
 **Ejemplo puntero a entero**
 ```sh
@@ -321,21 +283,19 @@ $p = 18
 free p
 ```
 La función `free` y `free[]` liberan al puntero p y les asigna `Nullpointer`.
-
 ## Instrucciones y Expresiones.
 
 ### Asignación
 
 La asignación se realiza mediante el operador `=`. 
 Puede realizarse al momento de declarar una variable o posterior a su declaración. 
-Dos variables pueden asignarse entre sí, si y solo si son del mismo tipo.
-Si variables son del mismo tipo se pueden declarar en la misma línea.
-
+Dos variables pueden asignarse entre sí, si y solo si son del mismo tipo
+Si las variables son del mismo tipo se pueden declarar en la misma línea.
 La sintaxis de la declaración de varias variables en la misma línea es:
 
 ```sh
 <tipo1> <identificador1>, ..., <identificadorN>
-<tipo2> <identificadorA> = <Expresión de tipo2>, <identificadorB> = <Expresión de tipo2>, <identificadorC>
+<tipo2> <identificadorA> = <Expresión de tipo2>, <identificadorB> = <Expresión de tipo2> ...
 ```
 
 #### Asignaciones especiales: Incremento (`++`) y Decremento (`--`).
@@ -371,7 +331,7 @@ cumple con las siguientes condiciones:
 minúscula.
 3. No incluye el carácter `ñ` ni carácteres acentuados.
 4. Puede poseer números del `0` al `9`.
-5. Puede poseer los caracteres especiales `_` y `'`.
+5. Puede poseer los carácteres especiales `_` y `'`.
 6. No posee espacios.
 7. No corresponde a ninguna palabra reservada de CHask*.
 
@@ -410,23 +370,23 @@ out <variable>
 La función `input` recibe un `Str` opcional como `prompt` para el
 usuario y lee un `Str` del usuario. Su ejecución consiste en una
 interrupción para leer de la entrada estándar y retorna lo obtenido
-sin el caracter de retorno de linea.
+sin el carácter de retorno de línea.
 
 La función `out` toma una variable de tipo `In`, `Str`,`Cr` o `Fl` y
 lo muestra en la salida estándar puede recibir varios argumentos
-separados por coma. Las cadenas de caracteres deben estar encerradas
-entre comillas dobles (") y sólo debe contener caracteres imprimibles.
+separados por coma. Las cadenas de carácteres deben estar encerradas
+entre comillas dobles (") y sólo debe contener carácteres imprimibles.
 
-Estas funciones se pueden llamar sin utilizar parentesis.
+Estas funciones se pueden llamar sin utilizar paréntesis.
 
 En CHask* existen las siguientes funciones utiles:
 
-* `convertIntToString`: Recibe un Int `In` regresa un `Str`.
-* `convertCharToString`: Recibe un Char `Cr` regresa un `Str`.
-* `convertFloatToString`: Recibe un Float `Fl` regresa un `Str`.
-* `convertFromStringToInt`: Recibe un `Str` y regresa un Int `In`.
-* `convertFromStringToChar` : Recibe un `Str` y regresa un Char `Cr`.
-* `convertFromStringToFloat`: Recibe un `Str` y regresa unFloat `Fl`.
+* `convertInToStr`: Recibe un Int `In` regresa un `Str`.
+* `convertCrToStr`: Recibe un Char `Cr` regresa un `Str`.
+* `convertFlToStr`: Recibe un Float `Fl` regresa un `Str`.
+* `convertStrToIn`: Recibe un `Str` y regresa un Int `In`.
+* `convertStrToCr` : Recibe un `Str` y regresa un Char `Cr`.
+* `convertStrToFl`: Recibe un `Str` y regresa unFloat `Fl`.
 
 ### Evaluación condicional (`?`).
 
@@ -440,7 +400,7 @@ dependiendo de si `<Expresión Booleana>` evalúa `T` o `F`.
 ### Interrupción de evaluación (`break`).
 
 Es una instrucción que permite interrumpir la evaluación de un bloque cuando es
-alcanzada. Solo permite interrumpir un bloque a la vez.
+alcanzada. Sólo permite interrumpir un bloque a la vez.
 
 ### Expresiones Aritméticas.
 
@@ -480,15 +440,15 @@ igualdad de enteros.
 * Desigualdad (`!=`): definida tradicionalmente. Para apuntadores se define como
 desigualdad de enteros.
 * Mayor que (`>`): definida tradicionalmente para enteros y punto flotante. Para
-caracteres se sigue el orden léxico normal.
+carácteres se sigue el orden léxico normal.
 * Mayor o igual que (`>=`): definida tradicionalmente para enteros y punto flotante.
-Para caracteres se sigue el orden léxico normal.
+Para carácteres se sigue el orden léxico normal.
 * Menor que (`<`): definida tradicionalmente para enteros y punto flotante. Para
-caracteres se sigue el orden léxico normal.
+carácteres se sigue el orden léxico normal.
 * Menor o igual que (`<=`): definida tradicionalmente para enteros y punto flotante.
-Para caracteres se sigue el orden léxico normal.
+Para carácteres se sigue el orden léxico normal.
   
-### Expresiones de Caracteres.
+### Expresiones de Carácteres.
 
 Corresponden a las expresiones que devuelven un carácter después de su evaluación.
 Son aquellas en las cuales están involucrados los operadores unarios prefijos de:
@@ -516,7 +476,7 @@ registro o la unión, se devuelve el valor almacenado en el campo.
 ## Bloques y Alcance de bloques.
 
 Un bloque dentro del programa está delimitado por llaves `<` y `>` y se obtiene al
-estar dentro de instrucciones condicionales, de repetición y funciones.
+estar dentro de instrucciones condicionales, de repetición, funciones y registros.
 
 El alcance es estático (o léxico), esto quiere decir, que dentro de cada alcance si
 se hace referencia a una variable que no está dentro de ese alcance se busca en el
@@ -567,7 +527,7 @@ La selección en CHask* es de la forma siguiente.
   <Lista de Instrucciones>
 ```
 
-Solo es necesaria una condición las demás son opcionales y se evaluarán si
+Sólo es necesaria una condición, las demás son opcionales y se evaluarán si
 la condición anterior es falsa. Si todas son falsas se ejecuta el contenido
 de la condición `| else:` en caso de existir. 
 
@@ -590,7 +550,7 @@ La repetición determinada es un ciclo `for` como se sigue:
 
 ```sh
 <
-for <variable>[, <Nombre Índice para el arreglo>] in <arreglo>:
+for <variable>[, <Nombre del índice para el arreglo>] in <arreglo>:
   <Lista de Instrucciones>
 >
 ```
@@ -600,7 +560,7 @@ iteraciones culminarán cuando ya no haya más elementos en `<arreglo>` sobre
 los cuales iterar. Los corchetes implican que lo que está encerrado en ellos
 es opcional en la sintaxis de un programa de CHask*.
 
-`<Nombre Índice para el arreglo>` corresponde a una variable que sirve de
+`<Nombre del índice para el arreglo>` corresponde a una variable que sirve de
 contador al momento de iterar sobre un arreglo.
 
 **Ejemplo:**
@@ -664,7 +624,7 @@ Hola Haskell tienes 15 años!
 
 ### Funciones y procedimientos.
 
-Las funciones se definen son estructuras de control de flujo que toman
+Las funciones se definen como estructuras de control de flujo que toman
 una cantidad arbitraria de argumentos definidos por el programador,
 pudiendo incluso no tomar argumento alguno.
 
@@ -730,7 +690,7 @@ calcularGanancia(Producto ?producto, In precioVendido) In:
   return precioVendido - producto.precioReal
 >
 <
-Rg Producto 
+Reg Producto 
   In precioReal;
 >
 
@@ -745,7 +705,7 @@ Al ejecutar este código se imprime en pantalla:
 Ganancia de 500
 ```
 
-**Nota:** Caso particular es cuando se pasa un puntero a una función que
+**Nota:** Un caso particular es cuando se pasa un puntero a una función que
 espera un argumento por referencia, en este caso se pasaría el valor del puntero.
 
 #### Recursión.
@@ -827,18 +787,18 @@ Al ejecutar este código, se muestra en pantalla:
 ## Comentarios y espacios en blanco.
 
 En CHask* se pueden escribir comentarios de una línea o de varias líneas.
-Al escribir `@` se ignorarán todos los caracteres hasta el siguiente salto
+Al escribir `@` se ignorarán todos los carácteres hasta el siguiente salto
 de línea. El texto escrito entre `{-` y `-}` será ignorado. Los espacios en
 blanco también son ignorados.
 
 ## Ejemplos en CHask*.
 
-**Calcular el volumen de un Cubo**
+**Calcular el volúmen de un Cubo**
 ```sh
 {- Calcula el volumen de un Cubo -}
 Fl arista, volumen;
 
-arista = convertFromStringToFloat(input "Introduzca arista: ")
+arista = convertStrToFl(input "Introduzca arista: ")
 
 volumen = arista*arista*arista;
 
@@ -850,7 +810,7 @@ out "El volumen del cubo es: ",volumen
 ```sh
 {- Dice si un número es par o impar -}
 In numero
-numero = convertFromStringToInt(input "Introduzca un numero entero: ")
+numero = convertStrToIn(input "Introduzca un numero entero: ")
 |numero % 2 == 0 :
     out "ES PAR"
 | else:
@@ -864,7 +824,7 @@ Ch seguir = 's';
 In i, numero;
 <
 while seguir != 'n':
-    numero = convertFromStringToInt(input "Introduzca un numero entero: ")
+    numero = convertStrToIn(input "Introduzca un numero entero: ")
 
     out "La tabla de multiplicar del ",numero," es:"
 
@@ -877,6 +837,6 @@ while seguir != 'n':
     >
     @ Fin del anidamiento
 
-    seguir = convertFromStringToChar( input "Desea ver otra tabla (s/n)?: ")
+    seguir = convertStrToCr( input "Desea ver otra tabla (s/n)?: ")
 >
 ```
