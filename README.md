@@ -830,7 +830,7 @@ factorial(In n) In:
   | n == 0: return 1
   | n > 0: return n * factorial(n-1)
 >
-In numero;
+In numero
 numero = input "Ingresa un numero: "
 out "Factorial de ", numero, " es ", factorial(numero)
 ```
