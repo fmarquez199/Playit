@@ -1,0 +1,55 @@
+name:                Playit
+version:             0.1.0.0
+github:              "fmarquez199/CHask-"
+license:             MIT
+author:              "manuelggonzalezm@gmail.com"
+maintainer:          "manuelggonzalezm@gmail.com"
+copyright:           "Free to copy"
+
+extra-source-files:
+- README.md
+- ChangeLog.md
+
+# Metadata used when publishing your package
+# synopsis:            Short description of your package
+# category:            Programming Language
+
+# To avoid duplicated efforts in documentation and dealing with the
+# complications of embedding Haddock markup inside cabal files, it is
+# common to point users to the README.md file.
+description:         Please see the README on GitHub at <https://github.com/fmarquez199/CHask-#readme>
+
+dependencies:
+- base >= 4.7 && < 5
+- array
+
+library:
+  source-dirs: src
+
+executables:
+  playit-exe:
+    main:                Main.hs
+    source-dirs:         app
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    build-tools:
+    - happy
+    - alex
+    dependencies:
+    - Playit
+
+tests:
+  playit-test:
+    main:                Pruebas.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - playit
+    - test-framework
+    - test-framework-hunit
+    - HUnit
