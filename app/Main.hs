@@ -19,7 +19,6 @@ subString "" _ = True
 subString _ "" = False
 subString (x:xs) y = x `elem` y && (subString xs y)
 
-main :: IO ()
 main = do
   args <- getArgs                        -- Tomar argumentos de la terminal.
   file <- openFile (head args) ReadMode  -- Leer un archivo.
@@ -34,3 +33,5 @@ main = do
     putStrLn (print_list graphic)
   -- Archivo cerrado.
   hClose file
+  
+  

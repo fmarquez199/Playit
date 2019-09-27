@@ -22,7 +22,11 @@ description:         Please see the README on GitHub at <https://github.com/fmar
 dependencies:
 - base >= 4.7 && < 5
 - array
-
+- strings
+- directory
+- filepath
+- text
+- bytestring
 library:
   source-dirs: src
 
@@ -49,7 +53,7 @@ tests:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - playit
+    - Playit
     - test-framework
     - test-framework-hunit
     - HUnit

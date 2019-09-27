@@ -1,25 +1,75 @@
+import qualified Data.ByteString as S  
+import qualified Data.ByteString.Char8 as BS
 import Test.HUnit
 import Test.Framework
 import Test.Framework.Providers.HUnit
 import Data.Monoid
 import Control.Monad
+import Data.Strings (strEndsWith,strBreak)
 import System.Environment
 import System.IO
+import System.Directory
 import System.IO.Error
 import Control.Exception
 import Playit.Lexer
+import Control.Monad (forM)
+import System.FilePath ((</>))
 
+getRecursiveContents :: FilePath -> IO [FilePath]
 
+getRecursiveContents topdir = do
+  names <- getDirectoryContents topdir
+  let properNames = filter (`notElem` [".", ".."]) names
+  paths <- forM properNames $ \name -> do
+    let path = topdir </> name
+    isDirectory <- doesDirectoryExist path
+    if isDirectory
+      then getRecursiveContents path
+      else return [path]
+  return (concat paths)
 
 main :: IO ()
 main = do
-  putStrLn "Testing "
-  file <- openFile ("test/casos/condicionales/casoifsimplecondtrue.hs") ReadMode  -- Leer un archivo.
-  content <- hGetContents file
-  let tokens = (alexScanTokens content)  -- Crea la lista de tokens.
-  let graphic = map show tokens    -- Crea la lista de tokens imprimible.
-  runTestTT ( TestCase $ assertEqual "Tokens generados incorrectos." ["Token Bl en la fila: 1, columna: 1","Token puedeConducir en la fila: 1, columna: 4","Token = en la fila: 1, columna: 18","Token F en la fila: 1, columna: 20","Token In en la fila: 2, columna: 1","Token edad en la fila: 2, columna: 4","Token = en la fila: 2, columna: 9","Token 18 en la fila: 2, columna: 11","Token | en la fila: 3, columna: 1","Token edad en la fila: 3, columna: 3","Token >= en la fila: 3, columna: 8","Token 18 en la fila: 3, columna: 11","Token : en la fila: 3, columna: 13","Token puedeConducir en la fila: 4, columna: 3","Token = en la fila: 4, columna: 17","Token T en la fila: 4, columna: 19"] graphic)
-  
-  hClose file
-  
+    
+    files <- getRecursiveContents "test/casos"
+    filesToTest <- forM files $ \filen -> do
+        fname <- if strEndsWith filen ".game" then do
+            let (fname,ext) = strBreak ".game" filen
+            return [fname]
+        else return []
+        
+        return fname
+    
+    let filesToTestDotGame = concat filesToTest
+    
+    testCases <- forM filesToTestDotGame $ \filen -> do
+        -- Lee el codigo 
+        fileSource        <- openFile (filen ++ ".game") ReadMode  
+        -- Lee la salida esperada del Lexer
+        fileExpectedOut   <- openFile (filen ++ ".out") ReadMode
+
+        -- Extrae el codigo del archivo
+        strSourceCode     <- S.hGetContents fileSource
+        -- Extrae la salida esperada del archivo
+        strExpectedOut    <- S.hGetContents fileExpectedOut
+
+        -- Separa el contenido por los saltos de lineas 
+        let lstStrExpectedOut = lines $ BS.unpack strExpectedOut
+        
+        -- Obtiene la lista de Tokens reconocidos en el codigo
+        let lstRecognizedTkns         = alexScanTokens $ BS.unpack strSourceCode 
+        -- Crea una lista de strings con los Tokens 
+        let lstStrRecognizedTokens    = map show lstRecognizedTkns           -- Crea la lista de tokens imprimible.
+            
+        
+
+        hClose fileSource
+        hClose fileExpectedOut
+        
+        return $ TestCase $ assertEqual ("**Tokens para " ++ filen ++ ".game generados incorrectamente**") lstStrRecognizedTokens lstStrExpectedOut
+    
+    runTestTT $ TestList testCases
+    return ()
+    
+
 

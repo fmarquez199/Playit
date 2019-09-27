@@ -1,0 +1,16 @@
+Token variable Bl en la fila: 1, columna: 1
+Token variable puedeConducir en la fila: 1, columna: 4
+Token = en la fila: 1, columna: 18
+Token variable F en la fila: 1, columna: 20
+Token variable In en la fila: 2, columna: 1
+Token variable edad en la fila: 2, columna: 4
+Token = en la fila: 2, columna: 9
+Token entero 18 en la fila: 2, columna: 11
+Token | en la fila: 3, columna: 1
+Token variable edad en la fila: 3, columna: 3
+Token >= en la fila: 3, columna: 8
+Token entero 18 en la fila: 3, columna: 11
+Token : en la fila: 3, columna: 13
+Token variable puedeConducir en la fila: 4, columna: 3
+Token = en la fila: 4, columna: 17
+Token variable T en la fila: 4, columna: 19
