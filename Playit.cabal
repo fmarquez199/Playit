@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 93d661cd008c6095effc677dfbc88dfc07ff498dc59190d764f83e0bd832e876
+-- hash: 4a8e4dfc2c550e5c925a5d3a696b8c1c50498aa5d2748f226addcf499e629db2
 
 name:           Playit
 version:        0.1.0.0
@@ -40,7 +40,6 @@ library
     , directory
     , filepath
     , strings
-    , text
   default-language: Haskell2010
 
 executable playit-exe
@@ -61,7 +60,6 @@ executable playit-exe
     , directory
     , filepath
     , strings
-    , text
   default-language: Haskell2010
 
 test-suite playit-test
@@ -83,5 +81,4 @@ test-suite playit-test
     , strings
     , test-framework
     , test-framework-hunit
-    , text
   default-language: Haskell2010

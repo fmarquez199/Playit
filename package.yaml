@@ -25,8 +25,8 @@ dependencies:
 - strings
 - directory
 - filepath
-- text
 - bytestring
+
 library:
   source-dirs: src
 
