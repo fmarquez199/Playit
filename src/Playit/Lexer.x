@@ -20,17 +20,20 @@ $abecedario   = [a-zA-Z]
 $simbolos     = [\+ \- \* \/ \% \# \! \< \> \( \) \' \{ \} \, \: \| \=]
 $especiales   = [0 t n \* \~ \\]
 $caracteres   = [$digitos $abecedario \_ \']
-$texto        = [$caracteres ~$caracteres]
 
 -- Expresiones regulares
+
+-- PUEDE SER CUALQUIER caracter MENOS el caracter ~ y el 
+--caracter * O PUEDE SER el caracter \* 
+@texto        = ([. #[\*\~]]|\\\*)*  
 
 @variables    = $abecedario $caracteres*
 @programas    = \% $caracteres+ \%
 @scape        = '\\'  $especiales
 @caracter     = "~".{1}"~" | "*".{1}"*" | @scape
-@strings      = \~ ($texto # \~)* \~
-@comentarios  = "~*" $texto* "*~"
-@comentario   = "@" $texto* \n
+@strings      = \~ @texto \~
+@comentarios  = "~*" ([[\x00-\x10ffff] #[\*\~]])* "*~"
+@comentario   = "@" . \n
 @float        = $digitos+ \' $digitos+
 @error        = .
 

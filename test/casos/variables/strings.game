@@ -1,0 +1,12 @@
+
+~* Comentario de multiples lineas en una *~
+
+~* Comentario de multiples lineas en 
+dos lineas *~
+
+~* Comentario de 
+multiples lineas 
+en tres lineas *~
+
+Runes s = ~Hola~
+
