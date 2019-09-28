@@ -1,10 +1,10 @@
 world %VolumenCubo%:
   ~* Calcula el volumen de un Cubo *~
-  Skill arista, volumen;
+  Skill arista, volumen
   
   arista = joystick ~Introduzca arista: ~
   
-  volumen = arista * arista * arista;
+  volumen = arista * arista * arista
   
   drop ~el volumen del cubo es: ~, volumen
 .~

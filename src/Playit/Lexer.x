@@ -251,8 +251,8 @@ instance Show Token where
     show (TkKLL p s) = "Token " ++ s ++ (pos p) -- kill
     show (TkMST p s) = "Token " ++ s ++ (pos p) -- monster
     show (TkBSS p s) = "Token " ++ s ++ (pos p) -- boss
-    show (TkNMB p s) = "Token nombre " ++ s ++ (pos p) -- Nombre programa
-    show (TkIDF p s) = "Token variable " ++ s ++ (pos p) -- Id
+    show (TkNMB p s) = "Token nombre programa " ++ s ++ (pos p) -- Nombre programa
+    show (TkIDF p s) = "Token identificador " ++ s ++ (pos p) -- Id
     show (TkCHA p s) = "Token caracter " ++ s ++ (pos p) -- carácter
     show (TkSTG p s) = "Token string " ++ s ++ (pos p) -- String
     show (TkINT p s) = "Token entero " ++ s ++ (pos p) -- Entero
