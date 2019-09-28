@@ -922,7 +922,7 @@ world %Tablas%:
     @ Inicio del anidamiento
     i = 1 
     play:
-      drop numero, ~ * ~, i, ~ = ~, i * numero
+      drop numero, ~ \* ~, i, ~ = ~, i * numero
       i++
     lock i <= 10
     .~
