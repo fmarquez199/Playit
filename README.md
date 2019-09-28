@@ -618,7 +618,7 @@ Button:
 
 Sólo es necesaria una condición, las demás son opcionales y se evaluarán si
 la condición anterior es falsa. Si todas son falsas se ejecuta el contenido
-de la condición `| not pressed }` en caso de existir. 
+de la condición `| notPressed }` en caso de existir. 
 
 **Ejemplo (una sola condición)**:
 
@@ -902,7 +902,7 @@ world %ParOImpar%:
   Button:
   |numero % 2 == 0 }
     drop ~es par~
-  | not pressed }
+  | notPressed }
     drop ~es impar~
   .~
 .~
