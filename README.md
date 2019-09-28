@@ -200,7 +200,7 @@ se inicializan automáticamente.
 **Ejemplo:**
 
 ```sh
-Kit lista1 = <<*C*, 3>>
+Kit lista1 = <<*C*, *3*>>
 Kit lista2
 ```
 
