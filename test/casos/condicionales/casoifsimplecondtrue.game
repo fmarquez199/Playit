@@ -1,4 +1,11 @@
-Bl puedeConducir = F
-In edad = 18
-| edad >= 18:
-  puedeConducir = T
+world %HolaMundo%:
+
+    Button edad = 18
+
+    Battle puedeConducir
+    Button:
+    | edad >= 18}
+      puedeConducir = Win
+
+.~
+

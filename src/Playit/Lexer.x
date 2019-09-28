@@ -13,7 +13,7 @@ module Playit.Lexer (Token(..), AlexPosn(..), alexScanTokens) where
 
 %wrapper "posn"
 
--- Conjunto de expresiones
+-- Conjunto de caracteres
 
 $digitos      = [0-9]
 $abecedario   = [a-zA-Z]
@@ -33,7 +33,7 @@ $caracteres   = [$digitos $abecedario \_ \']
 @caracter     = "~".{1}"~" | "*".{1}"*" | @scape
 @strings      = \~ @texto \~
 @comentarios  = "~*" ([[\x00-\x10ffff] #[\*\~]])* "*~"
-@comentario   = "@" . \n
+@comentario   = "@" .* \n
 @float        = $digitos+ \' $digitos+
 @error        = .
 
@@ -258,7 +258,7 @@ instance Show Token where
     show (TkMST p s) = "Token " ++ s ++ (pos p) -- monster
     show (TkBSS p s) = "Token " ++ s ++ (pos p) -- boss
     show (TkNMB p s) = "Token nombre programa " ++ s ++ (pos p) -- Nombre programa
-    show (TkIDF p s) = "Token identificador " ++ s ++ (pos p) -- Id
+    show (TkIDF p s) = "Token identificador \"" ++ s ++ "\"" ++ (pos p) -- Id
     show (TkCHA p s) = "Token caracter " ++ s ++ (pos p) -- carácter
     show (TkSTG p s) = "Token string " ++ s ++ (pos p) -- String
     show (TkINT p s) = "Token entero " ++ s ++ (pos p) -- Entero

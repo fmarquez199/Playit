@@ -1,16 +1,20 @@
-Token variable Bl en la fila: 1, columna: 1
-Token variable puedeConducir en la fila: 1, columna: 4
-Token = en la fila: 1, columna: 18
-Token variable F en la fila: 1, columna: 20
-Token variable In en la fila: 2, columna: 1
-Token variable edad en la fila: 2, columna: 4
-Token = en la fila: 2, columna: 9
-Token entero 18 en la fila: 2, columna: 11
-Token | en la fila: 3, columna: 1
-Token variable edad en la fila: 3, columna: 3
-Token >= en la fila: 3, columna: 8
-Token entero 18 en la fila: 3, columna: 11
-Token : en la fila: 3, columna: 13
-Token variable puedeConducir en la fila: 4, columna: 3
-Token = en la fila: 4, columna: 17
-Token variable T en la fila: 4, columna: 19
+Token world en la fila: 1, columna: 1
+Token nombre programa %HolaMundo% en la fila: 1, columna: 7
+Token : en la fila: 1, columna: 18
+Token Button en la fila: 3, columna: 5
+Token identificador "edad" en la fila: 3, columna: 12
+Token = en la fila: 3, columna: 17
+Token entero 18 en la fila: 3, columna: 19
+Token Battle en la fila: 5, columna: 5
+Token identificador "puedeConducir" en la fila: 5, columna: 12
+Token Button en la fila: 6, columna: 5
+Token : en la fila: 6, columna: 11
+Token | en la fila: 7, columna: 5
+Token identificador "edad" en la fila: 7, columna: 7
+Token >= en la fila: 7, columna: 12
+Token entero 18 en la fila: 7, columna: 15
+Token } en la fila: 7, columna: 17
+Token identificador "puedeConducir" en la fila: 8, columna: 7
+Token = en la fila: 8, columna: 21
+Token Win en la fila: 8, columna: 23
+Token .~ en la fila: 10, columna: 1

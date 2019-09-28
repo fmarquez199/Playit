@@ -1,12 +1,6 @@
-
-~* Comentario de multiples lineas en una *~
-
-~* Comentario de multiples lineas en 
-dos lineas *~
-
-~* Comentario de 
-multiples lineas 
-en tres lineas *~
-
-Runes s = ~Hola~
+Runes s1 = ~Hola1~
+Runes s2 = ~\*Hola\n1~
+Runes s3 = ~Hola2~
+Runes s4 = ~Hola2ñ\n~
+Runes s4 = ~¡Hey!, ¿Cómo estas?~
 

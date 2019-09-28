@@ -1,0 +1,20 @@
+Token Runes en la fila: 1, columna: 1
+Token identificador "s1" en la fila: 1, columna: 7
+Token = en la fila: 1, columna: 10
+Token string ~Hola1~ en la fila: 1, columna: 12
+Token Runes en la fila: 2, columna: 1
+Token identificador "s2" en la fila: 2, columna: 7
+Token = en la fila: 2, columna: 10
+Token string ~\*Hola\n1~ en la fila: 2, columna: 12
+Token Runes en la fila: 3, columna: 1
+Token identificador "s3" en la fila: 3, columna: 7
+Token = en la fila: 3, columna: 10
+Token string ~Hola2~ en la fila: 3, columna: 12
+Token Runes en la fila: 4, columna: 1
+Token identificador "s4" en la fila: 4, columna: 7
+Token = en la fila: 4, columna: 10
+Token string ~Hola2ñ\n~ en la fila: 4, columna: 12
+Token Runes en la fila: 5, columna: 1
+Token identificador "s4" en la fila: 5, columna: 7
+Token = en la fila: 5, columna: 10
+Token string ~¡Hey!, ¿Cómo estas?~ en la fila: 5, columna: 12

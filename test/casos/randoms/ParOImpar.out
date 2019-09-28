@@ -1,0 +1,28 @@
+Token world en la fila: 1, columna: 1
+Token nombre programa %ParOImpar% en la fila: 1, columna: 7
+Token : en la fila: 1, columna: 18
+Comentario varias lineas en la fila: 2, columna: 3
+Token Power en la fila: 3, columna: 3
+Token identificador "numero" en la fila: 3, columna: 9
+Token identificador "numero" en la fila: 4, columna: 3
+Token = en la fila: 4, columna: 10
+Token joystick en la fila: 4, columna: 12
+Token string ~Introduzca un numero entero: ~ en la fila: 4, columna: 21
+Token Button en la fila: 5, columna: 3
+Token : en la fila: 5, columna: 9
+Token | en la fila: 6, columna: 3
+Token identificador "numero" en la fila: 6, columna: 4
+Token % en la fila: 6, columna: 11
+Token entero 2 en la fila: 6, columna: 13
+Token == en la fila: 6, columna: 15
+Token entero 0 en la fila: 6, columna: 18
+Token } en la fila: 6, columna: 20
+Token drop en la fila: 7, columna: 5
+Token string ~es par~ en la fila: 7, columna: 10
+Token | en la fila: 8, columna: 3
+Token notPressed en la fila: 8, columna: 5
+Token } en la fila: 8, columna: 16
+Token drop en la fila: 9, columna: 5
+Token string ~es impar~ en la fila: 9, columna: 10
+Token .~ en la fila: 10, columna: 3
+Token .~ en la fila: 11, columna: 1
