@@ -20,19 +20,20 @@ $abecedario   = [a-zA-Z]
 $simbolos     = [\+ \- \* \/ \% \# \! \< \> \( \) \' \{ \} \, \: \| \=]
 $especiales   = [0 t n \* \~ \\]
 $caracteres   = [$digitos $abecedario \_ \']
+$ascii        = [ [\x00-\x10ffff] # [\* \~] ]
 
 -- Expresiones regulares
 
--- PUEDE SER CUALQUIER caracter MENOS el caracter ~ y el 
---caracter * O PUEDE SER el caracter \* 
-@texto        = ([. #[\*\~]]|\\\*)*  
+-- @texto PUEDE SER CUALQUIER caracter MENOS el caracter ~ y *
+--  O PUEDE SER el caracter \*
 
+@texto        = ([. # [\* \~]] | \*)*
 @variables    = $abecedario $caracteres*
 @programas    = \% $caracteres+ \%
 @scape        = '\\'  $especiales
-@caracter     = "~".{1}"~" | "*"."*" | @scape
+@caracter     = "*"."*" | @scape
 @strings      = \~ @texto \~
-@comentarios  = "~*" ([[\x00-\x10ffff] #[\*\~]])* "*~"
+@comentarios  = "~*" $ascii* "*~"
 @comentario   = "@" .* \n
 @float        = $digitos+ \' $digitos+
 @error        = .
@@ -54,6 +55,7 @@ tokens :-
   Rune                 { tok (\p s -> TkRNE p s) }
   Runes                { tok (\p s -> TkRNS p s) }
   Skill                { tok (\p s -> TkSKL p s) }
+  Button               { tok (\p s -> TkBTN p s) }
   boss                 { tok (\p s -> TkBSS p s) }
   controller           { tok (\p s -> TkCTR p s) }
   drop                 { tok (\p s -> TkDRP p s) }
@@ -71,7 +73,6 @@ tokens :-
   summon               { tok (\p s -> TkSMN p s) }
   unlock               { tok (\p s -> TkNLK p s) }
   world                { tok (\p s -> TkWRL p s) }
-  Button               { tok (\p s -> TkBTN p s) }
 
   -- Literales booleanos
   
@@ -111,27 +112,27 @@ tokens :-
   "->"                 { tok (\p s -> TkTO  p s) }
   "|}"                 { tok (\p s -> TkARA p s) }
   "{|"                 { tok (\p s -> TkARC p s) }
-  \+                   { tok (\p s -> TkSUM p s) }
-  \-                   { tok (\p s -> TkMIN p s) }
-  \*                   { tok (\p s -> TkTMS p s) }
-  \/                   { tok (\p s -> TkDVD p s) }
-  \%                   { tok (\p s -> TkMOD p s) }
-  \#                   { tok (\p s -> TkLEN p s) }
-  \?                   { tok (\p s -> TkREF p s) }
-  \!                   { tok (\p s -> TkEXC p s) }
-  \<                   { tok (\p s -> TkLTH p s) }
-  \>                   { tok (\p s -> TkGTH p s) }
-  \(                   { tok (\p s -> TkPRA p s) }
-  \)                   { tok (\p s -> TkPRC p s) }
-  \[                   { tok (\p s -> TkCRA p s) }
-  \]                   { tok (\p s -> TkCRC p s) }
-  \{                   { tok (\p s -> TkLLA p s) }
-  \}                   { tok (\p s -> TkLLC p s) }
-  \,                   { tok (\p s -> TkCOM p s) }
-  \'                   { tok (\p s -> TkCMS p s) }
-  \:                   { tok (\p s -> TkDSP p s) }
-  \|                   { tok (\p s -> TkCON p s) }
-  \=                   { tok (\p s -> TkASG p s) }
+  "+"                  { tok (\p s -> TkSUM p s) }
+  "-"                  { tok (\p s -> TkMIN p s) }
+  "*"                  { tok (\p s -> TkTMS p s) }
+  "/"                  { tok (\p s -> TkDVD p s) }
+  "%"                  { tok (\p s -> TkMOD p s) }
+  "#"                  { tok (\p s -> TkLEN p s) }
+  "?"                  { tok (\p s -> TkREF p s) }
+  "!"                  { tok (\p s -> TkEXC p s) }
+  "<"                  { tok (\p s -> TkLTH p s) }
+  ">"                  { tok (\p s -> TkGTH p s) }
+  "("                  { tok (\p s -> TkPRA p s) }
+  ")"                  { tok (\p s -> TkPRC p s) }
+  "["                  { tok (\p s -> TkCRA p s) }
+  "]"                  { tok (\p s -> TkCRC p s) }
+  "{"                  { tok (\p s -> TkLLA p s) }
+  "}"                  { tok (\p s -> TkLLC p s) }
+  ","                  { tok (\p s -> TkCOM p s) }
+  "'"                  { tok (\p s -> TkCMS p s) }
+  ":"                  { tok (\p s -> TkDSP p s) }
+  "|"                  { tok (\p s -> TkCON p s) }
+  "="                  { tok (\p s -> TkASG p s) }
   
   -- Comentarios
 
@@ -292,7 +293,7 @@ instance Show Token where
     show (TkLLA p s) = "Token " ++ s ++ (pos p) -- {
     show (TkLLC p s) = "Token " ++ s ++ (pos p) -- }
     show (TkCOM p s) = "Token " ++ s ++ (pos p) -- ,
-    show (TkCMS p s) = "Token " ++ s ++ (pos p) -- 
+    show (TkCMS p s) = "Token " ++ s ++ (pos p) -- " ' "
     show (TkDSP p s) = "Token " ++ s ++ (pos p) -- :
     show (TkCON p s) = "Token " ++ s ++ (pos p) -- |
     show (TkASG p s) = "Token " ++ s ++ (pos p) -- =
