@@ -320,7 +320,7 @@ sh spawn c spawn centerX = 2'1
 sh spawn c spawn centerY = 5'0
 sh spawn c spawn centerY = 5'0
 sh spawn c spawn radius = 15
-drop ~el area del circulo es ~, areaCirculo(sh spawn c)
+drop ~el area del circulo es ~, kill areaCirculo(sh spawn c)
 ```
 
 #### Apuntadores.
@@ -332,7 +332,7 @@ es: `<tipo al que apunta> puff <nombre>`. Por default son inicializados con `Dea
 **Ejemplo puntero a entero**
 ```sh
 Power puff p = summon Power
-puffp = 13
+puff p = 13
 free p
 ```
 **Ejemplo puntero a array de enteros**
@@ -736,10 +736,12 @@ una cantidad arbitraria de argumentos definidos por el programador,
 pudiendo incluso no tomar argumento alguno.
 
 Las funciones toman cualquier tipo de dato y retornan un tipo de dato
-escalar (ver **Tipos de datos**).
+escalar (ver **Tipos de datos**). La palabra reservada para declararlas es 
+`monster`.
 
 Los procedimientos son funciones que siempre retornan el valor unit,
-el cual no tiene más uso que este.
+el cual no tiene más uso que este. La palabra reservada para declararlas es 
+`boss`.
 
 Para retornar o salir de una función se utiliza `unlock <variable o constante>`
 donde `<variable o constante>` es del mismo tipo que el tipo de retorno de la
@@ -922,7 +924,7 @@ world %Tablas%:
     @ Inicio del anidamiento
     i = 1 
     play:
-      drop numero, ~ \* ~, i, ~ = ~, i * numero
+      drop numero, ~ * ~, i, ~ = ~, i * numero
       i++
     lock i <= 10
     .~
