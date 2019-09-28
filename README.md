@@ -934,6 +934,37 @@ world %Tablas%:
 .~
 ```
 
+## Entorno Stack.
+
+Primero clonar el repositorio y entrar en la carpeta.
+####Instalar stack (ubuntu 19.04)
+
+sudo apt-install haskell-stack
+Luego
+stack upgrade
+
+#### Otros sistemas
+https://docs.haskellstack.org/en/latest/install_and_upgrade/
+
+#### Compilar el compilador playit
+
+stack build
+
+#### Ejecutar el compilador
+
+stack exec playit-exe test/casos/condicionales/casoifsimplecondtrue.game 
+
+#### Ejecutar las pruebas
+
+stack test
+
+Esto corre todas las pruebas en test/casos 
+
+#### Ejecutar el GHCI en stack
+
+stack ghci
+
+
 ## Extras.
 
 La presente sección contiene algunas funcionalidades del Chask* que
