@@ -71,6 +71,7 @@ tokens :-
   summon               { tok (\p s -> TkSMN p s) }
   unlock               { tok (\p s -> TkNLK p s) }
   world                { tok (\p s -> TkWRL p s) }
+  Button               { tok (\p s -> TkBTN p s) }
 
   -- Literales booleanos
   
@@ -151,6 +152,7 @@ pos (AlexPn _ f c) = " en la fila: " ++ (show f) ++ ", columna: " ++ (show c)
 data Token = TkWRL AlexPosn String
            | TkRNE AlexPosn String
            | TkLOS AlexPosn String
+           | TkBTN AlexPosn String
            | TkWIN AlexPosn String
            | TkBTL AlexPosn String
            | TkPWR AlexPosn String
@@ -226,6 +228,7 @@ data Token = TkWRL AlexPosn String
 
 instance Show Token where
     show (TkWRL p s) = "Token " ++ s ++ (pos p) -- world
+    show (TkBTN p s) = "Token " ++ s ++ (pos p) -- Button
     show (TkRNE p s) = "Token " ++ s ++ (pos p) -- rune
     show (TkLOS p s) = "Token " ++ s ++ (pos p) -- Lose
     show (TkWIN p s) = "Token " ++ s ++ (pos p) -- Win
