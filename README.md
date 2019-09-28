@@ -107,7 +107,7 @@ Son datos de 64 bit (8 B) en memoria representados según el estándar **IEEE
 `<Entero>.<Entero>`
 
 La palabra reservada para las variables de tipo punto flotante es `Skill`.
-Si no se inicializan al declararse se le establece el valor `0.0`.
+Si no se inicializan al declararse se le establece el valor `0'0`.
 
 **Ejemplo escalares**
 
@@ -117,7 +117,7 @@ Rune c
 Battle esMayor = Lose
 Power b = 2
 a = 1
-Skill r = 0.5
+Skill r = 0'5
 a = 2
 ```
 
@@ -128,7 +128,7 @@ y son inicializadas por default en `0` y `*\0*`, respectivamente.
 2. Las variables `esMayor` y `b` de tipo booleano y entero, respectivamente, son declaradas
 e inicializadas directamente en `Lose` y `2`.
 3. A la variable `a` se le asigna el valor `1`.
-4. A la variable `r` de tipo punto flotante se declara e inicializa con el valor `0.5`.
+4. A la variable `r` de tipo punto flotante se declara e inicializa con el valor `0'5`.
 5. A la variable `a` se le asigna el valor `2`.
 
 ### Compuestos.
@@ -171,7 +171,7 @@ cada posición del arreglo en el valor por defecto del tipo dado.
 Rune|}3{| abc
 Runes|}3{| nombres = |}~Natascha~, ~Francisco~, ~Manuel~{|
 
-Skill|}3{| indices = |}3.67, 3.20, 3.0{|
+Skill|}3{| indices = |}3'67, 3'20, 3'0{|
 ```
 
 #### Strings.
@@ -247,7 +247,7 @@ registro = {0, *f*}
 Inventory Contacto:
   Runes nombre
   Power edad
-  Batle tieneTrabajo
+  Battle tieneTrabajo
 .~
 
 Contacto Alex = {~Alex~, 15, Lose}
@@ -312,13 +312,13 @@ Items Shape:
 .~
 
 boss areaCirculo(Circle ?c) Skill:
-  unlock 3.14 * c spawn radius * c spawn radius
+  unlock 3'14 * c spawn radius * c spawn radius
 .~
 
 Shape sh
-sh spawn c spawn centerX = 2.1
-sh spawn c spawn centerY = 5.0
-sh spawn c spawn centerY = 5.0
+sh spawn c spawn centerX = 2'1
+sh spawn c spawn centerY = 5'0
+sh spawn c spawn centerY = 5'0
 sh spawn c spawn radius = 15
 drop ~el area del circulo es ~, areaCirculo(sh spawn c)
 ```
@@ -463,8 +463,8 @@ Es una expresión de la forma:
 
 `<Expresión Booleana> ? <Función Caso Win> : <Funcion Caso Lose>`
 
-Es una expresión que evalúa la `<Función Caso Win>` o la `<Función Caso Lose>`
-dependiendo de si `<Expresión Booleana>` evalúa `Win` o `Lose`.
+Es una expresión que evalúa y regresa el resultado de `<Función Caso Win>` o  `<Función Caso Lose>`
+dependiendo de si `<Expresión Booleana>` evalúa `Win` o `Lose`. 
 
 ### Expresiones Aritméticas.
 
@@ -623,7 +623,7 @@ de la condición `| not pressed }` en caso de existir.
 **Ejemplo (una sola condición)**:
 
 ```sh
-Batle puedeConducir = Lose
+Battle puedeConducir = Lose
 Power edad = 18
 Button:
 | edad >= 18 }
@@ -882,11 +882,11 @@ blanco también son ignorados.
 ```sh
 world %VolumenCubo%:
   ~* Calcula el volumen de un Cubo *~
-  Skill arista, volumen;
+  Skill arista, volumen
   
   arista = joystick ~Introduzca arista: ~
   
-  volumen = arista * arista * arista;
+  volumen = arista * arista * arista
   
   drop ~el volumen del cubo es: ~, volumen
 .~
@@ -994,3 +994,4 @@ La presente sección contiene algunas funcionalidades del Chask* que
 ### Excepciones.
 
 ### Iteradores.
+
