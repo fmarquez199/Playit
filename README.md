@@ -194,14 +194,15 @@ Es una estructura de datos heterogénea de cualquier tipo escalar que se
 encuentran ubicadas, no necesariamente de forma consecutiva, en memoria, se
 admiten listas multidimensionales.
 
-La palabra reservada para su tipo es `Kit`. La lista vacía es `<<>>`. No
-se inicializan automáticamente.
+El formato para  `Kit of <tipo de la lista>`
 
-**Ejemplo:**
+Se inicializan por default con la lista vacía `<<>>`.
+
+**Ejemplos de declaraciones válidas:**
 
 ```sh
-Kit lista1 = <<*C*, *3*>>
-Kit lista2
+Kit of Power lista1 = <<2, 3>>
+Kit of Kit of Skill lista2
 ```
 
 En este código se declaran dos variables del tipo `Kit`, `lista1` inicializada
@@ -211,6 +212,7 @@ defecto no es inicializada.
 #### Registros.
 
 Son estructuras de la forma 
+
 
 ```sh
 Inventory <nombre>:
@@ -996,4 +998,5 @@ La presente sección contiene algunas funcionalidades del Chask* que
 ### Excepciones.
 
 ### Iteradores.
+
 
