@@ -104,7 +104,7 @@ precedida por una cantidad no nula de `0`, es decir, son enteros, los valores:
 Son datos de 64 bit (8 B) en memoria representados según el estándar **IEEE
 754 de precisión doble**. Se construyen como:
 
-`<Entero>.<Entero>`
+`<Entero>'<Entero>`
 
 La palabra reservada para las variables de tipo punto flotante es `Skill`.
 Si no se inicializan al declararse se le establece el valor `0'0`.
@@ -208,9 +208,7 @@ Kit of Kit of Skill lista2
 lista1|}0{| == 2
 ```
 
-En este código se declaran dos variables del tipo `Kit`, `lista1` inicializada
-en la lista que contiene al `Rune` `*C*` y al `Power` `3`, y `lista2` que por
-defecto no es inicializada.
+En este código se declaran dos variables del tipo `Kit`, `lista1` que solo podrá contener enteros, inicializada con 2 y 3.`lista2` es inicializada con la lista de lista de flotantes vacía, la cual si se indexa en posición cero da un error y tiene tamaño cero .
 
 #### Registros.
 
