@@ -195,6 +195,7 @@ encuentran ubicadas, no necesariamente de forma consecutiva, en memoria, se
 admiten listas multidimensionales.
 
 El formato para  `Kit of <tipo de la lista>`
+Para acceder a un elemento de la lista se utiliza el operador de indexación `|}{|`. 
 
 Se inicializan por default con la lista vacía `<<>>`.
 
@@ -203,6 +204,8 @@ Se inicializan por default con la lista vacía `<<>>`.
 ```sh
 Kit of Power lista1 = <<2, 3>>
 Kit of Kit of Skill lista2
+
+lista1|}0{| == 2
 ```
 
 En este código se declaran dos variables del tipo `Kit`, `lista1` inicializada
