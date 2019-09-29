@@ -31,7 +31,7 @@ $ascii        = [ [\x00-\x10ffff] # [\* \~] ]
 @variables    = $abecedario $caracteres*
 @programas    = \% $caracteres+ \%
 @scape        = '\\'  $especiales
-@caracter     = "*"."*" | @scape
+@caracter     = "*".{1}"*" | @scape
 @strings      = \~ @texto \~
 @comentarios  = "~*" $ascii* "*~"
 @comentario   = "@" .* \n
@@ -73,6 +73,7 @@ tokens :-
   summon               { tok (\p s -> TkSMN p s) }
   unlock               { tok (\p s -> TkNLK p s) }
   world                { tok (\p s -> TkWRL p s) }
+  "of"                 { tok (\p s -> TkOFK p s) }
 
   -- Literales booleanos
   
@@ -153,6 +154,7 @@ pos (AlexPn _ f c) = " en la fila: " ++ (show f) ++ ", columna: " ++ (show c)
 data Token = TkWRL AlexPosn String
            | TkRNE AlexPosn String
            | TkLOS AlexPosn String
+           | TkOFK AlexPosn String
            | TkBTN AlexPosn String
            | TkWIN AlexPosn String
            | TkBTL AlexPosn String
@@ -229,6 +231,7 @@ data Token = TkWRL AlexPosn String
 
 instance Show Token where
     show (TkWRL p s) = "Token " ++ s ++ (pos p) -- world
+    show (TkOFK p s) = "Token " ++ s ++ (pos p) -- of
     show (TkBTN p s) = "Token " ++ s ++ (pos p) -- Button
     show (TkRNE p s) = "Token " ++ s ++ (pos p) -- rune
     show (TkLOS p s) = "Token " ++ s ++ (pos p) -- Lose
