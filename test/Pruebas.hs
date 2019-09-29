@@ -62,13 +62,14 @@ main = do
         let lstStrRecognizedTokens    = map show lstRecognizedTkns           -- Crea la lista de tokens imprimible.
             
         
+        let testCases = [TestCase $ assertEqual ("\n***Error en tokens de:" ++ filen ++ ".game ***") lineExpected lineRecognized | (lineExpected , lineRecognized) <- zip lstStrExpectedOut lstStrRecognizedTokens]
 
         hClose fileSource
         hClose fileExpectedOut
         
-        return $ TestCase $ assertEqual ("**Tokens para " ++ filen ++ ".game generados incorrectamente**") lstStrRecognizedTokens lstStrExpectedOut
+        return $ testCases
     
-    runTestTT $ TestList testCases
+    runTestTT $ TestList $ concat testCases
     return ()
     
 
