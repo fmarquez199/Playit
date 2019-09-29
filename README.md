@@ -236,11 +236,11 @@ Para inicializarse en la declaración se puede pasar una expresión con
 exactamente el mismo número de argumentos, como se sigue:
 
 ```sh
-Inventory registro:
+Inventory Registro:
   Power up
   Rune tip
 .~
-registro = {0, *f*}
+Registro r = {0, *f*}
 ```
 
 **Ejemplo:**
@@ -926,7 +926,7 @@ world %Tablas%:
     @ Inicio del anidamiento
     i = 1 
     play:
-      drop numero, ~ * ~, i, ~ = ~, i * numero
+      drop numero, ~ \* ~, i, ~ = ~, i * numero
       i++
     lock i <= 10
     .~
@@ -998,5 +998,6 @@ La presente sección contiene algunas funcionalidades del Chask* que
 ### Excepciones.
 
 ### Iteradores.
+
 
 
