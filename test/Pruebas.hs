@@ -8,11 +8,11 @@
  *  genera su representación en String a cada uno guardandolos en la lista X.
  *      El programa lee el contenido del archivo de salida esperada .out en la misma
  *  carpeta, genera una lista con las lineas de la salida esperada.
- *      El programa crea un Caso de prueba HUnit que compara cada linea del
+ *      El programa crea un Caso de prueba HUnit que compara cada linea del 
  *  archivo .out salida esperada con la salida real obtenida del lexer.
  *
- * En caso de un error se muestra el nombre del archivo y la linea esperada y el
- * token que generó el error.
+ *      En caso de un error se muestra el nombre del archivo y la linea esperada 
+ *  y el    token que generó el error.
  *
  * Para crear un caso de prueba entonces se deben seguir los pasos:
  * 
@@ -21,13 +21,16 @@
  * 3) Copiar la salida y chequear manualmente si es correcta.
  * 4) y ya está en la suit de pruebas.
  *
- * Copyright : (c) Manuel Gonzalez 11-10390
- *                Francisco Javier 12-11163
- *                Natascha Gamboa 12-11250
- *-}
---Para forzar la lectura I/O  
+ * Copyright : (c)
+ *  Manuel Gonzalez     11-10390
+ *  Francisco Javier    12-11163
+ *  Natascha Gamboa     12-11250
+ *
+-}
+
+-- Para forzar la lectura I/O  
 import qualified Data.ByteString as S 
- -- Para convertir ByteString a String
+-- Para convertir ByteString a String
 import qualified Data.ByteString.Char8 as BS
 import Test.HUnit
 import Test.Framework

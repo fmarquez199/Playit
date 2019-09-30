@@ -1,14 +1,19 @@
 
 {
 {-
-Analizador lexico
-
-Copyright : (c) Manuel Gonzalez 11-10390
-                Francisco Javier 12-11163
-                Natascha Gamboa 12-11250
+ *  Analizador léxico del Lenguaje  Playit
+ *
+ * Copyright : (c) 
+ *  Manuel Gonzalez     11-10390
+ *  Francisco Javier    12-11163
+ *  Natascha Gamboa     12-11250
 -}
 
-module Playit.Lexer (Token(..), AlexPosn(..), alexScanTokens) where
+module Playit.Lexer (
+    Token(..),
+    AlexPosn(..), 
+    alexScanTokens
+) where
 }
 
 %wrapper "posn"
@@ -17,23 +22,23 @@ module Playit.Lexer (Token(..), AlexPosn(..), alexScanTokens) where
 
 $digitos      = [0-9]
 $abecedario   = [a-zA-Z]
-$simbolos     = [\+ \- \* \/ \% \# \! \< \> \( \) \' \{ \} \, \: \| \=]
-$especiales   = [0 t n \* \~ \\]
-$caracteres   = [$digitos $abecedario \_ \']
-$ascii        = [ [\x00-\x10ffff] # [\* \~] ]
-
+-- $simbolos     = [\+ \- \* \/ \% \# \! \< \> \( \) \' \{ \} \, \: \| \=]
+$char_identificador   = [$digitos $abecedario \_ \']
+-- $ascii        = [ [\x00-\x10ffff] # [\* \~] ]
+$char_texto   = [. # [\* \~]]
 -- Expresiones regulares
 
 -- @texto PUEDE SER CUALQUIER caracter MENOS el caracter ~ y *
 --  O PUEDE SER el caracter \*
 
-@texto        = ([. # [\* \~]] | \*)*
-@variables    = $abecedario $caracteres*
-@programas    = \% $caracteres+ \%
-@scape        = '\\'  $especiales
-@caracter     = "*".{1}"*" | @scape
+@scape        = "\\"|"\0"|"\n"|"\t"|"\\"|"\~"|"\*"
+@mcaracter    = $char_texto| @scape
+@caracter     = "*"@mcaracter"*"
+@texto        = @mcaracter*
+@identificador= $abecedario $char_identificador*
+@programas    = \% $char_identificador+ \%
 @strings      = \~ @texto \~
-@comentarios  = "~*" $ascii* "*~"
+@comentarios  = "~*" .* "*~"
 @comentario   = "@" .* \n
 @float        = $digitos+ \' $digitos+
 @error        = .
@@ -83,7 +88,7 @@ tokens :-
   -- Identificadores
 
   @programas          { tok (\p s -> TkNMB p s) }
-  @variables          { tok (\p s -> TkIDF p s) }
+  @identificador          { tok (\p s -> TkIDF p s) }
 
   -- Caracteres
 
@@ -130,7 +135,6 @@ tokens :-
   "{"                  { tok (\p s -> TkLLA p s) }
   "}"                  { tok (\p s -> TkLLC p s) }
   ","                  { tok (\p s -> TkCOM p s) }
-  "'"                  { tok (\p s -> TkCMS p s) }
   ":"                  { tok (\p s -> TkDSP p s) }
   "|"                  { tok (\p s -> TkCON p s) }
   "="                  { tok (\p s -> TkASG p s) }
@@ -217,7 +221,6 @@ data Token = TkWRL AlexPosn String
            | TkLLA AlexPosn String
            | TkLLC AlexPosn String
            | TkCOM AlexPosn String
-           | TkCMS AlexPosn String
            | TkDSP AlexPosn String
            | TkCON AlexPosn String
            | TkASG AlexPosn String
@@ -296,7 +299,6 @@ instance Show Token where
     show (TkLLA p s) = "Token " ++ s ++ (pos p) -- {
     show (TkLLC p s) = "Token " ++ s ++ (pos p) -- }
     show (TkCOM p s) = "Token " ++ s ++ (pos p) -- ,
-    show (TkCMS p s) = "Token " ++ s ++ (pos p) -- " ' "
     show (TkDSP p s) = "Token " ++ s ++ (pos p) -- :
     show (TkCON p s) = "Token " ++ s ++ (pos p) -- |
     show (TkASG p s) = "Token " ++ s ++ (pos p) -- =
