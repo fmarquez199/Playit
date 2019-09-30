@@ -1,4 +1,3 @@
-
 {
 {-
  *  Analizador léxico del Lenguaje  Playit
@@ -22,9 +21,7 @@ module Playit.Lexer (
 
 $digitos      = [0-9]
 $abecedario   = [a-zA-Z]
--- $simbolos     = [\+ \- \* \/ \% \# \! \< \> \( \) \' \{ \} \, \: \| \=]
 $char_identificador   = [$digitos $abecedario \_ \']
--- $ascii        = [ [\x00-\x10ffff] # [\* \~] ]
 $char_texto   = [. # [\* \~]]
 -- Expresiones regulares
 
@@ -37,8 +34,8 @@ $char_texto   = [. # [\* \~]]
 @texto        = @mcaracter*
 @identificador= $abecedario $char_identificador*
 @programas    = \% $char_identificador+ \%
-@strings      = \~ @texto \~
-@comentarios  = "~*" .* "*~"
+@strings      = "~" @texto "~"
+@comentarios  = "~*" (.|\n)* "*~"
 @comentario   = "@" .* \n
 @float        = $digitos+ \' $digitos+
 @error        = .
