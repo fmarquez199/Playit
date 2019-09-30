@@ -399,7 +399,7 @@ disminuye la segunda, luego se declaran e inicializan las variables `n3` y
 Un identificador válido para una variable en un programa de Playit cumple con
 las siguientes condiciones:
 
-1. No empieza con números.
+1. No empieza con números, `_` o `'`.
 2. Puede poseer carácteres `A` hasta la `Z` en mayúscula o minúscula.
 3. No incluye el carácter `ñ` ni carácteres acentuados.
 4. Puede poseer números del `0` al `9`.
@@ -878,7 +878,7 @@ Factorial de 5 es 120
 
 En Playit se pueden escribir comentarios de una línea o de varias líneas.
 Al escribir `@` se ignorarán todos los carácteres hasta el siguiente salto
-de línea. El texto escrito entre `~*` y `*~` será ignorado. Los espacios en
+de línea. El texto escrito entre comillas dobles más comillas simples `"'` y `'"` será ignorado. Los espacios en
 blanco también son ignorados.
 
 ## Ejemplos en Playit.
@@ -886,7 +886,7 @@ blanco también son ignorados.
 **Calcular el volúmen de un Cubo**
 ```sh
 world %VolumenCubo%:
-  ~* Calcula el volumen de un Cubo *~
+  "' Calcula el volumen de un Cubo '"
   Skill arista, volumen
   
   arista = joystick ~Introduzca arista: ~
@@ -901,7 +901,7 @@ world %VolumenCubo%:
 
 ```sh
 world %ParOImpar%:
-  ~* Dice si un número es par o impar *~
+  "' Dice si un número es par o impar '"
   Power numero
   numero = joystick ~Introduzca un numero entero: ~
   Button:
@@ -999,6 +999,7 @@ La presente sección contiene algunas funcionalidades del Chask* que
 ### Excepciones.
 
 ### Iteradores.
+
 
 
 
