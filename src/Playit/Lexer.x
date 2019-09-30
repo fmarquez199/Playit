@@ -6,6 +6,7 @@
  *  Manuel Gonzalez     11-10390
  *  Francisco Javier    12-11163
  *  Natascha Gamboa     12-11250
+ 
 -}
 
 module Playit.Lexer (
@@ -34,7 +35,7 @@ $char_texto   = [. # [\* \~]]
 @texto        = @mcaracter*
 @identificador= $abecedario $char_identificador*
 @programas    = \% $char_identificador+ \%
-@strings      = "~" @texto "~"
+@strings      = "~"@texto"~"
 @comentarios  = "~*" (.|\n)* "*~"
 @comentario   = "@" .* \n
 @float        = $digitos+ \' $digitos+
