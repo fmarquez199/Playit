@@ -1,0 +1,24 @@
+Token world en la fila: 1, columna: 1
+Token nombre programa %VolumenCubo% en la fila: 1, columna: 7
+Token : en la fila: 1, columna: 20
+Comentario varias lineas en la fila: 2, columna: 3
+Token Skill en la fila: 3, columna: 3
+Token identificador "arista" en la fila: 3, columna: 9
+Token , en la fila: 3, columna: 15
+Token identificador "volumen" en la fila: 3, columna: 17
+Token identificador "arista" en la fila: 5, columna: 3
+Token = en la fila: 5, columna: 10
+Token joystick en la fila: 5, columna: 12
+Token string ~Introduzca arista: ~ en la fila: 5, columna: 21
+Token identificador "volumen" en la fila: 7, columna: 3
+Token = en la fila: 7, columna: 11
+Token identificador "arista" en la fila: 7, columna: 13
+Token * en la fila: 7, columna: 20
+Token identificador "arista" en la fila: 7, columna: 22
+Token * en la fila: 7, columna: 29
+Token identificador "arista" en la fila: 7, columna: 31
+Token drop en la fila: 9, columna: 3
+Token string ~el volumen del cubo es: ~ en la fila: 9, columna: 8
+Token , en la fila: 9, columna: 34
+Token identificador "volumen" en la fila: 9, columna: 36
+Token .~ en la fila: 10, columna: 1

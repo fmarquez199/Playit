@@ -1,0 +1,63 @@
+Token world en la fila: 1, columna: 1
+Token nombre programa %Tablas% en la fila: 1, columna: 7
+Token : en la fila: 1, columna: 15
+Token Rune en la fila: 2, columna: 3
+Token identificador "seguir" en la fila: 2, columna: 8
+Token = en la fila: 2, columna: 15
+Token caracter *s* en la fila: 2, columna: 17
+Token Power en la fila: 3, columna: 3
+Token identificador "i" en la fila: 3, columna: 9
+Token , en la fila: 3, columna: 10
+Token identificador "numero" en la fila: 3, columna: 12
+Token play en la fila: 5, columna: 3
+Token : en la fila: 5, columna: 7
+Token identificador "numero" en la fila: 6, columna: 5
+Token = en la fila: 6, columna: 12
+Token joystick en la fila: 6, columna: 14
+Token string ~Introduzca un numero entero: ~ en la fila: 6, columna: 23
+Token drop en la fila: 8, columna: 5
+Token string ~La tabla de multiplicar del ~ en la fila: 8, columna: 10
+Token , en la fila: 8, columna: 40
+Token identificador "numero" en la fila: 8, columna: 41
+Token , en la fila: 8, columna: 47
+Token string ~ es:~ en la fila: 8, columna: 48
+Comentario una linea en la fila: 10, columna: 5
+Token identificador "i" en la fila: 11, columna: 5
+Token = en la fila: 11, columna: 7
+Token entero 1 en la fila: 11, columna: 9
+Token play en la fila: 12, columna: 5
+Token : en la fila: 12, columna: 9
+Token drop en la fila: 13, columna: 7
+Token identificador "numero" en la fila: 13, columna: 12
+Token , en la fila: 13, columna: 18
+Token string ~ \* ~ en la fila: 13, columna: 20
+Token , en la fila: 13, columna: 26
+Token identificador "i" en la fila: 13, columna: 28
+Token , en la fila: 13, columna: 29
+Token string ~ = ~ en la fila: 13, columna: 31
+Token , en la fila: 13, columna: 36
+Token identificador "i" en la fila: 13, columna: 38
+Token * en la fila: 13, columna: 40
+Token identificador "numero" en la fila: 13, columna: 42
+Token identificador "i" en la fila: 14, columna: 7
+Token ++ en la fila: 14, columna: 8
+Token lock en la fila: 15, columna: 5
+Token identificador "i" en la fila: 15, columna: 10
+Token <= en la fila: 15, columna: 12
+Token entero 10 en la fila: 15, columna: 15
+Token .~ en la fila: 16, columna: 5
+Comentario una linea en la fila: 17, columna: 5
+Token identificador "seguir" en la fila: 19, columna: 5
+Token = en la fila: 19, columna: 12
+Token kill en la fila: 19, columna: 14
+Token identificador "portalRunesToRune" en la fila: 19, columna: 19
+Token ( en la fila: 19, columna: 36
+Token joystick en la fila: 19, columna: 38
+Token string ~Desea ver otra tabla (s/n)?: ~ en la fila: 19, columna: 47
+Token ) en la fila: 19, columna: 78
+Token lock en la fila: 20, columna: 3
+Token identificador "seguir" en la fila: 20, columna: 9
+Token != en la fila: 20, columna: 16
+Token caracter *n* en la fila: 20, columna: 19
+Token .~ en la fila: 21, columna: 3
+Token .~ en la fila: 22, columna: 1

@@ -1,0 +1,56 @@
+Token Runes en la fila: 1, columna: 1
+Token identificador "s1" en la fila: 1, columna: 7
+Token = en la fila: 1, columna: 10
+Token string ~Hola1~ en la fila: 1, columna: 12
+Token Runes en la fila: 2, columna: 1
+Token identificador "s2" en la fila: 2, columna: 7
+Token = en la fila: 2, columna: 10
+Token string ~\*Hola\n1~ en la fila: 2, columna: 12
+Token Runes en la fila: 3, columna: 1
+Token identificador "s3" en la fila: 3, columna: 7
+Token = en la fila: 3, columna: 10
+Token string ~Hola2~ en la fila: 3, columna: 12
+Token Runes en la fila: 4, columna: 1
+Token |} en la fila: 4, columna: 6
+Token entero 5 en la fila: 4, columna: 8
+Token {| en la fila: 4, columna: 9
+Token identificador "s351" en la fila: 4, columna: 12
+Token = en la fila: 4, columna: 17
+Token string ~Hola2~ en la fila: 4, columna: 19
+Token Runes en la fila: 5, columna: 1
+Token |} en la fila: 5, columna: 6
+Token entero 5 en la fila: 5, columna: 8
+Token {| en la fila: 5, columna: 9
+Token identificador "s352" en la fila: 5, columna: 12
+Token = en la fila: 5, columna: 17
+Token |} en la fila: 5, columna: 19
+Token caracter *H* en la fila: 5, columna: 21
+Token , en la fila: 5, columna: 24
+Token caracter *o* en la fila: 5, columna: 25
+Token , en la fila: 5, columna: 28
+Token caracter *l* en la fila: 5, columna: 29
+Token , en la fila: 5, columna: 32
+Token caracter *a* en la fila: 5, columna: 33
+Token , en la fila: 5, columna: 36
+Token caracter *2* en la fila: 5, columna: 37
+Token {| en la fila: 5, columna: 40
+Token Runes en la fila: 6, columna: 1
+Token identificador "s4" en la fila: 6, columna: 7
+Token = en la fila: 6, columna: 10
+Token string ~Hola2\n~ en la fila: 6, columna: 12
+Token Runes en la fila: 7, columna: 1
+Token identificador "s5" en la fila: 7, columna: 7
+Token = en la fila: 7, columna: 10
+Token string ~Hey!, Como estas?~ en la fila: 7, columna: 12
+Token Power en la fila: 10, columna: 1
+Token identificador "length" en la fila: 10, columna: 7
+Token = en la fila: 10, columna: 14
+Token # en la fila: 10, columna: 16
+Token identificador "s1" en la fila: 10, columna: 17
+Token Rune en la fila: 12, columna: 1
+Token identificador "h" en la fila: 12, columna: 6
+Token = en la fila: 12, columna: 8
+Token identificador "s1" en la fila: 12, columna: 10
+Token |} en la fila: 12, columna: 12
+Token entero 0 en la fila: 12, columna: 14
+Token {| en la fila: 12, columna: 15

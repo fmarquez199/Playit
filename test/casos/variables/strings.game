@@ -1,0 +1,12 @@
+Runes s1 = ~Hola1~
+Runes s2 = ~\*Hola\n1~
+Runes s3 = ~Hola2~
+Runes|}5{| s351 = ~Hola2~
+Runes|}5{| s352 = |}*H*,*o*,*l*,*a*,*2*{|
+Runes s4 = ~Hola2\n~
+Runes s5 = ~Hey!, Como estas?~
+
+
+Power length = #s1
+
+Rune h = s1|}0{|

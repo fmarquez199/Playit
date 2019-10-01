@@ -1,0 +1,11 @@
+world %ParOImpar%:
+  "' Dice si un número es par o impar '"
+  Power numero
+  numero = joystick ~Introduzca un numero entero: ~
+  Button:
+  |numero % 2 == 0 }
+    drop ~es par~
+  | notPressed }
+    drop ~es impar~
+  .~
+.~

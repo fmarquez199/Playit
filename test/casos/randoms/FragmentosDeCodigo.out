@@ -1,0 +1,497 @@
+Token world en la fila: 1, columna: 1
+Token nombre programa %FragmentosDeCodigo% en la fila: 1, columna: 7
+Token : en la fila: 1, columna: 27
+Token entero 01 en la fila: 2, columna: 3
+Token entero 003 en la fila: 3, columna: 3
+Token entero 0000000000000000000000000000000000000005 en la fila: 4, columna: 3
+Token Power en la fila: 5, columna: 3
+Token identificador "a" en la fila: 5, columna: 9
+Token Rune en la fila: 6, columna: 3
+Token identificador "c" en la fila: 6, columna: 8
+Token Battle en la fila: 7, columna: 3
+Token identificador "esMayor" en la fila: 7, columna: 10
+Token = en la fila: 7, columna: 18
+Token Lose en la fila: 7, columna: 20
+Token Power en la fila: 8, columna: 3
+Token identificador "b" en la fila: 8, columna: 9
+Token = en la fila: 8, columna: 11
+Token entero 2 en la fila: 8, columna: 13
+Token identificador "a" en la fila: 9, columna: 3
+Token = en la fila: 9, columna: 5
+Token entero 1 en la fila: 9, columna: 7
+Token Skill en la fila: 10, columna: 3
+Token identificador "r" en la fila: 10, columna: 9
+Token = en la fila: 10, columna: 11
+Token flotante 0'5 en la fila: 10, columna: 13
+Token identificador "a" en la fila: 11, columna: 3
+Token = en la fila: 11, columna: 5
+Token entero 2 en la fila: 11, columna: 7
+Token Rune en la fila: 12, columna: 3
+Token |} en la fila: 12, columna: 7
+Token entero 3 en la fila: 12, columna: 9
+Token {| en la fila: 12, columna: 10
+Token identificador "abc" en la fila: 12, columna: 13
+Token Runes en la fila: 13, columna: 3
+Token |} en la fila: 13, columna: 8
+Token entero 3 en la fila: 13, columna: 10
+Token {| en la fila: 13, columna: 11
+Token identificador "nombres" en la fila: 13, columna: 14
+Token = en la fila: 13, columna: 22
+Token |} en la fila: 13, columna: 24
+Token string ~Natascha~ en la fila: 13, columna: 26
+Token , en la fila: 13, columna: 36
+Token string ~Francisco~ en la fila: 13, columna: 38
+Token , en la fila: 13, columna: 49
+Token string ~Manuel~ en la fila: 13, columna: 51
+Token {| en la fila: 13, columna: 59
+Token Skill en la fila: 14, columna: 3
+Token |} en la fila: 14, columna: 8
+Token entero 3 en la fila: 14, columna: 10
+Token {| en la fila: 14, columna: 11
+Token identificador "indices" en la fila: 14, columna: 14
+Token = en la fila: 14, columna: 22
+Token |} en la fila: 14, columna: 24
+Token flotante 3'67 en la fila: 14, columna: 26
+Token , en la fila: 14, columna: 30
+Token flotante 3'20 en la fila: 14, columna: 32
+Token , en la fila: 14, columna: 36
+Token flotante 3'0 en la fila: 14, columna: 38
+Token {| en la fila: 14, columna: 41
+Token |} en la fila: 15, columna: 3
+Token caracter *s* en la fila: 15, columna: 5
+Token , en la fila: 15, columna: 8
+Token caracter *t* en la fila: 15, columna: 10
+Token , en la fila: 15, columna: 13
+Token caracter *r* en la fila: 15, columna: 15
+Token , en la fila: 15, columna: 18
+Token caracter *i* en la fila: 15, columna: 20
+Token , en la fila: 15, columna: 23
+Token caracter *n* en la fila: 15, columna: 25
+Token , en la fila: 15, columna: 28
+Token caracter *g* en la fila: 15, columna: 30
+Token , en la fila: 15, columna: 33
+Token caracter *s* en la fila: 15, columna: 35
+Token {| en la fila: 15, columna: 38
+Token == en la fila: 15, columna: 41
+Token string ~strings~ en la fila: 15, columna: 44
+Token Kit en la fila: 16, columna: 3
+Token identificador "lista1" en la fila: 16, columna: 7
+Token = en la fila: 16, columna: 14
+Token << en la fila: 16, columna: 16
+Token caracter *C* en la fila: 16, columna: 18
+Token , en la fila: 16, columna: 21
+Token caracter *3* en la fila: 16, columna: 23
+Token >> en la fila: 16, columna: 26
+Token Kit en la fila: 17, columna: 3
+Token identificador "lista2" en la fila: 17, columna: 7
+Token Inventory en la fila: 18, columna: 3
+Token identificador "Registro" en la fila: 18, columna: 13
+Token : en la fila: 18, columna: 21
+Token Power en la fila: 19, columna: 5
+Token identificador "up" en la fila: 19, columna: 11
+Token Rune en la fila: 20, columna: 5
+Token identificador "tip" en la fila: 20, columna: 10
+Token .~ en la fila: 21, columna: 3
+Token identificador "Registro" en la fila: 22, columna: 3
+Token identificador "r" en la fila: 22, columna: 12
+Token = en la fila: 22, columna: 14
+Token { en la fila: 22, columna: 16
+Token entero 0 en la fila: 22, columna: 17
+Token , en la fila: 22, columna: 18
+Token caracter *f* en la fila: 22, columna: 20
+Token } en la fila: 22, columna: 23
+Token Inventory en la fila: 23, columna: 3
+Token identificador "Contacto" en la fila: 23, columna: 13
+Token : en la fila: 23, columna: 21
+Token Runes en la fila: 24, columna: 5
+Token identificador "nombre" en la fila: 24, columna: 11
+Token Power en la fila: 25, columna: 5
+Token identificador "edad" en la fila: 25, columna: 11
+Token Battle en la fila: 26, columna: 5
+Token identificador "tieneTrabajo" en la fila: 26, columna: 12
+Token .~ en la fila: 27, columna: 3
+Token identificador "Contacto" en la fila: 29, columna: 3
+Token identificador "Alex" en la fila: 29, columna: 12
+Token = en la fila: 29, columna: 17
+Token { en la fila: 29, columna: 19
+Token string ~Alex~ en la fila: 29, columna: 20
+Token , en la fila: 29, columna: 26
+Token entero 15 en la fila: 29, columna: 28
+Token , en la fila: 29, columna: 30
+Token Lose en la fila: 29, columna: 32
+Token } en la fila: 29, columna: 36
+Token identificador "Contacto" en la fila: 30, columna: 3
+Token identificador "sofia" en la fila: 30, columna: 12
+Token identificador "sofia" en la fila: 31, columna: 3
+Token spawn en la fila: 31, columna: 9
+Token identificador "nombre" en la fila: 31, columna: 15
+Token = en la fila: 31, columna: 22
+Token string ~Sofia~ en la fila: 31, columna: 24
+Token identificador "sofia" en la fila: 32, columna: 3
+Token spawn en la fila: 32, columna: 9
+Token identificador "edad" en la fila: 32, columna: 15
+Token = en la fila: 32, columna: 20
+Token entero 29 en la fila: 32, columna: 22
+Token identificador "sofia" en la fila: 33, columna: 3
+Token spawn en la fila: 33, columna: 9
+Token identificador "tieneTrabajo" en la fila: 33, columna: 15
+Token = en la fila: 33, columna: 28
+Token Win en la fila: 33, columna: 30
+Token drop en la fila: 35, columna: 3
+Token string ~Hola ~ en la fila: 35, columna: 8
+Token , en la fila: 35, columna: 15
+Token identificador "sofia" en la fila: 35, columna: 17
+Token spawn en la fila: 35, columna: 23
+Token identificador "nombre" en la fila: 35, columna: 29
+Token Inventory en la fila: 37, columna: 3
+Token identificador "Circle" en la fila: 37, columna: 13
+Token : en la fila: 37, columna: 19
+Token Skill en la fila: 38, columna: 5
+Token identificador "centerX" en la fila: 38, columna: 11
+Token Skill en la fila: 39, columna: 5
+Token identificador "centerY" en la fila: 39, columna: 11
+Token Skill en la fila: 40, columna: 5
+Token identificador "radius" en la fila: 40, columna: 11
+Token .~ en la fila: 41, columna: 3
+Token Inventory en la fila: 43, columna: 3
+Token identificador "Rectangle" en la fila: 43, columna: 13
+Token : en la fila: 43, columna: 22
+Token Skill en la fila: 44, columna: 5
+Token identificador "topLeftX" en la fila: 44, columna: 11
+Token Skill en la fila: 45, columna: 5
+Token identificador "topLeftY" en la fila: 45, columna: 11
+Token Skill en la fila: 46, columna: 5
+Token identificador "bottomRightX" en la fila: 46, columna: 11
+Token Skill en la fila: 47, columna: 5
+Token identificador "bottomRightY" en la fila: 47, columna: 11
+Token .~ en la fila: 48, columna: 3
+Token Items en la fila: 50, columna: 3
+Token identificador "Shape" en la fila: 50, columna: 9
+Token : en la fila: 50, columna: 14
+Token identificador "Circle" en la fila: 51, columna: 5
+Token identificador "c" en la fila: 51, columna: 12
+Token identificador "Rectangle" en la fila: 52, columna: 5
+Token identificador "r" en la fila: 52, columna: 15
+Token .~ en la fila: 53, columna: 3
+Token boss en la fila: 55, columna: 3
+Token identificador "areaCirculo" en la fila: 55, columna: 8
+Token ( en la fila: 55, columna: 19
+Token identificador "Circle" en la fila: 55, columna: 20
+Token ? en la fila: 55, columna: 27
+Token identificador "c" en la fila: 55, columna: 28
+Token ) en la fila: 55, columna: 29
+Token Skill en la fila: 55, columna: 31
+Token : en la fila: 55, columna: 36
+Token unlock en la fila: 56, columna: 5
+Token flotante 3'14 en la fila: 56, columna: 12
+Token * en la fila: 56, columna: 17
+Token identificador "c" en la fila: 56, columna: 19
+Token spawn en la fila: 56, columna: 21
+Token identificador "radius" en la fila: 56, columna: 27
+Token * en la fila: 56, columna: 34
+Token identificador "c" en la fila: 56, columna: 36
+Token spawn en la fila: 56, columna: 38
+Token identificador "radius" en la fila: 56, columna: 44
+Token .~ en la fila: 57, columna: 3
+Token identificador "Shape" en la fila: 59, columna: 3
+Token identificador "sh" en la fila: 59, columna: 9
+Token identificador "sh" en la fila: 60, columna: 5
+Token spawn en la fila: 60, columna: 8
+Token identificador "c" en la fila: 60, columna: 14
+Token spawn en la fila: 60, columna: 16
+Token identificador "centerX" en la fila: 60, columna: 22
+Token = en la fila: 60, columna: 30
+Token flotante 2'1 en la fila: 60, columna: 32
+Token identificador "sh" en la fila: 61, columna: 5
+Token spawn en la fila: 61, columna: 8
+Token identificador "c" en la fila: 61, columna: 14
+Token spawn en la fila: 61, columna: 16
+Token identificador "centerY" en la fila: 61, columna: 22
+Token = en la fila: 61, columna: 30
+Token flotante 5'0 en la fila: 61, columna: 32
+Token identificador "sh" en la fila: 62, columna: 5
+Token spawn en la fila: 62, columna: 8
+Token identificador "c" en la fila: 62, columna: 14
+Token spawn en la fila: 62, columna: 16
+Token identificador "centerY" en la fila: 62, columna: 22
+Token = en la fila: 62, columna: 30
+Token flotante 5'0 en la fila: 62, columna: 32
+Token identificador "sh" en la fila: 63, columna: 5
+Token spawn en la fila: 63, columna: 8
+Token identificador "c" en la fila: 63, columna: 14
+Token spawn en la fila: 63, columna: 16
+Token identificador "radius" en la fila: 63, columna: 22
+Token = en la fila: 63, columna: 29
+Token entero 15 en la fila: 63, columna: 31
+Token drop en la fila: 64, columna: 5
+Token string ~el area del circulo es ~ en la fila: 64, columna: 10
+Token , en la fila: 64, columna: 35
+Token identificador "areaCirculo" en la fila: 64, columna: 37
+Token ( en la fila: 64, columna: 48
+Token identificador "sh" en la fila: 64, columna: 49
+Token spawn en la fila: 64, columna: 52
+Token identificador "c" en la fila: 64, columna: 58
+Token ) en la fila: 64, columna: 59
+Token .~ en la fila: 65, columna: 3
+Token Power en la fila: 67, columna: 3
+Token puff en la fila: 67, columna: 9
+Token identificador "p" en la fila: 67, columna: 14
+Token = en la fila: 67, columna: 16
+Token summon en la fila: 67, columna: 18
+Token Power en la fila: 67, columna: 25
+Token |} en la fila: 67, columna: 30
+Token entero 20 en la fila: 67, columna: 32
+Token {| en la fila: 67, columna: 34
+Token puff en la fila: 68, columna: 3
+Token identificador "p" en la fila: 68, columna: 8
+Token |} en la fila: 68, columna: 9
+Token entero 1 en la fila: 68, columna: 11
+Token {| en la fila: 68, columna: 12
+Token = en la fila: 68, columna: 15
+Token entero 15 en la fila: 68, columna: 17
+Token free en la fila: 69, columna: 3
+Token |} en la fila: 69, columna: 7
+Token {| en la fila: 69, columna: 9
+Token identificador "p" en la fila: 69, columna: 12
+Token Power en la fila: 71, columna: 3
+Token puff en la fila: 71, columna: 9
+Token identificador "p" en la fila: 71, columna: 14
+Token = en la fila: 71, columna: 16
+Token summon en la fila: 71, columna: 18
+Token Power en la fila: 71, columna: 25
+Token puff en la fila: 72, columna: 3
+Token identificador "p" en la fila: 72, columna: 8
+Token = en la fila: 72, columna: 10
+Token entero 15 en la fila: 72, columna: 12
+Token free en la fila: 73, columna: 3
+Token identificador "p" en la fila: 73, columna: 8
+Token identificador "p" en la fila: 75, columna: 3
+Token = en la fila: 75, columna: 5
+Token summon en la fila: 75, columna: 7
+Token Power en la fila: 75, columna: 14
+Token puff en la fila: 76, columna: 3
+Token identificador "p" en la fila: 76, columna: 8
+Token = en la fila: 76, columna: 10
+Token entero 18 en la fila: 76, columna: 12
+Token free en la fila: 77, columna: 3
+Token identificador "p" en la fila: 77, columna: 8
+Token Power en la fila: 79, columna: 3
+Token identificador "n1" en la fila: 79, columna: 9
+Token = en la fila: 79, columna: 12
+Token entero 15 en la fila: 79, columna: 14
+Token , en la fila: 79, columna: 16
+Token identificador "n2" en la fila: 79, columna: 18
+Token = en la fila: 79, columna: 21
+Token entero 13 en la fila: 79, columna: 23
+Token identificador "n1" en la fila: 80, columna: 3
+Token ++ en la fila: 80, columna: 5
+Token identificador "n2" en la fila: 81, columna: 3
+Token -- en la fila: 81, columna: 5
+Token Power en la fila: 82, columna: 3
+Token identificador "n3" en la fila: 82, columna: 9
+Token = en la fila: 82, columna: 12
+Token identificador "n1" en la fila: 82, columna: 14
+Token , en la fila: 82, columna: 16
+Token identificador "n4" en la fila: 82, columna: 18
+Token = en la fila: 82, columna: 21
+Token identificador "n2" en la fila: 82, columna: 23
+Token identificador "bool" en la fila: 84, columna: 3
+Token ? en la fila: 84, columna: 8
+Token identificador "true" en la fila: 84, columna: 10
+Token : en la fila: 84, columna: 15
+Token identificador "false" en la fila: 84, columna: 17
+Token Battle en la fila: 86, columna: 3
+Token identificador "puedeConducir" en la fila: 86, columna: 10
+Token = en la fila: 86, columna: 24
+Token Lose en la fila: 86, columna: 26
+Token Power en la fila: 87, columna: 3
+Token identificador "edad" en la fila: 87, columna: 9
+Token = en la fila: 87, columna: 14
+Token entero 18 en la fila: 87, columna: 16
+Token Button en la fila: 88, columna: 3
+Token : en la fila: 88, columna: 9
+Token | en la fila: 89, columna: 3
+Token identificador "edad" en la fila: 89, columna: 5
+Token >= en la fila: 89, columna: 10
+Token entero 18 en la fila: 89, columna: 13
+Token } en la fila: 89, columna: 16
+Token identificador "puedeConducir" en la fila: 90, columna: 5
+Token = en la fila: 90, columna: 19
+Token Win en la fila: 90, columna: 21
+Token .~ en la fila: 91, columna: 3
+Token Runes en la fila: 93, columna: 3
+Token |} en la fila: 93, columna: 8
+Token entero 5 en la fila: 93, columna: 10
+Token {| en la fila: 93, columna: 11
+Token identificador "edades" en la fila: 93, columna: 14
+Token = en la fila: 93, columna: 21
+Token |} en la fila: 93, columna: 23
+Token string ~12~ en la fila: 93, columna: 25
+Token , en la fila: 93, columna: 29
+Token string ~23~ en la fila: 93, columna: 31
+Token , en la fila: 93, columna: 35
+Token string ~15~ en la fila: 93, columna: 37
+Token , en la fila: 93, columna: 41
+Token string ~40~ en la fila: 93, columna: 43
+Token , en la fila: 93, columna: 47
+Token string ~15~ en la fila: 93, columna: 49
+Token {| en la fila: 93, columna: 53
+Token Runes en la fila: 94, columna: 3
+Token |} en la fila: 94, columna: 8
+Token entero 5 en la fila: 94, columna: 10
+Token {| en la fila: 94, columna: 11
+Token identificador "nombres" en la fila: 94, columna: 14
+Token = en la fila: 94, columna: 22
+Token |} en la fila: 94, columna: 24
+Token string ~Natascha~ en la fila: 94, columna: 26
+Token , en la fila: 94, columna: 36
+Token string ~Francisco~ en la fila: 94, columna: 38
+Token , en la fila: 94, columna: 49
+Token string ~Manuel~ en la fila: 94, columna: 51
+Token , en la fila: 94, columna: 59
+Token string ~Ricardo~ en la fila: 94, columna: 61
+Token , en la fila: 94, columna: 70
+Token string ~Haskell~ en la fila: 94, columna: 72
+Token {| en la fila: 94, columna: 81
+Token controller en la fila: 96, columna: 3
+Token identificador "i" en la fila: 96, columna: 14
+Token = en la fila: 96, columna: 16
+Token entero 0 en la fila: 96, columna: 18
+Token -> en la fila: 96, columna: 20
+Token entero 4 en la fila: 96, columna: 23
+Token : en la fila: 96, columna: 24
+Token drop en la fila: 97, columna: 5
+Token string ~Hola ~ en la fila: 97, columna: 10
+Token , en la fila: 97, columna: 17
+Token identificador "nombres" en la fila: 97, columna: 19
+Token |} en la fila: 97, columna: 26
+Token identificador "i" en la fila: 97, columna: 28
+Token {| en la fila: 97, columna: 29
+Token , en la fila: 97, columna: 31
+Token string ~ tienes ~ en la fila: 97, columna: 33
+Token , en la fila: 97, columna: 43
+Token identificador "edad" en la fila: 97, columna: 45
+Token |} en la fila: 97, columna: 49
+Token identificador "i" en la fila: 97, columna: 51
+Token {| en la fila: 97, columna: 52
+Token , en la fila: 97, columna: 54
+Token string ~ anios!~ en la fila: 97, columna: 56
+Token .~ en la fila: 98, columna: 3
+Token Power en la fila: 100, columna: 3
+Token identificador "i" en la fila: 100, columna: 9
+Token = en la fila: 100, columna: 11
+Token entero 0 en la fila: 100, columna: 13
+Token play en la fila: 102, columna: 3
+Token : en la fila: 102, columna: 7
+Token drop en la fila: 103, columna: 5
+Token string ~Hola ~ en la fila: 103, columna: 10
+Token , en la fila: 103, columna: 17
+Token identificador "nombres" en la fila: 103, columna: 19
+Token |} en la fila: 103, columna: 26
+Token identificador "i" en la fila: 103, columna: 28
+Token {| en la fila: 103, columna: 29
+Token , en la fila: 103, columna: 31
+Token string ~ tienes ~ en la fila: 103, columna: 33
+Token , en la fila: 103, columna: 43
+Token identificador "edad" en la fila: 103, columna: 45
+Token |} en la fila: 103, columna: 49
+Token identificador "i" en la fila: 103, columna: 51
+Token {| en la fila: 103, columna: 52
+Token , en la fila: 103, columna: 54
+Token string ~ anios!~ en la fila: 103, columna: 56
+Token identificador "i" en la fila: 104, columna: 5
+Token ++ en la fila: 104, columna: 6
+Token lock en la fila: 105, columna: 3
+Token identificador "i" en la fila: 105, columna: 8
+Token < en la fila: 105, columna: 10
+Token entero 5 en la fila: 105, columna: 12
+Token .~ en la fila: 106, columna: 3
+Token gameOver en la fila: 108, columna: 3
+Token keepPlaying en la fila: 110, columna: 3
+Token monster en la fila: 112, columna: 3
+Token identificador "calcularGanancia" en la fila: 112, columna: 11
+Token ( en la fila: 112, columna: 27
+Token Power en la fila: 112, columna: 28
+Token identificador "precioComprado" en la fila: 112, columna: 34
+Token , en la fila: 112, columna: 48
+Token Power en la fila: 112, columna: 50
+Token identificador "precioVendido" en la fila: 112, columna: 56
+Token ) en la fila: 112, columna: 69
+Token Power en la fila: 112, columna: 71
+Token : en la fila: 112, columna: 76
+Token unlock en la fila: 113, columna: 5
+Token identificador "precioVendido" en la fila: 113, columna: 12
+Token - en la fila: 113, columna: 26
+Token identificador "precioComprado" en la fila: 113, columna: 28
+Token .~ en la fila: 114, columna: 3
+Token drop en la fila: 116, columna: 3
+Token string ~Ganancia de ~ en la fila: 116, columna: 8
+Token , en la fila: 116, columna: 22
+Token kill en la fila: 116, columna: 24
+Token identificador "calcularGanancia" en la fila: 116, columna: 29
+Token ( en la fila: 116, columna: 45
+Token entero 1500 en la fila: 116, columna: 46
+Token , en la fila: 116, columna: 50
+Token entero 2000 en la fila: 116, columna: 52
+Token ) en la fila: 116, columna: 56
+Token monster en la fila: 118, columna: 3
+Token identificador "calcularGanancia" en la fila: 118, columna: 11
+Token ( en la fila: 118, columna: 27
+Token identificador "Producto" en la fila: 118, columna: 28
+Token ? en la fila: 118, columna: 37
+Token identificador "producto" en la fila: 118, columna: 38
+Token , en la fila: 118, columna: 46
+Token Power en la fila: 118, columna: 48
+Token identificador "precioVendido" en la fila: 118, columna: 54
+Token ) en la fila: 118, columna: 67
+Token Power en la fila: 118, columna: 69
+Token : en la fila: 118, columna: 74
+Token unlock en la fila: 119, columna: 5
+Token identificador "precioVendido" en la fila: 119, columna: 12
+Token - en la fila: 119, columna: 26
+Token identificador "producto" en la fila: 119, columna: 28
+Token spawn en la fila: 119, columna: 37
+Token identificador "precioReal" en la fila: 119, columna: 43
+Token .~ en la fila: 120, columna: 3
+Token Inventory en la fila: 122, columna: 3
+Token identificador "Producto" en la fila: 122, columna: 13
+Token : en la fila: 122, columna: 21
+Token Power en la fila: 123, columna: 5
+Token identificador "precioReal" en la fila: 123, columna: 11
+Token .~ en la fila: 124, columna: 3
+Token identificador "Producto" en la fila: 126, columna: 3
+Token identificador "p" en la fila: 126, columna: 12
+Token identificador "p" en la fila: 127, columna: 3
+Token spawn en la fila: 127, columna: 5
+Token identificador "precioReal" en la fila: 127, columna: 11
+Token = en la fila: 127, columna: 22
+Token entero 1500 en la fila: 127, columna: 24
+Token drop en la fila: 128, columna: 3
+Token string ~Ganancia de ~ en la fila: 128, columna: 8
+Token , en la fila: 128, columna: 22
+Token kill en la fila: 128, columna: 24
+Token identificador "calcularGanancia" en la fila: 128, columna: 29
+Token ( en la fila: 128, columna: 45
+Token identificador "p" en la fila: 128, columna: 46
+Token , en la fila: 128, columna: 47
+Token entero 2000 en la fila: 128, columna: 49
+Token ) en la fila: 128, columna: 53
+Token Power en la fila: 130, columna: 3
+Token identificador "numero" en la fila: 130, columna: 9
+Token identificador "numero" en la fila: 131, columna: 3
+Token = en la fila: 131, columna: 10
+Token joystick en la fila: 131, columna: 12
+Token string ~Ingresa un numero: ~ en la fila: 131, columna: 21
+Token drop en la fila: 132, columna: 3
+Token string ~Factorial de ~ en la fila: 132, columna: 8
+Token , en la fila: 132, columna: 23
+Token identificador "numero" en la fila: 132, columna: 25
+Token , en la fila: 132, columna: 31
+Token string ~ es ~ en la fila: 132, columna: 33
+Token , en la fila: 132, columna: 39
+Token kill en la fila: 132, columna: 41
+Token identificador "factorial" en la fila: 132, columna: 46
+Token ( en la fila: 132, columna: 55
+Token identificador "numero" en la fila: 132, columna: 56
+Token ) en la fila: 132, columna: 62
+Token .~ en la fila: 133, columna: 1
