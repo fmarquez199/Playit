@@ -18,31 +18,30 @@ module Playit.Lexer (
 
 %wrapper "posn"
 
--- Conjuntos de caracteres
+-- Conjunto de caracteres
 
-$digitos = [0-9]
-$abecedario = [a-zA-Z]
-$simbolos = [\! \" \# \$ \% \& \' \( \) \* \+ \, \- \. \/ \: \; \< \= \> \? \@]
-$especial = [\[ \\ \] \^ \_ \` \{ \| \} \~ '\0' '\t' '\n' '\\' '\'' '\"' '\~' '\*']
-$validos = [$digitos $abecedario $simbolos $especial $white]
-$comentarios = [$validos ~$validos]
-$char_texto   = [$validos # [\* \~]]
+$digitos      = [0-9]
+$abecedario   = [a-zA-Z]
 $char_identificador   = [$digitos $abecedario \_ \']
-
+$char_texto   = [. # [\* \~]]
 -- Expresiones regulares
 
 -- @texto PUEDE SER CUALQUIER caracter MENOS el caracter ~ y *
 --  O PUEDE SER el caracter \*
 
-@scape        = "\\" | "\0" | "\n" | "\t" | "\~" | "\*"
+@scape        = "\\"|"\0"|"\n"|"\t"|"\~"|"\*"
 @mcaracter    = $char_texto| @scape
-@caracter     = "*" @mcaracter "*"
+@caracter     = "*"@mcaracter"*"
 @texto        = @mcaracter*
 @identificador= $abecedario $char_identificador*
 @programas    = \% $char_identificador+ \%
-@strings      = \~ @texto \~
+@strings      = "~"@texto"~"
+@comentarios  = \"\' (. # '\'\"' | \n )* \'\"
+@comentario   = "@" .* \n
 @float        = $digitos+ \' $digitos+
 @error        = .
+
+-- Tokens admitidos por el lenguaje
 
 tokens :-
 
@@ -140,10 +139,10 @@ tokens :-
   
   -- Comentarios
 
-  \"\' [$comentarios $white]* \'\"  { tok (\p s -> TkCMV p (init s)) }
-  \@ [$comentarios # \n]* \n        { tok (\p s -> TkCM1 p (init s)) }
-
-  -- Caracteres invalidos
+  @comentarios         { tok (\p s -> TkCMV p (init s)) }
+  @comentario          { tok (\p s -> TkCM1 p (init s)) }
+  
+  -- Caracteres erroneos
 
   @error               { tok (\p s -> TkERR p s) }
 

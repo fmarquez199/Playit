@@ -1,0 +1,8 @@
+~ esto es un String ~
+"' esto es un comentario
+ de varias lineas *******
+'"
+*\n*
+~\**~
+
+: @Comentario

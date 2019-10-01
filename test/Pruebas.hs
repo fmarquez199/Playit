@@ -36,36 +36,14 @@ import Test.HUnit
 import Test.Framework
 import Test.Framework.Providers.HUnit
 import Data.Monoid
-import Control.Monad
 import Data.Strings (strEndsWith,strBreak)
 import System.Environment
 import System.IO
-import System.Directory
 import System.IO.Error
 import Control.Exception
-import Playit.Lexer
 import Control.Monad (forM)
-import System.FilePath ((</>))
-
-
-
-{-
- *
- * getRecursiveContents: Dada la ruta a una carpeta , obtiene todas los archivos
- * de la carpeta y sus sub-carpetas recursivamente.
- * Dato "/" regresa ["/test.game","test2.out","/docs/test.txt"]
- -}
-getRecursiveContents :: FilePath -> IO [FilePath]
-getRecursiveContents topdir = do
-  names <- getDirectoryContents topdir
-  let properNames = filter (`notElem` [".", ".."]) names
-  paths <- forM properNames $ \name -> do
-    let path = topdir </> name
-    isDirectory <- doesDirectoryExist path
-    if isDirectory
-      then getRecursiveContents path
-      else return [path]
-  return (concat paths)
+import Playit.Lexer
+import Util(getRecursiveContents)
 
 main :: IO ()
 main = do
