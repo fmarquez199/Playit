@@ -26,7 +26,7 @@ $simbolos = [\! \" \# \$ \% \& \' \( \) \* \+ \, \- \. \/ \: \; \< \= \> \? \@]
 $especial = [\[ \\ \] \^ \_ \` \{ \| \} \~ '\0' '\t' '\n' '\\' '\'' '\"' '\~' '\*']
 $validos = [$digitos $abecedario $simbolos $especial $white]
 $comentarios = [$validos ~$validos]
-$char_texto   = [$validos # [\* \~]]
+$char_texto   = [$validos # [\* \~ \\]]
 $char_identificador   = [$digitos $abecedario \_ \']
 
 -- Expresiones regulares
