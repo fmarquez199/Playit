@@ -19,22 +19,23 @@ $digitos      = [0-9]
 $abecedario   = [a-zA-Z]
 $simbolos     = [\+ \- \* \/ \% \# \! \< \> \( \) \' \{ \} \, \: \| \=]
 $especiales   = [0 t n \* \~ \\]
-$caracteres   = [$digitos $abecedario \_ \']
-$ascii        = [ [\x00-\x10ffff] # [\* \~] ]
+$validos      = [$digitos $abecedario $simbolos $especiales]
+$char_id      = [$digitos $abecedario \_ \']
+$char_texto   = [ $validos # [\* \~] ]
 
 -- Expresiones regulares
 
 -- @texto PUEDE SER CUALQUIER caracter MENOS el caracter ~ y *
 --  O PUEDE SER el caracter \*
 
-@texto        = ([. # [\* \~]] | \*)*
-@variables    = $abecedario $caracteres*
-@programas    = \% $caracteres+ \%
 @scape        = '\\'  $especiales
-@caracter     = "*"."*" | @scape
+@texto        = $char_texto* | @scape
+@variables    = $abecedario $char_id*
+@programas    = \% $char_id+ \%
+@caracter     = \*.{1}\* | \* @scape \*
 @strings      = \~ @texto \~
-@comentarios  = "~*" $ascii* "*~"
-@comentario   = "@" .* \n
+@comentarios  = "~*" ([^[\*]] | [\r\n] | (\** ([^[\*\~]] | [\r\n]) ))* \*+\~
+@comentario   = "@" .*
 @float        = $digitos+ \' $digitos+
 @error        = .
 
@@ -73,6 +74,7 @@ tokens :-
   summon               { tok (\p s -> TkSMN p s) }
   unlock               { tok (\p s -> TkNLK p s) }
   world                { tok (\p s -> TkWRL p s) }
+  of                   { tok (\p s -> TkOFK p s) }
 
   -- Literales booleanos
   
@@ -153,6 +155,7 @@ pos (AlexPn _ f c) = " en la fila: " ++ (show f) ++ ", columna: " ++ (show c)
 data Token = TkWRL AlexPosn String
            | TkRNE AlexPosn String
            | TkLOS AlexPosn String
+           | TkOFK AlexPosn String
            | TkBTN AlexPosn String
            | TkWIN AlexPosn String
            | TkBTL AlexPosn String
@@ -228,79 +231,80 @@ data Token = TkWRL AlexPosn String
            deriving (Eq)
 
 instance Show Token where
-    show (TkWRL p s) = "Token " ++ s ++ (pos p) -- world
-    show (TkBTN p s) = "Token " ++ s ++ (pos p) -- Button
-    show (TkRNE p s) = "Token " ++ s ++ (pos p) -- rune
-    show (TkLOS p s) = "Token " ++ s ++ (pos p) -- Lose
-    show (TkWIN p s) = "Token " ++ s ++ (pos p) -- Win
-    show (TkBTL p s) = "Token " ++ s ++ (pos p) -- Battle
-    show (TkPWR p s) = "Token " ++ s ++ (pos p) -- Power
-    show (TkSKL p s) = "Token " ++ s ++ (pos p) -- Skill
-    show (TkRNS p s) = "Token " ++ s ++ (pos p) -- Runes
-    show (TkKIT p s) = "Token " ++ s ++ (pos p) -- Kit
-    show (TkINV p s) = "Token " ++ s ++ (pos p) -- Inventory
-    show (TkITM p s) = "Token " ++ s ++ (pos p) -- Items
-    show (TkSMN p s) = "Token " ++ s ++ (pos p) -- summon
-    show (TkFRE p s) = "Token " ++ s ++ (pos p) -- free
-    show (TkDTZ p s) = "Token " ++ s ++ (pos p) -- DeathZone
-    show (TkJST p s) = "Token " ++ s ++ (pos p) -- joystick
-    show (TkDRP p s) = "Token " ++ s ++ (pos p) -- drop
-    show (TkNPR p s) = "Token " ++ s ++ (pos p) -- notPressed
-    show (TkCTR p s) = "Token " ++ s ++ (pos p) -- controller
-    show (TkIN p s)  = "Token " ++ s ++ (pos p) -- <-
-    show (TkTO p s)  = "Token " ++ s ++ (pos p) -- ->
-    show (TkPLY p s) = "Token " ++ s ++ (pos p) -- play
-    show (TkLCK p s) = "Token " ++ s ++ (pos p) -- lock
-    show (TkNLK p s) = "Token " ++ s ++ (pos p) -- unlock
-    show (TkSPW p s) = "Token " ++ s ++ (pos p) -- spawn
-    show (TkGMO p s) = "Token " ++ s ++ (pos p) -- gameOver
-    show (TkKPP p s) = "Token " ++ s ++ (pos p) -- keepPlaying
-    show (TkKLL p s) = "Token " ++ s ++ (pos p) -- kill
-    show (TkMST p s) = "Token " ++ s ++ (pos p) -- monster
-    show (TkBSS p s) = "Token " ++ s ++ (pos p) -- boss
-    show (TkNMB p s) = "Token nombre programa " ++ s ++ (pos p) -- Nombre programa
-    show (TkIDF p s) = "Token identificador \"" ++ s ++ "\"" ++ (pos p) -- Id
-    show (TkCHA p s) = "Token caracter " ++ s ++ (pos p) -- carácter
-    show (TkSTG p s) = "Token string " ++ s ++ (pos p) -- String
-    show (TkINT p s) = "Token entero " ++ s ++ (pos p) -- Entero
-    show (TkFLT p s) = "Token flotante " ++ s ++ (pos p) -- Flotante
-    show (TkIDV p s) = "Token " ++ s ++ (pos p) -- //
-    show (TkLOR p s) = "Token " ++ s ++ (pos p) -- ||
-    show (TkAND p s) = "Token " ++ s ++ (pos p) -- &&
-    show (TkLET p s) = "Token " ++ s ++ (pos p) -- <=
-    show (TkEQL p s) = "Token " ++ s ++ (pos p) -- ==
-    show (TkNEQ p s) = "Token " ++ s ++ (pos p) -- !=
-    show (TkGET p s) = "Token " ++ s ++ (pos p) -- >=
-    show (TkLSA p s) = "Token " ++ s ++ (pos p) -- <<
-    show (TkLSC p s) = "Token " ++ s ++ (pos p) -- >>
-    show (TkINC p s) = "Token " ++ s ++ (pos p) -- ++
-    show (TkDEC p s) = "Token " ++ s ++ (pos p) -- --
-    show (TkSUM p s) = "Token " ++ s ++ (pos p) -- +
-    show (TkMIN p s) = "Token " ++ s ++ (pos p) -- -
-    show (TkTMS p s) = "Token " ++ s ++ (pos p) -- *
-    show (TkDVD p s) = "Token " ++ s ++ (pos p) -- /
-    show (TkMOD p s) = "Token " ++ s ++ (pos p) -- %
-    show (TkLEN p s) = "Token " ++ s ++ (pos p) -- #
-    show (TkREF p s) = "Token " ++ s ++ (pos p) -- ?
-    show (TkEXC p s) = "Token " ++ s ++ (pos p) -- !
-    show (TkLTH p s) = "Token " ++ s ++ (pos p) -- <
-    show (TkGTH p s) = "Token " ++ s ++ (pos p) -- >
-    show (TkAPT p s) = "Token " ++ s ++ (pos p) -- puff
-    show (TkPRA p s) = "Token " ++ s ++ (pos p) -- (
-    show (TkPRC p s) = "Token " ++ s ++ (pos p) -- )
-    show (TkCRA p s) = "Token " ++ s ++ (pos p) -- [
-    show (TkCRC p s) = "Token " ++ s ++ (pos p) -- ]
-    show (TkLLA p s) = "Token " ++ s ++ (pos p) -- {
-    show (TkLLC p s) = "Token " ++ s ++ (pos p) -- }
-    show (TkCOM p s) = "Token " ++ s ++ (pos p) -- ,
-    show (TkCMS p s) = "Token " ++ s ++ (pos p) -- " ' "
-    show (TkDSP p s) = "Token " ++ s ++ (pos p) -- :
-    show (TkCON p s) = "Token " ++ s ++ (pos p) -- |
-    show (TkASG p s) = "Token " ++ s ++ (pos p) -- =
-    show (TkCMV p s) = "Comentario varias lineas" ++ (pos p) -- ~* whatever *~
-    show (TkCM1 p s) = "Comentario una linea" ++ (pos p) -- @ whatever
-    show (TkFIN p s) = "Token " ++ s ++ (pos p) -- .~
-    show (TkARA p s) = "Token " ++ s ++ (pos p) -- "|}"
-    show (TkARC p s) = "Token " ++ s ++ (pos p) -- "{|"
-    show (TkERR p s) = "Error, caracter inesperado " ++ s ++ (pos p) -- Error
+    show (TkWRL p s) = "Token " ++ s ++ (pos p) ++ "\n" -- world
+    show (TkOFK p s) = "Token " ++ s ++ (pos p) ++ "\n" -- of
+    show (TkBTN p s) = "Token " ++ s ++ (pos p) ++ "\n" -- Button
+    show (TkRNE p s) = "Token " ++ s ++ (pos p) ++ "\n" -- rune
+    show (TkLOS p s) = "Token " ++ s ++ (pos p) ++ "\n" -- Lose
+    show (TkWIN p s) = "Token " ++ s ++ (pos p) ++ "\n" -- Win
+    show (TkBTL p s) = "Token " ++ s ++ (pos p) ++ "\n" -- Battle
+    show (TkPWR p s) = "Token " ++ s ++ (pos p) ++ "\n" -- Power
+    show (TkSKL p s) = "Token " ++ s ++ (pos p) ++ "\n" -- Skill
+    show (TkRNS p s) = "Token " ++ s ++ (pos p) ++ "\n" -- Runes
+    show (TkKIT p s) = "Token " ++ s ++ (pos p) ++ "\n" -- Kit
+    show (TkINV p s) = "Token " ++ s ++ (pos p) ++ "\n" -- Inventory
+    show (TkITM p s) = "Token " ++ s ++ (pos p) ++ "\n" -- Items
+    show (TkSMN p s) = "Token " ++ s ++ (pos p) ++ "\n" -- summon
+    show (TkFRE p s) = "Token " ++ s ++ (pos p) ++ "\n" -- free
+    show (TkDTZ p s) = "Token " ++ s ++ (pos p) ++ "\n" -- DeathZone
+    show (TkJST p s) = "Token " ++ s ++ (pos p) ++ "\n" -- joystick
+    show (TkDRP p s) = "Token " ++ s ++ (pos p) ++ "\n" -- drop
+    show (TkNPR p s) = "Token " ++ s ++ (pos p) ++ "\n" -- notPressed
+    show (TkCTR p s) = "Token " ++ s ++ (pos p) ++ "\n" -- controller
+    show (TkIN p s)  = "Token " ++ s ++ (pos p) ++ "\n" -- <-
+    show (TkTO p s)  = "Token " ++ s ++ (pos p) ++ "\n" -- ->
+    show (TkPLY p s) = "Token " ++ s ++ (pos p) ++ "\n" -- play
+    show (TkLCK p s) = "Token " ++ s ++ (pos p) ++ "\n" -- lock
+    show (TkNLK p s) = "Token " ++ s ++ (pos p) ++ "\n" -- unlock
+    show (TkSPW p s) = "Token " ++ s ++ (pos p) ++ "\n" -- spawn
+    show (TkGMO p s) = "Token " ++ s ++ (pos p) ++ "\n" -- gameOver
+    show (TkKPP p s) = "Token " ++ s ++ (pos p) ++ "\n" -- keepPlaying
+    show (TkKLL p s) = "Token " ++ s ++ (pos p) ++ "\n" -- kill
+    show (TkMST p s) = "Token " ++ s ++ (pos p) ++ "\n" -- monster
+    show (TkBSS p s) = "Token " ++ s ++ (pos p) ++ "\n" -- boss
+    show (TkNMB p s) = "Token nombre programa " ++ s ++ (pos p) ++ "\n" -- Nombre programa
+    show (TkIDF p s) = "Token identificador \"" ++ s ++ "\"" ++ (pos p) ++ "\n" -- Id
+    show (TkCHA p s) = "Token caracter " ++ s ++ (pos p) ++ "\n" -- carácter
+    show (TkSTG p s) = "Token string " ++ s ++ (pos p) ++ "\n" -- String
+    show (TkINT p s) = "Token entero " ++ s ++ (pos p) ++ "\n" -- Entero
+    show (TkFLT p s) = "Token flotante " ++ s ++ (pos p) ++ "\n" -- Flotante
+    show (TkIDV p s) = "Token " ++ s ++ (pos p) ++ "\n" -- //
+    show (TkLOR p s) = "Token " ++ s ++ (pos p) ++ "\n" -- ||
+    show (TkAND p s) = "Token " ++ s ++ (pos p) ++ "\n" -- &&
+    show (TkLET p s) = "Token " ++ s ++ (pos p) ++ "\n" -- <=
+    show (TkEQL p s) = "Token " ++ s ++ (pos p) ++ "\n" -- ==
+    show (TkNEQ p s) = "Token " ++ s ++ (pos p) ++ "\n" -- !=
+    show (TkGET p s) = "Token " ++ s ++ (pos p) ++ "\n" -- >=
+    show (TkLSA p s) = "Token " ++ s ++ (pos p) ++ "\n" -- <<
+    show (TkLSC p s) = "Token " ++ s ++ (pos p) ++ "\n" -- >>
+    show (TkINC p s) = "Token " ++ s ++ (pos p) ++ "\n" -- ++
+    show (TkDEC p s) = "Token " ++ s ++ (pos p) ++ "\n" -- --
+    show (TkSUM p s) = "Token " ++ s ++ (pos p) ++ "\n" -- +
+    show (TkMIN p s) = "Token " ++ s ++ (pos p) ++ "\n" -- -
+    show (TkTMS p s) = "Token " ++ s ++ (pos p) ++ "\n" -- *
+    show (TkDVD p s) = "Token " ++ s ++ (pos p) ++ "\n" -- /
+    show (TkMOD p s) = "Token " ++ s ++ (pos p) ++ "\n" -- %
+    show (TkLEN p s) = "Token " ++ s ++ (pos p) ++ "\n" -- #
+    show (TkREF p s) = "Token " ++ s ++ (pos p) ++ "\n" -- ?
+    show (TkEXC p s) = "Token " ++ s ++ (pos p) ++ "\n" -- !
+    show (TkLTH p s) = "Token " ++ s ++ (pos p) ++ "\n" -- <
+    show (TkGTH p s) = "Token " ++ s ++ (pos p) ++ "\n" -- >
+    show (TkAPT p s) = "Token " ++ s ++ (pos p) ++ "\n" -- puff
+    show (TkPRA p s) = "Token " ++ s ++ (pos p) ++ "\n" -- (
+    show (TkPRC p s) = "Token " ++ s ++ (pos p) ++ "\n" -- )
+    show (TkCRA p s) = "Token " ++ s ++ (pos p) ++ "\n" -- [
+    show (TkCRC p s) = "Token " ++ s ++ (pos p) ++ "\n" -- ]
+    show (TkLLA p s) = "Token " ++ s ++ (pos p) ++ "\n" -- {
+    show (TkLLC p s) = "Token " ++ s ++ (pos p) ++ "\n" -- }
+    show (TkCOM p s) = "Token " ++ s ++ (pos p) ++ "\n" -- ,
+    show (TkCMS p s) = "Token " ++ s ++ (pos p) ++ "\n" -- " ' "
+    show (TkDSP p s) = "Token " ++ s ++ (pos p) ++ "\n" -- :
+    show (TkCON p s) = "Token " ++ s ++ (pos p) ++ "\n" -- |
+    show (TkASG p s) = "Token " ++ s ++ (pos p) ++ "\n" -- =
+    show (TkCMV p s) = "Comentario varias lineas" ++ (pos p) ++ "\n" -- ~* whatever *~
+    show (TkCM1 p s) = "Comentario una linea" ++ (pos p) ++ "\n" -- @ whatever
+    show (TkFIN p s) = "Token " ++ s ++ (pos p) ++ "\n" -- .~
+    show (TkARA p s) = "Token " ++ s ++ (pos p) ++ "\n" -- "|}"
+    show (TkARC p s) = "Token " ++ s ++ (pos p) ++ "\n" -- "{|"
+    show (TkERR p s) = "Error, caracter inesperado " ++ s ++ (pos p) ++ "\n" -- Error
 }
