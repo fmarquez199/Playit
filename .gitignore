@@ -1,0 +1,4 @@
+.stack-work/
+Playit.cabal
+*~
+*.yaml.lock
