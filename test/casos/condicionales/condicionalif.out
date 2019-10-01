@@ -1,0 +1,65 @@
+Token world en la fila: 1, columna: 1
+Token nombre programa %HolaMundo% en la fila: 1, columna: 7
+Token : en la fila: 1, columna: 18
+Token Button en la fila: 3, columna: 5
+Token identificador "edad" en la fila: 3, columna: 12
+Token = en la fila: 3, columna: 17
+Token entero 18 en la fila: 3, columna: 19
+Token Battle en la fila: 5, columna: 5
+Token identificador "puedeConducir" en la fila: 5, columna: 12
+Token Button en la fila: 6, columna: 5
+Token : en la fila: 6, columna: 11
+Token | en la fila: 7, columna: 5
+Token identificador "edad" en la fila: 7, columna: 7
+Token >= en la fila: 7, columna: 12
+Token entero 18 en la fila: 7, columna: 15
+Token } en la fila: 7, columna: 17
+Token identificador "puedeConducir" en la fila: 8, columna: 7
+Token = en la fila: 8, columna: 21
+Token Win en la fila: 8, columna: 23
+Token .~ en la fila: 9, columna: 5
+Token Button en la fila: 11, columna: 5
+Token : en la fila: 11, columna: 11
+Token | en la fila: 12, columna: 5
+Token identificador "edad" en la fila: 12, columna: 7
+Token >= en la fila: 12, columna: 12
+Token entero 18 en la fila: 12, columna: 15
+Token } en la fila: 12, columna: 17
+Token identificador "puedeConducir" en la fila: 13, columna: 7
+Token = en la fila: 13, columna: 21
+Token Win en la fila: 13, columna: 23
+Token | en la fila: 14, columna: 5
+Token identificador "edad" en la fila: 14, columna: 7
+Token >= en la fila: 14, columna: 12
+Token entero 18 en la fila: 14, columna: 15
+Token } en la fila: 14, columna: 17
+Token identificador "puedeConducir" en la fila: 15, columna: 7
+Token = en la fila: 15, columna: 21
+Token Win en la fila: 15, columna: 23
+Token .~ en la fila: 16, columna: 5
+Token Button en la fila: 18, columna: 5
+Token : en la fila: 18, columna: 11
+Token | en la fila: 19, columna: 5
+Token identificador "edad" en la fila: 19, columna: 7
+Token >= en la fila: 19, columna: 12
+Token entero 18 en la fila: 19, columna: 15
+Token } en la fila: 19, columna: 17
+Token identificador "puedeConducir" en la fila: 20, columna: 7
+Token = en la fila: 20, columna: 21
+Token Win en la fila: 20, columna: 23
+Token | en la fila: 21, columna: 5
+Token identificador "edad" en la fila: 21, columna: 7
+Token >= en la fila: 21, columna: 12
+Token entero 18 en la fila: 21, columna: 15
+Token } en la fila: 21, columna: 17
+Token identificador "puedeConducir" en la fila: 22, columna: 7
+Token = en la fila: 22, columna: 21
+Token Win en la fila: 22, columna: 23
+Token | en la fila: 23, columna: 5
+Token notPressed en la fila: 23, columna: 7
+Token } en la fila: 23, columna: 17
+Token identificador "puedeConducir" en la fila: 24, columna: 7
+Token = en la fila: 24, columna: 21
+Token Win en la fila: 24, columna: 23
+Token .~ en la fila: 25, columna: 5
+Token .~ en la fila: 26, columna: 1

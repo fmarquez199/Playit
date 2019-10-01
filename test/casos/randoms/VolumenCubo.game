@@ -1,5 +1,5 @@
 world %VolumenCubo%:
-  ~* Calcula el volumen de un Cubo *~
+  "' Calcula el volumen de un Cubo '"
   Skill arista, volumen
   
   arista = joystick ~Introduzca arista: ~

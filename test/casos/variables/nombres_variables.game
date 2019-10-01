@@ -1,0 +1,42 @@
+@No empieza con números.
+@Puede poseer carácteres A hasta la Z en mayúscula o minúscula.
+@No incluye el carácter ñ ni carácteres acentuados.
+@Puede poseer números del 0 al 9.
+@Puede poseer los carácteres especiales _ y '.
+@No posee espacios.
+@No corresponde a ninguna palabra reservada de Playit.
+
+
+a0123456789
+a91248619906153209213
+ahga672ghas61mklas01an18
+Ahs7sad2daDs128sd'd621Das1
+a_b'c_d'e_f'g_h'i_j'k_l'm_n'opqrstuvwxyz0123456789ABCDFGHIJKLMNOPQRSTUVWXYZ_'
+world
+Win
+Lose
+Battle
+Lose
+Power
+Rune
+Skill
+Kit
+of
+Inventory
+spawn
+drop
+Items
+kill
+puff
+summon
+free
+joystick
+Button
+controller
+lock
+play
+gameOver
+keepPlaying
+monster
+boss
+unlock

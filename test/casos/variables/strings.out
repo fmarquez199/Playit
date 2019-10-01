@@ -37,11 +37,11 @@ Token {| en la fila: 5, columna: 40
 Token Runes en la fila: 6, columna: 1
 Token identificador "s4" en la fila: 6, columna: 7
 Token = en la fila: 6, columna: 10
-Token string ~Hola2ñ\n~ en la fila: 6, columna: 12
+Token string ~Hola2\n~ en la fila: 6, columna: 12
 Token Runes en la fila: 7, columna: 1
 Token identificador "s5" en la fila: 7, columna: 7
 Token = en la fila: 7, columna: 10
-Token string ~¡Hey!, ¿Cómo estas?~ en la fila: 7, columna: 12
+Token string ~Hey!, Como estas?~ en la fila: 7, columna: 12
 Token Power en la fila: 10, columna: 1
 Token identificador "length" en la fila: 10, columna: 7
 Token = en la fila: 10, columna: 14
