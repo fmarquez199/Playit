@@ -20,29 +20,31 @@ module Playit.Lexer (
 
 -- Conjuntos de caracteres
 
-$digitos = [0-9]
-$abecedario = [a-zA-Z]
-$simbolos = [\! \" \# \$ \% \& \' \( \) \* \+ \, \- \. \/ \: \; \< \= \> \? \@]
-$especial = [\[ \\ \] \^ \_ \` \{ \| \} \~ '\0' '\t' '\n' '\\' '\'' '\"' '\~' '\*']
-$validos = [$digitos $abecedario $simbolos $especial $white]
-$comentarios = [$validos ~$validos]
-$char_texto   = [$validos # [\* \~ \\]]
-$char_identificador   = [$digitos $abecedario \_ \']
+$digitos        = [0-9]
+$abecedario     = [a-zA-Z]
+$simbolos       = [\! \" \# \$ \% \& \' \( \) \* \+ \, \- \. \/ \: \; \< \= \> \? \@]
+$especial       = [\[ \\ \] \^ \_ \` \{ \| \} \~ '\0' '\t' '\n' '\\' '\'' '\"' '\~' '\*']
+$validos        = [$digitos $abecedario $simbolos $especial $white]
+$comentarios    = [$validos ~$validos]
+$char_texto     = [$validos # [\* \~ \\]]   -- arreglar
+$char_id        = [$digitos $abecedario \_ \']
 
 -- Expresiones regulares
 
 -- @texto PUEDE SER CUALQUIER caracter MENOS el caracter ~ y *
 --  O PUEDE SER el caracter \*
 
-@scape        = "\\" | "\0" | "\n" | "\t" | "\~" | "\*"
-@mcaracter    = $char_texto| @scape
-@caracter     = "*" @mcaracter "*"
-@texto        = @mcaracter*
-@identificador= $abecedario $char_identificador*
-@programas    = \% $char_identificador+ \%
-@strings      = \~ @texto \~
-@float        = $digitos+ \' $digitos+
-@error        = .
+@scape          = "\\" | "\0" | "\n" | "\t" | "\~" | "\*"
+@mcaracter      = $char_texto | @scape
+@caracter       = "*" @mcaracter "*"
+@texto          = @mcaracter*
+@identificador  = $abecedario $char_id*
+@programas      = \% $char_id+ \%
+@strings        = \~ @texto \~
+@float          = $digitos+ \' $digitos+
+@comments       = \"\' [$comentarios $white]* \'\"
+@comment        = \@ [$comentarios # \n]* \n 
+@error          = .
 
 tokens :-
 
@@ -77,7 +79,7 @@ tokens :-
   summon               { tok (\p s -> TkSMN p s) }
   unlock               { tok (\p s -> TkNLK p s) }
   world                { tok (\p s -> TkWRL p s) }
-  "of"                 { tok (\p s -> TkOFK p s) }
+  of                   { tok (\p s -> TkOFK p s) }
 
   -- Literales booleanos
   
@@ -86,8 +88,8 @@ tokens :-
 
   -- Identificadores
 
-  @programas          { tok (\p s -> TkNMB p s) }
-  @identificador          { tok (\p s -> TkIDF p s) }
+  @programas           { tok (\p s -> TkNMB p s) }
+  @identificador       { tok (\p s -> TkIDF p s) }
 
   -- Caracteres
 
@@ -140,8 +142,8 @@ tokens :-
   
   -- Comentarios
 
-  \"\' [$comentarios $white]* \'\"  { tok (\p s -> TkCMV p (init s)) }
-  \@ [$comentarios # \n]* \n        { tok (\p s -> TkCM1 p (init s)) }
+  @comments            { tok (\p s -> TkCMV p (init s)) }
+  @comment             { tok (\p s -> TkCM1 p (init s)) }
 
   -- Caracteres invalidos
 
