@@ -6,7 +6,6 @@
  *  Manuel Gonzalez     11-10390
  *  Francisco Javier    12-11163
  *  Natascha Gamboa     12-11250
- 
 -}
 
 module Playit.Lexer (
@@ -139,6 +138,8 @@ tokens :-
   ":"                  { tok (\p s -> TkDSP p s) }
   "|"                  { tok (\p s -> TkCON p s) }
   "="                  { tok (\p s -> TkASG p s) }
+  "^"                  { tok (\p s -> TkUPP p s) }
+  "."                  { tok (\p s -> TkLOW p s) }
   
   -- Comentarios
 
@@ -225,6 +226,8 @@ data Token = TkWRL AlexPosn String
            | TkDSP AlexPosn String
            | TkCON AlexPosn String
            | TkASG AlexPosn String
+           | TkUPP AlexPosn String
+           | TkLOW AlexPosn String
            | TkCMV AlexPosn String
            | TkCM1 AlexPosn String
            | TkFIN AlexPosn String
@@ -303,6 +306,8 @@ instance Show Token where
     show (TkDSP p s) = "Token " ++ s ++ (pos p) -- :
     show (TkCON p s) = "Token " ++ s ++ (pos p) -- |
     show (TkASG p s) = "Token " ++ s ++ (pos p) -- =
+    show (TkUPP p s) = "Token " ++ s ++ (pos p) -- ^
+    show (TkLOW p s) = "Token " ++ s ++ (pos p) -- .
     show (TkCMV p s) = "Comentario varias lineas" ++ (pos p) -- ~* whatever *~
     show (TkCM1 p s) = "Comentario una linea" ++ (pos p) -- @ whatever
     show (TkFIN p s) = "Token " ++ s ++ (pos p) -- .~
