@@ -54,9 +54,9 @@ Un archivo de código fuente en Playit debe tener la extensión `.game` para ser
 
 ---
 ---
-## **Tipos de datos. Escalares.**
+# **Tipos de datos. Escalares.**
 
-### **Caracteres.**
+## **Caracteres.**
 
 Son datos de **8 bit (1 B)** en memoria y se caracterizan por ser un carácter
 *ASCII* encerrado entre asteriscos (`**`). Su palabra reservada es **`Rune`**, y su valor por defecto es `*\0*`.
@@ -72,7 +72,7 @@ backslash (`\`):
 * `*\**` (asterisco).
 
 ---
-### **Booleanos.**
+## **Booleanos.**
 
 Son datos de **8 bit (1 B)** en memoria cuyos valores son **`Win`** y **`Lose`**. Su palabra reservada es **`Battle`**, y su valor por defecto es `Lose`.
 
@@ -80,7 +80,7 @@ Nota: `Lose` corresponde en memoria a los ocho bit en 0 y `Win` a cualquier otra
 combinación.
 
 ---
-### **Enteros.**
+## **Enteros.**
 
 Son datos de **32 bit (4 B)** en memoria que pueden ser cualquier cadena no vacía
 de números de la base decimal. Su representación es **complemento a 2**, por lo
@@ -100,7 +100,7 @@ precedida por una cantidad no nula de `0`, es decir, son enteros:
 ```
 
 ---
-### **Números de punto flotante.**
+## **Números de punto flotante.**
 
 Son datos de **64 bit (8 B)** en memoria representados según el estándar **IEEE
 754 de precisión doble**. Se construyen como:
@@ -111,9 +111,9 @@ Su palabra reservada es **`Skill`** y su valor por defecto es  `0'0`.
 
 ---
 ---
-## **Tipos de datos. Compuestos.**
+# **Tipos de datos. Compuestos.**
 
-### **Strings.**
+## **Strings.**
 
 Son arreglos de caracteres, es decir que admiten la
 representación de arreglo y de cadena de caracteres, encerrados entre virgulillas
@@ -128,7 +128,7 @@ ser declarados como `Runes` serán inicializados con la cadena vacía `~~` por
 defecto.
 
 ---
-### **Arreglos.**
+## **Arreglos.**
 
 Es una estructura de datos homogénea de cualquier tipo escalar que se
 encuentran ubicados de forma consecutiva en memoria, se admiten arreglos
@@ -156,7 +156,7 @@ La inicialización por defecto de los arreglos en Playit se hace inicializando
 cada posición del arreglo en el valor por defecto del tipo dado.
 
 ---
-### **Listas.**
+## **Listas.**
 
 Es una estructura de datos heterogénea de cualquier tipo escalar que se
 encuentran ubicadas, no necesariamente de forma consecutiva, en memoria, se
@@ -169,7 +169,7 @@ Se declaran de la siguiente manera:
 Para acceder a un elemento de la lista se utiliza el operador de indexación **`|}{|`** y su inicialización por defecto es la lista vacía **`<<>>`**.
 
 ---
-### **Registros.**
+## **Registros.**
 
 La palabra reservada para definirlos es **`Inventory`** y su sintaxis es de la forma:
 
@@ -204,7 +204,7 @@ r spawn tip = *c*
 ```
 
 ---
-### **Registros variantes.**
+## **Registros variantes.**
 
 La palabra reservada para definirlos es **`Items`** y su sintaxis es de la forma:
 
@@ -252,7 +252,7 @@ sh spawn c spawn radius = 15
 ```
 
 ---
-### **Apuntadores.**
+## **Apuntadores.**
 
 Son un tipo de dato especial que guarda el elemento en memoria dinámica (heap)
 de forma referencial. En memoria son una palabra del procesador. Su sintaxis
@@ -260,13 +260,16 @@ es:
 
 **`<tipo al que apunta> puff <nombre>`**.
 
-Se declaran con la palabra reservada **`summon`** y se inicializan por defecto apuntando a un espacio vacío en memoria con **`DeathZone`**, para liberar su espacio en memoria se usa **`free`**, **`free|}{|`** para arreglos y **`free<<>>`** para listas, y se les asigna `DeathZone`.
+Se declaran con la palabra reservada **`summon`** y se inicializan por defecto 
+apuntando a un espacio vacío en memoria con **`DeathZone`**, para liberar su 
+espacio en memoria se usa **`free`**, **`free|}{|`** para arreglos y **`free<<>>`** 
+para listas, y se les asigna `DeathZone`.
 
 ---
 ---
-## **Instrucciones.**
+# **Instrucciones.**
 
-### **Asignación.**
+## **Asignación.**
 
 La asignación se realiza mediante el operador **`=`**. Puede realizarse al momento
 de declarar una variable o posterior a su declaración. Dos variables pueden
@@ -279,7 +282,7 @@ de varias variables en la misma línea es:
 <tipo2> <identificadorA> = <Expresión de tipo2>, <identificadorB> = <Expresión de tipo2> ...
 ```
 
-#### Asignaciones especiales: Incremento (`++`) y Decremento (`--`).
+### **Asignaciones especiales: Incremento (`++`) y Decremento (`--`)**.
 
 Son asignaciones que funcionan exclusivamente sobre variables de tipo entero y
 funcionan como operadores sufijos/postfijos:
@@ -288,7 +291,7 @@ funcionan como operadores sufijos/postfijos:
 * Decremento (**`--`**): Disminuye el valor de la variable en 1.
 
 ---
-### **Identificadores de variables.**
+## **Identificadores de variables.**
 
 Un identificador válido para una variable en un programa de **Playit** cumple con
 las siguientes condiciones:
@@ -307,23 +310,24 @@ Siendo así, son ***nombres válidos***: `test1`, `yes_we_can`, `maybe'not`. Y s
 Se diferencian mayúsculas de minúsculas así, `test1`, `tEst1` son
 identificadores diferentes.
 
-#### Declaración e inicialización de variables.
+### **Declaración e inicialización de variables.**
 
 Se permite la declaración de variables sin previa inicialización. Si la
-variable es de tipo escalar o puntero será inicializada con los valores por defecto descritos para cada tipo escalar.
+variable es de tipo escalar o puntero será inicializada con los valores por 
+defecto descritos para cada tipo escalar.
 
 ---
-### **Condicional.**
+## **Condicional.**
 
 Ver sección **Estructuras de Control de Flujo. Selección**.
 
 ---
-### **Repetición.**
+## **Repetición.**
 
 Ver sección **Estructuras de Control de Flujo. Repetición**.
 
 ---
-### **Entrada/Salida.**
+## **Entrada/Salida.**
 
 Las operaciones de entrada/salida serán realizadas con las instrucciones
 **`joystick`** y **`drop`** como se sigue:
@@ -357,20 +361,20 @@ En **Playit** existen las siguientes funciones útiles:
 * `portalRunesToSkill`: Recibe un `Runes` y regresa un `Skill`.
 
 ---
-### **Evaluación condicional (`?:`).**
+## **Evaluación condicional (`?:`).**
 
 Es una expresión de la forma:
 
 **`<Expresión Booleana> ? <Función Caso Win> : <Funcion Caso Lose>`**
 
-Es una expresión que evalúa y regresa el resultado de `<Función Caso Win>` o  `<Función Caso Lose>`
-dependiendo de si `<Expresión Booleana>` evalúa `Win` o `Lose`. 
+Es una expresión que evalúa y regresa el resultado de `<Función Caso Win>` o 
+`<Función Caso Lose>` dependiendo de si `<Expresión Booleana>` evalúa `Win` o `Lose`. 
 
 ---
 ---
-## **Expresiones.**
+# **Expresiones.**
 
-### **Aritméticas.**
+## **Aritméticas.**
 
 Corresponden a las expresiones que devuelven valores numéricos después de
 evaluarse. Los valores numéricos pueden ser indiferentemente enteros o punto
@@ -390,7 +394,7 @@ de la división.
 contiene.
 
 ---
-### **Booleanas.**
+## **Booleanas.**
 
 Corresponden a las expresiones que devuelven valores booleanos **`Win`** o **`Lose`**
 después de evaluarse.
@@ -419,7 +423,7 @@ Para caracteres se sigue el orden léxico normal.
 flotante. Para caracteres se sigue el orden léxico normal.
 
 ---
-### **Expresiones de Caracteres.**
+## **Expresiones de Caracteres.**
 
 Corresponden a las expresiones que devuelven un carácter después de su
 evaluación. Son aquellas en las cuales están involucrados los operadores
@@ -431,7 +435,7 @@ mayúscula.
 minúscula.
 
 ---
-### **Expresiones para Arreglos y Listas.**
+## **Expresiones para Arreglos y Listas.**
 
 Corresponden a las expresiones que devuelven un arreglo o lista después de su
 evaluación. Son aquellas en las cuales están involucrados los operadores de:
@@ -444,7 +448,7 @@ primero.
 * **Anexo (`:`):** toma un elemento cualquiera y lo agrega a la cabeza de la lista.
 
 ---
-### **Expresiones para Registros y Registros variantes.**
+## **Expresiones para Registros y Registros variantes.**
 
 Corresponden a las expresiones que involucran registros y uniones. Son
 aquellas en las cuáles está involucrado el operador de acceso **`spawn`** el cual
@@ -453,7 +457,7 @@ alguno de los campos del registro o la unión, se devuelve el valor almacenado
 en el campo.
 
 ---
-### **Expresiones para Apuntadores.**
+## **Expresiones para Apuntadores.**
 
 Corresponden a las expresiones que involucran a variables del tipo apuntador,
 el tipo apuntado y el operador de desrreferenciación **`puff`** el cual dada una
@@ -466,7 +470,7 @@ dirección del elemento apuntado.
 
 ---
 ---
-## **Bloques y Alcance de bloques.**
+# **Bloques y Alcance de bloques.**
 
 Un bloque dentro del programa está delimitado por el nombre que representa la
 instrucción y al final **`.~`**, y se obtiene al estar dentro de instrucciones
@@ -479,9 +483,9 @@ recursivamente hasta alcanzar el alcance global.
 
 ---
 ---
-## **Evaluación.**
+# **Evaluación.**
 
-### **Precedencia de los operadores.**
+## **Precedencia de los operadores.**
 
 En orden descendente, la precedencia de los operadores es:
 
@@ -496,7 +500,7 @@ En orden descendente, la precedencia de los operadores es:
 |  Apuntador |    Desreferenciación   |                        |                          |                      |
 
 ---
-### **Asociatividad de los operadores.**
+## **Asociatividad de los operadores.**
 
 |    Tipo    |                     Izquierda                    |                    Derecha                   |   No asocia  |
 | ---------- | ------------------------------------------------ | -------------------------------------------- | ------------ |
@@ -509,7 +513,7 @@ En orden descendente, la precedencia de los operadores es:
 |  Apuntador |                                                  |               Desreferenciación              |              |
 
 ---
-### **Orden de evaluación de las expresiones.**
+## **Orden de evaluación de las expresiones.**
 
 Las expresiones se evalúan de izquierda a derecha.
 
@@ -519,7 +523,8 @@ Las expresiones se evalúan de izquierda a derecha.
 
 ## **Selección.**
 
-La palabra reservada para su definición es **`Button`**, para la condición por defecto se usa **`notPressed`**. Su sintaxis es de la siguiente forma:
+La palabra reservada para su definición es **`Button`**, para la condición por 
+defecto se usa **`notPressed`**. Su sintaxis es de la siguiente forma:
 
 ```sh
 Button:
@@ -542,7 +547,8 @@ de la condición `| notPressed }` en caso de existir.
 
 ### **Determinada.**
 
-Las palabras reservadas para su definición son **`controller`** y **`[lock]`**(opcional), teniendo las siguientes sintaxis:
+Las palabras reservadas para su definición son **`controller`** y **`[lock]`**(opcional), 
+teniendo las siguientes sintaxis:
 
 ```sh
 controller <variable de iteración> = <valor inicial> -> <valor final> [lock <condición>]:
@@ -565,7 +571,8 @@ elementos sobre los cuales iterar.
 
 ### **Indeterminada.**
 
-Las palabras reservadas para su definición son **`play`** y **`lock`**, teniendo la siguiente sintaxis:
+Las palabras reservadas para su definición son **`play`** y **`lock`**, 
+teniendo la siguiente sintaxis:
 
 ```sh
 play:
@@ -573,8 +580,8 @@ play:
 lock <Expresión Booleana>
 .~
 ```
-`<Lista de Instrucciones>` se seguirá ejecutando hasta que `<Expresión Booleana>` sea `Lose`.
-
+`<Lista de Instrucciones>` se seguirá ejecutando hasta que `<Expresión Booleana>` 
+sea `Lose`.
 
 ### **Interrupción de evaluación (`gameOver`).**
 
@@ -589,33 +596,32 @@ iteración, cuando esta instrucción es alcanzada dentro de una repetición
 `play` o `controller`.
 
 ---
-## **Subrutinas.**
+---
+# **Subrutinas.**
 
-### **Funciones.**
+## **Funciones.**
 
 Las funciones se definen como estructuras de control de flujo que toman
 una cantidad arbitraria de argumentos definidos por el programador,
 pudiendo incluso no tomar argumento alguno.
 
-Las funciones toman cualquier tipo de dato y retornan un tipo de dato
-escalar (ver **Tipos de datos**). La palabra reservada para declararlas es 
-**`monster`**.
+Las funciones toman cualquier tipo de dato y retornan un tipo de dato escalar
+(ver **Tipos de datos**). La palabra reservada para declararlas es **`monster`**.
 
 Para retornar o salir de una función se utiliza **`unlock <variable o constante>`**
-donde `<variable o constante>` es del mismo tipo que el tipo de retorno de la
-función.
+donde `<variable o constante>` es del mismo tipo que el tipo de retorno de la función.
 
 Su sintaxis es de la siguiente forma:
 
 ```sh
-monster <nombre>(<tipo> <parámetro formal>, <tipo> <parámetro formal>, ..., <tipo> <parámetro formal>) <tipo>:
+monster <nombre>(<tipo> <parámetro formal>, ... , <tipo> <parámetro formal>) <tipo>:
   <Lista de instrucciones>
   unlock <variable o constante>
 .~
 ```
 
 ---
-### **Procedimientos.**
+## **Procedimientos.**
 
 Los procedimientos son funciones que siempre retornan el valor unit,
 el cual no tiene más uso que este. La palabra reservada para declararlas es 
@@ -624,12 +630,12 @@ el cual no tiene más uso que este. La palabra reservada para declararlas es
 Su sintaxis es de la siguiente forma:
 
 ```sh
-boss <nombre>(<tipo> <parámetro formal>, <tipo> <parámetro formal>, ..., <tipo> <parámetro formal>):
+boss <nombre>(<tipo> <parámetro formal>, ... , <tipo> <parámetro formal>):
   <Lista de instrucciones>
 .~
 ```
 ---
-### **Llamadas a subrutinas.**
+## **Llamadas a subrutinas.**
 
 Para realizar una llamada a una subrutina se usa la palabra reservada **`kill`**.
 
@@ -638,7 +644,7 @@ kill <nombre de la subrutina>
 ```
 
 ---
-### **Pasaje de parámetros**
+## **Pasaje de parámetros**
 
 Se admite el paso de parámetros por valor y por referencia. Se diferencia el
 pase por referencia por el signo de interrogación (**`?`**) prefijo a uno de los
@@ -647,7 +653,7 @@ parámetros. El pase por valor no requiere ninguna sintaxis adicional.
 Su sintaxis es:
 
 ```sh
-monster función(<tipo> <parámetro por valor>, <tipo> ?<parámetro por referencia>)<tipo de retorno>:
+monster función(<tipo> <parámetro por valor>, <tipo> ?<parámetro por referencia>) <tipo de retorno>:
   <Lista de instrucciones>
   unlock <variable o constante>
 .~
@@ -657,9 +663,10 @@ monster función(<tipo> <parámetro por valor>, <tipo> ?<parámetro por referenc
 espera un argumento por referencia, en este caso se pasaría el valor del puntero.
 
 ---
-### **Recursión.**
+## **Recursión.**
 
-**Playit** admite la invocación recursiva de funciones en cualquier momento de la siguiente manera:
+**Playit** admite la invocación recursiva de funciones en cualquier momento de 
+la siguiente manera:
 
 ```sh
 boss procedimiento(<Parámetros>):
@@ -706,7 +713,8 @@ Factorial de 5 es 120
 
 En **Playit** se pueden escribir comentarios de una línea o de varias líneas.
 Al escribir **`@`** se ignorarán todos los caracteres hasta el siguiente salto
-de línea. El texto escrito entre comillas dobles más comillas simples **`"'`** y **`'"`** será ignorado. Los espacios en
+de línea. El texto escrito entre comillas dobles más comillas simples **`"'`** 
+y **`'"`** será ignorado. Los espacios en
 blanco también son ignorados.
 
 ---
@@ -769,14 +777,45 @@ world %Tablas%:
 .~
 ```
 
+**Ejemplo puntero a entero**
+```sh
+Power puff p = summon Power
+puff p = 13
+free p
+```
+**Ejemplo puntero a array de enteros**
+```sh
+Power puff p = summon Power|}20{|
+puff p|}1{| = 15
+free|}{| p
+```
 
+**Ejemplo cambiar variable apuntada**
+```sh
+Power puff p = summon Power
+puff p = 15
+free p
 
+p = summon Power
+puff p = 18
+free p
+```
 
+**Ejemplo arreglos y listas**
+```sh
+Kit of Runes edades = <<~12~, ~23~, ~15~, ~40~, ~15~>>
+Runes|}5{| nombres = |}~Natascha~, ~Francisco~, ~Manuel~, ~Ricardo~, ~Haskell~{| 
 
+controller i = 0 -> 4:
+  drop ~Hola ~, nombres|}i{|, ~ tienes ~, edad|}i{|, ~ años!~
+.~
 
+Kit of Kit of Power dobles = << <<10,5>>, <<3,6>>, <<4,2>> >>
 
-
-
+controller d <- dobles:
+  drop ~Dobles: ~, d
+.~
+```
 
 ---
 ---
