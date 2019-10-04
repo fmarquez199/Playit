@@ -132,18 +132,18 @@ import Playit.Types
 
 
 -- VERIFICAR
---%nonassoc nombre
---%right "."
---%left "||"
---%left "&&"
---%nonassoc "==" "!="
---%nonassoc ">" "<" ">=" "<="
---%left "+" "-" "::"
---%left "*" "/" "//" "%"
+%nonassoc nombre
+%right "."
+%left "||"
+%left "&&"
+%nonassoc "==" "!="
+%nonassoc ">" "<" ">=" "<="
+%left "+" "-" "::"
+%left "*" "/" "//" "%"
 %right negativo "!"
---%left "++" "|}" "{|" "<<" ">>"
---%left "--"
---%right "#"
+%left "++" "|}" "{|" "<<" ">>"
+%left "--"
+%right "#"
 
 %%
 
@@ -155,8 +155,11 @@ import Playit.Types
 
 --Programa :: {}
 Programa :
-    world programa ":" Instrucciones fin {$4}
+    world programa ":" Instrucciones fin EndInstructs{[$4]}
 
+EndInstructs:
+    endInstr {}
+    | EndInstructs endInstr {}
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 --                            Declaraciones
@@ -451,6 +454,8 @@ Apuntador  :
 
 
 {
+
 parseError :: [Token] -> a
-parseError _ = error "Parse error"
+parseError h = 
+    error $ "\n\nError sintactico del parser antes de: '" ++ (show h) ++ "\n"
 }

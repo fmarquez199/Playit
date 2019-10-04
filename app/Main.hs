@@ -14,17 +14,19 @@ import System.IO
 import System.IO.Error
 import Control.Exception
 import Playit.Lexer
+import Playit.Parser (parse)
 
 main :: IO ()
 main = do
 
-  args <- getArgs                        -- Tomar argumentos de la terminal.
-  file <- openFile (head args) ReadMode  -- Leer un archivo.
+  args <- getArgs                           -- Tomar argumentos de la terminal.
+  file <- openFile (head args) ReadMode     -- Leer un archivo.
 
-  content   <- hGetContents file           -- Copia todo el contenido del archivo
+  content   <- hGetContents file            -- Copia todo el contenido del archivo
 
-  let tokens    = alexScanTokens content  -- Crea la lista de tokens.
-  let graphic   = map show tokens    -- Crea la lista de tokens imprimible.
+  let tokens    = alexScanTokens content    -- Crea la lista de tokens.
+  let tokensParser = parse tokens
+  let graphic   = map show tokensParser           -- Crea la lista de tokens imprimible.
   
   -- Se imprimen todos los tokens
   _ <- forM graphic $ \tokenln -> do
