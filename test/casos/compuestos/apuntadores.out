@@ -4,30 +4,35 @@ Token identificador "p" en la fila: 1, columna: 14
 Token = en la fila: 1, columna: 16
 Token summon en la fila: 1, columna: 18
 Token Power en la fila: 1, columna: 25
+Token End Instruction \n en la fila: 1, columna: 30
 Token Rune en la fila: 2, columna: 1
 Token puff en la fila: 2, columna: 9
 Token identificador "p" en la fila: 2, columna: 14
 Token = en la fila: 2, columna: 16
 Token summon en la fila: 2, columna: 18
 Token Rune en la fila: 2, columna: 25
+Token End Instruction \n en la fila: 2, columna: 29
 Token Runes en la fila: 3, columna: 1
 Token puff en la fila: 3, columna: 9
 Token identificador "p" en la fila: 3, columna: 14
 Token = en la fila: 3, columna: 16
 Token summon en la fila: 3, columna: 18
 Token Runes en la fila: 3, columna: 25
+Token End Instruction \n en la fila: 3, columna: 30
 Token Battle en la fila: 4, columna: 1
 Token puff en la fila: 4, columna: 9
 Token identificador "p" en la fila: 4, columna: 14
 Token = en la fila: 4, columna: 16
 Token summon en la fila: 4, columna: 18
 Token Battle en la fila: 4, columna: 25
+Token End Instruction \n en la fila: 4, columna: 31
 Token Skill en la fila: 5, columna: 1
 Token puff en la fila: 5, columna: 9
 Token identificador "p" en la fila: 5, columna: 14
 Token = en la fila: 5, columna: 16
 Token summon en la fila: 5, columna: 18
 Token Skill en la fila: 5, columna: 25
+Token End Instruction \n en la fila: 5, columna: 30
 Token Skill en la fila: 6, columna: 1
 Token puff en la fila: 6, columna: 9
 Token identificador "p" en la fila: 6, columna: 14
@@ -37,11 +42,13 @@ Token Skill en la fila: 6, columna: 25
 Token |} en la fila: 6, columna: 30
 Token entero 10 en la fila: 6, columna: 32
 Token {| en la fila: 6, columna: 34
+Token End Instruction \n en la fila: 6, columna: 36
 Token identificador "Contactopuff" en la fila: 7, columna: 1
 Token identificador "p" en la fila: 7, columna: 14
 Token = en la fila: 7, columna: 16
 Token summon en la fila: 7, columna: 18
 Token identificador "Contacto" en la fila: 7, columna: 25
+Token End Instruction \n en la fila: 7, columna: 33
 Token Kit en la fila: 8, columna: 1
 Token of en la fila: 8, columna: 5
 Token Power en la fila: 8, columna: 9
@@ -52,16 +59,24 @@ Token summon en la fila: 8, columna: 24
 Token Kit en la fila: 8, columna: 31
 Token of en la fila: 8, columna: 35
 Token Power en la fila: 8, columna: 38
+Token End Instruction \n en la fila: 8, columna: 43
+Token End Instruction \n en la fila: 9, columna: 1
 Token puff en la fila: 10, columna: 1
 Token identificador "p" en la fila: 10, columna: 6
 Token = en la fila: 10, columna: 8
 Token entero 13 en la fila: 10, columna: 10
+Token End Instruction \n en la fila: 10, columna: 12
+Token End Instruction \n en la fila: 11, columna: 1
 Token free en la fila: 12, columna: 1
 Token identificador "p" en la fila: 12, columna: 6
+Token End Instruction \n en la fila: 12, columna: 7
 Token free en la fila: 13, columna: 1
 Token |} en la fila: 13, columna: 5
 Token {| en la fila: 13, columna: 7
 Token identificador "p" en la fila: 13, columna: 10
+Token End Instruction \n en la fila: 13, columna: 11
+Token End Instruction \n en la fila: 14, columna: 1
 Token identificador "p" en la fila: 15, columna: 1
 Token == en la fila: 15, columna: 3
 Token DeathZone en la fila: 15, columna: 6
+Token End Instruction \n en la fila: 15, columna: 15

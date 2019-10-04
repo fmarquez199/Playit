@@ -41,6 +41,7 @@ $char_id        = [$digitos $abecedario \_ \']
 @identificador  = $abecedario $char_id*
 @programas      = \% $char_id+ \%
 @strings        = \~ @texto \~
+@end_instruction= \n
 @float          = $digitos+ \' $digitos+
 @comments       = \"\' [$comentarios $white]* \'\"
 @comment        = \@ [$comentarios # \n]* \n 
@@ -48,7 +49,7 @@ $char_id        = [$digitos $abecedario \_ \']
 
 tokens :-
 
-  $white+                           ;
+  ([$white # \n])+                           ;
   
   -- Palabras reservadas
 
@@ -80,6 +81,7 @@ tokens :-
   unlock               { tok (\p s -> TkNLK p s) }
   world                { tok (\p s -> TkWRL p s) }
   of                   { tok (\p s -> TkOFK p s) }
+  @end_instruction     { tok (\p s -> TokenEndInstruction p s) }
 
   -- Literales booleanos
   
@@ -205,6 +207,7 @@ data Token = TkWRL AlexPosn String
            | TkINC AlexPosn String
            | TkDEC AlexPosn String
            | TkSUM AlexPosn String
+           | TokenEndInstruction AlexPosn String
            | TkMIN AlexPosn String
            | TkTMS AlexPosn String
            | TkDVD AlexPosn String
@@ -236,6 +239,7 @@ data Token = TkWRL AlexPosn String
 instance Show Token where
     show (TkWRL p s) = "Token " ++ s ++ (pos p) -- world
     show (TkOFK p s) = "Token " ++ s ++ (pos p) -- of
+    show (TokenEndInstruction p s) = "Token End Instruction \\n" ++  (pos p) -- New line
     show (TkBTN p s) = "Token " ++ s ++ (pos p) -- Button
     show (TkRNE p s) = "Token " ++ s ++ (pos p) -- rune
     show (TkLOS p s) = "Token " ++ s ++ (pos p) -- Lose

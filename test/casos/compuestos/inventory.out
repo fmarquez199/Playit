@@ -1,31 +1,42 @@
 Token Inventory en la fila: 1, columna: 1
 Token identificador "registro" en la fila: 1, columna: 11
 Token : en la fila: 1, columna: 19
+Token End Instruction \n en la fila: 1, columna: 20
 Token Power en la fila: 2, columna: 3
 Token identificador "up" en la fila: 2, columna: 9
+Token End Instruction \n en la fila: 2, columna: 11
 Token Rune en la fila: 3, columna: 3
 Token identificador "tip" en la fila: 3, columna: 8
+Token End Instruction \n en la fila: 3, columna: 11
 Token Runes en la fila: 4, columna: 3
 Token identificador "rns" en la fila: 4, columna: 9
+Token End Instruction \n en la fila: 4, columna: 12
 Token Battle en la fila: 5, columna: 3
 Token identificador "b" en la fila: 5, columna: 10
+Token End Instruction \n en la fila: 5, columna: 11
 Token Skill en la fila: 6, columna: 3
 Token identificador "sk" en la fila: 6, columna: 9
+Token End Instruction \n en la fila: 6, columna: 11
 Token Skill en la fila: 7, columna: 3
 Token |} en la fila: 7, columna: 8
 Token entero 10 en la fila: 7, columna: 10
 Token {| en la fila: 7, columna: 12
 Token identificador "sk" en la fila: 7, columna: 15
+Token End Instruction \n en la fila: 7, columna: 17
 Token identificador "Contacto" en la fila: 8, columna: 3
 Token identificador "c" en la fila: 8, columna: 12
+Token End Instruction \n en la fila: 8, columna: 13
 Token Kit en la fila: 9, columna: 3
 Token of en la fila: 9, columna: 7
 Token Power en la fila: 9, columna: 10
 Token identificador "lista" en la fila: 9, columna: 16
+Token End Instruction \n en la fila: 9, columna: 21
 Token Power en la fila: 10, columna: 3
 Token puff en la fila: 10, columna: 9
 Token identificador "p" en la fila: 10, columna: 14
+Token End Instruction \n en la fila: 10, columna: 15
 Token .~ en la fila: 11, columna: 1
+Token End Instruction \n en la fila: 11, columna: 3
 Token identificador "Registro" en la fila: 12, columna: 1
 Token identificador "r" en la fila: 12, columna: 10
 Token = en la fila: 12, columna: 12
@@ -34,4 +45,4 @@ Token entero 0 en la fila: 12, columna: 15
 Token , en la fila: 12, columna: 16
 Token caracter *f* en la fila: 12, columna: 18
 Token } en la fila: 12, columna: 21
-
+Token End Instruction \n en la fila: 12, columna: 22

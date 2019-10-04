@@ -1,32 +1,43 @@
 Token world en la fila: 1, columna: 1
 Token nombre programa %Tablas% en la fila: 1, columna: 7
 Token : en la fila: 1, columna: 15
+Token End Instruction \n en la fila: 1, columna: 16
 Token Rune en la fila: 2, columna: 3
 Token identificador "seguir" en la fila: 2, columna: 8
 Token = en la fila: 2, columna: 15
 Token caracter *s* en la fila: 2, columna: 17
+Token End Instruction \n en la fila: 2, columna: 20
 Token Power en la fila: 3, columna: 3
 Token identificador "i" en la fila: 3, columna: 9
 Token , en la fila: 3, columna: 10
 Token identificador "numero" en la fila: 3, columna: 12
+Token End Instruction \n en la fila: 3, columna: 18
+Token End Instruction \n en la fila: 4, columna: 3
 Token play en la fila: 5, columna: 3
 Token : en la fila: 5, columna: 7
+Token End Instruction \n en la fila: 5, columna: 8
 Token identificador "numero" en la fila: 6, columna: 5
 Token = en la fila: 6, columna: 12
 Token joystick en la fila: 6, columna: 14
 Token string ~Introduzca un numero entero: ~ en la fila: 6, columna: 23
+Token End Instruction \n en la fila: 6, columna: 54
+Token End Instruction \n en la fila: 7, columna: 3
 Token drop en la fila: 8, columna: 5
 Token string ~La tabla de multiplicar del ~ en la fila: 8, columna: 10
 Token , en la fila: 8, columna: 40
 Token identificador "numero" en la fila: 8, columna: 41
 Token , en la fila: 8, columna: 47
 Token string ~ es:~ en la fila: 8, columna: 48
+Token End Instruction \n en la fila: 8, columna: 54
+Token End Instruction \n en la fila: 9, columna: 3
 Comentario una linea en la fila: 10, columna: 5
 Token identificador "i" en la fila: 11, columna: 5
 Token = en la fila: 11, columna: 7
 Token entero 1 en la fila: 11, columna: 9
+Token End Instruction \n en la fila: 11, columna: 11
 Token play en la fila: 12, columna: 5
 Token : en la fila: 12, columna: 9
+Token End Instruction \n en la fila: 12, columna: 10
 Token drop en la fila: 13, columna: 7
 Token identificador "numero" en la fila: 13, columna: 12
 Token , en la fila: 13, columna: 18
@@ -39,14 +50,19 @@ Token , en la fila: 13, columna: 36
 Token identificador "i" en la fila: 13, columna: 38
 Token * en la fila: 13, columna: 40
 Token identificador "numero" en la fila: 13, columna: 42
+Token End Instruction \n en la fila: 13, columna: 48
 Token identificador "i" en la fila: 14, columna: 7
 Token ++ en la fila: 14, columna: 8
+Token End Instruction \n en la fila: 14, columna: 10
 Token lock en la fila: 15, columna: 5
 Token identificador "i" en la fila: 15, columna: 10
 Token <= en la fila: 15, columna: 12
 Token entero 10 en la fila: 15, columna: 15
+Token End Instruction \n en la fila: 15, columna: 17
 Token .~ en la fila: 16, columna: 5
+Token End Instruction \n en la fila: 16, columna: 7
 Comentario una linea en la fila: 17, columna: 5
+Token End Instruction \n en la fila: 18, columna: 3
 Token identificador "seguir" en la fila: 19, columna: 5
 Token = en la fila: 19, columna: 12
 Token kill en la fila: 19, columna: 14
@@ -55,9 +71,13 @@ Token ( en la fila: 19, columna: 36
 Token joystick en la fila: 19, columna: 38
 Token string ~Desea ver otra tabla (s/n)?: ~ en la fila: 19, columna: 47
 Token ) en la fila: 19, columna: 78
+Token End Instruction \n en la fila: 19, columna: 79
 Token lock en la fila: 20, columna: 3
 Token identificador "seguir" en la fila: 20, columna: 9
 Token != en la fila: 20, columna: 16
 Token caracter *n* en la fila: 20, columna: 19
+Token End Instruction \n en la fila: 20, columna: 22
 Token .~ en la fila: 21, columna: 3
+Token End Instruction \n en la fila: 21, columna: 5
 Token .~ en la fila: 22, columna: 1
+Token End Instruction \n en la fila: 22, columna: 3
