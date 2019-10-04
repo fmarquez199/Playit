@@ -24,7 +24,7 @@ Token , en la fila: 12, columna: 1
 Token End Instruction \n en la fila: 12, columna: 3
 Token - en la fila: 13, columna: 1
 Token End Instruction \n en la fila: 13, columna: 3
-Error, caracter inesperado . en la fila: 14, columna: 1
+Token . en la fila: 14, columna: 1
 Token End Instruction \n en la fila: 14, columna: 3
 Token / en la fila: 15, columna: 1
 Token End Instruction \n en la fila: 15, columna: 3
@@ -119,7 +119,7 @@ Error, caracter inesperado \ en la fila: 60, columna: 1
 Token End Instruction \n en la fila: 60, columna: 3
 Token ] en la fila: 61, columna: 1
 Token End Instruction \n en la fila: 61, columna: 3
-Error, caracter inesperado ^ en la fila: 62, columna: 1
+Token ^ en la fila: 62, columna: 1
 Token End Instruction \n en la fila: 62, columna: 3
 Error, caracter inesperado _ en la fila: 63, columna: 1
 Token End Instruction \n en la fila: 63, columna: 3

@@ -8,7 +8,8 @@
  *  Natascha Gamboa     12-11250
 -}
 
-module Playit.Parser (parse, parseRead, error) where
+--module Playit.Parser (parse, parseRead, error) where
+module Playit.Parser (parse, error) where
 import Control.Monad.Trans.State
 import Control.Monad.IO.Class
 -- import SymbolTable
@@ -30,98 +31,98 @@ import Playit.Types
 %token
   -- Palabras reservadas
 
-  bool              { TkBTL _ _ }
-  null              { TkDTZ _ _ }
-  registro          { TkINV _ _ }
-  union             { TkITM _ _ }
-  list              { TkKIT _ _ }
-  int               { TkPWR _ _ }
-  char              { TkRNE _ _ }
-  str               { TkRNS _ _ }
-  float             { TkSKL _ _ }
-  if                { TkBTN _ _ }
-  proc              { TkBSS _ _ }
-  for               { TkCTR _ _ }
-  print             { TkDRP _ _ }
-  else              { TkNPR _ _ }
-  free              { TkFRE _ _ }
-  break             { TkGMO _ _ }
-  input             { TkJST _ _ }
-  continue          { TkKPP _ _ }
-  funcCall          { TkKLL _ _ }
-  while             { TkLCK _ _ }
-  function          { TkMST _ _ }
-  do                { TkPLY _ _ }
-  pointer           { TkAPT _ _ }
-  "."               { TkSPW _ _ }
-  new               { TkSMN _ _ }
-  return            { TkNLK _ _ }
-  world             { TkWRL _ _ }
-  of                { TkOFK _ _ }
-  endInstr          { TokenEndInstruction }
+  bool              { TkBTL _ _}
+  null              { TkDTZ _ _}
+  registro          { TkINV _ _}
+  union             { TkITM _ _}
+  list              { TkKIT _ _}
+  int               { TkPWR _ _}
+  char              { TkRNE _ _}
+  str               { TkRNS _ _}
+  float             { TkSKL _ _}
+  if                { TkBTN _ _}
+  proc              { TkBSS _ _}
+  for               { TkCTR _ _}
+  print             { TkDRP _ _}
+  else              { TkNPR _ _}
+  free              { TkFRE _ _}
+  break             { TkGMO _ _}
+  input             { TkJST _ _}
+  continue          { TkKPP _ _}
+  funcCall          { TkKLL _ _}
+  while             { TkLCK _ _}
+  function          { TkMST _ _}
+  do                { TkPLY _ _}
+  pointer           { TkAPT _ _}
+  "."               { TkSPW _ _}
+  new               { TkSMN _ _}
+  return            { TkNLK _ _}
+  world             { TkWRL _ _}
+  of                { TkOFK _ _}
+  endInstr          { TokenEndInstruction _ _}
 
   -- Literales booleanos
 
-  true              { TkWIN _ _ }
-  false             { TkLOS _ _ }
+  true              { TkWIN _ _}
+  false             { TkLOS _ _}
 
   -- Identificadores
 
-  programa          { TkNMB _ _ }
-  nombre            { TkIDF _ _ }
+  programa          { TkNMB _ _}
+  nombre            { TkIDF _ _}
 
   -- Caracteres
 
-  caracter          { TkCHA _ _ }
-  string            { TkSTG _ _ }
+  caracter          { TkCHA _ _}
+  string            { TkSTG _ _}
   
   -- Literares numericos
   
-  entero            { TkINT _ _ }
-  flotante          { TkFLT _ _ }
+  entero            { TkINT _ _}
+  flotante          { TkFLT _ _}
 
   -- Simbolos
 
-  fin               { TkFIN _ _ }
-  "//"              { TkIDV _ _ }
-  "||"              { TkLOR _ _ }
-  "&&"              { TkAND _ _ }
-  "<="              { TkLET _ _ }
-  "=="              { TkEQL _ _ }
-  "!="              { TkNEQ _ _ }
-  ">="              { TkGET _ _ }
-  "<<"              { TkLSA _ _ }
-  ">>"              { TkLSC _ _ }
-  "++"              { TkINC _ _ }
-  "--"              { TkDEC _ _ }
-  "<-"              { TkIN  _ _ }
-  "->"              { TkTO  _ _ }
-  "|}"              { TkARA _ _ }
-  "{|"              { TkARC _ _ }
-  "+"               { TkSUM _ _ }
-  "-"               { TkMIN _ _ }
-  "*"               { TkTMS _ _ }
-  "/"               { TkDVD _ _ }
-  "%"               { TkMOD _ _ }
-  "#"               { TkLEN _ _ }
-  "?"               { TkREF _ _ }
-  "!"               { TkEXC _ _ }
-  "<"               { TkLTH _ _ }
-  ">"               { TkGTH _ _ }
-  "("               { TkPRA _ _ }
-  ")"               { TkPRC _ _ }
-  "["               { TkCRA _ _ }
-  "]"               { TkCRC _ _ }
-  "{"               { TkLLA _ _ }
-  "}"               { TkLLC _ _ }
-  ","               { TkCOM _ _ }
-  ":"               { TkDSP _ _ }
-  "::"              { TkCONCAT  } -- Concatenación de dos listas
+  fin               { TkFIN _ _}
+  "//"              { TkIDV _ _}
+  "||"              { TkLOR _ _}
+  "&&"              { TkAND _ _}
+  "<="              { TkLET _ _}
+  "=="              { TkEQL _ _}
+  "!="              { TkNEQ _ _}
+  ">="              { TkGET _ _}
+  "<<"              { TkLSA _ _}
+  ">>"              { TkLSC _ _}
+  "++"              { TkINC _ _}
+  "--"              { TkDEC _ _}
+  "<-"              { TkIN  _ _}
+  "->"              { TkTO  _ _}
+  "|}"              { TkARA _ _}
+  "{|"              { TkARC _ _}
+  "+"               { TkSUM _ _}
+  "-"               { TkMIN _ _}
+  "*"               { TkTMS _ _}
+  "/"               { TkDVD _ _}
+  "%"               { TkMOD _ _}
+  "#"               { TkLEN _ _}
+  "?"               { TkREF _ _}
+  "!"               { TkEXC _ _}
+  "<"               { TkLTH _ _}
+  ">"               { TkGTH _ _}
+  "("               { TkPRA _ _}
+  ")"               { TkPRC _ _}
+  "["               { TkCRA _ _}
+  "]"               { TkCRC _ _}
+  "{"               { TkLLA _ _}
+  "}"               { TkLLC _ _}
+  ","               { TkCOM _ _}
+  ":"               { TkDSP _ _}
+  "::"              { TkCONCAT  _ _} -- Concatenación de dos listas
 
-  "|"               { TkCON _ _ }
-  "="               { TkASG _ _ }
-  upperCase         { TkUPP _ _ }
-  lowerCase         { TkLOW _ _ }
+  "|"               { TkCON _ _}
+  "="               { TkASG _ _}
+  upperCase         { TkUPP _ _}
+  lowerCase         { TkLOW _ _}
 
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
@@ -152,8 +153,9 @@ import Playit.Types
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 
-Programa :: {SecuenciaInstr}
-  :  world programa ":" Instrucciones fin {$4}
+--Programa :: {}
+Programa :
+    world programa ":" Instrucciones fin {$4}
 
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
@@ -161,13 +163,14 @@ Programa :: {SecuenciaInstr}
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 
-Declaraciones :: {SecuenciaInstr}
+--Declaraciones :: {SecuenciaInstr}
 Declaraciones :
-    Declaracion {}
-  | Declaraciones Declaracion {}
+    Declaracion                 {$1}
+  | Declaraciones Declaracion   {}
 
-Declaracion ::  {SecuenciaInstr}
-  :  Tipo Identificadores {}
+--Declaracion ::  {SecuenciaInstr}
+Declaracion  :
+    Tipo Identificadores        {}
 
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
@@ -176,13 +179,14 @@ Declaracion ::  {SecuenciaInstr}
 --------------------------------------------------------------------------------
 
 --Identificadores :: 
-Identificadores  : Identificador {}
+Identificadores  : 
+    Identificador                       {}
     | Identificadores "," Identificador {}
 
 --Identificador :: {}
 Identificador  : 
-    nombre {}
-  | nombre "=" Expresion {}
+    nombre                  {}
+  | nombre "=" Expresion    {}
 
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
@@ -203,16 +207,16 @@ Lvalue  :
 
 -- Tipos de datos
 --Tipo :: {Tipo}
-Tipo 
-  : int {}
-  | float {}
-  | bool {}
-  | char {}
-  | str {}
-  | Tipo "|}" Expresion "{|" {}
-  | list of Tipo {}
-  | Apuntador{}
-  | Registros {}
+Tipo : 
+    int                         {}
+  | float                       {}
+  | bool                        {}
+  | char                        {}
+  | str                         {}
+  | Tipo "|}" Expresion "{|"    {}
+  | list of Tipo                {}
+  | Apuntador                   {}
+  | Registros                   {}
 
 
 --------------------------------------------------------------------------------
@@ -221,41 +225,46 @@ Tipo
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 
-Instrucciones ::  {SecuenciaInstr}
-  :  Instrucciones Instruccion {}
-  |  Instruccion {}
+--Instrucciones ::  {SecuenciaInstr}
+Instrucciones :  
+    Instrucciones Instruccion   {}
+  |  Instruccion                {}
 
-Instruccion ::  {Instr} 
-  : Declaraciones {}
-  | Controller {}
-  | Play {}
-  | Button {}
-  | Asignacion {}
-  | EntradaSalida {}
-  | Free {}
-  | Subrutina {}
-  | FuncCall {}
-  | return Expresion {}
-  | break {}
-  | continue {}
-  | endInstr {}
+--Instruccion ::  {Instr} 
+Instruccion  : 
+    Declaraciones       {}
+  | Controller          {}
+  | Play                {}
+  | Button              {}
+  | Asignacion          {}
+  | EntradaSalida       {}
+  | Free                {}
+  | Subrutina           {}
+  | FuncCall            {}
+  | return Expresion    {}
+  | break               {}
+  | continue            {}
+  | endInstr            {}
 
 
 --------------------------------------------------------------------------------
 -- Instruccion de asignacion '='
-Asignacion :: {Instr}
-  : Lvalue "=" Expresion {}
+--Asignacion :: {Instr}
+Asignacion  : 
+    Lvalue "=" Expresion {}
 --------------------------------------------------------------------------------
 
 
 --------------------------------------------------------------------------------
 -- Instrucciones de condicionales 'Button', '|' y 'notPressed'
-Button :: {Instr}
-  : if ":" Guardias fin {}
+--Button :: {Instr}
+Button  :
+    if ":" Guardias fin {}
 
 --Guardias :: {}
-Guardias : Guardia {}
-  | Guardia Guardias {}
+Guardias : 
+    Guardia             {}
+  | Guardia Guardias    {}
 
 --Guardia :: {}
 Guardia  : 
@@ -266,41 +275,46 @@ Guardia  :
 
 --------------------------------------------------------------------------------
 -- Instruccion de iteracion determinada 'control'
-Controller :: {Instr}
- : for InitVar "=" entero "->" entero ":" Instrucciones fin   {}
+--Controller :: {Instr}
+Controller : 
+   for InitVar "=" entero "->" entero ":" Instrucciones fin     {}
  | for InitVar "=" entero "->" entero while Expresion ":" Instrucciones fin   {}
- | for InitVar "<-" nombre ":" Instrucciones fin   {}
- | for InitVar "<-" nombre ":" Instrucciones fin  {}
+ | for InitVar "<-" nombre ":" Instrucciones fin                {}
+ | for InitVar "<-" nombre ":" Instrucciones fin                {}
 
 
 -- Se inserta la variable de iteracion en la tabla de simbolos junto con su
 -- valor inicial, antes de construir el arbol de instrucciones del 'for'
-InitVar :: {(Nombre, Expr)}
-  : nombre  {}
+--InitVar :: {(Nombre, Expr)}
+InitVar  : 
+    nombre  {}
 --------------------------------------------------------------------------------
 
 
 --------------------------------------------------------------------------------
 -- Instruccion de iteracion indeterminada 'play unlock'
-Play :: {Instr}
-  : do ":" Instrucciones while Expresion fin {}
+--Play :: {Instr}
+Play  : 
+    do ":" Instrucciones while Expresion fin {}
 --------------------------------------------------------------------------------
 
 
 --------------------------------------------------------------------------------
 -- Instrucciones de E/S 'drop' y 'joystick'
-EntradaSalida :: {Instr}
-  : nombre "=" input {}
-  | nombre "=" input str {}
-  | print Expresiones {}
+--EntradaSalida :: {Instr}
+EntradaSalida  : 
+    nombre "=" input        {}
+  | nombre "=" input str    {}
+  | print Expresiones       {}
 --------------------------------------------------------------------------------
 
 --------------------------------------------------------------------------------
 -- Instrucciones para liberar la memoria de los apuntadores 'free'
-Free :: {Instr}
-  : free nombre {}
-  | free "|" "}" "{" "|" nombre  {}
-  | free "<<" ">>" nombre  {}
+--Free :: {Instr}
+Free : 
+    free nombre                 {}
+  | free "|" "}" "{" "|" nombre {}
+  | free "<<" ">>" nombre       {}
 --------------------------------------------------------------------------------
 
 
@@ -310,8 +324,9 @@ Free :: {Instr}
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 
-Subrutina :: {}
-  : Boss    {}
+--Subrutina :: {}
+Subrutina :
+    Boss    {}
   | Monster {}
 
 --------------------------------------------------------------------------------
@@ -324,29 +339,33 @@ Boss :
 
 --------------------------------------------------------------------------------
 -- Funciones
-Monster :: {}
-  : proc nombre "(" Parametros ")" Tipo ":" Instrucciones fin   {}
+--Monster :: {}
+Monster  : 
+    proc nombre "(" Parametros ")" Tipo ":" Instrucciones fin       {}
 --------------------------------------------------------------------------------
 
 
 --------------------------------------------------------------------------------
 -- Parametros de las subrutinas
-Parametros :: {}
-  : Parametro   {}
+--Parametros :: {}
+Parametros  : 
+    Parametro                   {}
   | Parametros "," Parametro    {}
 
 
-Parametro :: {} 
-  : Tipo nombre {}
-  | Tipo "?" nombre {}
-  | {- Lambda -}    {}
+--Parametro :: {} 
+Parametro  : 
+    Tipo nombre         {}
+  | Tipo "?" nombre     {}
+  | {- Lambda -}        {}
 --------------------------------------------------------------------------------
 
 
 --------------------------------------------------------------------------------
 -- Llamada a subrutinas
-FuncCall :: {Instr}
-  : funcCall Subrutina {}
+--FuncCall :: {Instr}
+FuncCall  : 
+    funcCall Subrutina  {}
 --------------------------------------------------------------------------------
 
 
@@ -358,7 +377,7 @@ FuncCall :: {Instr}
 
 --Expresiones :: {}
 Expresiones : 
-    Expresion   {}
+    Expresion                   {}
   | Expresiones "," Expresion   {}
 
 
@@ -386,8 +405,8 @@ Expresion  :
   | "(" Expresion ")"       {}
   | "|}" Expresiones "{|"   {}
   | "<<" Expresiones ">>"   {}
-  | FuncCall    {}
-  | new Tipo    {}
+  | FuncCall                {}
+  | new Tipo                {}
   
   -- Operadores unarios
   | "-" Expresion %prec negativo    {}
@@ -418,12 +437,20 @@ Expresion  :
 
 --------------------------------------------------------------------------------
 -- Registros y uniones
-Registros :: {}
-  : registro nombre ":" Declaraciones fin   {}
+--Registros :: {}
+Registros  : 
+    registro nombre ":" Declaraciones fin   {}
 --------------------------------------------------------------------------------
 
 
 --------------------------------------------------------------------------------
-Apuntador :: {}
-  : Tipo pointer nombre {}
+--Apuntador :: {}
+Apuntador  : 
+    Tipo pointer nombre {}
 --------------------------------------------------------------------------------
+
+
+{
+parseError :: [Token] -> a
+parseError _ = error "Parse error"
+}

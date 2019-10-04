@@ -2,3 +2,4 @@
 Playit.cabal
 *~
 *.yaml.lock
+.idea
