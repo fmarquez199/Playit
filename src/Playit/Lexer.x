@@ -52,34 +52,34 @@ tokens :-
   
   -- Palabras reservadas
 
-  Battle               { tok (\p s -> TkBTL p s) }
-  DeathZone            { tok (\p s -> TkDTZ p s) }
-  Inventory            { tok (\p s -> TkINV p s) }
-  Items                { tok (\p s -> TkITM p s) }
-  Kit                  { tok (\p s -> TkKIT p s) }
-  Power                { tok (\p s -> TkPWR p s) }
-  Rune                 { tok (\p s -> TkRNE p s) }
-  Runes                { tok (\p s -> TkRNS p s) }
-  Skill                { tok (\p s -> TkSKL p s) }
-  Button               { tok (\p s -> TkBTN p s) }
-  boss                 { tok (\p s -> TkBSS p s) }
-  controller           { tok (\p s -> TkCTR p s) }
-  drop                 { tok (\p s -> TkDRP p s) }
-  notPressed           { tok (\p s -> TkNPR p s) }
-  free                 { tok (\p s -> TkFRE p s) }
-  gameOver             { tok (\p s -> TkGMO p s) }
-  joystick             { tok (\p s -> TkJST p s) }
-  keepPlaying          { tok (\p s -> TkKPP p s) }
-  kill                 { tok (\p s -> TkKLL p s) }
-  lock                 { tok (\p s -> TkLCK p s) }
-  monster              { tok (\p s -> TkMST p s) }
-  play                 { tok (\p s -> TkPLY p s) }
-  puff                 { tok (\p s -> TkAPT p s) }
-  spawn                { tok (\p s -> TkSPW p s) }
-  summon               { tok (\p s -> TkSMN p s) }
-  unlock               { tok (\p s -> TkNLK p s) }
-  world                { tok (\p s -> TkWRL p s) }
-  of                   { tok (\p s -> TkOFK p s) }
+  Battle               { tok (\p s -> TkBTL p s) } -- Booleano
+  DeathZone            { tok (\p s -> TkDTZ p s) } -- Null pointer
+  Inventory            { tok (\p s -> TkINV p s) } -- Registro
+  Items                { tok (\p s -> TkITM p s) } -- Union
+  Kit                  { tok (\p s -> TkKIT p s) } -- Lista
+  Power                { tok (\p s -> TkPWR p s) } -- Entero
+  Rune                 { tok (\p s -> TkRNE p s) } -- Char
+  Runes                { tok (\p s -> TkRNS p s) } -- String
+  Skill                { tok (\p s -> TkSKL p s) } -- Flotante
+  Button               { tok (\p s -> TkBTN p s) } -- Condicional if
+  boss                 { tok (\p s -> TkBSS p s) } -- procedimiento
+  controller           { tok (\p s -> TkCTR p s) } -- Bucle for
+  drop                 { tok (\p s -> TkDRP p s) } -- print
+  notPressed           { tok (\p s -> TkNPR p s) } -- else
+  free                 { tok (\p s -> TkFRE p s) } -- delete de C++
+  gameOver             { tok (\p s -> TkGMO p s) } -- break de C
+  joystick             { tok (\p s -> TkJST p s) } -- read 
+  keepPlaying          { tok (\p s -> TkKPP p s) } -- continue de C
+  kill                 { tok (\p s -> TkKLL p s) } -- llama a una funcion
+  lock                 { tok (\p s -> TkLCK p s) } -- condicional del bucle do(play) while(lock){}
+  monster              { tok (\p s -> TkMST p s) } -- Funcion
+  play                 { tok (\p s -> TkPLY p s) } -- do de un bucle do(play) while(lock){}
+  puff                 { tok (\p s -> TkAPT p s) } -- * de C para punteros
+  spawn                { tok (\p s -> TkSPW p s) } -- . para registros de C
+  summon               { tok (\p s -> TkSMN p s) } -- new de Java para punteros
+  unlock               { tok (\p s -> TkNLK p s) } -- return para funciones
+  world                { tok (\p s -> TkWRL p s) } -- void main() 
+  of                   { tok (\p s -> TkOFK p s) } -- Declara el tipo de una lista
   @end_instruction     { tok (\p s -> TokenEndInstruction p s) }
 
   -- Literales booleanos
@@ -138,6 +138,7 @@ tokens :-
   "}"                  { tok (\p s -> TkLLC p s) }
   ","                  { tok (\p s -> TkCOM p s) }
   ":"                  { tok (\p s -> TkDSP p s) }
+  "::"                 { tok (\p s -> TkCONCAT p s) } -- Concatenación de dos listas
   "|"                  { tok (\p s -> TkCON p s) }
   "="                  { tok (\p s -> TkASG p s) }
   "^"                  { tok (\p s -> TkUPP p s) }
@@ -167,6 +168,7 @@ data Token = TkWRL AlexPosn String
            | TkWIN AlexPosn String
            | TkBTL AlexPosn String
            | TkPWR AlexPosn String
+           | TkCONCAT AlexPosn String
            | TkSKL AlexPosn String
            | TkRNS AlexPosn String
            | TkKIT AlexPosn String
@@ -251,6 +253,7 @@ instance Show Token where
     show (TkPWR p s) = "Token " ++ s ++ (pos p) -- Power
     show (TkSKL p s) = "Token " ++ s ++ (pos p) -- Skill
     show (TkRNS p s) = "Token " ++ s ++ (pos p) -- Runes
+    show (TkCONCAT p s) = "Token " ++ s ++ (pos p) -- Concatenación de lista
     show (TkKIT p s) = "Token " ++ s ++ (pos p) -- Kit
     show (TkINV p s) = "Token " ++ s ++ (pos p) -- Inventory
     show (TkITM p s) = "Token " ++ s ++ (pos p) -- Items
