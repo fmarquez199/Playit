@@ -26,6 +26,8 @@ dependencies:
 - directory
 - filepath
 - bytestring
+- transformers
+- containers
 
 library:
   source-dirs: src
