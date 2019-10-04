@@ -40,7 +40,7 @@ import Playit.Types
   char              { TkRNE _ _}
   str               { TkRNS _ _}
   float             { TkSKL _ _}
-  if                { TkBTN _ _}
+  button            { TkBTN _ _}
   proc              { TkBSS _ _}
   for               { TkCTR _ _}
   print             { TkDRP _ _}
@@ -132,7 +132,7 @@ import Playit.Types
 
 
 -- VERIFICAR
-%nonassoc nombre
+--%nonassoc nombre
 %right "."
 %left "||"
 %left "&&"
@@ -160,6 +160,7 @@ Programa :
 EndInstructs:
     endInstr {}
     | EndInstructs endInstr {}
+    | {--empty--} {}
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 --                            Declaraciones
@@ -168,13 +169,14 @@ EndInstructs:
 
 --Declaraciones :: {SecuenciaInstr}
 Declaraciones :
-    Declaracion                 {$1}
-  | Declaraciones Declaracion   {}
+    Declaracion                         {}
+  | Declaracion EndInstructs Declaraciones  {}
+  | {-empty-} {}
 
 --Declaracion ::  {SecuenciaInstr}
 Declaracion  :
     Tipo Identificadores        {}
-
+    | registro nombre ":" EndInstructs Declaraciones fin EndInstructs        {}
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 --                  Identificadores de las declaraciones
@@ -201,11 +203,11 @@ Identificador  :
 -- Lvalues, contenedores que identifican a las variables
 --Lvalue :: {}
 Lvalue  :
-    nombre {}
-  | pointer nombre {}
-  | Lvalue "." Lvalue {}
-  | Lvalue "|}" Expresion "{|" {}
-  | Lvalue "<<" Expresion ">>" {}
+    nombre                      {}
+  | pointer nombre              {}
+  | Lvalue "." Lvalue           {}
+  | Lvalue "|}" Expresion "{|"  {}
+  | Lvalue "<<" Expresion ">>"  {}
 
 
 -- Tipos de datos
@@ -219,7 +221,7 @@ Tipo :
   | Tipo "|}" Expresion "{|"    {}
   | list of Tipo                {}
   | Apuntador                   {}
-  | Registros                   {}
+  | nombre                      {}
 
 
 --------------------------------------------------------------------------------
@@ -230,8 +232,8 @@ Tipo :
 
 --Instrucciones ::  {SecuenciaInstr}
 Instrucciones :  
-    Instrucciones Instruccion   {}
-  |  Instruccion                {}
+    Instruccion Instrucciones    {}
+  |  Instruccion                 {}
 
 --Instruccion ::  {Instr} 
 Instruccion  : 
@@ -243,10 +245,11 @@ Instruccion  :
   | EntradaSalida       {}
   | Free                {}
   | Subrutina           {}
-  | FuncCall            {}
+  | FunctionCreate      {}
   | return Expresion    {}
   | break               {}
   | continue            {}
+  | Expresion           {}
   | endInstr            {}
 
 
@@ -254,7 +257,8 @@ Instruccion  :
 -- Instruccion de asignacion '='
 --Asignacion :: {Instr}
 Asignacion  : 
-    Lvalue "=" Expresion {}
+     nombre "=" InicioRegistro {}    
+    | Lvalue "=" Expresion      {}
 --------------------------------------------------------------------------------
 
 
@@ -262,7 +266,7 @@ Asignacion  :
 -- Instrucciones de condicionales 'Button', '|' y 'notPressed'
 --Button :: {Instr}
 Button  :
-    if ":" Guardias fin {}
+    button ":" endInstr Guardias fin {}
 
 --Guardias :: {}
 Guardias : 
@@ -333,31 +337,44 @@ Subrutina :
   | Monster {}
 
 --------------------------------------------------------------------------------
--- Procedimientos
+-- Procedimientos FALTA NO PERMITIR FUNCIONES ANIDADAS
 --Boss :: {}
 Boss : 
-    function nombre "(" Parametros ")" Tipo ":" Instrucciones fin   {}
+    function nombre "(" ParametrosFuncionDeclaracion ")" Tipo ":" Instrucciones fin   {}
 --------------------------------------------------------------------------------
 
 
 --------------------------------------------------------------------------------
--- Funciones
+-- Funciones FALTA NO PERMITIR FUNCIONES ANIDADAS
 --Monster :: {}
 Monster  : 
-    proc nombre "(" Parametros ")" Tipo ":" Instrucciones fin       {}
+    proc nombre "(" ParametrosFuncionDeclaracion ")" Tipo ":" Instrucciones fin       {}
 --------------------------------------------------------------------------------
 
-
 --------------------------------------------------------------------------------
--- Parametros de las subrutinas
+-- Parametros de las subrutinas cuando se llaman
 --Parametros :: {}
-Parametros  : 
-    Parametro                   {}
-  | Parametros "," Parametro    {}
+--ParametrosLlamarFuncion  : 
+ --   Expresion                                  {}
+ -- | Expresion "," Expresion     {}
 
 
+-- Parametro puntual de una subrutina cuando esta es llamada
 --Parametro :: {} 
-Parametro  : 
+--ParametroLlamandoFuncion  : 
+--    Expresion         {}
+
+--------------------------------------------------------------------------------
+-- Parametros de las subrutinas cuando se crean
+--Parametros :: {}
+ParametrosFuncionDeclaracion  : 
+    ParametroEnFuncionDeclaracion                                       {}
+  | ParametroEnFuncionDeclaracion "," ParametroEnFuncionDeclaracion     {}
+
+
+-- Parametro puntual de una subrutina cuando esta es creada
+--Parametro :: {} 
+ParametroEnFuncionDeclaracion  : 
     Tipo nombre         {}
   | Tipo "?" nombre     {}
   | {- Lambda -}        {}
@@ -366,9 +383,9 @@ Parametro  :
 
 --------------------------------------------------------------------------------
 -- Llamada a subrutinas
---FuncCall :: {Instr}
-FuncCall  : 
-    funcCall Subrutina  {}
+--FunctionCreate :: {Instr}
+FunctionCreate  : 
+    Subrutina  {}
 --------------------------------------------------------------------------------
 
 
@@ -408,7 +425,10 @@ Expresion  :
   | "(" Expresion ")"       {}
   | "|}" Expresiones "{|"   {}
   | "<<" Expresiones ">>"   {}
-  | FuncCall                {}
+
+  | funcCall nombre         {}
+  | funcCall nombre "(" Expresiones ")"       {}
+
   | new Tipo                {}
   
   -- Operadores unarios
@@ -440,11 +460,10 @@ Expresion  :
 
 --------------------------------------------------------------------------------
 -- Registros y uniones
---Registros :: {}
-Registros  : 
-    registro nombre ":" Declaraciones fin   {}
 --------------------------------------------------------------------------------
 
+InicioRegistro :
+    "{" Expresiones "}" {}
 
 --------------------------------------------------------------------------------
 --Apuntador :: {}
@@ -456,6 +475,6 @@ Apuntador  :
 {
 
 parseError :: [Token] -> a
-parseError h = 
+parseError (h:rs) = 
     error $ "\n\nError sintactico del parser antes de: '" ++ (show h) ++ "\n"
 }
