@@ -524,7 +524,7 @@ monádicos prefijos de:
 
 * Mayúscula (`^`): convierte el carácter alfabético dado a su representación en
 mayúscula.
-* Minúscula (`~`): convierte el carácter alfabético dado a su representación en
+* Minúscula (`.`): convierte el carácter alfabético dado a su representación en
 minúscula.
 
 ### Expresiones para Arreglos y Listas.

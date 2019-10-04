@@ -15,7 +15,7 @@ import System.IO.Error
 import Control.Exception
 import Playit.Lexer
 
-
+main :: IO ()
 main = do
 
   args <- getArgs                        -- Tomar argumentos de la terminal.
