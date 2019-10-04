@@ -8,23 +8,23 @@
  *  Natascha Gamboa     12-11250
 -}
 
-module Parser (parse, parseRead, error) where
+module Playit.Parser (parse, parseRead, error) where
 import Control.Monad.Trans.State
 import Control.Monad.IO.Class
 -- import SymbolTable
 -- import CheckAST
-import Lexer
-import Types
+import Playit.Lexer
+import Playit.Types
 -- import Eval
 -- import AST
 
 }
 
 %name parse
-%name parseRead Expr
+--%name parseRead Expr
 %tokentype { Token }
 %error { parseError }
-%monad { MonadSymTab }
+--%monad { MonadSymTab }
 
 
 %token
@@ -58,6 +58,7 @@ import Types
   return            { TkNLK _ _ }
   world             { TkWRL _ _ }
   of                { TkOFK _ _ }
+  endInstr          { TokenEndInstruction }
 
   -- Literales booleanos
 
@@ -115,6 +116,8 @@ import Types
   "}"               { TkLLC _ _ }
   ","               { TkCOM _ _ }
   ":"               { TkDSP _ _ }
+  "::"              { TkCONCAT  } -- Concatenación de dos listas
+
   "|"               { TkCON _ _ }
   "="               { TkASG _ _ }
   upperCase         { TkUPP _ _ }
@@ -128,18 +131,18 @@ import Types
 
 
 -- VERIFICAR
-%nonassoc nombre
-%right "."
-%left "||"
-%left "&&"
-%nonassoc "==" "!="
-%nonassoc ">" "<" ">=" "<="
-%left "+" "-" "::"
-%left "*" "/" "//" "%"
+--%nonassoc nombre
+--%right "."
+--%left "||"
+--%left "&&"
+--%nonassoc "==" "!="
+--%nonassoc ">" "<" ">=" "<="
+--%left "+" "-" "::"
+--%left "*" "/" "//" "%"
 %right negativo "!"
-%left "++" "|}" "{|" "<<" ">>"
-%left "--"
-%right "#"
+--%left "++" "|}" "{|" "<<" ">>"
+--%left "--"
+--%right "#"
 
 %%
 
@@ -150,7 +153,7 @@ import Types
 --------------------------------------------------------------------------------
 
 Programa :: {SecuenciaInstr}
-  :  world programa ":" Instrucciones fin
+  :  world programa ":" Instrucciones fin {$4}
 
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
@@ -160,11 +163,11 @@ Programa :: {SecuenciaInstr}
 
 Declaraciones :: {SecuenciaInstr}
 Declaraciones :
-    Declaracion
-  | Declaraciones Declaracion
+    Declaracion {}
+  | Declaraciones Declaracion {}
 
-Declaracion :: {}
-  :  Tipo Identificadores
+Declaracion ::  {SecuenciaInstr}
+  :  Tipo Identificadores {}
 
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
@@ -172,13 +175,14 @@ Declaracion :: {}
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 
-Identificadores :: {}
-  : Identificador
-  | Identificadores "," Identificador
+--Identificadores :: 
+Identificadores  : Identificador {}
+    | Identificadores "," Identificador {}
 
-Identificador :: {}
-  : nombre
-  | nombre "=" Expresion
+--Identificador :: {}
+Identificador  : 
+    nombre {}
+  | nombre "=" Expresion {}
 
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
@@ -188,25 +192,27 @@ Identificador :: {}
 
 
 -- Lvalues, contenedores que identifican a las variables
-Lvalue :: {}
-  : nombre
-  | pointer nombre
-  | Lvalue "." Lvalue
-  | Lvalue "|}" Expresion "{|"
-  | Lvalue "<<" Expresion ">>"
+--Lvalue :: {}
+Lvalue  :
+    nombre {}
+  | pointer nombre {}
+  | Lvalue "." Lvalue {}
+  | Lvalue "|}" Expresion "{|" {}
+  | Lvalue "<<" Expresion ">>" {}
 
 
 -- Tipos de datos
-Tipo :: {Tipo}
-  : int
-  | float
-  | bool
-  | char
-  | str
-  | Tipo "|}" Expresion "{|"
-  | list of Tipo
-  | Apuntador
-  | Registros
+--Tipo :: {Tipo}
+Tipo 
+  : int {}
+  | float {}
+  | bool {}
+  | char {}
+  | str {}
+  | Tipo "|}" Expresion "{|" {}
+  | list of Tipo {}
+  | Apuntador{}
+  | Registros {}
 
 
 --------------------------------------------------------------------------------
@@ -216,83 +222,85 @@ Tipo :: {Tipo}
 --------------------------------------------------------------------------------
 
 Instrucciones ::  {SecuenciaInstr}
-  :  Instrucciones Instruccion
-  |  Instruccion
+  :  Instrucciones Instruccion {}
+  |  Instruccion {}
 
 Instruccion ::  {Instr} 
-  : Declaraciones
-  | Controller
-  | Play
-  | Button
-  | Asignacion
-  | EntradaSalida
-  | Free
-  | Subrutina
-  | FuncCall
-  | return Expresion
-  | break
-  | continue
+  : Declaraciones {}
+  | Controller {}
+  | Play {}
+  | Button {}
+  | Asignacion {}
+  | EntradaSalida {}
+  | Free {}
+  | Subrutina {}
+  | FuncCall {}
+  | return Expresion {}
+  | break {}
+  | continue {}
+  | endInstr {}
 
 
 --------------------------------------------------------------------------------
 -- Instruccion de asignacion '='
 Asignacion :: {Instr}
-  : Lvalue "=" Expresion
+  : Lvalue "=" Expresion {}
 --------------------------------------------------------------------------------
 
 
 --------------------------------------------------------------------------------
 -- Instrucciones de condicionales 'Button', '|' y 'notPressed'
-If :: {Instr}
-  : if ":" Guardias fin
+Button :: {Instr}
+  : if ":" Guardias fin {}
 
-Guardias :: {}
-  : Guardia
-  | Guardia Guardias
+--Guardias :: {}
+Guardias : Guardia {}
+  | Guardia Guardias {}
 
-Guardia :: {}
-  : "|" Expresion "}" Instrucciones
-  | "|" else "}" Instrucciones
+--Guardia :: {}
+Guardia  : 
+    "|" Expresion "}" Instrucciones {}
+  | "|" else "}" Instrucciones      {}
 --------------------------------------------------------------------------------
 
 
 --------------------------------------------------------------------------------
 -- Instruccion de iteracion determinada 'control'
 Controller :: {Instr}
- : for InitVar "=" entero to entero ":" Instrucciones fin
- | for InitVar "=" entero to entero while Expresion ":" Instrucciones fin
- | for InitVar "<-" Arreglo ":" Instrucciones fin
- | for InitVar "<-" List ":" Instrucciones fin
+ : for InitVar "=" entero "->" entero ":" Instrucciones fin   {}
+ | for InitVar "=" entero "->" entero while Expresion ":" Instrucciones fin   {}
+ | for InitVar "<-" nombre ":" Instrucciones fin   {}
+ | for InitVar "<-" nombre ":" Instrucciones fin  {}
 
 
 -- Se inserta la variable de iteracion en la tabla de simbolos junto con su
 -- valor inicial, antes de construir el arbol de instrucciones del 'for'
 InitVar :: {(Nombre, Expr)}
-  : nombre
+  : nombre  {}
 --------------------------------------------------------------------------------
 
 
 --------------------------------------------------------------------------------
 -- Instruccion de iteracion indeterminada 'play unlock'
 Play :: {Instr}
-  : do ":" Instrucciones while Expresion fin
+  : do ":" Instrucciones while Expresion fin {}
 --------------------------------------------------------------------------------
 
 
 --------------------------------------------------------------------------------
 -- Instrucciones de E/S 'drop' y 'joystick'
 EntradaSalida :: {Instr}
-  : nombre "=" input 
-  | nombre "=" input str 
-  | print Expresiones
+  : nombre "=" input {}
+  | nombre "=" input str {}
+  | print Expresiones {}
 --------------------------------------------------------------------------------
 
 --------------------------------------------------------------------------------
 -- Instrucciones para liberar la memoria de los apuntadores 'free'
 Free :: {Instr}
-  : free nombre
-  | free "|}{|" nombre
-  | free "<<>>" nombre
+  : free nombre {}
+  | free "|" "}" "{" "|" nombre  {}
+  | free "<<" ">>" nombre  {}
 --------------------------------------------------------------------------------
 
 
@@ -303,41 +311,42 @@ Free :: {Instr}
 --------------------------------------------------------------------------------
 
 Subrutina :: {}
-  : Boss
-  | Monster
+  : Boss    {}
+  | Monster {}
 
 --------------------------------------------------------------------------------
 -- Procedimientos
-Boss :: {}
-  : function nombre ( Parametros ) Tipo ":" Instrucciones fin
+--Boss :: {}
+Boss : 
+    function nombre "(" Parametros ")" Tipo ":" Instrucciones fin   {}
 --------------------------------------------------------------------------------
 
 
 --------------------------------------------------------------------------------
 -- Funciones
 Monster :: {}
-  : proc nombre "(" Parametros ")" Tipo ":" Instrucciones fin
+  : proc nombre "(" Parametros ")" Tipo ":" Instrucciones fin   {}
 --------------------------------------------------------------------------------
 
 
 --------------------------------------------------------------------------------
 -- Parametros de las subrutinas
 Parametros :: {}
-  : Parametro
-  | Parametros "," Parametro
+  : Parametro   {}
+  | Parametros "," Parametro    {}
 
 
 Parametro :: {} 
-  : Tipo nombre
-  | Tipo "?" nombre
-  | {- Lambda -}
+  : Tipo nombre {}
+  | Tipo "?" nombre {}
+  | {- Lambda -}    {}
 --------------------------------------------------------------------------------
 
 
 --------------------------------------------------------------------------------
 -- Llamada a subrutinas
 FuncCall :: {Instr}
-  : funcCall Subrutina
+  : funcCall Subrutina {}
 --------------------------------------------------------------------------------
 
 
@@ -347,55 +356,57 @@ FuncCall :: {Instr}
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 
-Expresiones :: {}
-  : Expresion
-  | Expresiones "," Expresion
+--Expresiones :: {}
+Expresiones : 
+    Expresion   {}
+  | Expresiones "," Expresion   {}
 
 
-Expresion :: {Expr}
-  : Expresion "+" Expresion
-  | Expresion "-" Expresion
-  | Expresion "*" Expresion
-  | Expresion "%" Expresion
-  | Expresion "/" Expresion
-  | Expresion "//" Expresion
-  | Expresion "&&" Expresion
-  | Expresion "||" Expresion
-  | Expresion "==" Expresion
-  | Expresion "!=" Expresion
-  | Expresion ">=" Expresion
-  | Expresion "<=" Expresion
-  | Expresion ">" Expresion
-  | Expresion "<" Expresion
-  | Expresion ":" Expresion
-  | Expresion "::" Expresion
+--Expresion :: {Expr}
+Expresion  : 
+    Expresion "+" Expresion     {}
+  | Expresion "-" Expresion     {}
+  | Expresion "*" Expresion     {}
+  | Expresion "%" Expresion     {}
+  | Expresion "/" Expresion     {}
+  | Expresion "//" Expresion    {}
+  | Expresion "&&" Expresion    {}
+  | Expresion "||" Expresion    {}
+  | Expresion "==" Expresion    {}
+  | Expresion "!=" Expresion    {}
+  | Expresion ">=" Expresion    {}
+  | Expresion "<=" Expresion    {}
+  | Expresion ">" Expresion     {}
+  | Expresion "<" Expresion     {}
+  | Expresion ":" Expresion     {}
+  | Expresion "::" Expresion    {}
   
   --
-  | Expresion "?" Expresion ":" Expresion
-  | "(" Expresion ")"
-  | "|}" Expresiones "{|"
-  | "<<" Expresiones ">>"
-  | FuncCall
-  | new Tipo
+  | Expresion "?" Expresion ":" Expresion   {}
+  | "(" Expresion ")"       {}
+  | "|}" Expresiones "{|"   {}
+  | "<<" Expresiones ">>"   {}
+  | FuncCall    {}
+  | new Tipo    {}
   
   -- Operadores unarios
-  | "-" Expresion %prec negativo
-  | "#" Expresion
-  | "!" Expresion
-  | upperCase Expresion
-  | lowerCase Expresion
-  | Expresion "++"
-  | Expresion "--"
+  | "-" Expresion %prec negativo    {}
+  | "#" Expresion           {}
+  | "!" Expresion           {}
+  | upperCase Expresion     {}
+  | lowerCase Expresion     {}
+  | Expresion "++"          {}
+  | Expresion "--"          {}
   
   -- Literales
-  | true
-  | false
-  | entero
-  | flotante
-  | caracter
-  | string
-  | null
-  | Lvalue
+  | true        {}
+  | false       {}
+  | entero      {}
+  | flotante    {}
+  | caracter    {}
+  | string      {}
+  | null        {}
+  | Lvalue      {}
 
 
 --------------------------------------------------------------------------------
@@ -408,11 +419,11 @@ Expresion :: {Expr}
 --------------------------------------------------------------------------------
 -- Registros y uniones
 Registros :: {}
-  : registro nombre ":" Declaraciones fin
+  : registro nombre ":" Declaraciones fin   {}
 --------------------------------------------------------------------------------
 
 
 --------------------------------------------------------------------------------
 Apuntador :: {}
-  : Tipo pointer nombre
+  : Tipo pointer nombre {}
 --------------------------------------------------------------------------------

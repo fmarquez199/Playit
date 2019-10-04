@@ -6,7 +6,7 @@
 *  Francisco Javier    12-11163
 *  Natascha Gamboa     12-11250
 -}
-module Types where
+module Playit.Types where
 
 import Control.Monad.Trans.State
 import Control.Monad.IO.Class
@@ -149,7 +149,7 @@ showE :: Expr -> String
 showE (Literal lit _)                           = showL lit
 showE (Variables vars _)                        = showVar vars
 showE (Operador_Binario Suma e1 e2 _)           = showE e1 ++ " + " ++ showE e2
-showE (Operador_Binario Punto e1 e2 _)          = showE e1 ++ " . " ++ showE e2
+--showE (Operador_Binario Punto e1 e2 _)          = showE e1 ++ " . " ++ showE e2
 showE (Operador_Binario Resta e1 e2 _)          = showE e1 ++ " - " ++ showE e2
 showE (Operador_Binario Modulo e1 e2 _)         = showE e1 ++ " % " ++ showE e2
 showE (Operador_Binario Division e1 e2 _)       = showE e1 ++ " / " ++ showE e2
