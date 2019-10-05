@@ -130,7 +130,7 @@ import Playit.Types
 
 
 -- VERIFICAR
---%nonassoc nombre
+%nonassoc ":" 
 %right "."
 %left "||"
 %left "&&"
@@ -138,11 +138,11 @@ import Playit.Types
 %nonassoc ">" "<" ">=" "<="
 %left "+" "-" "::"
 %left "*" "/" "//" "%"
-%right negativo "!"
-%left "++" "|}" "{|" "<<" ">>"
-%left "--"
+%right  "!"
+%left "|}" "{|" "<<" ">>"
+%nonassoc negativo 
+%nonassoc "--" "++" 
 %right "#"
---%nonassoc nombre
 %%
 
 --------------------------------------------------------------------------------
@@ -158,7 +158,6 @@ Programa :
 
 EndInstructs:
     endInstr {}
-    | EndInstructs endInstr {}
     | {-empty-} {}
 
 --------------------------------------------------------------------------------
@@ -215,8 +214,8 @@ Declaraciones :
 --Declaracion ::  {SecuenciaInstr}
 Declaracion  :
     Tipo Identificadores        {}
-    | Tipo pointer nombre {}
-    | Tipo pointer nombre "=" Expresion {}
+    | Tipo pointer Identificador {}
+    | Tipo "|}" "{|"  pointer Identificador  {}
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 --                  Identificadores de las declaraciones
@@ -434,8 +433,12 @@ Expresion  :
   | "!" Expresion           {}
   | upperCase Expresion     {}
   | lowerCase Expresion     {}
-  | Expresion "++"          {}
-  | Expresion "--"          {}
+  | Lvalue "++"          {}
+  | "++" Lvalue          {}
+  | Lvalue "--"          {}
+  | "--" Lvalue  {}
+  | "<<" ">>"   {}
+
   
   -- Literales
   | true        {}
@@ -446,7 +449,6 @@ Expresion  :
   | string      {}
   | null        {}
   | Lvalue      {}
-
 
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------

@@ -785,7 +785,7 @@ free p
 ```
 **Ejemplo puntero a array de enteros**
 ```sh
-Power puff p = summon Power|}20{|
+Power|}{| puff p = summon Power|}20{|
 puff p|}1{| = 15
 free|}{| p
 ```
