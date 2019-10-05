@@ -183,7 +183,6 @@ DeclaracionUserDefinedType:
   {-Asignacion de tipos definidos por el usuario Registro,Union-}
     nombre nombre {}
     | nombre nombre "=" Expresion    {}
-    | nombre nombre "=" Expresion    {}
      {-Solo se permiten inicializaciones de arreglos cuando se declaran.
         Ejemplo:
             Contacto c = {2,3}
@@ -200,7 +199,7 @@ Instruccion  :
   | Play                {}
   | Button              {}
   | Asignacion          {}
-  | EntradaSalida       {}
+  | print Expresiones   {}
   | Free                {}
   | return Expresion    {}
   | break               {}
@@ -301,20 +300,20 @@ Guardia  :
 -- Instruccion de iteracion determinada 'control'
 --Controller :: {Instr}
 Controller : 
-   for InitVarTipoPrimitivo "=" Expresion "->" Expresion ":" Instrucciones fin     {}
- | for InitVarTipoPrimitivo "=" Expresion "->" Expresion while Expresion ":" Instrucciones fin   {}
- | for InitVarTipoCompuesto "<-" nombre ":" Instrucciones fin                {}
+   for InitVarTipoPrimitivoFor "=" Expresion "->" Expresion ":" Instrucciones fin     {}
+ | for InitVarTipoPrimitivoFor "=" Expresion "->" Expresion while Expresion ":" Instrucciones fin   {}
+ | for InitVarTipoCompuestoFor "<-" nombre ":" Instrucciones fin                {}
 
 
 
 -- Se inserta la variable de iteracion en la tabla de simbolos junto con su
 -- valor inicial, antes de construir el arbol de instrucciones del 'for'
 --InitVar :: {(Nombre, Expr)}
-InitVarTipoPrimitivo  : 
+InitVarTipoPrimitivoFor  : 
     nombre          {}
     | int nombre    {}
 
-InitVarTipoCompuesto: 
+InitVarTipoCompuestoFor: 
     nombre          {}
     | nombre nombre    {}
 
@@ -327,13 +326,7 @@ InitVarTipoCompuesto:
 Play  : 
     do ":" Instrucciones while Expresion endInstr fin {}
 --------------------------------------------------------------------------------
-
-
---------------------------------------------------------------------------------
--- Instrucciones de E/S 'drop' y 'joystick'
---EntradaSalida :: {Instr}
-EntradaSalida  : 
-  print Expresiones       {}
+  
 --------------------------------------------------------------------------------
 
 --------------------------------------------------------------------------------
@@ -358,7 +351,7 @@ Subrutina :
   | Monster {}
 
 --------------------------------------------------------------------------------
--- Procedimientos FALTA NO PERMITIR FUNCIONES ANIDADAS
+-- Procedimientos
 --Boss :: {}
 Boss : 
     function nombre "(" ParametrosFuncionDeclaracion ")" TipoRetornoFuncion ":" Instrucciones fin   {}
@@ -366,7 +359,7 @@ Boss :
 
 
 --------------------------------------------------------------------------------
--- Funciones FALTA NO PERMITIR FUNCIONES ANIDADAS
+-- Funciones
 --Monster :: {}
 Monster  : 
     proc nombre "(" ParametrosFuncionDeclaracion ")" TipoRetornoFuncion ":" Instrucciones fin       {}
@@ -388,7 +381,6 @@ ParametrosFuncionDeclaracion  :
 ParametroEnFuncionDeclaracion  : 
     Tipo nombre         {}
   | Tipo "?" nombre     {}
-  | nombre "?" nombre     {}
   | nombre "?" nombre     {}
   | {- empty -}        {}
 --------------------------------------------------------------------------------
@@ -480,22 +472,6 @@ Expresion  :
   | string      {}
   | null        {}
   | Lvalue      {}
-
---------------------------------------------------------------------------------
---------------------------------------------------------------------------------
---                           Registros, Unions, Apuntadores
---------------------------------------------------------------------------------
---------------------------------------------------------------------------------
-
-
---------------------------------------------------------------------------------
--- Registros y uniones
---------------------------------------------------------------------------------
-
-
---------------------------------------------------------------------------------
---Apuntador :: {}
---------------------------------------------------------------------------------
 
 
 {
