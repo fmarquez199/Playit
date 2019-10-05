@@ -42,7 +42,7 @@ $char_id        = [$digitos $abecedario \_ \']
 @strings        = \~ @texto \~
 @end_instruction= (\n)+
 @float          = $digitos+ \' $digitos+
-@comments       = \"\' [$comentarios $white]* \'\"
+@comments       = \"\' ( . # [\'\"] |\n)* \'\"
 @comment        = \@ [$comentarios # \n]* \n 
 @error          = .
 
@@ -144,9 +144,10 @@ tokens :-
   
   -- Comentarios
 
-  @comments           ; -- Se ignoran los comentarios
-  @comment             ;-- Se ignora el comentario
-
+--  @comments           ; -- Se ignoran los comentarios
+ -- @comment             ;-- Se ignora el comentario
+  @comments            ;
+  @comment             ;
   -- Caracteres invalidos
 
   @error               { tok (\p s -> TkERR p s) }
@@ -160,6 +161,10 @@ pos (AlexPn _ f c) = " en la fila: " ++ (show f) ++ ", columna: " ++ (show c)
 
 data Token = TkWRL AlexPosn String
            | TkRNE AlexPosn String
+
+           | TkCMV AlexPosn String
+           | TkCM1 AlexPosn String
+           
            | TkLOS AlexPosn String
            | TkOFK AlexPosn String
            | TkBTN AlexPosn String
@@ -283,6 +288,10 @@ instance Show Token where
     show (TkNEQ p s) = "Token " ++ s ++ (pos p) -- !=
     show (TkGET p s) = "Token " ++ s ++ (pos p) -- >=
     show (TkLSA p s) = "Token " ++ s ++ (pos p) -- <<
+
+    show (TkCMV p s) = "Comentario varias lineas" ++ (pos p) -- ~* whatever *~
+    show (TkCM1 p s) = "Comentario una linea" ++ (pos p) -- @ whatever
+
     show (TkLSC p s) = "Token " ++ s ++ (pos p) -- >>
     show (TkINC p s) = "Token " ++ s ++ (pos p) -- ++
     show (TkDEC p s) = "Token " ++ s ++ (pos p) -- --

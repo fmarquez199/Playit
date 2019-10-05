@@ -154,7 +154,7 @@ import Playit.Types
 --Programa :: {}
 {-Bug raro donde los archivos siempre tienen un \n al final chequear-}
 Programa :
-    EndInstructs world programa ":" Instrucciones fin  endInstr {[$5]}
+    EndInstructs world programa ":" InstruccionesPrincipal fin  endInstr {[$5]}
 
 EndInstructs:
     endInstr {}
@@ -166,10 +166,29 @@ EndInstructs:
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 
+InstruccionesPrincipal:
+   InstruccionPrincipal InstruccionesPrincipal {}
+    | InstruccionPrincipal {}
+
+InstruccionPrincipal :
+   Instruccion {}
+  | FunctionCreate       {}
+
 --Instrucciones ::  {SecuenciaInstr}
 Instrucciones :  
     Instruccion Instrucciones    {}
   |  Instruccion                 {}
+
+DeclaracionUserDefinedType:
+  {-Asignacion de tipos definidos por el usuario Registro,Union-}
+    nombre nombre {}
+    | nombre nombre "=" Expresion    {}
+    | nombre nombre "=" Expresion    {}
+     {-Solo se permiten inicializaciones de arreglos cuando se declaran.
+        Ejemplo:
+            Contacto c = {2,3}
+     -}
+    | nombre nombre "=" "{" Expresiones "}" {} 
 
 --Instruccion ::  {Instr} 
 Instruccion  : 
@@ -177,22 +196,12 @@ Instruccion  :
 
   {-Creacion de tipos definidos por el usuario Registro,Union-}
   | registro nombre ":" EndInstructs Declaraciones fin      {}
-
-  {-Asignacion de tipos definidos por el usuario Registro,Union-}
-  | nombre nombre {}
-  | nombre nombre "=" Expresion    {}
-     {-Solo se permiten inicializaciones de arreglos cuando se declaran.
-        Ejemplo:
-            Contacto c = {2,3}
-     -}
-  | nombre nombre "=" "{" Expresiones "}" {} 
   | Controller          {}
   | Play                {}
   | Button              {}
   | Asignacion          {}
   | EntradaSalida       {}
   | Free                {}
-  | FunctionCreate      {}
   | return Expresion    {}
   | break               {}
   | continue            {}
@@ -214,6 +223,7 @@ Declaraciones :
 --Declaracion ::  {SecuenciaInstr}
 Declaracion  :
     Tipo Identificadores        {}
+    | DeclaracionUserDefinedType {}
     | Tipo pointer Identificador {}
     | Tipo "|}" "{|"  pointer Identificador  {}
 --------------------------------------------------------------------------------
@@ -291,16 +301,23 @@ Guardia  :
 -- Instruccion de iteracion determinada 'control'
 --Controller :: {Instr}
 Controller : 
-   for InitVar "=" entero "->" entero ":" Instrucciones fin     {}
- | for InitVar "=" entero "->" entero while Expresion ":" Instrucciones fin   {}
- | for InitVar "<-" nombre ":" Instrucciones fin                {}
+   for InitVarTipoPrimitivo "=" Expresion "->" Expresion ":" Instrucciones fin     {}
+ | for InitVarTipoPrimitivo "=" Expresion "->" Expresion while Expresion ":" Instrucciones fin   {}
+ | for InitVarTipoCompuesto "<-" nombre ":" Instrucciones fin                {}
+
 
 
 -- Se inserta la variable de iteracion en la tabla de simbolos junto con su
 -- valor inicial, antes de construir el arbol de instrucciones del 'for'
 --InitVar :: {(Nombre, Expr)}
-InitVar  : 
-    nombre  {}
+InitVarTipoPrimitivo  : 
+    nombre          {}
+    | int nombre    {}
+
+InitVarTipoCompuesto: 
+    nombre          {}
+    | nombre nombre    {}
+
 --------------------------------------------------------------------------------
 
 
@@ -344,7 +361,7 @@ Subrutina :
 -- Procedimientos FALTA NO PERMITIR FUNCIONES ANIDADAS
 --Boss :: {}
 Boss : 
-    function nombre "(" ParametrosFuncionDeclaracion ")" Tipo ":" Instrucciones fin   {}
+    function nombre "(" ParametrosFuncionDeclaracion ")" TipoRetornoFuncion ":" Instrucciones fin   {}
 --------------------------------------------------------------------------------
 
 
@@ -352,9 +369,12 @@ Boss :
 -- Funciones FALTA NO PERMITIR FUNCIONES ANIDADAS
 --Monster :: {}
 Monster  : 
-    proc nombre "(" ParametrosFuncionDeclaracion ")" Tipo ":" Instrucciones fin       {}
+    proc nombre "(" ParametrosFuncionDeclaracion ")" TipoRetornoFuncion ":" Instrucciones fin       {}
 --------------------------------------------------------------------------------
 
+TipoRetornoFuncion:
+    Tipo    {}
+    | nombre    {}
 --------------------------------------------------------------------------------
 -- Parametros de las subrutinas cuando se crean
 --Parametros :: {}
@@ -370,7 +390,7 @@ ParametroEnFuncionDeclaracion  :
   | Tipo "?" nombre     {}
   | nombre "?" nombre     {}
   | nombre "?" nombre     {}
-  | {- Lambda -}        {}
+  | {- empty -}        {}
 --------------------------------------------------------------------------------
 
 
@@ -433,10 +453,21 @@ Expresion  :
   | "!" Expresion           {}
   | upperCase Expresion     {}
   | lowerCase Expresion     {}
-  | Lvalue "++"          {}
-  | "++" Lvalue          {}
-  | Lvalue "--"          {}
-  | "--" Lvalue  {}
+    
+  {- Notar que solo se permiten ++ y -- para variables por lo que
+  --(a + 1) debería dar error pero --(--a) no!
+  
+    Se puede hacer que la expresion en vez de regresar el valor de a regrese 
+  la misma a.
+  
+    o se puede poner abajo en vez de Expresion Lvalue y --(--a) no sería permitido
+  -}
+  | Expresion "++"          {}
+  | "++" Expresion          {}
+  | Expresion "--"          {}
+  | "--" Expresion  {}
+
+  -- Para a = <<>>
   | "<<" ">>"   {}
 
   

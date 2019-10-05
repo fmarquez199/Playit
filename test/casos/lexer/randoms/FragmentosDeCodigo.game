@@ -13,8 +13,8 @@ world %FragmentosDeCodigo%:
   Runes|}3{| nombres = |}~Natascha~, ~Francisco~, ~Manuel~{|
   Skill|}3{| indices = |}3'67, 3'20, 3'0{|
   |}*s*, *t*, *r*, *i*, *n*, *g*, *s*{| == ~strings~
-  Kit lista1 = <<*C*, *3*>>
-  Kit lista2
+  Kit of Power lista1 = <<*C*, *3*>>
+  Kit of Rune lista2
   Inventory Registro:
     Power up
     Rune tip
@@ -47,10 +47,6 @@ world %FragmentosDeCodigo%:
     Skill bottomRightY
   .~
 
-  Items Shape:
-    Circle c
-    Rectangle r
-  .~
 
   boss areaCirculo(Circle ?c) Skill:
     unlock 3'14 * c spawn radius * c spawn radius
@@ -62,9 +58,8 @@ world %FragmentosDeCodigo%:
     sh spawn c spawn centerY = 5'0
     sh spawn c spawn radius = 15
     drop ~el area del circulo es ~, areaCirculo(sh spawn c)
-  .~
 
-  Power puff p = summon Power|}20{|
+  Power|}{| puff p = summon Power|}20{|
   puff p|}1{| = 15
   free|}{| p
 

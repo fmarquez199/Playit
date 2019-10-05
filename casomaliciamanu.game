@@ -43,11 +43,18 @@ a3 = a2
     Kit of Kit of Power lista1 = << <<a2,a3>> , <<a2,a3>>  >>
     
     lista1|}0{| = 240
+
+    Inventory PrimerNombre:
+        Runes nombre
+    .~
     
+    Inventory Nombre:
+        PrimerNombre n
+    .~
     
     Inventory Contacto:
 
-
+        Nombre n
 
         Kit of Kit of Power lista1 = << <<a2,a3>> , <<a2,a3>>  >>
 
@@ -61,8 +68,8 @@ a3 = a2
     
     Kit of Power l1 = <<1,2,3,4,4>>
     Contacto c = {<<l1,l1>>, a2}
-
-    c spawn up = 5
+    c spawn n spawn n spawn nombre = joystick ~Dame un nombre YEH NOW BB~
+    c spawn lista1|}2{||}1{| = joystick ~HEY LOL~
     c spawn tip = *c*    
         
     Power puff p = summon Power
@@ -84,7 +91,7 @@ a3 = a2
     Kit of Power puff plista3 = summon Kit of Power
     
     puff plista3 = <<<<2>>>>::<<>>
-    puff plista3 = (b2? a2 + 1 : abc|}b1 - 1{|)::<<1,2>>
+    puff plista3 = (b2? a2 + 1 : abc|}b1 - 1{|):<<1,2>>
     puff plista3 = <<1,2>>
     
     puff plista4 = puff plista3
@@ -94,11 +101,194 @@ a3 = a2
     @ Esto debería dar error p1 = p2
     
     p1 = 0
-    puff p2|}-(--(--(p1))){| = 12
-    p4|}--p1{| = 12
+    puff p2|}-(--(--(p1))){| = joystick ~HEY LOL~
+    p4|}--p1{| = joystick
     
-.~
+    
+    a + 2 + 2 * 3 // 3 / 4  % 4 - 5 - -1 + #kit2
+     
+    ((a + (2)) + 2) * ((3 // 3) / (4  % 4) - 5) - ((-1) + #kit2)
+    
+    ((b1 || Win && Lose || !b2 ) == Win && b4 != (b2? Win:Lose))
+     
+    Rune c = ^*c*
+    Rune c = .*c*
+    Rune c = ^.c
+    Rune c = .^c
+    Rune c = .(^c)
+    Rune c = (.(^c))
+    Rune c = ^(.(c))
+    
+    
+    "' Hola '"
+    play:
+      @<Lista de Instrucciones>
+      @test = 1
+            gameOver
+            keepPlaying
+       
+        @ Notar que la condición de lock debe ser booleana
+        controller Power i = (2 - 2) -> 10 - 1 lock (abc|}0{| + b2 ) * (b2? a2 + 1 : abc|}b1 - 1{|):
 
+            Button:
+                | n1 > 2 }
+            gameOver
+            keepPlaying
+                    Power a
+            .~    
+            Button:
+                | n1 > 2 }
+                    n1 + 2
+                | notPressed }
+                    n1 + 2
+            .~    
+        .~ 
+             
+      asd
+    lock (abc|}0{| + b2 ) * (b2? a2 + 1 : abc|}b1 - 1{|)
+    .~
+    boss f2(Power p,Contacto? c) Contacto:
+    .~
+    
+    boss f(Power p,Contacto? c) Contacto:
+            Rune ast1 = *\** , m1 , a1=*a*,n1=*n*,u1=*u*,ast2 = *\** 
+
+            m1 = *M*     @ Asignación ñiangara yo no me imprimo L$OL
+
+            Battle b1 = Win , b2=Lose ,b3 , b4 = (b1 && b2) || b3,b5 = b1 > 3? Win:Lose
+
+            b3 = Lose
+            
+            
+            Power a2 = 0,b2 = 1,c2 = a2 + 1,d2 = a2*b2
+
+            Skill a3 = 1,b3 = 1'0,c3 = a3 + 1,d3 = a3*b3
+            
+        a3 = a2 
+            
+            Power|}2{| enteros1,enteros2 = |}a2,c2 + a3,(abc|}0{| + b2 ) * (b2? a2 + 1 : abc|}b1 - 1{|){|
+            
+            Power |}2{| abc
+
+            abc|}0{| = 0
+
+            abc|}1{| = 1
+
+
+
+            abc|}(abc|}0{| + b2 ) * (b2? a2 + 1 : abc|}b1 - 1{|){| = (abc|}0{| + b2 ) * (b2? a2 + 1 : abc|}b1 - 1{|)
+            
+            Kit of Kit of Power lista1 = << <<a2,a3>> , <<a2,a3>>  >>
+            
+            lista1|}0{| = 240
+
+            Inventory PrimerNombre:
+                Runes nombre
+            .~
+            
+            Inventory Nombre:
+                PrimerNombre n
+            .~
+            
+            Inventory Contacto:
+
+                Nombre n
+
+                Kit of Kit of Power lista1 = << <<a2,a3>> , <<a2,a3>>  >>
+
+
+                Power|}2{| enteros1,enteros2 = |}a2,c2 + a3,(abc|}0{| + b2 ) * (b2? a2 + 1 : abc|}b1 - 1{|){|
+
+
+                Rune ast1 = *\** , m1 , a1=*a*,n1=*n*,u1=*u*,ast2 = *\** 
+
+            .~
+            
+            Kit of Power l1 = <<1,2,3,4,4>>
+            Contacto c = {<<l1,l1>>, a2}
+            c spawn n spawn n spawn nombre = joystick ~Dame un nombre YEH NOW BB~
+            c spawn lista1|}2{||}1{| = joystick ~HEY LOL~
+            c spawn tip = *c*    
+                
+            Power puff p = summon Power
+            
+            puff p = (b2? a2 + 1 : abc|}b1 - 1{|)
+            
+            puff p = 15
+            
+            free p
+            
+            Power|}{| puff p2 = summon Power|}30{|
+            
+            puff p2|}0{| = 21
+            
+            free|}{| p2
+            
+            Kit of Power l1 = <<1,2,3,4,4>>
+            
+            Kit of Power puff plista3 = summon Kit of Power
+            
+            puff plista3 = <<<<2>>>>::<<>>
+            puff plista3 = (b2? a2 + 1 : abc|}b1 - 1{|):<<1,2>>
+            puff plista3 = <<1,2>>
+            
+            puff plista4 = puff plista3
+
+            @ Esto debería dar error p2|}10{| = 12
+            @ Esto debería dar error p1 = p2|}10{|
+            @ Esto debería dar error p1 = p2
+            
+            p1 = 0
+            puff p2|}-(--(--(p1))){| = joystick ~HEY LOL~
+            p4|}--p1{| = joystick
+            
+            
+            a + 2 + 2 * 3 // 3 / 4  % 4 - 5 - -1 + #kit2
+             
+            ((a + (2)) + 2) * ((3 // 3) / (4  % 4) - 5) - ((-1) + #kit2)
+            
+            ((b1 || Win && Lose || !b2 ) == Win && b4 != (b2? Win:Lose))
+             
+            Rune c = ^*c*
+            Rune c = .*c*
+            Rune c = ^.c
+            Rune c = .^c
+            Rune c = .(^c)
+            Rune c = (.(^c))
+            Rune c = ^(.(c))
+            
+            
+            "' Hola '"
+            play:
+              @<Lista de Instrucciones>
+              @test = 1
+                    gameOver
+                    keepPlaying
+               
+                @ Notar que la condición de lock debe ser booleana
+                controller Power i = (2 - 2) -> 10 - 1 lock (abc|}0{| + b2 ) * (b2? a2 + 1 : abc|}b1 - 1{|):
+
+                    Button:
+                        | n1 > 2 }
+                    gameOver
+                    keepPlaying
+                            Power a
+                    .~    
+                    Button:
+                        | n1 > 2 }
+                            n1 + 2
+                        | notPressed }
+                            n1 + 2
+                    .~    
+                .~ 
+                     
+              asd
+            lock (abc|}0{| + b2 ) * (b2? a2 + 1 : abc|}b1 - 1{|)
+            .~
+    .~
+    
+    Power a = kill f
+.~
 
 
 
