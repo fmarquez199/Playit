@@ -130,7 +130,7 @@ import Playit.Types
 
 
 -- VERIFICAR
-%nonassoc nombre
+--%nonassoc nombre
 %right "."
 %left "||"
 %left "&&"
@@ -142,7 +142,7 @@ import Playit.Types
 %left "++" "|}" "{|" "<<" ">>"
 %left "--"
 %right "#"
-
+--%nonassoc nombre
 %%
 
 --------------------------------------------------------------------------------
@@ -152,13 +152,53 @@ import Playit.Types
 --------------------------------------------------------------------------------
 
 --Programa :: {}
+{-Bug raro donde los archivos siempre tienen un \n al final chequear-}
 Programa :
-    world programa ":" Instrucciones fin EndInstructs{[$4]}
+    world programa ":" Instrucciones fin  endInstr {[$4]}
 
 EndInstructs:
     endInstr {}
     | EndInstructs endInstr {}
-    | {--empty--} {}
+
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--                        Secuencia de instrucciones
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+
+--Instrucciones ::  {SecuenciaInstr}
+Instrucciones :  
+    Instruccion Instrucciones    {}
+  |  Instruccion                 {}
+
+--Instruccion ::  {Instr} 
+Instruccion  : 
+  Declaracion       {}
+
+  {-Creacion de tipos definidos por el usuario Registro,Union-}
+  | registro nombre ":" EndInstructs Declaraciones fin      {}
+
+  {-Asignacion de tipos definidos por el usuario Registro,Union-}
+  | nombre nombre {}
+  | nombre nombre "=" Expresion    {}
+     {-Solo se permiten inicializaciones de arreglos cuando se declaran.
+        Ejemplo:
+            Contacto c = {2,3}
+     -}
+  | nombre nombre "=" "{" Expresiones "}" {} 
+  | Controller          {}
+  | Play                {}
+  | Button              {}
+  | Asignacion          {}
+  | EntradaSalida       {}
+  | Free                {}
+  | FunctionCreate      {}
+  | return Expresion    {}
+  | break               {}
+  | continue            {}
+  | Expresion           {}
+  | endInstr            {}
+
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 --                            Declaraciones
@@ -174,6 +214,8 @@ Declaraciones :
 --Declaracion ::  {SecuenciaInstr}
 Declaracion  :
     Tipo Identificadores        {}
+    | Tipo pointer nombre {}
+    | Tipo pointer nombre "=" Expresion {}
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 --                  Identificadores de las declaraciones
@@ -217,55 +259,13 @@ Tipo :
   | str                         {}
   | Tipo "|}" Expresion "{|"    {}
   | list of Tipo                {}
-  | Apuntador                   {}
-
-
---------------------------------------------------------------------------------
---------------------------------------------------------------------------------
---                        Secuencia de instrucciones
---------------------------------------------------------------------------------
---------------------------------------------------------------------------------
-
---Instrucciones ::  {SecuenciaInstr}
-Instrucciones :  
-    Instruccion Instrucciones    {}
-  |  Instruccion                 {}
-
---Instruccion ::  {Instr} 
-Instruccion  : 
-   Declaraciones       {}
-
-  {-Creacion de tipos definidos por el usuario Registro,Union-}
-  | registro nombre ":" EndInstructs Declaraciones fin EndInstructs        {}
-
-  {-Asignacion de tipos definidos por el usuario Registro,Union-}
-  | nombre nombre {}
-  | nombre nombre "=" Expresion    {}
-
-  | Controller          {}
-  | Play                {}
-  | Button              {}
-  | Asignacion          {}
-  | EntradaSalida       {}
-  | Free                {}
-  | FunctionCreate      {}
-  | return Expresion    {}
-  | break               {}
-  | continue            {}
-  | Expresion           {}
-  | endInstr            {}
 
 
 --------------------------------------------------------------------------------
 -- Instruccion de asignacion '='
 --Asignacion :: {Instr}
 Asignacion  : 
-     {-Solo se permiten inicializaciones de arreglos cuando se declaran.
-        Ejemplo:
-            Contacto c = {2,3}
-     -}
-     nombre nombre "=" "{" Expresiones "}" {} 
-    | Lvalue "=" Expresion      {}
+     Lvalue "=" Expresion      {}
 --------------------------------------------------------------------------------
 
 
@@ -308,7 +308,7 @@ InitVar  :
 -- Instruccion de iteracion indeterminada 'play unlock'
 --Play :: {Instr}
 Play  : 
-    do ":" Instrucciones while Expresion fin {}
+    do ":" Instrucciones while Expresion endInstr fin {}
 --------------------------------------------------------------------------------
 
 
@@ -324,7 +324,7 @@ EntradaSalida  :
 --Free :: {Instr}
 Free : 
     free nombre                 {}
-  | free "|" "}" "{" "|" nombre {}
+  | free "|}" "{|" nombre {}
   | free "<<" ">>" nombre       {}
 --------------------------------------------------------------------------------
 
@@ -368,6 +368,8 @@ ParametrosFuncionDeclaracion  :
 ParametroEnFuncionDeclaracion  : 
     Tipo nombre         {}
   | Tipo "?" nombre     {}
+  | nombre "?" nombre     {}
+  | nombre "?" nombre     {}
   | {- Lambda -}        {}
 --------------------------------------------------------------------------------
 
@@ -459,8 +461,6 @@ Expresion  :
 
 --------------------------------------------------------------------------------
 --Apuntador :: {}
-Apuntador  : 
-    Tipo pointer nombre {}
 --------------------------------------------------------------------------------
 
 
