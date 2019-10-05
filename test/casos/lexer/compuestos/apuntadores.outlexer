@@ -60,13 +60,11 @@ Token Kit en la fila: 8, columna: 31
 Token of en la fila: 8, columna: 35
 Token Power en la fila: 8, columna: 38
 Token End Instruction \n en la fila: 8, columna: 43
-Token End Instruction \n en la fila: 9, columna: 1
 Token puff en la fila: 10, columna: 1
 Token identificador "p" en la fila: 10, columna: 6
 Token = en la fila: 10, columna: 8
 Token entero 13 en la fila: 10, columna: 10
 Token End Instruction \n en la fila: 10, columna: 12
-Token End Instruction \n en la fila: 11, columna: 1
 Token free en la fila: 12, columna: 1
 Token identificador "p" en la fila: 12, columna: 6
 Token End Instruction \n en la fila: 12, columna: 7
@@ -75,7 +73,6 @@ Token |} en la fila: 13, columna: 5
 Token {| en la fila: 13, columna: 7
 Token identificador "p" en la fila: 13, columna: 10
 Token End Instruction \n en la fila: 13, columna: 11
-Token End Instruction \n en la fila: 14, columna: 1
 Token identificador "p" en la fila: 15, columna: 1
 Token == en la fila: 15, columna: 3
 Token DeathZone en la fila: 15, columna: 6

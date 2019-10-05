@@ -21,7 +21,7 @@ module Playit.Lexer (
 
 $digitos        = [0-9]
 $abecedario     = [a-zA-Z]
-$simbolos       = [\! \" \# \$ \% \& \' \( \) \* \+ \, \- \. \/ \: \; \< \= \> \? \@]
+$simbolos       = [\! \" \# \] \[ \$ \% \& \' \( \) \* \+ \, \- \. \/ \: \; \< \= \> \? \@]
 $especial       = [ \\  \^ \_ \` \{ \| \} \~ '\0' '\t' '\n' '\\' '\'' '\"' '\~' '\*']
 $validos        = [$digitos $abecedario $simbolos $especial $white]
 $comentarios    = [$validos ~$validos]

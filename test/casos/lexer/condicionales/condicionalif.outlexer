@@ -2,13 +2,11 @@ Token world en la fila: 1, columna: 1
 Token nombre programa %HolaMundo% en la fila: 1, columna: 7
 Token : en la fila: 1, columna: 18
 Token End Instruction \n en la fila: 1, columna: 19
-Token End Instruction \n en la fila: 2, columna: 1
 Token Button en la fila: 3, columna: 5
 Token identificador "edad" en la fila: 3, columna: 12
 Token = en la fila: 3, columna: 17
 Token entero 18 en la fila: 3, columna: 19
 Token End Instruction \n en la fila: 3, columna: 21
-Token End Instruction \n en la fila: 4, columna: 1
 Token Battle en la fila: 5, columna: 5
 Token identificador "puedeConducir" en la fila: 5, columna: 12
 Token End Instruction \n en la fila: 5, columna: 25
@@ -89,4 +87,3 @@ Token .~ en la fila: 25, columna: 5
 Token End Instruction \n en la fila: 25, columna: 13
 Token .~ en la fila: 26, columna: 1
 Token End Instruction \n en la fila: 26, columna: 3
-Token End Instruction \n en la fila: 27, columna: 1

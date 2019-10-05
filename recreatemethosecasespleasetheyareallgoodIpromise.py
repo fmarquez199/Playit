@@ -3,7 +3,7 @@ import os
 
 os.system("stack build")
 
-test_todos = Path('test/casos/').glob('**/*.game')
+test_todos = Path('test/casos/parser').glob('**/*.game')
 
 test_files = [filename for filename in test_todos]
 
@@ -17,7 +17,7 @@ for filename in test_files:
     command_runtest = 'stack run ' + filename.as_posix()
     output = os.popen(command_runtest).read()
     
-    finameout = filename.as_posix().split(filename.suffix)[0] + ".out"
+    finameout = filename.as_posix().split(filename.suffix)[0] + ".outparser"
     fileout  = open(finameout,"w")
     fileout.write(output)
     filegame.close()

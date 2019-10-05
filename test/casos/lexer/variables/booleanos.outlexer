@@ -11,7 +11,6 @@ Token End Instruction \n en la fila: 2, columna: 20
 Token Battle en la fila: 3, columna: 1
 Token identificador "bool3" en la fila: 3, columna: 8
 Token End Instruction \n en la fila: 3, columna: 13
-Token End Instruction \n en la fila: 4, columna: 1
 Token identificador "bool1" en la fila: 5, columna: 1
 Token >= en la fila: 5, columna: 9
 Token identificador "bool2" en la fila: 5, columna: 13
