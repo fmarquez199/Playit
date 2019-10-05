@@ -30,7 +30,6 @@ Token , en la fila: 8, columna: 47
 Token string ~ es:~ en la fila: 8, columna: 48
 Token End Instruction \n en la fila: 8, columna: 54
 Token End Instruction \n en la fila: 9, columna: 3
-Comentario una linea en la fila: 10, columna: 5
 Token identificador "i" en la fila: 11, columna: 5
 Token = en la fila: 11, columna: 7
 Token entero 1 en la fila: 11, columna: 9
@@ -61,7 +60,6 @@ Token entero 10 en la fila: 15, columna: 15
 Token End Instruction \n en la fila: 15, columna: 17
 Token .~ en la fila: 16, columna: 5
 Token End Instruction \n en la fila: 16, columna: 7
-Comentario una linea en la fila: 17, columna: 5
 Token End Instruction \n en la fila: 18, columna: 3
 Token identificador "seguir" en la fila: 19, columna: 5
 Token = en la fila: 19, columna: 12

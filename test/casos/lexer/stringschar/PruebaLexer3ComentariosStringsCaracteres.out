@@ -1,6 +1,5 @@
 Token string ~ esto es un String ~ en la fila: 1, columna: 1
 Token End Instruction \n en la fila: 1, columna: 23
-Comentario varias lineas en la fila: 2, columna: 1
 Token End Instruction \n en la fila: 4, columna: 4
 Token caracter *\n* en la fila: 5, columna: 1
 Token End Instruction \n en la fila: 5, columna: 6
@@ -12,4 +11,3 @@ Error, caracter inesperado ~ en la fila: 6, columna: 5
 Token End Instruction \n en la fila: 6, columna: 7
 Token End Instruction \n en la fila: 7, columna: 2
 Token : en la fila: 8, columna: 1
-Comentario una linea en la fila: 8, columna: 3

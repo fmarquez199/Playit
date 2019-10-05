@@ -114,9 +114,9 @@ Token ( en la fila: 57, columna: 1
 Token End Instruction \n en la fila: 57, columna: 3
 Token ) en la fila: 58, columna: 1
 Token End Instruction \n en la fila: 58, columna: 3
-Token [ en la fila: 59, columna: 1
+Error, caracter inesperado [ en la fila: 59, columna: 1
 Token End Instruction \n en la fila: 59, columna: 3
-Token ] en la fila: 60, columna: 1
+Error, caracter inesperado ] en la fila: 60, columna: 1
 Token End Instruction \n en la fila: 60, columna: 3
 Token { en la fila: 61, columna: 1
 Token End Instruction \n en la fila: 61, columna: 3
@@ -165,9 +165,7 @@ Token entero 000000000000000001 en la fila: 78, columna: 1
 Token End Instruction \n en la fila: 78, columna: 20
 Token flotante 000000000001'0000000000000000000000001 en la fila: 79, columna: 1
 Token End Instruction \n en la fila: 79, columna: 40
-Comentario varias lineas en la fila: 80, columna: 1
 Token End Instruction \n en la fila: 80, columna: 32
-Comentario una linea en la fila: 81, columna: 1
 Token string ~String~ en la fila: 82, columna: 1
 Token End Instruction \n en la fila: 82, columna: 10
 Token caracter *c* en la fila: 83, columna: 1

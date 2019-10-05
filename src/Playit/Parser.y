@@ -121,7 +121,7 @@ import Playit.Types
   "="               { TkASG _ _}
   upperCase         { TkUPP _ _}
   lowerCase         { TkLOW _ _}
-
+  
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 --                          Reglas de asociatividad
@@ -425,7 +425,7 @@ Expresion  :
   | new Tipo                {}
 
   | input        {}
-  | input str    {}
+  | input string    {}
   
   -- Operadores unarios
   | "-" Expresion %prec negativo    {}

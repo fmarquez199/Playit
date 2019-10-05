@@ -60,7 +60,6 @@ Token > en la fila: 30, columna: 1
 Token End Instruction \n en la fila: 30, columna: 3
 Token ? en la fila: 31, columna: 1
 Token End Instruction \n en la fila: 31, columna: 3
-Comentario una linea en la fila: 32, columna: 1
 Token identificador "A" en la fila: 33, columna: 1
 Token End Instruction \n en la fila: 33, columna: 3
 Token identificador "B" en la fila: 34, columna: 1
@@ -113,11 +112,11 @@ Token identificador "Y" en la fila: 57, columna: 1
 Token End Instruction \n en la fila: 57, columna: 3
 Token identificador "Z" en la fila: 58, columna: 1
 Token End Instruction \n en la fila: 58, columna: 3
-Token [ en la fila: 59, columna: 1
+Error, caracter inesperado [ en la fila: 59, columna: 1
 Token End Instruction \n en la fila: 59, columna: 3
 Error, caracter inesperado \ en la fila: 60, columna: 1
 Token End Instruction \n en la fila: 60, columna: 3
-Token ] en la fila: 61, columna: 1
+Error, caracter inesperado ] en la fila: 61, columna: 1
 Token End Instruction \n en la fila: 61, columna: 3
 Token ^ en la fila: 62, columna: 1
 Token End Instruction \n en la fila: 62, columna: 3

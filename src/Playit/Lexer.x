@@ -144,8 +144,8 @@ tokens :-
   
   -- Comentarios
 
-  @comments            { tok (\p s -> TkCMV p (init s)) }
-  @comment             { tok (\p s -> TkCM1 p (init s)) }
+  @comments           ; -- Se ignoran los comentarios
+  @comment             ;-- Se ignora el comentario
 
   -- Caracteres invalidos
 
@@ -229,8 +229,6 @@ data Token = TkWRL AlexPosn String
            | TkASG AlexPosn String
            | TkUPP AlexPosn String
            | TkLOW AlexPosn String
-           | TkCMV AlexPosn String
-           | TkCM1 AlexPosn String
            | TkFIN AlexPosn String
            | TkARA AlexPosn String
            | TkARC AlexPosn String
@@ -309,8 +307,6 @@ instance Show Token where
     show (TkASG p s) = "Token " ++ s ++ (pos p) -- =
     show (TkUPP p s) = "Token " ++ s ++ (pos p) -- ^
     show (TkLOW p s) = "Token " ++ s ++ (pos p) -- .
-    show (TkCMV p s) = "Comentario varias lineas" ++ (pos p) -- ~* whatever *~
-    show (TkCM1 p s) = "Comentario una linea" ++ (pos p) -- @ whatever
     show (TkFIN p s) = "Token " ++ s ++ (pos p) -- .~
     show (TkARA p s) = "Token " ++ s ++ (pos p) -- "|}"
     show (TkARC p s) = "Token " ++ s ++ (pos p) -- "{|"
