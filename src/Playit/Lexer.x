@@ -40,7 +40,7 @@ $char_id        = [$digitos $abecedario \_ \']
 @identificador  = $abecedario $char_id*
 @programas      = \% $char_id+ \%
 @strings        = \~ @texto \~
-@end_instruction= \n
+@end_instruction= (\n)+
 @float          = $digitos+ \' $digitos+
 @comments       = \"\' [$comentarios $white]* \'\"
 @comment        = \@ [$comentarios # \n]* \n 
@@ -48,7 +48,7 @@ $char_id        = [$digitos $abecedario \_ \']
 
 tokens :-
 
-  ([$white # \n])+                           ;
+  ([$white # \n])+               ;
   
   -- Palabras reservadas
 

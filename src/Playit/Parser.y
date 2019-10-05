@@ -154,11 +154,12 @@ import Playit.Types
 --Programa :: {}
 {-Bug raro donde los archivos siempre tienen un \n al final chequear-}
 Programa :
-    world programa ":" Instrucciones fin  endInstr {[$4]}
+    EndInstructs world programa ":" Instrucciones fin  endInstr {[$5]}
 
 EndInstructs:
     endInstr {}
     | EndInstructs endInstr {}
+    | {-empty-} {}
 
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
