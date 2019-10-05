@@ -132,8 +132,6 @@ tokens :-
   ">"                  { tok (\p s -> TkGTH p s) }
   "("                  { tok (\p s -> TkPRA p s) }
   ")"                  { tok (\p s -> TkPRC p s) }
-  "["                  { tok (\p s -> TkCRA p s) }
-  "]"                  { tok (\p s -> TkCRC p s) }
   "{"                  { tok (\p s -> TkLLA p s) }
   "}"                  { tok (\p s -> TkLLC p s) }
   ","                  { tok (\p s -> TkCOM p s) }
@@ -223,8 +221,6 @@ data Token = TkWRL AlexPosn String
            | TkAPT AlexPosn String
            | TkPRA AlexPosn String
            | TkPRC AlexPosn String
-           | TkCRA AlexPosn String
-           | TkCRC AlexPosn String
            | TkLLA AlexPosn String
            | TkLLC AlexPosn String
            | TkCOM AlexPosn String
@@ -305,8 +301,6 @@ instance Show Token where
     show (TkAPT p s) = "Token " ++ s ++ (pos p) -- puff
     show (TkPRA p s) = "Token " ++ s ++ (pos p) -- (
     show (TkPRC p s) = "Token " ++ s ++ (pos p) -- )
-    show (TkCRA p s) = "Token " ++ s ++ (pos p) -- [
-    show (TkCRC p s) = "Token " ++ s ++ (pos p) -- ]
     show (TkLLA p s) = "Token " ++ s ++ (pos p) -- {
     show (TkLLC p s) = "Token " ++ s ++ (pos p) -- }
     show (TkCOM p s) = "Token " ++ s ++ (pos p) -- ,

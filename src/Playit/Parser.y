@@ -111,8 +111,6 @@ import Playit.Types
   ">"               { TkGTH _ _}
   "("               { TkPRA _ _}
   ")"               { TkPRC _ _}
-  "["               { TkCRA _ _}
-  "]"               { TkCRC _ _}
   "{"               { TkLLA _ _}
   "}"               { TkLLC _ _}
   ","               { TkCOM _ _}
@@ -132,7 +130,7 @@ import Playit.Types
 
 
 -- VERIFICAR
---%nonassoc nombre
+%nonassoc nombre
 %right "."
 %left "||"
 %left "&&"
@@ -176,7 +174,6 @@ Declaraciones :
 --Declaracion ::  {SecuenciaInstr}
 Declaracion  :
     Tipo Identificadores        {}
-    | registro nombre ":" EndInstructs Declaraciones fin EndInstructs        {}
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 --                  Identificadores de las declaraciones
@@ -221,7 +218,6 @@ Tipo :
   | Tipo "|}" Expresion "{|"    {}
   | list of Tipo                {}
   | Apuntador                   {}
-  | nombre                      {}
 
 
 --------------------------------------------------------------------------------
@@ -237,14 +233,21 @@ Instrucciones :
 
 --Instruccion ::  {Instr} 
 Instruccion  : 
-    Declaraciones       {}
+   Declaraciones       {}
+
+  {-Creacion de tipos definidos por el usuario Registro,Union-}
+  | registro nombre ":" EndInstructs Declaraciones fin EndInstructs        {}
+
+  {-Asignacion de tipos definidos por el usuario Registro,Union-}
+  | nombre nombre {}
+  | nombre nombre "=" Expresion    {}
+
   | Controller          {}
   | Play                {}
   | Button              {}
   | Asignacion          {}
   | EntradaSalida       {}
   | Free                {}
-  | Subrutina           {}
   | FunctionCreate      {}
   | return Expresion    {}
   | break               {}
@@ -257,7 +260,11 @@ Instruccion  :
 -- Instruccion de asignacion '='
 --Asignacion :: {Instr}
 Asignacion  : 
-     nombre "=" InicioRegistro {}    
+     {-Solo se permiten inicializaciones de arreglos cuando se declaran.
+        Ejemplo:
+            Contacto c = {2,3}
+     -}
+     nombre nombre "=" "{" Expresiones "}" {} 
     | Lvalue "=" Expresion      {}
 --------------------------------------------------------------------------------
 
@@ -287,7 +294,6 @@ Controller :
    for InitVar "=" entero "->" entero ":" Instrucciones fin     {}
  | for InitVar "=" entero "->" entero while Expresion ":" Instrucciones fin   {}
  | for InitVar "<-" nombre ":" Instrucciones fin                {}
- | for InitVar "<-" nombre ":" Instrucciones fin                {}
 
 
 -- Se inserta la variable de iteracion en la tabla de simbolos junto con su
@@ -310,9 +316,7 @@ Play  :
 -- Instrucciones de E/S 'drop' y 'joystick'
 --EntradaSalida :: {Instr}
 EntradaSalida  : 
-    nombre "=" input        {}
-  | nombre "=" input str    {}
-  | print Expresiones       {}
+  print Expresiones       {}
 --------------------------------------------------------------------------------
 
 --------------------------------------------------------------------------------
@@ -350,19 +354,6 @@ Boss :
 Monster  : 
     proc nombre "(" ParametrosFuncionDeclaracion ")" Tipo ":" Instrucciones fin       {}
 --------------------------------------------------------------------------------
-
---------------------------------------------------------------------------------
--- Parametros de las subrutinas cuando se llaman
---Parametros :: {}
---ParametrosLlamarFuncion  : 
- --   Expresion                                  {}
- -- | Expresion "," Expresion     {}
-
-
--- Parametro puntual de una subrutina cuando esta es llamada
---Parametro :: {} 
---ParametroLlamandoFuncion  : 
---    Expresion         {}
 
 --------------------------------------------------------------------------------
 -- Parametros de las subrutinas cuando se crean
@@ -430,6 +421,9 @@ Expresion  :
   | funcCall nombre "(" Expresiones ")"       {}
 
   | new Tipo                {}
+
+  | input        {}
+  | input str    {}
   
   -- Operadores unarios
   | "-" Expresion %prec negativo    {}
@@ -462,8 +456,6 @@ Expresion  :
 -- Registros y uniones
 --------------------------------------------------------------------------------
 
-InicioRegistro :
-    "{" Expresiones "}" {}
 
 --------------------------------------------------------------------------------
 --Apuntador :: {}
