@@ -86,9 +86,10 @@ a3 = a2
     
     free|}{| p2
     
-    Kit of Power l1 = <<1,2,3,4,4>>
+    Kit of Power l1 "'= <<1,2,3,4,4>>'" = <<>>
     
-    Kit of Power puff plista3 = summon Kit of Power
+        
+    Kit of Power puff plista3 = summon Kit of Power @jejelol
     
     puff plista3 = <<<<2>>>>::<<>>
     puff plista3 = (b2? a2 + 1 : abc|}b1 - 1{|):<<1,2>>
@@ -147,6 +148,14 @@ a3 = a2
       asd
     lock (abc|}0{| + b2 ) * (b2? a2 + 1 : abc|}b1 - 1{|)
     .~
+
+    controller Power i <- asd:
+    .~ 
+    controller Skill i <- asd:
+    .~ 
+    controller Contacto i <- asd:
+    .~ 
+
 
     boss f2():
     .~

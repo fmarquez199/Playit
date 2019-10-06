@@ -1,8 +1,8 @@
-@No empieza con números.
-@Puede poseer carácteres A hasta la Z en mayúscula o minúscula.
-@No incluye el carácter ñ ni carácteres acentuados.
-@Puede poseer números del 0 al 9.
-@Puede poseer los carácteres especiales _ y '.
+@No empieza con numeros.
+@Puede poseer caracteres A hasta la Z en mayuscula o minuscula.
+@No incluye el caracter enye ni caracteres acentuados.
+@Puede poseer numeros del 0 al 9.
+@Puede poseer los caracteres especiales _ y '.
 @No posee espacios.
 @No corresponde a ninguna palabra reservada de Playit.
 

@@ -43,7 +43,7 @@ $char_id        = [$digitos $abecedario \_ \']
 @end_instruction= (\n)+
 @float          = $digitos+ \' $digitos+
 @comments       = \"\' ( . # [\'\"] |\n)* \'\"
-@comment        = \@ [$comentarios # \n]* \n 
+@comment        = \@ .* 
 @error          = .
 
 tokens :-

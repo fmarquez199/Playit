@@ -141,10 +141,10 @@ import Playit.Types
 %left "+" "-" "::"
 %left "*" "/" "//" "%"
 %right  "!"
-%left "|}" "{|" 
-%nonassoc negativo QSTMRK
 
+%right "<-"
 %right upperCase lowerCase 
+%nonassoc negativo QSTMRK
 %nonassoc PRE_MM PRE_PP 
 %right "#" 
 
@@ -205,16 +205,6 @@ Instruccion  :
   | continue            {}
   | Expresion           {}
     
-DeclaracionTipoDefinidoUsuario:
-  {-Asignacion de tipos definidos por el usuario Registro,Union-}
-    nombre nombre {}
-    | nombre nombre "=" Expresion    {}
-     {-Solo se permiten inicializaciones de arreglos cuando se declaran.
-        Ejemplo:
-            Contacto c = {2,3}
-     -}
-    | nombre nombre "=" "{" Expresiones "}" {} 
-
 
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
@@ -224,29 +214,44 @@ DeclaracionTipoDefinidoUsuario:
 
 --Declaraciones :: {SecuenciaInstr}
 Declaraciones :
-    Declaracion                         {}
-  | Declaracion EndInstructs Declaraciones  {}
-  | {-empty-} {}
+   Declaracion endInstr  Declaraciones              {}
+   | endInstr Declaraciones {}
+   | {-empty-}   {}
 
 --Declaracion ::  {SecuenciaInstr}
 Declaracion  :
-    Tipo Identificadores        {}
+    Tipo VariablesEnDeclaracion        {}
+
     | DeclaracionTipoDefinidoUsuario {}
-    | Tipo pointer Identificador {}
-    | Tipo "|}" "{|"  pointer Identificador  {}
---------------------------------------------------------------------------------
+    
+    | DeclaracionPuntero {}
+
+DeclaracionPuntero:
+     TipoPuntero pointer VariableEnDecl {}
+
+TipoPuntero:
+    TipoEscalar {}
+    | TipoEscalar "|}" "{|" {}
+    | TipoLista {}
+
+
+{-Declaración de REGISTRO-}
+DeclaracionTipoDefinidoUsuario:
+    nombre nombre {}
+    | nombre nombre "=" Expresion    {}
+    | nombre nombre "=" "{" Expresiones "}" {} 
+
 --------------------------------------------------------------------------------
 --                  Identificadores de las declaraciones
 --------------------------------------------------------------------------------
---------------------------------------------------------------------------------
 
 --Identificadores :: 
-Identificadores  : 
-    Identificador                       {}
-    | Identificadores "," Identificador {}
+VariablesEnDeclaracion  : 
+    VariableEnDecl                       {}
+    | VariablesEnDeclaracion "," VariableEnDecl {}
 
 --Identificador :: {}
-Identificador  : 
+VariableEnDecl  : 
     nombre                  {}
   | nombre "=" Expresion    {}
 
@@ -256,6 +261,28 @@ Identificador  :
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 
+TipoEscalar :
+    int                         {}
+  | float                       {}
+  | bool                        {}
+  | char                        {}
+  | str                         {}
+
+
+-- Tipos de datos
+--Tipo :: {Tipo}
+Tipo : 
+    TipoEscalar                     {}
+  | TipoEscalar "|}" Expresion "{|" {}
+  | TipoLista                       {}
+
+ 
+TipoLista :
+  list of TipoEscalar               {}
+  | list of TipoLista               {}
+    
+
+
 
 -- Lvalues, contenedores que identifican a las variables
 --Lvalue :: {}
@@ -264,20 +291,6 @@ Lvalue  :
   | pointer nombre              {}
   | Lvalue "." Lvalue           {}
   | Lvalue "|}" Expresion "{|"  {}
---  | Lvalue "<<" Expresion ">>"  {}
-
-
--- Tipos de datos
---Tipo :: {Tipo}
-Tipo : 
-    int                         {}
-  | float                       {}
-  | bool                        {}
-  | char                        {}
-  | str                         {}
-  | Tipo "|}" Expresion "{|"    {}
-  | list of Tipo                {}
-  
 
 
 --------------------------------------------------------------------------------
@@ -310,23 +323,28 @@ Guardia  :
 -- Instruccion de iteracion determinada 'control'
 --Controller :: {Instr}
 Controller : 
-   for InitVarTipoPrimitivoFor "=" Expresion "->" Expresion ":" Instrucciones fin     {}
- | for InitVarTipoPrimitivoFor "=" Expresion "->" Expresion while Expresion ":" Instrucciones fin   {}
- | for InitVarTipoCompuestoFor "<-" nombre ":" Instrucciones fin                {}
+   for InitVarTipoEscalarFor "=" Expresion "->" Expresion ":" Instrucciones fin     {}
+ | for InitVarTipoEscalarFor "=" Expresion "->" Expresion while Expresion ":" Instrucciones fin   {}
+ | for InitVarTipoCompuestoFor "<-" nombre ":" Instrucciones fin           %prec "<-"      {}
 
 
 
 -- Se inserta la variable de iteracion en la tabla de simbolos junto con su
 -- valor inicial, antes de construir el arbol de instrucciones del 'for'
 --InitVar :: {(Nombre, Expr)}
-InitVarTipoPrimitivoFor  : 
+InitVarTipoEscalarFor  : 
     nombre          {}
     | int nombre    {}
 
 InitVarTipoCompuestoFor: 
-    nombre          {}
-    | nombre nombre    {}
-
+    nombre  {}
+    | nombre    nombre  {}
+    | int       nombre  {}
+    | float     nombre  {}
+    | bool      nombre  {}
+    | char      nombre  {}
+    | str       nombre  {}
+    
 --------------------------------------------------------------------------------
 
 

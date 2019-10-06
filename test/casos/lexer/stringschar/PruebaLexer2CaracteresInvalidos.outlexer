@@ -60,6 +60,7 @@ Token > en la fila: 30, columna: 1
 Token End Instruction \n en la fila: 30, columna: 3
 Token ? en la fila: 31, columna: 1
 Token End Instruction \n en la fila: 31, columna: 3
+Token End Instruction \n en la fila: 32, columna: 3
 Token identificador "A" en la fila: 33, columna: 1
 Token End Instruction \n en la fila: 33, columna: 3
 Token identificador "B" en la fila: 34, columna: 1
