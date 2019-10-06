@@ -130,7 +130,9 @@ import Playit.Types
 
 
 -- VERIFICAR
-%nonassoc ":" 
+%nonassoc "++" "--"
+%left ":" 
+%nonassoc  "="
 %right "."
 %left "||"
 %left "&&"
@@ -139,10 +141,13 @@ import Playit.Types
 %left "+" "-" "::"
 %left "*" "/" "//" "%"
 %right  "!"
-%left "|}" "{|" "<<" ">>"
-%nonassoc negativo 
-%nonassoc "--" "++" 
-%right "#"
+%left "|}" "{|" 
+%nonassoc negativo QSTMRK
+
+%right upperCase lowerCase 
+%nonassoc PRE_MM PRE_PP 
+%right "#" 
+
 %%
 
 --------------------------------------------------------------------------------
@@ -255,7 +260,7 @@ Lvalue  :
   | pointer nombre              {}
   | Lvalue "." Lvalue           {}
   | Lvalue "|}" Expresion "{|"  {}
-  | Lvalue "<<" Expresion ">>"  {}
+--  | Lvalue "<<" Expresion ">>"  {}
 
 
 -- Tipos de datos
@@ -426,7 +431,7 @@ Expresion  :
   | Expresion "::" Expresion    {}
   
   --
-  | Expresion "?" Expresion ":" Expresion   {}
+  | Expresion "?" Expresion ":" Expresion  %prec QSTMRK {}
   | "(" Expresion ")"       {}
   | "|}" Expresiones "{|"   {}
   | "<<" Expresiones ">>"   {}
@@ -443,8 +448,8 @@ Expresion  :
   | "-" Expresion %prec negativo    {}
   | "#" Expresion           {}
   | "!" Expresion           {}
-  | upperCase Expresion     {}
-  | lowerCase Expresion     {}
+  | upperCase Expresion %prec upperCase  {}
+  | lowerCase Expresion %prec lowerCase    {}
     
   {- Notar que solo se permiten ++ y -- para variables por lo que
   --(a + 1) debería dar error pero --(--a) no!
@@ -455,9 +460,9 @@ Expresion  :
     o se puede poner abajo en vez de Expresion Lvalue y --(--a) no sería permitido
   -}
   | Expresion "++"          {}
-  | "++" Expresion          {}
+  | "++" Expresion  %prec PRE_PP        {}
   | Expresion "--"          {}
-  | "--" Expresion  {}
+  | "--" Expresion  %prec PRE_MM{}
 
   -- Para a = <<>>
   | "<<" ">>"   {}
