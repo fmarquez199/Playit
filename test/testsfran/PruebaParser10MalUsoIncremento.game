@@ -1,0 +1,16 @@
+world %Caso9%:
+  monster fibonnaci(Power primero, Power segundo, Power limite):
+    drop primero
+    drop segundo
+    Power n = primero
+    Power i = 1
+    play
+      drop primero + segundo
+      primero = segundo
+      segundo = n + segundo
+      ++i
+    lock i < limite
+  .~
+  drop ~Nada importa, esto no compilara, saludos~
+  kill fibonnaci(1, 2, 5)
+.~ 

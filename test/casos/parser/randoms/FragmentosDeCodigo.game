@@ -45,7 +45,7 @@ world %FragmentosDeCodigo%:
     Skill bottomRightY
   .~
 
-  boss areaCirculo(Circle ?c) Skill:
+  boss areaCirculo(Circle ?c) :
     unlock 3'14 * c spawn radius * c spawn radius
   .~
 
@@ -54,7 +54,7 @@ world %FragmentosDeCodigo%:
     sh spawn c spawn centerY = 5'0
     sh spawn c spawn centerY = 5'0
     sh spawn c spawn radius = 15
-    drop ~el area del circulo es ~, areaCirculo(sh spawn c)
+    drop ~el area del circulo es ~, kill areaCirculo(sh spawn c)
 
   Power puff p = summon Power|}20{|
   puff p|}1{| = 15

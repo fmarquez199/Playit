@@ -147,10 +147,13 @@ a3 = a2
       asd
     lock (abc|}0{| + b2 ) * (b2? a2 + 1 : abc|}b1 - 1{|)
     .~
-    boss f2(Power p,Contacto? c) Contacto:
+
+    boss f2():
+    .~
+    monster f2() Contacto:
     .~
     
-    boss f(Power p,Contacto? c) Contacto:
+    monster f(Power p,Contacto? c,Contacto2 c,Runes c) Contacto:
             Rune ast1 = *\** , m1 , a1=*a*,n1=*n*,u1=*u*,ast2 = *\** 
 
             m1 = *M*     @ Asignación ñiangara yo no me imprimo L$OL

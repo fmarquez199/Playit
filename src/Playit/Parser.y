@@ -159,7 +159,7 @@ import Playit.Types
 --Programa :: {}
 {-Bug raro donde los archivos siempre tienen un \n al final chequear-}
 Programa :
-    EndInstructs world programa ":" InstruccionesPrincipal fin  endInstr {[$5]}
+    EndInstructs world programa ":" endInstr InstruccionesPrincipal fin  endInstr {[$6]}
 
 EndInstructs:
     endInstr {}
@@ -172,8 +172,9 @@ EndInstructs:
 --------------------------------------------------------------------------------
 
 InstruccionesPrincipal:
-   InstruccionPrincipal InstruccionesPrincipal {}
-    | InstruccionPrincipal {}
+    InstruccionPrincipal endInstr InstruccionesPrincipal{}
+    |endInstr InstruccionesPrincipal{}
+    | {-empty-}   {}
 
 InstruccionPrincipal :
    Instruccion {}
@@ -181,18 +182,10 @@ InstruccionPrincipal :
 
 --Instrucciones ::  {SecuenciaInstr}
 Instrucciones :  
-    Instruccion Instrucciones    {}
-  |  Instruccion                 {}
+   Instruccion endInstr  Instrucciones              {}
+   | endInstr Instrucciones {}
+   | {-empty-}   {}
 
-DeclaracionUserDefinedType:
-  {-Asignacion de tipos definidos por el usuario Registro,Union-}
-    nombre nombre {}
-    | nombre nombre "=" Expresion    {}
-     {-Solo se permiten inicializaciones de arreglos cuando se declaran.
-        Ejemplo:
-            Contacto c = {2,3}
-     -}
-    | nombre nombre "=" "{" Expresiones "}" {} 
 
 --Instruccion ::  {Instr} 
 Instruccion  : 
@@ -200,6 +193,7 @@ Instruccion  :
 
   {-Creacion de tipos definidos por el usuario Registro,Union-}
   | registro nombre ":" EndInstructs Declaraciones fin      {}
+
   | Controller          {}
   | Play                {}
   | Button              {}
@@ -210,7 +204,17 @@ Instruccion  :
   | break               {}
   | continue            {}
   | Expresion           {}
-  | endInstr            {}
+    
+DeclaracionTipoDefinidoUsuario:
+  {-Asignacion de tipos definidos por el usuario Registro,Union-}
+    nombre nombre {}
+    | nombre nombre "=" Expresion    {}
+     {-Solo se permiten inicializaciones de arreglos cuando se declaran.
+        Ejemplo:
+            Contacto c = {2,3}
+     -}
+    | nombre nombre "=" "{" Expresiones "}" {} 
+
 
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
@@ -227,7 +231,7 @@ Declaraciones :
 --Declaracion ::  {SecuenciaInstr}
 Declaracion  :
     Tipo Identificadores        {}
-    | DeclaracionUserDefinedType {}
+    | DeclaracionTipoDefinidoUsuario {}
     | Tipo pointer Identificador {}
     | Tipo "|}" "{|"  pointer Identificador  {}
 --------------------------------------------------------------------------------
@@ -273,6 +277,7 @@ Tipo :
   | str                         {}
   | Tipo "|}" Expresion "{|"    {}
   | list of Tipo                {}
+  
 
 
 --------------------------------------------------------------------------------
@@ -296,8 +301,8 @@ Guardias :
 
 --Guardia :: {}
 Guardia  : 
-    "|" Expresion "}" Instrucciones {}
-  | "|" else "}" Instrucciones      {}
+    "|" Expresion "}" Instrucciones     {}
+  | "|" else      "}" Instrucciones     {}
 --------------------------------------------------------------------------------
 
 
@@ -359,7 +364,7 @@ Subrutina :
 -- Procedimientos
 --Boss :: {}
 Boss : 
-    function nombre "(" ParametrosFuncionDeclaracion ")" TipoRetornoFuncion ":" Instrucciones fin   {}
+    proc nombre "(" ListaParametrosFuncionDeclaracion ")" ":" Instrucciones fin   {}
 --------------------------------------------------------------------------------
 
 
@@ -367,18 +372,25 @@ Boss :
 -- Funciones
 --Monster :: {}
 Monster  : 
-    proc nombre "(" ParametrosFuncionDeclaracion ")" TipoRetornoFuncion ":" Instrucciones fin       {}
+    function nombre "(" ListaParametrosFuncionDeclaracion ")" TipoRetornoFuncion ":" Instrucciones fin       {}
 --------------------------------------------------------------------------------
 
 TipoRetornoFuncion:
     Tipo    {}
     | nombre    {}
+
+
 --------------------------------------------------------------------------------
 -- Parametros de las subrutinas cuando se crean
+
+ListaParametrosFuncionDeclaracion :
+     {-no params-}                 {}
+    | ParametrosFuncionDeclaracion  {}
+
 --Parametros :: {}
 ParametrosFuncionDeclaracion  : 
     ParametroEnFuncionDeclaracion                                       {}
-  | ParametroEnFuncionDeclaracion "," ParametroEnFuncionDeclaracion     {}
+  | ParametroEnFuncionDeclaracion "," ParametrosFuncionDeclaracion     {}
 
 
 -- Parametro puntual de una subrutina cuando esta es creada
@@ -386,8 +398,8 @@ ParametrosFuncionDeclaracion  :
 ParametroEnFuncionDeclaracion  : 
     Tipo nombre         {}
   | Tipo "?" nombre     {}
+  | nombre nombre     {}
   | nombre "?" nombre     {}
-  | {- empty -}        {}
 --------------------------------------------------------------------------------
 
 
@@ -440,6 +452,7 @@ Expresion  :
   | funcCall nombre "(" Expresiones ")"       {}
 
   | new Tipo                {}
+  | new nombre                {}
 
   | input        {}
   | input string    {}
