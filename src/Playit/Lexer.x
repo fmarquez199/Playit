@@ -21,133 +21,133 @@ module Playit.Lexer (
 
 $digitos        = [0-9]
 $abecedario     = [a-zA-Z]
-$simbolos       = [\! \" \# \] \[ \$ \% \& \' \( \) \* \+ \, \- \. \/ \: \; \< \= \> \? \@]
-$especial       = [ \\  \^ \_ \` \{ \| \} \~ '\0' '\t' '\n' '\\' '\'' '\"' '\~' '\*']
-$validos        = [$digitos $abecedario $simbolos $especial $white]
-$comentarios    = [$validos ~$validos]
-$char_texto     = [$validos # [\* \~ \\]]   -- arreglar
+-- $simbolos       = [\! '"' \# \[ \] \$ \% \& \' \( \) \* \+ \, \- \. \/ \: \; \< \= \> \? \@]
+-- $especial       = [\\ \^ \_ \` \{ \| \} \~ '\0' '\t' '\n' '\\' '\'' '\"' '\~' '\*']
+$validos        = [$digitos $abecedario $white]
+-- $comentarios    = [$validos ~$validos]
+$char_texto     = [$validos # [\* \~ \\]]
 $char_id        = [$digitos $abecedario \_ \']
 
 -- Expresiones regulares
 
--- @texto PUEDE SER CUALQUIER caracter MENOS el caracter ~ y *
---  O PUEDE SER el caracter \*
-
 @scape          = "\\" | "\0" | "\n" | "\t" | "\~" | "\*"
-@mcaracter      = $char_texto | @scape
-@caracter       = "*" @mcaracter "*"
-@texto          = @mcaracter*
-@identificador  = $abecedario $char_id*
+@caracters      = $char_texto | @scape
+@caracter       = "*" @caracters "*"
+@texto          = @caracters*
+@id    = $abecedario $char_id*
 @programas      = \% $char_id+ \%
 @strings        = \~ @texto \~
-@end_instruction= (\n)+
+@endLine        = ($white* \n)+ -- Revisar
 @float          = $digitos+ \' $digitos+
-@comments       = \"\' ( . # [\'\"] |\n)* \'\"
-@comment        = \@ .* 
+@comments       = \"\' ( . # [\'\"] | \n)* \'\"
+@comment        = \@ [. # \n]* \n 
 @error          = .
 
 tokens :-
 
-  ([$white # \n])+               ;
+  ([$white # \n])+     ;
   
   -- Palabras reservadas
 
-  Battle               { tok (\p s -> TkBTL p s) } -- Booleano
-  DeathZone            { tok (\p s -> TkDTZ p s) } -- Null pointer
-  Inventory            { tok (\p s -> TkINV p s) } -- Registro
-  Items                { tok (\p s -> TkITM p s) } -- Union
-  Kit                  { tok (\p s -> TkKIT p s) } -- Lista
-  Power                { tok (\p s -> TkPWR p s) } -- Entero
-  Rune                 { tok (\p s -> TkRNE p s) } -- Char
-  Runes                { tok (\p s -> TkRNS p s) } -- String
-  Skill                { tok (\p s -> TkSKL p s) } -- Flotante
-  Button               { tok (\p s -> TkBTN p s) } -- Condicional if
-  boss                 { tok (\p s -> TkBSS p s) } -- procedimiento
-  controller           { tok (\p s -> TkCTR p s) } -- Bucle for
-  drop                 { tok (\p s -> TkDRP p s) } -- print
-  notPressed           { tok (\p s -> TkNPR p s) } -- else
-  free                 { tok (\p s -> TkFRE p s) } -- delete de C++
-  gameOver             { tok (\p s -> TkGMO p s) } -- break de C
-  joystick             { tok (\p s -> TkJST p s) } -- read 
-  keepPlaying          { tok (\p s -> TkKPP p s) } -- continue de C
-  kill                 { tok (\p s -> TkKLL p s) } -- llama a una funcion
-  lock                 { tok (\p s -> TkLCK p s) } -- condicional del bucle do(play) while(lock){}
-  monster              { tok (\p s -> TkMST p s) } -- Funcion
-  play                 { tok (\p s -> TkPLY p s) } -- do de un bucle do(play) while(lock){}
-  puff                 { tok (\p s -> TkAPT p s) } -- * de C para punteros
-  spawn                { tok (\p s -> TkSPW p s) } -- . para registros de C
-  summon               { tok (\p s -> TkSMN p s) } -- new de Java para punteros
-  unlock               { tok (\p s -> TkNLK p s) } -- return para funciones
-  world                { tok (\p s -> TkWRL p s) } -- void main() 
-  of                   { tok (\p s -> TkOFK p s) } -- Declara el tipo de una lista
-  @end_instruction     { tok (\p s -> TokenEndInstruction p s) }
+  Battle               { tok (\p s -> TkBATLE p s) }
+  DeathZone            { tok (\p s -> TkDeathZone p s) }
+  Inventory            { tok (\p s -> TkINVENTORY p s) }
+  Items                { tok (\p s -> TkITEMS p s) }
+  Kit                  { tok (\p s -> TkKIT p s) }
+  Power                { tok (\p s -> TkPOWER p s) }
+  Rune                 { tok (\p s -> TkRUNE p s) }
+  Runes                { tok (\p s -> TkRUNES p s) }
+  Skill                { tok (\p s -> TkSKILL p s) }
+  Button               { tok (\p s -> TkBUTTON p s) }
+  boss                 { tok (\p s -> TkBOSS p s) }
+  controller           { tok (\p s -> TkCONTROLLER p s) }
+  drop                 { tok (\p s -> TkDROP p s) }
+  notPressed           { tok (\p s -> TkNotPressed p s) }
+  free                 { tok (\p s -> TkFREE p s) }
+  gameOver             { tok (\p s -> TkGameOver p s) }
+  joystick             { tok (\p s -> TkJOYSTICK p s) }
+  keepPlaying          { tok (\p s -> TkKeepPlaying p s) }
+  kill                 { tok (\p s -> TkKILL p s) }
+  lock                 { tok (\p s -> TkLOCK p s) }
+  monster              { tok (\p s -> TkMONSTER p s) }
+  play                 { tok (\p s -> TkPLAY p s) }
+  puff                 { tok (\p s -> TkPUFF p s) }
+  spawn                { tok (\p s -> TkSPAWN p s) }
+  summon               { tok (\p s -> TkSUMMON p s) }
+  unlock               { tok (\p s -> TkUNLOCK p s) }
+  world                { tok (\p s -> TkWORLD p s) }
+  of                   { tok (\p s -> TkOF p s) }
+  @endLine             { tok (\p s -> TkEndLine p s) }
 
   -- Literales booleanos
   
   Win                  { tok (\p s -> TkWIN p s) }
-  Lose                 { tok (\p s -> TkLOS p s) }
+  Lose                 { tok (\p s -> TkLOSE p s) }
 
   -- Identificadores
 
-  @programas           { tok (\p s -> TkNMB p s) }
-  @identificador       { tok (\p s -> TkIDF p s) }
+  @programas           { tok (\p s -> TkProgramName p s) }
+  @id                  { tok (\p s -> TkID p s) }
 
   -- Caracteres
 
-  @caracter            { tok (\p s -> TkCHA p s) }
-  @strings             { tok (\p s -> TkSTG p s) }
+  @caracter            { tok (\p s -> TkCARACTER p s) }
+  @strings             { tok (\p s -> TkSTRINGS p s) }
   
   -- Literares numericos
   
   $digitos+            { tok (\p s -> TkINT p s) }
-  @float               { tok (\p s -> TkFLT p s) }
+  @float               { tok (\p s -> TkFLOAT p s) }
 
   -- Simbolos
 
   ".~"                 { tok (\p s -> TkFIN p s) }
-  "//"                 { tok (\p s -> TkIDV p s) }
-  "||"                 { tok (\p s -> TkLOR p s) }
+  "//"                 { tok (\p s -> TkDivEntera p s) }
+  "||"                 { tok (\p s -> TkOR p s) }
   "&&"                 { tok (\p s -> TkAND p s) }
-  "<="                 { tok (\p s -> TkLET p s) }
-  "=="                 { tok (\p s -> TkEQL p s) }
-  "!="                 { tok (\p s -> TkNEQ p s) }
-  ">="                 { tok (\p s -> TkGET p s) }
-  "<<"                 { tok (\p s -> TkLSA p s) }
-  ">>"                 { tok (\p s -> TkLSC p s) }
-  "++"                 { tok (\p s -> TkINC p s) }
-  "--"                 { tok (\p s -> TkDEC p s) }
+  "<="                 { tok (\p s -> TkLessEqual p s) }
+  "=="                 { tok (\p s -> TkEQUAL p s) }
+  "!="                 { tok (\p s -> TkNotEqual p s) }
+  ">="                 { tok (\p s -> TkGreaterEqual p s) }
+  "<<"                 { tok (\p s -> TkOpenList p s) }
+  ">>"                 { tok (\p s -> TkCloseList p s) }
+  "|>"                 { tok (\p s -> TkOpenListIndex p s) }
+  "<|"                 { tok (\p s -> TkCloseListIndex p s) }
+  "++"                 { tok (\p s -> TkINCREMENT p s) }
+  "--"                 { tok (\p s -> TkDECREMENT p s) }
   "<-"                 { tok (\p s -> TkIN  p s) }
   "->"                 { tok (\p s -> TkTO  p s) }
-  "|}"                 { tok (\p s -> TkARA p s) }
-  "{|"                 { tok (\p s -> TkARC p s) }
+  "|}"                 { tok (\p s -> TkOpenArray p s) }
+  "{|"                 { tok (\p s -> TkCloseArray p s) }
+  "|)"                 { tok (\p s -> TkOpenArrayIndex p s) }
+  "(|"                 { tok (\p s -> TkCloseArrayIndex p s) }
   "+"                  { tok (\p s -> TkSUM p s) }
   "-"                  { tok (\p s -> TkMIN p s) }
-  "*"                  { tok (\p s -> TkTMS p s) }
-  "/"                  { tok (\p s -> TkDVD p s) }
+  "*"                  { tok (\p s -> TkMULT p s) }
+  "/"                  { tok (\p s -> TkDIV p s) }
   "%"                  { tok (\p s -> TkMOD p s) }
   "#"                  { tok (\p s -> TkLEN p s) }
   "?"                  { tok (\p s -> TkREF p s) }
-  "!"                  { tok (\p s -> TkEXC p s) }
-  "<"                  { tok (\p s -> TkLTH p s) }
-  ">"                  { tok (\p s -> TkGTH p s) }
-  "("                  { tok (\p s -> TkPRA p s) }
-  ")"                  { tok (\p s -> TkPRC p s) }
-  "{"                  { tok (\p s -> TkLLA p s) }
-  "}"                  { tok (\p s -> TkLLC p s) }
-  ","                  { tok (\p s -> TkCOM p s) }
-  ":"                  { tok (\p s -> TkDSP p s) }
-  "::"                 { tok (\p s -> TkCONCAT p s) } -- Concatenación de dos listas
-  "|"                  { tok (\p s -> TkCON p s) }
-  "="                  { tok (\p s -> TkASG p s) }
-  "^"                  { tok (\p s -> TkUPP p s) }
-  "."                  { tok (\p s -> TkLOW p s) }
+  "!"                  { tok (\p s -> TkNOT p s) }
+  "<"                  { tok (\p s -> TkLessThan p s) }
+  ">"                  { tok (\p s -> TkGreaterThan p s) }
+  "("                  { tok (\p s -> TkOpenParenthesis p s) }
+  ")"                  { tok (\p s -> TkCloseParenthesis p s) }
+  "{"                  { tok (\p s -> TkOpenBrackets p s) }
+  "}"                  { tok (\p s -> TkCloseBrackets p s) }
+  ","                  { tok (\p s -> TkCOMA p s) }
+  ":"                  { tok (\p s -> TkANEXO p s) }
+  "::"                 { tok (\p s -> TkCONCAT p s) }
+  "|"                  { tok (\p s -> TkGUARD p s) }
+  "="                  { tok (\p s -> TkASING p s) }
+  "^"                  { tok (\p s -> TkUPPER p s) }
+  "."                  { tok (\p s -> TkLOWER p s) }
   
   -- Comentarios
 
---  @comments           ; -- Se ignoran los comentarios
- -- @comment             ;-- Se ignora el comentario
   @comments            ;
   @comment             ;
+
   -- Caracteres invalidos
 
   @error               { tok (\p s -> TkERR p s) }
@@ -159,165 +159,167 @@ tok f p s = f p s
 pos :: AlexPosn -> String
 pos (AlexPn _ f c) = " en la fila: " ++ (show f) ++ ", columna: " ++ (show c)
 
-data Token = TkWRL AlexPosn String
-           | TkRNE AlexPosn String
-
-           | TkCMV AlexPosn String
-           | TkCM1 AlexPosn String
-           
-           | TkLOS AlexPosn String
-           | TkOFK AlexPosn String
-           | TkBTN AlexPosn String
+data Token = TkWORLD AlexPosn String
+           | TkRUNE AlexPosn String
+           | TkLOSE AlexPosn String
+           | TkOF AlexPosn String
+           | TkBUTTON AlexPosn String
            | TkWIN AlexPosn String
-           | TkBTL AlexPosn String
-           | TkPWR AlexPosn String
-           | TkCONCAT AlexPosn String
-           | TkSKL AlexPosn String
-           | TkRNS AlexPosn String
+           | TkBATLE AlexPosn String
+           | TkPOWER AlexPosn String
+           | TkSKILL AlexPosn String
+           | TkRUNES AlexPosn String
            | TkKIT AlexPosn String
-           | TkINV AlexPosn String
-           | TkITM AlexPosn String
-           | TkSMN AlexPosn String
-           | TkFRE AlexPosn String
-           | TkDTZ AlexPosn String
-           | TkJST AlexPosn String
-           | TkDRP AlexPosn String
-           | TkNPR AlexPosn String
-           | TkCTR AlexPosn String
+           | TkINVENTORY AlexPosn String
+           | TkITEMS AlexPosn String
+           | TkSUMMON AlexPosn String
+           | TkFREE AlexPosn String
+           | TkDeathZone AlexPosn String
+           | TkJOYSTICK AlexPosn String
+           | TkDROP AlexPosn String
+           | TkNotPressed AlexPosn String
+           | TkCONTROLLER AlexPosn String
            | TkIN  AlexPosn String
            | TkTO  AlexPosn String
-           | TkPLY AlexPosn String
-           | TkLCK AlexPosn String
-           | TkNLK AlexPosn String
-           | TkSPW AlexPosn String
-           | TkGMO AlexPosn String
-           | TkKPP AlexPosn String
-           | TkKLL AlexPosn String
-           | TkMST AlexPosn String
-           | TkBSS AlexPosn String
-           | TkNMB AlexPosn String
-           | TkIDF AlexPosn String
-           | TkCHA AlexPosn String
-           | TkSTG AlexPosn String
+           | TkPLAY AlexPosn String
+           | TkLOCK AlexPosn String
+           | TkUNLOCK AlexPosn String
+           | TkSPAWN AlexPosn String
+           | TkGameOver AlexPosn String
+           | TkKeepPlaying AlexPosn String
+           | TkKILL AlexPosn String
+           | TkMONSTER AlexPosn String
+           | TkBOSS AlexPosn String
+           | TkProgramName AlexPosn String
+           | TkID AlexPosn String
+           | TkCARACTER AlexPosn String
+           | TkSTRINGS AlexPosn String
            | TkINT AlexPosn String
-           | TkFLT AlexPosn String
-           | TkIDV AlexPosn String
-           | TkLOR AlexPosn String
+           | TkFLOAT AlexPosn String
+           | TkDivEntera AlexPosn String
+           | TkOR AlexPosn String
            | TkAND AlexPosn String
-           | TkLET AlexPosn String
-           | TkEQL AlexPosn String
-           | TkNEQ AlexPosn String
-           | TkGET AlexPosn String
-           | TkLSA AlexPosn String
-           | TkLSC AlexPosn String
-           | TkINC AlexPosn String
-           | TkDEC AlexPosn String
+           | TkLessEqual AlexPosn String
+           | TkEQUAL AlexPosn String
+           | TkNotEqual AlexPosn String
+           | TkGreaterEqual AlexPosn String
+           | TkOpenList AlexPosn String
+           | TkCloseList AlexPosn String
+           | TkOpenListIndex AlexPosn String
+           | TkCloseListIndex AlexPosn String
+           | TkINCREMENT AlexPosn String
+           | TkDECREMENT AlexPosn String
            | TkSUM AlexPosn String
-           | TokenEndInstruction AlexPosn String
            | TkMIN AlexPosn String
-           | TkTMS AlexPosn String
-           | TkDVD AlexPosn String
+           | TkMULT AlexPosn String
+           | TkDIV AlexPosn String
            | TkMOD AlexPosn String
            | TkLEN AlexPosn String
            | TkREF AlexPosn String
-           | TkEXC AlexPosn String
-           | TkLTH AlexPosn String
-           | TkGTH AlexPosn String
-           | TkAPT AlexPosn String
-           | TkPRA AlexPosn String
-           | TkPRC AlexPosn String
-           | TkLLA AlexPosn String
-           | TkLLC AlexPosn String
-           | TkCOM AlexPosn String
-           | TkDSP AlexPosn String
-           | TkCON AlexPosn String
-           | TkASG AlexPosn String
-           | TkUPP AlexPosn String
-           | TkLOW AlexPosn String
+           | TkNOT AlexPosn String
+           | TkLessThan AlexPosn String
+           | TkGreaterThan AlexPosn String
+           | TkPUFF AlexPosn String
+           | TkOpenParenthesis AlexPosn String
+           | TkCloseParenthesis AlexPosn String
+           | TkOpenBrackets AlexPosn String
+           | TkCloseBrackets AlexPosn String
+           | TkCOMA AlexPosn String
+           | TkANEXO AlexPosn String
+           | TkGUARD AlexPosn String
+           | TkASING AlexPosn String
+           | TkUPPER AlexPosn String
+           | TkLOWER AlexPosn String
+           | TkCMV AlexPosn String
+           | TkCM1 AlexPosn String
            | TkFIN AlexPosn String
-           | TkARA AlexPosn String
-           | TkARC AlexPosn String
+           | TkOpenArray AlexPosn String
+           | TkCloseArray AlexPosn String
+           | TkOpenArrayIndex AlexPosn String
+           | TkCloseArrayIndex AlexPosn String
            | TkERR AlexPosn String
+           | TkCONCAT AlexPosn String
+           | TkEndLine AlexPosn String
            deriving (Eq)
 
 instance Show Token where
-    show (TkWRL p s) = "Token " ++ s ++ (pos p) -- world
-    show (TkOFK p s) = "Token " ++ s ++ (pos p) -- of
-    show (TokenEndInstruction p s) = "Token End Instruction \\n" ++  (pos p) -- New line
-    show (TkBTN p s) = "Token " ++ s ++ (pos p) -- Button
-    show (TkRNE p s) = "Token " ++ s ++ (pos p) -- rune
-    show (TkLOS p s) = "Token " ++ s ++ (pos p) -- Lose
+    show (TkWORLD p s) = "Token " ++ s ++ (pos p) -- world
+    show (TkOF p s) = "Token " ++ s ++ (pos p) -- of
+    show (TkEndLine p s) = "Token End Instruction \\n" ++  (pos p) -- New line
+    show (TkBUTTON p s) = "Token " ++ s ++ (pos p) -- Button
+    show (TkRUNE p s) = "Token " ++ s ++ (pos p) -- rune
+    show (TkLOSE p s) = "Token " ++ s ++ (pos p) -- Lose
     show (TkWIN p s) = "Token " ++ s ++ (pos p) -- Win
-    show (TkBTL p s) = "Token " ++ s ++ (pos p) -- Battle
-    show (TkPWR p s) = "Token " ++ s ++ (pos p) -- Power
-    show (TkSKL p s) = "Token " ++ s ++ (pos p) -- Skill
-    show (TkRNS p s) = "Token " ++ s ++ (pos p) -- Runes
+    show (TkBATLE p s) = "Token " ++ s ++ (pos p) -- Battle
+    show (TkPOWER p s) = "Token " ++ s ++ (pos p) -- Power
+    show (TkSKILL p s) = "Token " ++ s ++ (pos p) -- Skill
+    show (TkRUNES p s) = "Token " ++ s ++ (pos p) -- Runes
     show (TkCONCAT p s) = "Token " ++ s ++ (pos p) -- Concatenación de lista
     show (TkKIT p s) = "Token " ++ s ++ (pos p) -- Kit
-    show (TkINV p s) = "Token " ++ s ++ (pos p) -- Inventory
-    show (TkITM p s) = "Token " ++ s ++ (pos p) -- Items
-    show (TkSMN p s) = "Token " ++ s ++ (pos p) -- summon
-    show (TkFRE p s) = "Token " ++ s ++ (pos p) -- free
-    show (TkDTZ p s) = "Token " ++ s ++ (pos p) -- DeathZone
-    show (TkJST p s) = "Token " ++ s ++ (pos p) -- joystick
-    show (TkDRP p s) = "Token " ++ s ++ (pos p) -- drop
-    show (TkNPR p s) = "Token " ++ s ++ (pos p) -- notPressed
-    show (TkCTR p s) = "Token " ++ s ++ (pos p) -- controller
+    show (TkINVENTORY p s) = "Token " ++ s ++ (pos p) -- Inventory
+    show (TkITEMS p s) = "Token " ++ s ++ (pos p) -- Items
+    show (TkSUMMON p s) = "Token " ++ s ++ (pos p) -- summon
+    show (TkFREE p s) = "Token " ++ s ++ (pos p) -- free
+    show (TkDeathZone p s) = "Token " ++ s ++ (pos p) -- DeathZone
+    show (TkJOYSTICK p s) = "Token " ++ s ++ (pos p) -- joystick
+    show (TkDROP p s) = "Token " ++ s ++ (pos p) -- drop
+    show (TkNotPressed p s) = "Token " ++ s ++ (pos p) -- notPressed
+    show (TkCONTROLLER p s) = "Token " ++ s ++ (pos p) -- controller
     show (TkIN p s)  = "Token " ++ s ++ (pos p) -- <-
     show (TkTO p s)  = "Token " ++ s ++ (pos p) -- ->
-    show (TkPLY p s) = "Token " ++ s ++ (pos p) -- play
-    show (TkLCK p s) = "Token " ++ s ++ (pos p) -- lock
-    show (TkNLK p s) = "Token " ++ s ++ (pos p) -- unlock
-    show (TkSPW p s) = "Token " ++ s ++ (pos p) -- spawn
-    show (TkGMO p s) = "Token " ++ s ++ (pos p) -- gameOver
-    show (TkKPP p s) = "Token " ++ s ++ (pos p) -- keepPlaying
-    show (TkKLL p s) = "Token " ++ s ++ (pos p) -- kill
-    show (TkMST p s) = "Token " ++ s ++ (pos p) -- monster
-    show (TkBSS p s) = "Token " ++ s ++ (pos p) -- boss
-    show (TkNMB p s) = "Token nombre programa " ++ s ++ (pos p) -- Nombre programa
-    show (TkIDF p s) = "Token identificador \"" ++ s ++ "\"" ++ (pos p) -- Id
-    show (TkCHA p s) = "Token caracter " ++ s ++ (pos p) -- carácter
-    show (TkSTG p s) = "Token string " ++ s ++ (pos p) -- String
+    show (TkPLAY p s) = "Token " ++ s ++ (pos p) -- play
+    show (TkLOCK p s) = "Token " ++ s ++ (pos p) -- lock
+    show (TkUNLOCK p s) = "Token " ++ s ++ (pos p) -- unlock
+    show (TkSPAWN p s) = "Token " ++ s ++ (pos p) -- spawn
+    show (TkGameOver p s) = "Token " ++ s ++ (pos p) -- gameOver
+    show (TkKeepPlaying p s) = "Token " ++ s ++ (pos p) -- keepPlaying
+    show (TkKILL p s) = "Token " ++ s ++ (pos p) -- kill
+    show (TkMONSTER p s) = "Token " ++ s ++ (pos p) -- monster
+    show (TkBOSS p s) = "Token " ++ s ++ (pos p) -- boss
+    show (TkProgramName p s) = "Token nombre programa " ++ s ++ (pos p) -- Nombre programa
+    show (TkID p s) = "Token identificador \"" ++ s ++ "\"" ++ (pos p) -- Id
+    show (TkCARACTER p s) = "Token caracter " ++ s ++ (pos p) -- carActer
+    show (TkSTRINGS p s) = "Token string " ++ s ++ (pos p) -- String
     show (TkINT p s) = "Token entero " ++ s ++ (pos p) -- Entero
-    show (TkFLT p s) = "Token flotante " ++ s ++ (pos p) -- Flotante
-    show (TkIDV p s) = "Token " ++ s ++ (pos p) -- //
-    show (TkLOR p s) = "Token " ++ s ++ (pos p) -- ||
+    show (TkFLOAT p s) = "Token flotante " ++ s ++ (pos p) -- Flotante
+    show (TkDivEntera p s) = "Token " ++ s ++ (pos p) -- //
+    show (TkOR p s) = "Token " ++ s ++ (pos p) -- ||
     show (TkAND p s) = "Token " ++ s ++ (pos p) -- &&
-    show (TkLET p s) = "Token " ++ s ++ (pos p) -- <=
-    show (TkEQL p s) = "Token " ++ s ++ (pos p) -- ==
-    show (TkNEQ p s) = "Token " ++ s ++ (pos p) -- !=
-    show (TkGET p s) = "Token " ++ s ++ (pos p) -- >=
-    show (TkLSA p s) = "Token " ++ s ++ (pos p) -- <<
-
-    show (TkCMV p s) = "Comentario varias lineas" ++ (pos p) -- ~* whatever *~
-    show (TkCM1 p s) = "Comentario una linea" ++ (pos p) -- @ whatever
-
-    show (TkLSC p s) = "Token " ++ s ++ (pos p) -- >>
-    show (TkINC p s) = "Token " ++ s ++ (pos p) -- ++
-    show (TkDEC p s) = "Token " ++ s ++ (pos p) -- --
+    show (TkLessEqual p s) = "Token " ++ s ++ (pos p) -- <=
+    show (TkEQUAL p s) = "Token " ++ s ++ (pos p) -- ==
+    show (TkNotEqual p s) = "Token " ++ s ++ (pos p) -- !=
+    show (TkGreaterEqual p s) = "Token " ++ s ++ (pos p) -- >=
+    show (TkOpenList p s) = "Token " ++ s ++ (pos p) -- <<
+    show (TkCloseList p s) = "Token " ++ s ++ (pos p) -- >>
+    show (TkOpenListIndex p s) = "Token " ++ s ++ (pos p) -- |>
+    show (TkCloseListIndex p s) = "Token " ++ s ++ (pos p) -- <°
+    show (TkINCREMENT p s) = "Token " ++ s ++ (pos p) -- ++
+    show (TkDECREMENT p s) = "Token " ++ s ++ (pos p) -- --
     show (TkSUM p s) = "Token " ++ s ++ (pos p) -- +
     show (TkMIN p s) = "Token " ++ s ++ (pos p) -- -
-    show (TkTMS p s) = "Token " ++ s ++ (pos p) -- *
-    show (TkDVD p s) = "Token " ++ s ++ (pos p) -- /
+    show (TkMULT p s) = "Token " ++ s ++ (pos p) -- *
+    show (TkDIV p s) = "Token " ++ s ++ (pos p) -- /
     show (TkMOD p s) = "Token " ++ s ++ (pos p) -- %
     show (TkLEN p s) = "Token " ++ s ++ (pos p) -- #
     show (TkREF p s) = "Token " ++ s ++ (pos p) -- ?
-    show (TkEXC p s) = "Token " ++ s ++ (pos p) -- !
-    show (TkLTH p s) = "Token " ++ s ++ (pos p) -- <
-    show (TkGTH p s) = "Token " ++ s ++ (pos p) -- >
-    show (TkAPT p s) = "Token " ++ s ++ (pos p) -- puff
-    show (TkPRA p s) = "Token " ++ s ++ (pos p) -- (
-    show (TkPRC p s) = "Token " ++ s ++ (pos p) -- )
-    show (TkLLA p s) = "Token " ++ s ++ (pos p) -- {
-    show (TkLLC p s) = "Token " ++ s ++ (pos p) -- }
-    show (TkCOM p s) = "Token " ++ s ++ (pos p) -- ,
-    show (TkDSP p s) = "Token " ++ s ++ (pos p) -- :
-    show (TkCON p s) = "Token " ++ s ++ (pos p) -- |
-    show (TkASG p s) = "Token " ++ s ++ (pos p) -- =
-    show (TkUPP p s) = "Token " ++ s ++ (pos p) -- ^
-    show (TkLOW p s) = "Token " ++ s ++ (pos p) -- .
+    show (TkNOT p s) = "Token " ++ s ++ (pos p) -- !
+    show (TkLessThan p s) = "Token " ++ s ++ (pos p) -- <
+    show (TkGreaterThan p s) = "Token " ++ s ++ (pos p) -- >
+    show (TkPUFF p s) = "Token " ++ s ++ (pos p) -- puff
+    show (TkOpenParenthesis p s) = "Token " ++ s ++ (pos p) -- (
+    show (TkCloseParenthesis p s) = "Token " ++ s ++ (pos p) -- )
+    show (TkOpenBrackets p s) = "Token " ++ s ++ (pos p) -- {
+    show (TkCloseBrackets p s) = "Token " ++ s ++ (pos p) -- }
+    show (TkCOMA p s) = "Token " ++ s ++ (pos p) -- ,
+    show (TkANEXO p s) = "Token " ++ s ++ (pos p) -- :
+    show (TkGUARD p s) = "Token " ++ s ++ (pos p) -- |
+    show (TkASING p s) = "Token " ++ s ++ (pos p) -- =
+    show (TkUPPER p s) = "Token " ++ s ++ (pos p) -- ^
+    show (TkLOWER p s) = "Token " ++ s ++ (pos p) -- .
     show (TkFIN p s) = "Token " ++ s ++ (pos p) -- .~
-    show (TkARA p s) = "Token " ++ s ++ (pos p) -- "|}"
-    show (TkARC p s) = "Token " ++ s ++ (pos p) -- "{|"
+    show (TkOpenArray p s) = "Token " ++ s ++ (pos p) -- "|}"
+    show (TkCloseArray p s) = "Token " ++ s ++ (pos p) -- "{|"
+    show (TkOpenArrayIndex p s) = "Token " ++ s ++ (pos p) -- "|)"
+    show (TkCloseArrayIndex p s) = "Token " ++ s ++ (pos p) -- "(|"
     show (TkERR p s) = "Error, caracter inesperado " ++ s ++ (pos p) -- Error
 }

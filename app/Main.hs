@@ -26,7 +26,7 @@ main = do
 
   let tokens    = alexScanTokens content    -- Crea la lista de tokens.
   let tokensParser = parse tokens
-  let graphic   = map show tokensParser           -- Crea la lista de tokens imprimible.
+  let graphic   = map show [(tokensParser)]           -- Crea la lista de tokens imprimible.
   
   -- Se imprimen todos los tokens
   _ <- forM graphic $ \tokenln -> do
