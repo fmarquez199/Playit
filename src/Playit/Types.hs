@@ -34,6 +34,7 @@ type Alcance = Integer
 -- Posicion donde se encuentra la instruccion
 type Posicion = (Int, Int)
 
+type Parametros = [Expr]
 
 type SecuenciaInstr = [Instr]
 
@@ -96,8 +97,10 @@ data Literal    = Entero Int
                 | ValorVacio
                 deriving (Eq, Show, Ord)
 
+
 data Compuesto  = Registro Nombre SecuenciaInstr
                 deriving (Eq, Show)
+
 
 -- Operadores binarios
 data BinOp  = Suma
