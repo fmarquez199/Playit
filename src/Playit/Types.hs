@@ -61,13 +61,13 @@ data Vars   = VarIndex Vars Expr Tipo
 data Instr  = Asignacion Vars Expr
             | BloqueInstr SecuenciaInstr SymTab
             | For Nombre Expr Expr SecuenciaInstr SymTab
-            | ForEach Nombre Expr Expr Expr SecuenciaInstr SymTab
+            | ForEach Nombre Expr SecuenciaInstr SymTab
             | While Expr SecuenciaInstr
             | If Expr SecuenciaInstr
             | IfElse Expr SecuenciaInstr SecuenciaInstr
-            | Func
-            | Proc
-            | Free
+            | Proc Parametros SecuenciaInstr
+            | Func Parametros Tipo SecuenciaInstr
+            | Free Nombre
             | CrearSubrutina
             | SubrutinaCall
             | Print Expr
