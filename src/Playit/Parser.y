@@ -230,25 +230,25 @@ Lvalue
 
 
 -- Tipos de datos
-Tipo
+Tipo :: {Tipo}
   : Tipo "|}" Expresion "{|" %prec "|}"
-    {}
+    {TArray $3 $1}
   | list of Tipo
-    {}
+    {TLista $3}
   | int
-    {}
+    {TInt}
   | float
-    {}
+    {TFloat}
   | bool
-    {}
+    {TBool}
   | char
-    {}
+    {TChar}
   | str
-    {}
+    {TStr}
   | nombre
-    {}
+    {TDummy} -- No se sabe si es un Registro o Union
   | Tipo pointer
-    {}
+    {TApuntador}
 
 
 --------------------------------------------------------------------------------
@@ -403,7 +403,7 @@ Free
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 
-DefinirSubrutina
+DefinirSubrutina 
   : Boss
     {}
   | Monster
@@ -411,9 +411,9 @@ DefinirSubrutina
 
 --------------------------------------------------------------------------------
 -- Procedimientos
-Boss
+Boss 
   : proc nombre "(" Parametros ")" ":" endLine Instrucciones endLine ".~"
-    {}
+    {  }
   | proc nombre "(" Parametros ")" ":" endLine ".~"
     {}
 --------------------------------------------------------------------------------
@@ -421,7 +421,7 @@ Boss
 
 --------------------------------------------------------------------------------
 -- Funciones
-Monster
+Monster 
   : function nombre "(" Parametros ")" Tipo ":" endLine Instrucciones endLine ".~"
     {}
   | function nombre "(" Parametros ")" Tipo ":" endLine ".~"
@@ -431,47 +431,47 @@ Monster
 
 --------------------------------------------------------------------------------
 -- Definicion de los parametros de las subrutinas
-Parametros
+Parametros :: {[Expr]}
   : Parametros "," Parametro
-    {}
+    { $1 ++ [$3] }
   | Parametro
-    {}
+    { [$1] }
 
 
-Parametro
+Parametro :: {Expr}
   : Tipo nombre
-    {}
+    { Variables (Param $2) $1 }
   | Tipo "?" nombre
-    {}
+    { Variables (Param $3) $1 }
   | {- Lambda -}
-    {}
+    { ExprVacia }
 --------------------------------------------------------------------------------
 
 
 --------------------------------------------------------------------------------
 -- Llamada a subrutinas
-FuncCall
-: funcCall nombre "(" PasarParametros ")" 
-{}
+FuncCall :: {Instr}
+  : funcCall nombre "(" PasarParametros ")" 
+  { llamarSubrutina $2 $4 }
 --------------------------------------------------------------------------------
 
 
 --------------------------------------------------------------------------------
 -- Pasaje de los parametros a las subrutinas
-PasarParametros
+PasarParametros :: {Parametros}
   : PasarParametros "," ParametroPasado
-    {}
+    { $1 ++ [$3] }
   | ParametroPasado
-    {}
+    { [$1] }
 
 
-ParametroPasado
+ParametroPasado :: {Expr}
   : Expresion
-    {}
+    { $1 }
   | "?" Expresion
-    {}
+    { $2 }
   | {- Lambda -}
-    {}
+    { ExprVacia }
 --------------------------------------------------------------------------------
 
 

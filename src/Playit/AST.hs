@@ -219,8 +219,9 @@ crearFor var e1 e2 i st scope pos@(line,_)
 
 --------------------------------------------------------------------------------
 -- Crea el nodo para una instruccion ForEach
-crearForEachDetermined :: Nombre -> Expr -> SecuenciaInstr -> SymTab -> Alcance -> Posicion -> MonadSymTab Instr
-crearForEachDetermined var e1 i st scope pos@(line,_) = do
+crearForEachDetermined :: Nombre -> Expr -> SecuenciaInstr -> SymTab -> Alcance
+                        -> Posicion -> MonadSymTab Instr
+crearForEachDetermined var e1 i st scope pos@(line,_) =
     return $ ForEach var e1 i st 
     
 
@@ -236,6 +237,38 @@ crearWhile e i (line,_)
                 ". En la linea: " ++ show line ++ "\n")
     where
         tE = typeE e
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--        Crear Nodos de las instrucciones de procedimientos y funciones
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+-- Crea el nodo para la instruccion que crea un procedimiento
+crearProcedimiento :: Nombre -> Parametros -> SecuenciaInstr -> SymTab -> Alcance
+                    -> Posicion -> MonadSymTab Instr
+crearProcedimiento name params i st scope pos@(line,_) =
+    return $ Proc name params i st
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+-- Crea el nodo para la instruccion que crea una funcion
+crearFuncion :: Nombre -> Parametros -> Tipo -> SecuenciaInstr -> SymTab -> Alcance
+                    -> Posicion -> MonadSymTab Instr
+crearFuncion name params returnT i st scope pos@(line,_) =
+    return $ Func name params returnT i st
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+-- Crea el nodo para la instruccion que llama a la subrutina
+llamarSubrutina :: Nombre -> Parametros -> Instr
+llamarSubrutina = SubrutinaCall
 --------------------------------------------------------------------------------
 
 
