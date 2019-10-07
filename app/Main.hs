@@ -8,31 +8,47 @@
 -}
 module Main where
 
+import qualified Control.Exception as Exc------------------------------------- > (*)
 import Control.Monad (forM)
+import Control.Monad.Trans.State
+import Playit.SymbolTable
 import System.Environment
 import System.IO
 import System.IO.Error
 import Control.Exception
 import Playit.Lexer
 import Playit.Parser (parse)
+import Playit.Print
+import Data.Strings (strEndsWith,strBreak)
+
+-- Determina si un archivo esta vacio
+isEmptyFile :: String -> Bool
+isEmptyFile file = all (== '\n') file
+
+
+-- Determina que el archivo tenga la extension conrrecta, '.bt'
+checkExt :: [String] -> Either String String
+checkExt [] = Left "\nError: debe indicar un archivo\n"
+checkExt (file:_:_) = Left "\nError: solo se puede indicar un archivo\n"
+checkExt [file] =  if strEndsWith file ".game" then Right file else  Left "\nError: archivo no es .game\n"
+
 
 main :: IO ()
 main = do
 
-  args <- getArgs                           -- Tomar argumentos de la terminal.
-  file <- openFile (head args) ReadMode     -- Leer un archivo.
+    args <- getArgs                           -- Tomar argumentos de la terminal.
+    case checkExt args of
+        Left msg -> putStrLn msg
+        Right checkedFile -> do
+            code <- readFile checkedFile
+            if (null code) || (isEmptyFile code) then
+                putStrLn "\nArchivo vacio. Nada que hacer\n"
+            else
+                let tokens = alexScanTokens code in
+                --putStrLn $ show tokens ++ "\n\n"
+                if hasError tokens then
+                    putStrLn $ tkErrorToString $ filter isError tokens
+                else do
+                    (ast, lastState) <- runStateT (parse tokens) initState
+                    printAST 0 ast -- >> evalStateT (runAST ast) lastState
 
-  content   <- hGetContents file            -- Copia todo el contenido del archivo
-
-  let tokens    = alexScanTokens content    -- Crea la lista de tokens.
-  let tokensParser = parse tokens
-  let graphic   = map show [(tokensParser)]           -- Crea la lista de tokens imprimible.
-  
-  -- Se imprimen todos los tokens
-  _ <- forM graphic $ \tokenln -> do
-    putStrLn tokenln
-    return ()
-  -- Se cierra el archivo código.
-  hClose file
-  
-  

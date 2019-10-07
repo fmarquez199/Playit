@@ -11,8 +11,15 @@
 module Playit.Lexer (
     Token(..),
     AlexPosn(..), 
-    alexScanTokens
+    hasError,
+    alexScanTokens,
+    tkErrorToString,
+    isError,
+    posicion
 ) where
+
+import Data.List(intercalate)
+
 }
 
 %wrapper "posn"
@@ -150,7 +157,7 @@ tokens :-
 
   -- Caracteres invalidos
 
-  @error               { tok (\p s -> TkERR p s) }
+  @error               { createTkError}
 
 {
 tok :: (AlexPosn -> String -> Token) -> AlexPosn -> String -> Token
@@ -237,10 +244,41 @@ data Token = TkWORLD AlexPosn String
            | TkCloseArray AlexPosn String
            | TkOpenArrayIndex AlexPosn String
            | TkCloseArrayIndex AlexPosn String
-           | TkERR AlexPosn String
+           | TkError {mensaje :: String}
            | TkCONCAT AlexPosn String
            | TkEndLine AlexPosn String
            deriving (Eq)
+
+
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--                       Manejo de los tokens erroneos
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+
+
+createTkError alex_pos err           = TkError $ tokerr err alex_pos
+
+
+-- 'hasError' : Determina si en una lista de tokens existe al menos un error.
+hasError :: [Token] -> Bool
+hasError [] = False
+hasError ((TkError _):tks) = True
+hasError (_:tks) = hasError tks
+
+--  'isError' : Determina si un token es un error.
+isError :: Token -> Bool
+isError (TkError _) = True
+isError _ = False
+
+-- 'tokerr' : Traduce los errores al formato especificado en el proyecto.
+tokerr s (AlexPn _ l c) = 
+    "Error: Caracter inesperado " ++ s ++ 
+    " en la linea " ++ (show l) ++ ", columna " ++ (show c) ++ "."
+
+-- 'tkErrorToString': Inserta nuevas lineas entre los errores para ser impresos.
+tkErrorToString :: [Token] -> String
+tkErrorToString tk = intercalate "\n" $ map mensaje tk
 
 instance Show Token where
     show (TkWORLD p s) = "Token " ++ s ++ (pos p) -- world
@@ -321,5 +359,88 @@ instance Show Token where
     show (TkCloseArray p s) = "Token " ++ s ++ (pos p) -- "{|"
     show (TkOpenArrayIndex p s) = "Token " ++ s ++ (pos p) -- "|)"
     show (TkCloseArrayIndex p s) = "Token " ++ s ++ (pos p) -- "(|"
-    show (TkERR p s) = "Error, caracter inesperado " ++ s ++ (pos p) -- Error
+
+
+posicion :: Token -> (Int, Int)
+posicion (TkWORLD (AlexPn _ f c) _) = (f, c)
+posicion (TkRUNE (AlexPn _ f c) _) = (f, c)
+posicion (TkLOSE (AlexPn _ f c) _) = (f, c)
+posicion (TkOF (AlexPn _ f c) _) = (f, c)
+posicion (TkBUTTON (AlexPn _ f c) _) = (f, c)
+posicion (TkWIN (AlexPn _ f c) _) = (f, c)
+posicion (TkBATLE (AlexPn _ f c) _) = (f, c)
+posicion (TkPOWER (AlexPn _ f c) _) = (f, c)
+posicion (TkSKILL (AlexPn _ f c) _) = (f, c)
+posicion (TkRUNES (AlexPn _ f c) _) = (f, c)
+posicion (TkKIT (AlexPn _ f c) _) = (f, c)
+posicion (TkINVENTORY (AlexPn _ f c) _) = (f, c)
+posicion (TkITEMS (AlexPn _ f c) _) = (f, c)
+posicion (TkSUMMON (AlexPn _ f c) _) = (f, c)
+posicion (TkFREE (AlexPn _ f c) _) = (f, c)
+posicion (TkDeathZone (AlexPn _ f c) _) = (f, c)
+posicion (TkJOYSTICK (AlexPn _ f c) _) = (f, c)
+posicion (TkDROP (AlexPn _ f c) _) = (f, c)
+posicion (TkNotPressed (AlexPn _ f c) _) = (f, c)
+posicion (TkCONTROLLER (AlexPn _ f c) _) = (f, c)
+posicion (TkIN (AlexPn _ f c) _) = (f, c)
+posicion (TkTO (AlexPn _ f c) _) = (f, c)
+posicion (TkPLAY (AlexPn _ f c) _) = (f, c)
+posicion (TkLOCK (AlexPn _ f c) _) = (f, c)
+posicion (TkUNLOCK (AlexPn _ f c) _) = (f, c)
+posicion (TkSPAWN (AlexPn _ f c) _) = (f, c)
+posicion (TkGameOver (AlexPn _ f c) _) = (f, c)
+posicion (TkKeepPlaying (AlexPn _ f c) _) = (f, c)
+posicion (TkKILL (AlexPn _ f c) _) = (f, c)
+posicion (TkMONSTER (AlexPn _ f c) _) = (f, c)
+posicion (TkBOSS (AlexPn _ f c) _) = (f, c)
+posicion (TkProgramName (AlexPn _ f c) _) = (f, c)
+posicion (TkID (AlexPn _ f c) _) = (f, c)
+posicion (TkCARACTER (AlexPn _ f c) _) = (f, c)
+posicion (TkSTRINGS (AlexPn _ f c) _) = (f, c)
+posicion (TkINT (AlexPn _ f c) _) = (f, c)
+posicion (TkFLOAT (AlexPn _ f c) _) = (f, c)
+posicion (TkDivEntera (AlexPn _ f c) _) = (f, c)
+posicion (TkOR (AlexPn _ f c) _) = (f, c)
+posicion (TkAND (AlexPn _ f c) _) = (f, c)
+posicion (TkLessEqual (AlexPn _ f c) _) = (f, c)
+posicion (TkEQUAL (AlexPn _ f c) _) = (f, c)
+posicion (TkNotEqual (AlexPn _ f c) _) = (f, c)
+posicion (TkGreaterEqual (AlexPn _ f c) _) = (f, c)
+posicion (TkOpenList (AlexPn _ f c) _) = (f, c)
+posicion (TkCloseList (AlexPn _ f c) _) = (f, c)
+posicion (TkOpenListIndex (AlexPn _ f c) _) = (f, c)
+posicion (TkCloseListIndex (AlexPn _ f c) _) = (f, c)
+posicion (TkINCREMENT (AlexPn _ f c) _) = (f, c)
+posicion (TkDECREMENT (AlexPn _ f c) _) = (f, c)
+posicion (TkSUM (AlexPn _ f c) _) = (f, c)
+posicion (TkMIN (AlexPn _ f c) _) = (f, c)
+posicion (TkMULT (AlexPn _ f c) _) = (f, c)
+posicion (TkDIV (AlexPn _ f c) _) = (f, c)
+posicion (TkMOD (AlexPn _ f c) _) = (f, c)
+posicion (TkLEN (AlexPn _ f c) _) = (f, c)
+posicion (TkREF (AlexPn _ f c) _) = (f, c)
+posicion (TkNOT (AlexPn _ f c) _) = (f, c)
+posicion (TkLessThan (AlexPn _ f c) _) = (f, c)
+posicion (TkGreaterThan (AlexPn _ f c) _) = (f, c)
+posicion (TkPUFF (AlexPn _ f c) _) = (f, c)
+posicion (TkOpenParenthesis (AlexPn _ f c) _) = (f, c)
+posicion (TkCloseParenthesis (AlexPn _ f c) _) = (f, c)
+posicion (TkOpenBrackets (AlexPn _ f c) _) = (f, c)
+posicion (TkCloseBrackets (AlexPn _ f c) _) = (f, c)
+posicion (TkCOMA (AlexPn _ f c) _) = (f, c)
+posicion (TkANEXO (AlexPn _ f c) _) = (f, c)
+posicion (TkGUARD (AlexPn _ f c) _) = (f, c)
+posicion (TkASING (AlexPn _ f c) _) = (f, c)
+posicion (TkUPPER (AlexPn _ f c) _) = (f, c)
+posicion (TkLOWER (AlexPn _ f c) _) = (f, c)
+posicion (TkCMV (AlexPn _ f c) _) = (f, c)
+posicion (TkCM1 (AlexPn _ f c) _) = (f, c)
+posicion (TkFIN (AlexPn _ f c) _) = (f, c)
+posicion (TkOpenArray (AlexPn _ f c) _) = (f, c)
+posicion (TkCloseArray (AlexPn _ f c) _) = (f, c)
+posicion (TkOpenArrayIndex (AlexPn _ f c) _) = (f, c)
+posicion (TkCloseArrayIndex (AlexPn _ f c) _) = (f, c)
+posicion (TkCONCAT (AlexPn _ f c) _) = (f, c)
+posicion (TkEndLine (AlexPn _ f c) _) = (f, c)
+
 }
