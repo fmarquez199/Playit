@@ -70,6 +70,9 @@ data Instr  = Asignacion Vars Expr
             | Free Nombre
             | CrearSubrutina Nombre Parametros
             | SubrutinaCall Nombre Parametros
+            | Break
+            | Continue
+            | Return Expr
             | Print Expr
             | Read Vars
             deriving (Eq, Show)
@@ -93,8 +96,7 @@ data Literal    = Entero Int
                 | ValorVacio
                 deriving (Eq, Show, Ord)
 
-data Compuesto  = Registro
-                | Union
+data Compuesto  = Registro Nombre SecuenciaInstr
                 deriving (Eq, Show)
 
 -- Operadores binarios
