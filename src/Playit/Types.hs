@@ -68,8 +68,8 @@ data Instr  = Asignacion Vars Expr
             | Proc Parametros SecuenciaInstr
             | Func Parametros Tipo SecuenciaInstr
             | Free Nombre
-            | CrearSubrutina
-            | SubrutinaCall
+            | CrearSubrutina Nombre Parametros
+            | SubrutinaCall Nombre Parametros
             | Print Expr
             | Read Vars
             deriving (Eq, Show)
@@ -110,21 +110,24 @@ data BinOp  = Suma
             | MayorIgual
             | Igual
             | Desigual
+            | Anexo
             | Concatenacion
             | And
             | Or
+            | IfSimple
             deriving (Eq, Show, Ord)
 
 
 -- Operadores unarios
 data UnOp   = Negativo
             | TamArregloLista
-            | UpperCarse
-            | LowerCarse
+            | UpperCase
+            | LowerCase
             | Incremento
             | Decremento
             | Desreferenciar
             | Not
+            | New
             deriving (Eq, Show, Ord)
 
 
