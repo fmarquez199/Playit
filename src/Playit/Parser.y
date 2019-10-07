@@ -154,8 +154,7 @@ import Playit.AST
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 
-Programa:: {Instr}
-Programa 
+Programa :: {Instr}
   :  EndLines world programa ":" endLine Instrucciones EndLines ".~" EndLines
     {% do
         (symTab,_) <- get
@@ -178,33 +177,39 @@ EndLines
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 
-Declaraciones
+Declaraciones :: {SecuenciaInstr}
   : Declaracion 
-    {}
+    {[$1]}
   | Declaraciones endLine Declaracion
-    {}
+    {$1 ++ [$3]}
 
-Declaracion
+Declaracion :: {Instr}
   :  Tipo Identificadores
-    {}
+    {%  let (ids, asigs, vals) = $2 
+        in do
+            (actualSymTab, scope) <- get
+            addToSymTab ids $1 vals actualSymTab scope
+            return $ SecuenciaDeclaraciones asigs actualSymTab }
+
+{-Dummy tipo (1,2)-}
 
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 --                  Identificadores de las declaraciones
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
---Identificadores ::
-Identificadores
+Identificadores ::{([Nombre], SecuenciaInstr, [Literal])}
   : Identificador
-    {}
+    { let (id, asigs, e) = $1 in ([id], asigs, [e]) }
   | Identificadores "," Identificador
-    {}
+    {let ((ids, asigs, exprs),(id, asig, e)) = ($1, $3) 
+                  in (ids ++ [id], asigs ++ asig, exprs ++ [e])}
 
-Identificador
+Identificador::{(Nombre, SecuenciaInstr, Literal)}
   : nombre "=" Expresion
-    {}
+    {($1, [Asignacion (Var $1 TDummy) $3],ValorVacio) }
   | nombre
-    {}
+    {($1, [], ValorVacio) }
 
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
@@ -215,7 +220,6 @@ Identificador
 
 -- Lvalues, contenedores que identifican a las variables
 Lvalue  ::  {Vars}
-Lvalue
 --  : Lvalue "." nombre
 --    {}
     -- Tokens indexacion
@@ -258,16 +262,15 @@ Tipo :: {Tipo}
 --------------------------------------------------------------------------------
 
 Instrucciones :: {SecuenciaInstr}
-Instrucciones
   : Instrucciones endLine Instruccion
     { $1 ++ [$3] }
   | Instruccion
     { [$1] }
 
-Instruccion
---  : Declaracion
---    { $1 }
-  --| DefinirSubrutina
+Instruccion :: {Instr}
+  : Declaracion
+    { $1 }
+  -- | DefinirSubrutina
 --    { $1 }
 --  | DefinirRegistro
 --    { $1 }
@@ -277,7 +280,7 @@ Instruccion
 --    { $1 }
 --  | Play
 --    { $1 }
-  : Button
+  | Button
     { $1 }
   | Asignacion
     { $1 }
@@ -298,7 +301,6 @@ Instruccion
 --------------------------------------------------------------------------------
 -- Instruccion de asignacion '='
 Asignacion :: {Instr}
-Asignacion
   : Lvalue "=" Expresion
     { crearAsignacion $1 $3 (0,0) }
 --------------------------------------------------------------------------------
@@ -307,12 +309,10 @@ Asignacion
 --------------------------------------------------------------------------------
 -- Instrucciones de condicionales 'Button', '|' y 'notPressed'
 Button :: {Instr}
-Button
   : if ":" endLine Guardias ".~"
     { $4 }
 
 Guardias::{Instr}
-Guardias
   : Guardia
     { $1 }
   | Guardias Guardia
@@ -323,7 +323,6 @@ Guardias
         return $ ButtonIF $ bloq1 ++ bloq2 }
 
 Guardia:: {Instr}
-Guardia
   : "|" Expresion "}" EndLines Instrucciones endLine
     { crearGuardiaIF $2 $5 (posicion $1) }
   | "|" else "}" EndLines Instrucciones endLine
@@ -579,8 +578,8 @@ Expresion :: {Expr}
 --    {}
 --  | null
 --    {}
---  | Lvalue
---    { Variables $1 (typeVar $1) }
+  | Lvalue
+    { Variables $1 (typeVar $1) }
 
 
 --------------------------------------------------------------------------------
