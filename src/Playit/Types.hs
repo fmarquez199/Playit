@@ -46,7 +46,7 @@ data IdInfo = IdInfo {getType :: Tipo, getVal :: Literal, getScope :: Alcance}
 
 -- Tipo de dato que pueden ser las expresiones
 data Tipo   = TInt | TFloat | TBool | TChar | TStr | TArray Expr Tipo
-            | TLista Tipo | TRegistro | TUnion | TApuntador
+            | TLista Tipo | TRegister | TUnion | TApuntador
             | TError    -- Tipo error, no machean los tipos como deben
             | TDummy    -- Tipo temporal cuando todavia no se lee el tipo de la
                         -- variable en una asignacion en las declaraciones o no
@@ -61,8 +61,8 @@ data Vars   = VarIndex Vars Expr Tipo
 
 
 data Instr  = Asignacion Vars Expr
-            | Registro Nombre SecDeclaraciones Tipo
-            | Union Nombre SecDeclaraciones Tipo
+            | Registro Nombre SecuenciaInstr Tipo
+            | Union Nombre SecuenciaInstr Tipo
             | BloqueInstr SecuenciaInstr SymTab
             | For Nombre Expr Expr SecuenciaInstr SymTab
             | ForEach Nombre Expr SecuenciaInstr SymTab
@@ -85,8 +85,8 @@ data Expr   = OpBinario BinOp Expr Expr Tipo
             | ListaExpr [Expr] Tipo
             | Variables Vars Tipo
             | Literal Literal Tipo
+            | Read Vars
             | ExprVacia
-            | Read Expr
             deriving (Eq, Show, Ord)
 
 
@@ -194,7 +194,6 @@ showE (OpBinario And e1 e2 _)            = showE e1 ++ " && " ++ showE e2
 showE (OpUnario Negativo e _)            = "-" ++ showE e
 showE (OpUnario Not e _)                 = "!" ++ showE e
 showE (ListaExpr lst _)                  = "[" ++ intercalate "," (map showE lst) ++ "]"
-showE (Read e)     = "<= joystick ask : " ++ showE e ++ "?"
 
 
 -- 
@@ -202,7 +201,6 @@ showL :: Literal -> String
 showL ValorVacio      = "Valor vacio"
 showL (Entero val)    = show val
 showL (Caracter val)  = show val
-showL (Str val)  = show val
 showL (Booleano val)  = show val
 showL (Arreglo lst@(Entero _:_)) = show $ map ((\x->read x::Int) . showL) lst
 showL (Arreglo lst@(Booleano _:_)) = show $ map ((\x->read x::Bool) . showL) lst

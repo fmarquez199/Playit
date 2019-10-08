@@ -580,7 +580,7 @@ Expresion :: {Expr}
   | entero
     { Literal (Entero (read $1::Int)) TInt }
   | flotante
-    { Loteral (Flotante $1) TFloat }
+    { Loteral (Flotante (read $1::Float)) TFloat }
   | caracter
     { Literal (Caracter $ $1 !! 0) TChar }
   | string
@@ -600,7 +600,7 @@ Expresion :: {Expr}
 
 --------------------------------------------------------------------------------
 -- Registros
-DefinirRegistro :: Instr
+DefinirRegistro :: {Instr}
   : registro nombre ":" endLine Declaraciones endLine ".~"
     { definirRegistro $2 $5 TRegistro }
   | registro nombre ":" endLine ".~"
@@ -610,7 +610,7 @@ DefinirRegistro :: Instr
 
 --------------------------------------------------------------------------------
 -- Uniones
-DefinirUnion :: Instr
+DefinirUnion :: {Instr}
   : union nombre ":" endLine Declaraciones endLine ".~"
     { definirUnion $2 $5 TUnion }
   | union nombre ":" endLine ".~"

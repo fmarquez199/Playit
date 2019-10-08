@@ -9,6 +9,7 @@ Modulo para imprimir el AST y la Tabla de Simbolos
 module Playit.Print (printAST) where
 
 import qualified Data.Map as M
+import Control.Monad (mapM_)
 import Playit.Types
 
 
@@ -67,7 +68,7 @@ printAST n instr =
         (Print exp) -> putStrLn (t ++ "Impresion:") >> printExpr (n + 1) exp
         ------------------------------------------------------------------------
         -- Leer valor
-        (Secclaraciones seq symTab) -> do
+        (SecDeclaraciones seq symTab) ->
             --printSymTab symTab t
             putStrLn (t ++ "\tDeclaraciones:") >> printSeq (n + 2) seq
         ------------------------------------------------------------------------
@@ -80,7 +81,7 @@ printAST n instr =
 -- Subrutina para imprimir secuencias de instrucciones
 printSeq :: Int -> [Instr] -> IO()
 printSeq n seq = 
-    putStrLn (t ++ "Secuencia: ") >> sequence_ (map (printAST $ n + 1) seq)
+    putStrLn (t ++ "Secuencia: ") >> mapM_ (printAST $ n + 1) seq
     
     where t = replicate n '\t'
 --------------------------------------------------------------------------------
@@ -90,14 +91,14 @@ printSeq n seq =
 printButtonGuardia :: Int -> (Expr,SecuenciaInstr) -> IO()
 printButtonGuardia n (cond,seq) =  do
     putStrLn (t ++ "Condicion: ") >> printExpr (n + 1) cond
-    putStrLn (t ++ "Instrucciones: ") >> sequence_ (map (printAST $ n + 1) seq)
+    putStrLn (t ++ "Instrucciones: ") >> mapM_ (printAST $ n + 1) seq
     
     where t = replicate n '\t'
 
 
 printSeqButtonGuardias :: Int -> [(Expr,SecuenciaInstr)] -> IO()
 printSeqButtonGuardias n bloques = 
-    putStrLn (t ++ "Guardias IF: ") >> sequence_ (map (printButtonGuardia (n + 1)) bloques)
+    putStrLn (t ++ "Guardias IF: ") >> mapM_ (printButtonGuardia (n + 1)) bloques
     
     where t = replicate n '\t'
 
@@ -135,7 +136,7 @@ printId n name = putStrLn $ t ++ "Variable: " ++ name
 --------------------------------------------------------------------------------
 -- Subrutina para imprimir expresiones
 printExpr :: Int -> Expr -> IO()
-printExpr n e = do
+printExpr n e =
     case e of
         -- Expresion variable
         (Variables vars _) ->
@@ -157,7 +158,7 @@ printExpr n e = do
         ------------------------------------------------------------------------
         -- Expresion de arreglo explicito
         (ListaExpr exps _) ->
-            putStrLn (t ++ "Arreglo:") >> sequence_ (map (printExpr $ n + 1) exps)
+            putStrLn (t ++ "Arreglo:") >> mapM_ (printExpr $ n + 1) exps
         ------------------------------------------------------------------------
         ------------------------------------------------------------------------
         -- Leer valor
@@ -189,6 +190,6 @@ printSymTab (SymTab (table, father)) tab = do
 
 
 printSymbol :: String -> (Nombre, IdInfo) -> IO()
-printSymbol tab (n, (IdInfo t val _)) = 
+printSymbol tab (n, IdInfo t val _) = 
     putStrLn $ tab ++ "Simbolo: " ++ n ++ "\t| Tipo: " ++ showType t
 

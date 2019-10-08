@@ -13,7 +13,7 @@ import Control.Monad.IO.Class
 import Control.Monad.Trans.State
 import qualified Data.Map as M
 import Data.List(intercalate)
-import Data.Maybe (fromJust)
+import Data.Maybe (fromJust, isJust)
 import Playit.SymbolTable
 import Playit.CheckAST
 import Playit.Types
@@ -33,7 +33,7 @@ crearIdvar name = do
     (symTab, scope) <- get
     let info = lookupInSymTab name symTab
 
-    if info /= Nothing then return $ Var name (getType $ fromJust info)
+    if isJust info then return $ Var name (getType $ fromJust info)
     else 
         error ("\n\nError semantico, la variable: '" ++ name ++ 
                 "', no esta declarada.\n")
@@ -46,7 +46,7 @@ crearVarIndex :: Vars -> Expr -> Vars
 crearVarIndex v e = 
     let t = case typeVar v of 
                 tipo@(TArray _ _) -> typeArray tipo
-                otherwise -> TError
+                _ -> TError
     in VarIndex v e t
 --------------------------------------------------------------------------------
 
@@ -70,12 +70,12 @@ crearAsignacion lval e (line,_)
         tE     =
             case tE' of
                 t@(TArray _ _) -> typeArray t
-                otherwise -> tE'
+                _ -> tE'
         tV'    = typeVar lval
         tV     = 
             case tV' of
                 t@(TArray _ _) -> typeArray t
-                otherwise -> tV'
+                _ -> tV'
 --------------------------------------------------------------------------------
 
 
@@ -113,7 +113,7 @@ crearOpConcat op e1 e2 =
         t2 = typeE e2
         tr = if t1 == t2 then case t1 of
                                 (TArray _ _) -> t1
-                                otherwise -> TError
+                                _ -> TError
              else TError
 --------------------------------------------------------------------------------
 
@@ -125,7 +125,7 @@ crearOpShift op e =
     let t = typeE e
         tr = case t of 
                 (TArray _ _) -> t
-                otherwise -> TError
+                _ -> TError
     in OpUnario op e tr
 --------------------------------------------------------------------------------
 
@@ -281,14 +281,14 @@ llamarSubrutina = SubrutinaCall
 
 --------------------------------------------------------------------------------
 -- Crea el nodo para la instruccion que crea los registros
-definirRegistro :: Nombre -> SecDeclaraciones -> Tipo -> Instr
+definirRegistro :: Nombre -> SecuenciaInstr -> Tipo -> Instr
 definirRegistro = Registro
 --------------------------------------------------------------------------------
 
 
 --------------------------------------------------------------------------------
 -- Crea el nodo para la instruccion que crea las uniones
-definirUnion :: Nombre -> SecDeclaraciones -> Tipo -> Instr
+definirUnion :: Nombre -> SecuenciaInstr -> Tipo -> Instr
 definirUnion = Union
 --------------------------------------------------------------------------------
 
@@ -317,5 +317,5 @@ crearPrint e (line,_)
 --------------------------------------------------------------------------------
 -- Crea el nodo para una instruccion Read
 crearRead :: Posicion -> Expr -> Expr
-crearRead _ e = Read e
+crearRead _ = Read
 --------------------------------------------------------------------------------
