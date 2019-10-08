@@ -178,33 +178,43 @@ EndLines
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 
+Declaraciones :: {SecuenciaInstr}
 Declaraciones
   : Declaracion 
-    {}
+    {[$1]}
   | Declaraciones endLine Declaracion
-    {}
+    {$1 ++ [$3]}
 
+Declaracion :: {Instr}
 Declaracion
   :  Tipo Identificadores
-    {}
+    {%  let (ids, asigs, vals) = $2 
+        in do
+            (actualSymTab, scope) <- get
+            --addToSymTab ids $! vals actualSymTab scope
+            return $ SecuenciaDeclaraciones asigs actualSymTab }
+
+{-Dummy tipo (1,2)-}
 
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 --                  Identificadores de las declaraciones
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
---Identificadores ::
+Identificadores ::{([Nombre], SecuenciaInstr, [Literal])}
 Identificadores
   : Identificador
-    {}
+    { let (id, asigs, e) = $1 in ([id], asigs, [e]) }
   | Identificadores "," Identificador
-    {}
+    {let ((ids, asigs, exprs),(id, asig, e)) = ($1, $3) 
+                  in (ids ++ [id], asigs ++ asig, exprs ++ [e])}
 
+Identificador::{(Nombre, SecuenciaInstr, Literal)}
 Identificador
   : nombre "=" Expresion
-    {}
+    {($1, [Asignacion (Var $1 TDummy) $3],ValorVacio) }
   | nombre
-    {}
+    {($1, [], ValorVacio) }
 
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
@@ -230,25 +240,26 @@ Lvalue
 
 
 -- Tipos de datos
+Tipo :: {Tipo}
 Tipo
   : Tipo "|}" Expresion "{|" %prec "|}"
-    {}
+    {TArray $3 $1}
   | list of Tipo
-    {}
+    {TLista $3}
   | int
-    {}
+    {TInt}
   | float
-    {}
+    {TFloat}
   | bool
-    {}
+    {TBool}
   | char
-    {}
+    {TChar}
   | str
-    {}
-  | nombre
-    {}
-  | Tipo pointer
-    {}
+    {TStr}
+--  | nombre
+--    {}
+--  | Tipo pointer
+--    {}
 
 
 --------------------------------------------------------------------------------
@@ -264,10 +275,11 @@ Instrucciones
   | Instruccion
     { [$1] }
 
+Instruccion :: {Instr}
 Instruccion
---  : Declaracion
---    { $1 }
-  --| DefinirSubrutina
+  : Declaracion
+    { $1 }
+  -- | DefinirSubrutina
 --    { $1 }
 --  | DefinirRegistro
 --    { $1 }
@@ -277,7 +289,7 @@ Instruccion
 --    { $1 }
 --  | Play
 --    { $1 }
-  : Button
+  | Button
     { $1 }
   | Asignacion
     { $1 }
@@ -579,8 +591,8 @@ Expresion :: {Expr}
 --    {}
 --  | null
 --    {}
---  | Lvalue
---    { Variables $1 (typeVar $1) }
+  | Lvalue
+    { Variables $1 (typeVar $1) }
 
 
 --------------------------------------------------------------------------------
