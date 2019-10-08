@@ -76,7 +76,6 @@ data Instr  = Asignacion Vars Expr
             | Continue
             | Return Expr
             | Print Expr
-            | Read Vars
             deriving (Eq, Show)
 
 data Expr   = OpBinario BinOp Expr Expr Tipo
@@ -85,6 +84,7 @@ data Expr   = OpBinario BinOp Expr Expr Tipo
             | Variables Vars Tipo
             | Literal Literal Tipo
             | ExprVacia
+            | Read Expr
             deriving (Eq, Show, Ord)
 
 
@@ -196,6 +196,7 @@ showE (OpBinario And e1 e2 _)            = showE e1 ++ " && " ++ showE e2
 showE (OpUnario Negativo e _)            = "-" ++ showE e
 showE (OpUnario Not e _)                 = "!" ++ showE e
 showE (ListaExpr lst _)                  = "[" ++ intercalate "," (map showE lst) ++ "]"
+showE (Read e)     = "<= joystick ask : " ++ showE e ++ "?"
 
 
 -- 
@@ -203,6 +204,7 @@ showL :: Literal -> String
 showL ValorVacio      = "Valor vacio"
 showL (Entero val)    = show val
 showL (Caracter val)  = show val
+showL (Str val)  = show val
 showL (Booleano val)  = show val
 showL (Arreglo lst@(Entero _:_)) = show $ map ((\x->read x::Int) . showL) lst
 showL (Arreglo lst@(Booleano _:_)) = show $ map ((\x->read x::Bool) . showL) lst

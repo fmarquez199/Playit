@@ -539,10 +539,10 @@ Expresion :: {Expr}
 --    {}
 --  | new Tipo
 --    {}
---  | input
---    {}
---  | input Expresion %prec input
---    {}
+  | input
+    { crearRead (posicion $1) (Literal ValorVacio TStr) }
+  | input Expresion %prec input
+    { crearRead (posicion $1) $2 }
 
   -- Operadores unarios
   | "-" Expresion %prec negativo
