@@ -16,7 +16,7 @@ import Control.Monad.IO.Class
 import Playit.Lexer
 import Playit.Types
 -- import Eval
--- import AST
+import Playit.AST
 
 }
 
@@ -253,39 +253,39 @@ Tipo
 
 Instrucciones
   : Instrucciones endLine Instruccion
-    {}
+    { $1 ++ [$3] }
   | Instruccion
-    {}
+    { [$1] }
 
 Instruccion
   : Declaracion
-    {}
+    { $1 }
   | DefinirSubrutina
-    {}
+    { $1 }
   | DefinirRegistro
-    {}
+    { $1 }
   | DefinirUnion
-    {}
+    { $1 }
   | Controller
-    {}
+    { $1 }
   | Play
-    {}
+    { $1 }
   | Button
-    {}
+    { $1 }
   | Asignacion
-    {}
+    { $1 }
   | EntradaSalida
-    {}
+    { $1 }
   | Free
-    {}
+    { $1 }
   | FuncCall
-    {}
+    { $1 }
   | return Expresion
-    {}
+    { $2 }
   | break
-    {}
+    { $1 }
   | continue
-    {}
+    { $1 }
 
 
 --------------------------------------------------------------------------------
@@ -300,23 +300,23 @@ Asignacion
 -- Instrucciones de condicionales 'Button', '|' y 'notPressed'
 Button
   : if ":" endLine Guardias ".~"
-    {}
+    { $4 }
 
 Guardias
   : Guardia
-    {}
+    { $1 }
   | Guardias Guardia
-    {}
+    { $1 ++ [$2] }
 
 Guardia
   : "|" Expresion "}" EndLines Instrucciones endLine
-    {}
+    { crearIf $2 $5 (posicion $1) }
   | "|" else "}" EndLines Instrucciones endLine
-    {}
+    { crearIf (Literal (Booleano True) TBool) $5 (posicion $1) }
   | "|" Expresion "}" Instrucciones endLine
-    {}
+    { crearIf $2 $4 (posicion $1) }
   | "|" else "}" Instrucciones endLine
-    {}
+    { crearIf (Literal (Booleano True) TBool) $4 (posicion $1) }
 --------------------------------------------------------------------------------
 
 
