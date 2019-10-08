@@ -61,15 +61,18 @@ data Vars   = VarIndex Vars Expr Tipo
 data Instr  = Asignacion Vars Expr
             | BloqueInstr SecuenciaInstr SymTab
             | For Nombre Expr Expr SecuenciaInstr SymTab
-            | ForEach Nombre Expr Expr Expr SecuenciaInstr SymTab
+            | ForEach Nombre Expr SecuenciaInstr SymTab
             | While Expr SecuenciaInstr
             | If Expr SecuenciaInstr
             | IfElse Expr SecuenciaInstr SecuenciaInstr
-            | Func
-            | Proc
-            | Free
-            | CrearSubrutina
-            | SubrutinaCall
+            | Proc Parametros SecuenciaInstr
+            | Func Parametros Tipo SecuenciaInstr
+            | Free Nombre
+            | CrearSubrutina Nombre Parametros
+            | SubrutinaCall Nombre Parametros
+            | Break
+            | Continue
+            | Return Expr
             | Print Expr
             | Read Vars
             deriving (Eq, Show)
@@ -93,8 +96,7 @@ data Literal    = Entero Int
                 | ValorVacio
                 deriving (Eq, Show, Ord)
 
-data Compuesto  = Registro
-                | Union
+data Compuesto  = Registro Nombre SecuenciaInstr
                 deriving (Eq, Show)
 
 -- Operadores binarios
@@ -110,21 +112,24 @@ data BinOp  = Suma
             | MayorIgual
             | Igual
             | Desigual
+            | Anexo
             | Concatenacion
             | And
             | Or
+            | IfSimple
             deriving (Eq, Show, Ord)
 
 
 -- Operadores unarios
 data UnOp   = Negativo
             | TamArregloLista
-            | UpperCarse
-            | LowerCarse
+            | UpperCase
+            | LowerCase
             | Incremento
             | Decremento
             | Desreferenciar
             | Not
+            | New
             deriving (Eq, Show, Ord)
 
 
