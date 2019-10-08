@@ -67,10 +67,7 @@ printAST n instr =
         (Print exp) -> putStrLn (t ++ "Impresion:") >> printExpr (n + 1) exp
         ------------------------------------------------------------------------
         -- Leer valor
-        (Read vars) -> putStrLn (t ++ "Lectura:") >> printVar (n + 1) vars
-        ------------------------------------------------------------------------
-        -- Leer valor
-        (SecDeclaraciones seq symTab) -> do
+        (Secclaraciones seq symTab) -> do
             --printSymTab symTab t
             putStrLn (t ++ "\tDeclaraciones:") >> printSeq (n + 2) seq
         ------------------------------------------------------------------------
@@ -162,6 +159,9 @@ printExpr n e = do
         (ListaExpr exps _) ->
             putStrLn (t ++ "Arreglo:") >> sequence_ (map (printExpr $ n + 1) exps)
         ------------------------------------------------------------------------
+        ------------------------------------------------------------------------
+        -- Leer valor
+        (Read expre) -> putStrLn (t ++ "Lectura con prompt:") >> printExpr (n + 1) expre
     
     where t = replicate n '\t'
 --------------------------------------------------------------------------------

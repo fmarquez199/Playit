@@ -79,6 +79,7 @@ typeE (Literal _ t)              = t
 typeE (OpBinario _ _ _ t) = t
 --typeE (OpBinario _ _ t)    = t
 typeE (ListaExpr _ t)            = t
+typeE (Read _)            = TStr
 --------------------------------------------------------------------------------
 
 
@@ -263,12 +264,7 @@ changeTDummyFor t symTab scope (IfElse e seqI1 seqI2) =
 changeTDummyFor t symTab scope (Print e) =
     let newE = changeTDummyExpr t e
     in Print newE
---------------------------------------------------------------------------
-changeTDummyFor t symTab scope (Read var)
-    | isVarIter var symTab scope =
-        error ("\n\nError semantico, la variable de iteracion: '" ++
-               showVar var ++ "', no se puede modificar.\n")
-    | otherwise = Read var
+
 --------------------------------------------------------------------------------
 
 

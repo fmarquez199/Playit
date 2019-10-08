@@ -56,7 +56,7 @@ crearVarIndex v e =
 crearAsignacion :: Vars -> Expr -> Posicion -> Instr
 -- crearAsignacion lval (ListaExpr [] _)
 crearAsignacion lval e (line,_)
-    | tE == tV = Asignacion lval e
+    | True = Asignacion lval e
     | otherwise =
         error ("\n\nError semantico en la asignacion: '" ++ var ++
                 " <- " ++ expr ++ "'.\nEl tipo de la variable: " ++
@@ -316,15 +316,6 @@ crearPrint e (line,_)
 
 --------------------------------------------------------------------------------
 -- Crea el nodo para una instruccion Read
-crearRead :: Vars -> Posicion -> Instr
-crearRead lval@(Var name _) (line,_) = Read lval
-crearRead var@(VarIndex vars e t) l@(line,_)
-    | tE /= TError = Read var
-    | otherwise = 
-        error ("\n\nError semantico en la variable del 'read': '" ++
-                showVar var ++ ", con el indice '" ++ showE e ++ "', de tipo: "
-                ++ showType tE ++ ". En la linea: " ++ show line ++ "\n")
-
-    where
-        tE = typeE e
+crearRead :: Posicion -> Expr -> Expr
+crearRead _ e = Read e
 --------------------------------------------------------------------------------
