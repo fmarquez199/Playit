@@ -154,15 +154,23 @@ import Playit.AST
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 
-Programa :: {Instr}
-  :  EndLines world programa ":" endLine Instrucciones EndLines ".~" EndLines
+ProgramaWrapper :: {Instr}
+ProgramaWrapper
+  :  EndLines Programa EndLines
+    {$2}
+  |  EndLines Programa
+    {$2}
+  |  Programa EndLines
+    {$1}
+  |  Programa
+    {$1}
+
+Programa 
+    : world programa ":" endLine Instrucciones EndLines ".~"  
     {% do
         (symTab,_) <- get
-        return $ BloqueInstr $6 symTab }
-  |  EndLines world programa ":" endLine Instrucciones EndLines ".~"
-    {% do
-        (symTab,_) <- get
-        return $ BloqueInstr $6 symTab }
+        return $ BloqueInstr $5 symTab }
+    
 
 EndLines
   : endLine
@@ -613,5 +621,5 @@ DefinirUnion :: Instr
 {
 parseError :: [Token] -> a
 parseError (h:rs) = 
-    error $ "\n\nError sintactico del parser antes de: " ++ (show h) ++ "\n"
+    error $ "\n\nError sintactico del parser antes del : " ++ (show h) ++ "\n"
 }
