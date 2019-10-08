@@ -61,14 +61,20 @@ printAST n instr =
         -- Condicional
         (ButtonIF bloques) -> do
             putStrLn $ t ++ "Condicional encontrado:"
-            --putStrLn (t ++ "\tGuardia: ") >> printExpr (n + 2) exp
-            --putStrLn (t ++ "\tExito:") >> printSeq (n + 2) seq
+            printSeqButtonGuardias (n + 1) bloques
+--            putStrLn (t ++ "\tGuardia: ") >> printExpr (n + 2) exp
+  --          putStrLn (t ++ "\tExito:") >> printSeq (n + 2) seq
         ------------------------------------------------------------------------
         -- Imprimir expresion
         (Print exp) -> putStrLn (t ++ "Impresion:") >> printExpr (n + 1) exp
         ------------------------------------------------------------------------
         -- Leer valor
         (Read vars) -> putStrLn (t ++ "Lectura:") >> printVar (n + 1) vars
+        ------------------------------------------------------------------------
+        -- Leer valor
+        (SecuenciaDeclaraciones seq symTab) -> do
+            --printSymTab symTab t
+            putStrLn (t ++ "\tDeclaraciones:") >> printSeq (n + 2) seq
         ------------------------------------------------------------------------
     
     where t = replicate n '\t'
@@ -82,6 +88,25 @@ printSeq n seq =
     putStrLn (t ++ "Secuencia: ") >> sequence_ (map (printAST $ n + 1) seq)
     
     where t = replicate n '\t'
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+-- Subrutina para imprimir secuencias de guardias
+printButtonGuardia :: Int -> (Expr,SecuenciaInstr) -> IO()
+printButtonGuardia n (cond,seq) =  do
+    putStrLn (t ++ "Condicion: ") >> printExpr (n + 1) cond
+    putStrLn (t ++ "Instrucciones: ") >> sequence_ (map (printAST $ n + 1) seq)
+    
+    where t = replicate n '\t'
+
+
+printSeqButtonGuardias :: Int -> [(Expr,SecuenciaInstr)] -> IO()
+printSeqButtonGuardias n bloques = 
+    putStrLn (t ++ "Guardias IF: ") >> sequence_ (map (printButtonGuardia (n + 1)) bloques)
+    
+    where t = replicate n '\t'
+
+
 --------------------------------------------------------------------------------
 
 
