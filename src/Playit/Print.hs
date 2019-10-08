@@ -45,13 +45,11 @@ printAST n instr =
             putStrLn (t ++ "\tCiclo:") >> printSeq (n + 2) seq
         ------------------------------------------------------------------------
         -- Iteracion definida con saltos
-        (ForEach iter desd hast paso seq symTab) -> do
-            putStrLn $ t ++ "Ciclo Definido con Pasos:"
+        (ForEach nombre expr seq symTab) -> do
+            putStrLn $ t ++ "Ciclo determinado:"
             printSymTab symTab t
-            putStrLn (t ++ "\tVariable de Iteracion: ") >> printId (n + 2) iter
-            putStrLn (t ++ "\tDesde:") >> printExpr (n + 2) desd
-            putStrLn (t ++ "\tHasta:") >> printExpr (n + 2) hast
-            putStrLn (t ++ "\tPaso:") >> printExpr (n + 2) paso
+            putStrLn (t ++ "\tVariable de Iteracion: ") >> printId (n + 2) nombre
+            putStrLn (t ++ "\tCondicion:") >> printExpr (n + 2) expr
             putStrLn (t ++ "\tCiclo:") >> printSeq (n + 2) seq
         ------------------------------------------------------------------------
         -- Iteracion indefinida

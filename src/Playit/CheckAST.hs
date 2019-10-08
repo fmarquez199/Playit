@@ -237,12 +237,12 @@ changeTDummyFor t symTab scope (For name e1 e2 seqI st) =
         newSeqI = map (changeTDummyFor t symTab scope) seqI
     in For name newE1 newE2 newSeqI st
 --------------------------------------------------------------------------
-changeTDummyFor t symTab scope (ForEach name e1 e2 e3 seqI st) =
-    let newE1 = changeTDummyExpr t e1
-        newE2 = changeTDummyExpr t e2
-        newE3 = changeTDummyExpr t e3
-        newSeqI = map (changeTDummyFor t symTab scope) seqI
-    in ForEach name newE1 newE2 newE3 newSeqI st
+--changeTDummyFor t symTab scope (ForEach name e1 e2 e3 --seqI st) =
+    --let newE1 = changeTDummyExpr t e1
+--        newE2 = changeTDummyExpr t e2
+--        newE3 = changeTDummyExpr t e3
+--        newSeqI = map (changeTDummyFor t symTab scope) seqI
+--    in ForEach name newE1 newE2 newE3 newSeqI st
 --------------------------------------------------------------------------
 changeTDummyFor t symTab scope (While e seqI) =
     let newE = changeTDummyExpr t e

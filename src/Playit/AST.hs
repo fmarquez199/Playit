@@ -219,64 +219,10 @@ crearFor var e1 e2 i st scope pos@(line,_)
 
 --------------------------------------------------------------------------------
 -- Crea el nodo para una instruccion ForEach
-crearForWithStep :: Nombre -> Expr -> Expr -> Expr -> SecuenciaInstr -> SymTab -> Alcance -> Posicion
-                    -> MonadSymTab Instr
-crearForWithStep var e1 e2 e3 i st scope pos@(line,_)
-    | tE1 == TInt && tE2 == TInt && tE3 == TInt =
-        do
-            let newI = map (changeTDummyFor TInt st scope) i
-            checkInfSup e1 e2 pos st >> checkStep e3 pos st
-            return $ ForEach var e1 e2 e3 newI st
-    --------------------------------------------------------------------------
-    | tE2 == TInt && tE3 == TInt =
-        error ("\n\nError semantico en la primera expresion del 'for': '" ++
-                expr1 ++ "', de tipo: " ++ showType tE1 ++ ". En la linea: " ++
-                show line ++ "\n")
-    --------------------------------------------------------------------------
-    | tE1 == TInt && tE3 == TInt =
-        error ("\n\nError semantico en segunda la expresion del 'for': '" ++
-                expr2 ++ "', de tipo: " ++ showType tE2 ++ ". En la linea: " ++
-                show line ++ "\n")
-    --------------------------------------------------------------------------
-    | tE1 == TInt && tE2 == TInt =
-        error ("\n\nError semantico en la expresion del paso del 'for': '" ++
-                expr3 ++ "', de tipo: " ++ showType tE3 ++ ". En la linea: " ++
-                show line ++ "\n")
-    --------------------------------------------------------------------------
-    | tE1 == TInt =
-        error ("\n\nError semantico en segunda la expresion: '" ++ expr2 ++
-                "', de tipo: " ++ showType tE2 ++ ", y expresion de paso: '"
-               ++  expr3 ++ "', de tipo: " ++ showType tE3 ++
-                ", del 'for'. En la linea: " ++ show line ++ "\n")
-    --------------------------------------------------------------------------
-    | tE2 == TInt =
-        error ("\n\nError semantico en primera la expresion: '" ++ expr1 ++
-                "', de tipo: " ++ showType tE1 ++ ", y expresion de paso: '"
-                ++ expr3 ++ "', de tipo: " ++ showType tE3 ++
-                ", del 'for'. En la linea: " ++ show line ++ "\n")
-    --------------------------------------------------------------------------
-    | tE3 == TInt =
-        error ("\n\nError semantico en primera la expresion: " ++ expr1 ++
-                ", de tipo: " ++ showType tE2 ++ ", y segunda expresion: "
-                ++ expr2 ++ ", de tipo: " ++ showType tE2 ++
-                ", del 'for'. En la linea: " ++ show line ++ "\n")
-    --------------------------------------------------------------------------
-    | otherwise =
-        error ("\n\nError semantico en las expresiones del 'for': '" ++ expr1
-                ++ "', de tipo: " ++ showType tE2 ++ ", '" ++ expr2 ++
-                "', de tipo: " ++ showType tE2 ++ ", y '" ++ expr3 ++
-                "', de tipo: " ++ showType tE2 ++ ". En la linea: " ++
-                show line ++ "\n")
-
-    where
-        expr1 = showE e1
-        expr2 = showE e2
-        expr3 = showE e3
-        tE1 = typeE e1
-        tE2 = typeE e2
-        tE3 = typeE e3
---------------------------------------------------------------------------------
-
+crearForEachDetermined :: Nombre -> Expr -> SecuenciaInstr -> SymTab -> Alcance -> Posicion -> MonadSymTab Instr
+crearForEachDetermined var e1 i st scope pos@(line,_) = do
+    return $ ForEach var e1 i st 
+    
 
 --------------------------------------------------------------------------------
 -- Crea el nodo para una instruccion While

@@ -63,7 +63,7 @@ data Vars   = VarIndex Vars Expr Tipo
 data Instr  = Asignacion Vars Expr
             | BloqueInstr SecuenciaInstr SymTab
             | For Nombre Expr Expr SecuenciaInstr SymTab
-            | ForEach Nombre Expr Expr Expr SecuenciaInstr SymTab
+            | ForEach Nombre Expr SecuenciaInstr SymTab
             | While Expr SecuenciaInstr
             | ButtonIF [(Expr,SecuenciaInstr)] 
             | Proc Parametros SecuenciaInstr
