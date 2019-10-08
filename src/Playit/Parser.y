@@ -191,7 +191,7 @@ Declaracion
     {%  let (ids, asigs, vals) = $2 
         in do
             (actualSymTab, scope) <- get
-            --addToSymTab ids $! vals actualSymTab scope
+            addToSymTab ids $1 vals actualSymTab scope
             return $ SecuenciaDeclaraciones asigs actualSymTab }
 
 {-Dummy tipo (1,2)-}
