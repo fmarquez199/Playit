@@ -28,9 +28,9 @@ import Data.List(intercalate)
 
 $digitos        = [0-9]
 $abecedario     = [a-zA-Z]
--- $simbolos       = [\! '"' \# \[ \] \$ \% \& \' \( \) \* \+ \, \- \. \/ \: \; \< \= \> \? \@]
--- $especial       = [\\ \^ \_ \` \{ \| \} \~ '\0' '\t' '\n' '\\' '\'' '\"' '\~' '\*']
-$validos        = [$digitos $abecedario $white]
+$simbolos       = [\! \" \# \$ \% \& \' \( \) \* \+ \, \- \. \/ \: \; \< \= \> \? \@]
+$especial       = [\[ \\ \] \^ \_ \` \{ \| \} \~ '\0' '\t' '\n' '\\' '\'' '\"' '\~' '\*']
+$validos        = [$digitos $abecedario $simbolos $especial  $white]
 -- $comentarios    = [$validos ~$validos]
 $char_texto     = [$validos # [\* \~ \\]]
 $char_id        = [$digitos $abecedario \_ \']
@@ -38,13 +38,13 @@ $char_id        = [$digitos $abecedario \_ \']
 -- Expresiones regulares
 
 @scape          = "\\" | "\0" | "\n" | "\t" | "\~" | "\*"
-@caracters      = $char_texto | @scape
-@caracter       = "*" @caracters "*"
-@texto          = @caracters*
-@id    = $abecedario $char_id*
-@programas      = \% $char_id+ \%
+@caracteres      = $char_texto | @scape
+@texto          = @caracteres*
+@caracter       = "*" @caracteres "*"
 @strings        = \~ @texto \~
-@endLine        = ($white* \n)+ -- Revisar
+@id             = $abecedario $char_id*
+@programas      = \% $char_id+ \%
+@endLine        = ($white* \n)+ 
 @float          = $digitos+ \' $digitos+
 @comments       = \"\' ( . # [\'\"] | \n)* \'\"
 @comment        = \@ [. # \n]* \n 

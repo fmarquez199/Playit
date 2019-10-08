@@ -73,7 +73,7 @@ import Playit.AST
   -- Caracteres
 
   caracter          { TkCARACTER _ $$ }
-  string            { TkSTRINGS _ _ }
+  string            { TkSTRINGS _ $$ }
   
   -- Literares numericos
   
@@ -284,8 +284,8 @@ Instruccion :: {Instr}
     { $1 }
   | Asignacion
     { $1 }
---  | EntradaSalida
---    { $1 }
+  | EntradaSalida
+    { $1 }
 --  | Free
 --    { $1 }
 --  | FuncCall
@@ -379,9 +379,10 @@ Play
 
 --------------------------------------------------------------------------------
 -- Instrucciones de E/S 'drop' y 'joystick'
+EntradaSalida :: {Instr}
 EntradaSalida
   : print Expresiones
-    {}
+    {crearPrint (crearListaExpr $2) (posicion $1) }
 --------------------------------------------------------------------------------
 
 --------------------------------------------------------------------------------
@@ -574,8 +575,8 @@ Expresion :: {Expr}
 --    {}
   | caracter
     { Literal (Caracter $ $1 !! 0) TChar }
---  | string
---    {}
+  | string
+    {Literal (Str $1) TStr}
 --  | null
 --    {}
   | Lvalue
