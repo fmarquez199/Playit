@@ -11,8 +11,14 @@
 module Playit.Lexer (
     Token(..),
     AlexPosn(..), 
-    alexScanTokens
+    hasError,
+    alexScanTokens,
+    tkErrorToString,
+    isError
 ) where
+
+import Data.List(intercalate)
+
 }
 
 %wrapper "posn"
@@ -150,7 +156,7 @@ tokens :-
 
   -- Caracteres invalidos
 
-  @error               { tok (\p s -> TkERR p s) }
+  @error               { createTkError}
 
 {
 tok :: (AlexPosn -> String -> Token) -> AlexPosn -> String -> Token
@@ -237,10 +243,41 @@ data Token = TkWORLD AlexPosn String
            | TkCloseArray AlexPosn String
            | TkOpenArrayIndex AlexPosn String
            | TkCloseArrayIndex AlexPosn String
-           | TkERR AlexPosn String
+           | TkError {mensaje :: String}
            | TkCONCAT AlexPosn String
            | TkEndLine AlexPosn String
            deriving (Eq)
+
+
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--                       Manejo de los tokens erroneos
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+
+
+createTkError alex_pos err           = TkError $ tokerr err alex_pos
+
+
+-- 'hasError' : Determina si en una lista de tokens existe al menos un error.
+hasError :: [Token] -> Bool
+hasError [] = False
+hasError ((TkError _):tks) = True
+hasError (_:tks) = hasError tks
+
+--  'isError' : Determina si un token es un error.
+isError :: Token -> Bool
+isError (TkError _) = True
+isError _ = False
+
+-- 'tokerr' : Traduce los errores al formato especificado en el proyecto.
+tokerr s (AlexPn _ l c) = 
+    "Error: Caracter inesperado " ++ s ++ 
+    " en la linea " ++ (show l) ++ ", columna " ++ (show c) ++ "."
+
+-- 'tkErrorToString': Inserta nuevas lineas entre los errores para ser impresos.
+tkErrorToString :: [Token] -> String
+tkErrorToString tk = intercalate "\n" $ map mensaje tk
 
 instance Show Token where
     show (TkWORLD p s) = "Token " ++ s ++ (pos p) -- world
@@ -321,5 +358,4 @@ instance Show Token where
     show (TkCloseArray p s) = "Token " ++ s ++ (pos p) -- "{|"
     show (TkOpenArrayIndex p s) = "Token " ++ s ++ (pos p) -- "|)"
     show (TkCloseArrayIndex p s) = "Token " ++ s ++ (pos p) -- "(|"
-    show (TkERR p s) = "Error, caracter inesperado " ++ s ++ (pos p) -- Error
 }

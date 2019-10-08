@@ -11,12 +11,12 @@
 module Playit.Parser (parse, {-parseRead,-} error) where
 import Control.Monad.Trans.State
 import Control.Monad.IO.Class
--- import SymbolTable
--- import CheckAST
+import Playit.SymbolTable
+import Playit.CheckAST
 import Playit.Lexer
 import Playit.Types
 -- import Eval
--- import AST
+import Playit.AST
 
 }
 
@@ -24,7 +24,7 @@ import Playit.Types
 -- %name parseRead Expr
 %tokentype { Token }
 %error { parseError }
--- %monad { MonadSymTab }
+%monad { MonadSymTab }
 
 
 %token
@@ -68,16 +68,16 @@ import Playit.Types
   -- Identificadores
 
   programa          { TkProgramName _ _ }
-  nombre            { TkID _ _ }
+  nombre            { TkID _ $$ }
 
   -- Caracteres
 
-  caracter          { TkCARACTER _ _ }
+  caracter          { TkCARACTER _ $$ }
   string            { TkSTRINGS _ _ }
   
   -- Literares numericos
   
-  entero            { TkINT _ _ }
+  entero            { TkINT _ $$ }
   flotante          { TkFLOAT _ _ }
 
   -- Simbolos
@@ -154,11 +154,16 @@ import Playit.Types
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 
-Programa
+Programa:: {Instr}
+Programa 
   :  EndLines world programa ":" endLine Instrucciones EndLines ".~" EndLines
-    {}
+    {% do
+        (symTab,_) <- get
+        return $ BloqueInstr $6 symTab }
   |  EndLines world programa ":" endLine Instrucciones EndLines ".~"
-    {}
+    {% do
+        (symTab,_) <- get
+        return $ BloqueInstr $6 symTab }
 
 EndLines
   : endLine
@@ -188,7 +193,7 @@ Declaracion
 --                  Identificadores de las declaraciones
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
-
+--Identificadores ::
 Identificadores
   : Identificador
     {}
@@ -209,18 +214,19 @@ Identificador
 
 
 -- Lvalues, contenedores que identifican a las variables
+Lvalue  ::  {Vars}
 Lvalue
-  : Lvalue "." nombre
-    {}
+--  : Lvalue "." nombre
+--    {}
     -- Tokens indexacion
-  | Lvalue "|)" Expresion "(|"
-    {}
-  | Lvalue "|>" Expresion "<|"
-    {}
-  | pointer Lvalue
-    {}
-  | nombre
-    {}
+--  | Lvalue "|)" Expresion "(|"
+--    {}
+--  | Lvalue "|>" Expresion "<|"
+--    {}
+--  | pointer Lvalue
+--    {}
+  : nombre
+    {% crearIdvar $1 }
 
 
 -- Tipos de datos
@@ -251,48 +257,51 @@ Tipo
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 
+Instrucciones :: {SecuenciaInstr}
 Instrucciones
   : Instrucciones endLine Instruccion
-    {}
+    {$1 ++ [$3]}
   | Instruccion
-    {}
+    {[$1]}
 
-Instruccion
-  : Declaracion
-    {}
-  | DefinirSubrutina
-    {}
-  | DefinirRegistro
-    {}
-  | DefinirUnion
-    {}
-  | Controller
-    {}
-  | Play
-    {}
-  | Button
-    {}
-  | Asignacion
-    {}
-  | EntradaSalida
-    {}
-  | Free
-    {}
-  | FuncCall
-    {}
-  | return Expresion
-    {}
-  | break
-    {}
-  | continue
-    {}
+Instruccion :: {Instr}
+Instruccion:
+--  : Declaracion
+--    {}
+--  | DefinirSubrutina
+--    {}
+--  | DefinirRegistro
+--    {}
+--  | DefinirUnion
+--    {}
+--  | Controller
+--   {}
+--  | Play
+--    {}
+--  | Button
+--    {}
+   Asignacion
+    {$1}
+--  | EntradaSalida
+--    {}
+--  | Free
+--    {}
+--  | FuncCall
+--    {}
+--  | return Expresion
+--    {}
+--  | break
+--    {}
+--  | continue
+--    {}
 
 
 --------------------------------------------------------------------------------
 -- Instruccion de asignacion '='
+Asignacion :: {Instr}
 Asignacion
   : Lvalue "=" Expresion
-    {}
+    { crearAsignacion $1 $3 (0,0) }
 --------------------------------------------------------------------------------
 
 
@@ -466,106 +475,106 @@ ParametroPasado
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 
-Expresiones
+Expresiones::{[Expr]}
   : Expresiones "," Expresion
-    {}
+    {$1 ++ [$3]}
   | Expresion
-    {}
+    {[$1]}
 
 
-Expresion
+Expresion :: {Expr}
   : Expresion "+" Expresion
-    {}
+    { crearOpBin TInt TInt TInt Suma $1 $3 }
   | Expresion "-" Expresion
-    {}
+    { crearOpBin TInt TInt TInt Resta $1 $3 }
   | Expresion "*" Expresion
-    {}
+    { crearOpBin TInt TInt TInt Multiplicacion $1 $3  }
   | Expresion "%" Expresion
-    {}
+    { crearOpBin TInt TInt TInt Modulo $1 $3 }
   | Expresion "/" Expresion
-    {}
-  | Expresion "//" Expresion
-    {}
+    { crearOpBin TInt TInt TInt Division $1 $3 }
+--  | Expresion "//" Expresion
+--    {}
   | Expresion "&&" Expresion
-    {}
+    { crearOpBin TBool TBool TBool And $1 $3 }
   | Expresion "||" Expresion
-    {}
+    { crearOpBin TBool TBool TBool Or $1 $3 }
   | Expresion "==" Expresion
-    {}
+    { crearOpBin TInt TInt TBool Igual $1 $3 }
   | Expresion "!=" Expresion
-    {}
+    { crearOpBin TInt TInt TBool Desigual $1 $3 }
   | Expresion ">=" Expresion
-    {}
+    { crearOpBin TInt TInt TBool MayorIgual $1 $3 }
   | Expresion "<=" Expresion
-    {}
+    { crearOpBin TInt TInt TBool MenorIgual $1 $3 }
   | Expresion ">" Expresion
-    {}
+    { crearOpBin TInt TInt TBool Mayor $1 $3 }
   | Expresion "<" Expresion
-    {}
-  | Expresion ":" Expresion %prec ":"
-    {}
-  | Expresion "::" Expresion
-    {}
+    { crearOpBin TInt TInt TBool Menor $1 $3 }
+--  | Expresion ":" Expresion %prec ":"
+--    {}
+--  | Expresion "::" Expresion
+--    { crearOpConcat Concatenacion $1 $3 }
   
   --
-  | Expresion "?" Expresion ":" Expresion %prec "?"
-    {}
-  | "(" Expresion ")"
-    {}
-  | "{" Expresiones "}"
-    {}
-  | "|}" Expresiones "{|"
-    {}
-  | "<<" Expresiones ">>"
-    {}
-  | "<<"  ">>"
-    {}
-  | FuncCall
-    {}
-  | new Tipo
-    {}
-  | input
-    {}
-  | input Expresion %prec input
-    {}
+--  | Expresion "?" Expresion ":" Expresion %prec "?"
+--    {}
+--  | "(" Expresion ")"
+--    {$2}
+--  | "{" Expresiones "}"
+--    {crearListaExpr $2 }
+--  | "|}" Expresiones "{|"
+--    {crearListaExpr $2 }
+--  | "<<" Expresiones ">>"
+--    {crearListaExpr $2 }
+--  | "<<"  ">>"
+--    {}
+--  | FuncCall
+--    {}
+--  | new Tipo
+--    {}
+--  | input
+--    {}
+--  | input Expresion %prec input
+--    {}
 
   -- Operadores unarios
   | "-" Expresion %prec negativo
-    {}
-  | "#" Expresion
-    {}
+    { crearOpUn TInt TInt Negativo $2 }
+--  | "#" Expresion
+--    {}
   | "!" Expresion
-    {}
-  | upperCase Expresion %prec upperCase
-    {}
-  | lowerCase Expresion %prec lowerCase
-    {}
-  | Expresion "++"
-    {}
-  | "++" Expresion 
-    {}
-  | Expresion "--"
-    {}
-  | "--" Expresion
-    {}
+    { crearOpUn TBool TBool Not $2 }
+--  | upperCase Expresion %prec upperCase
+--    {}
+--  | lowerCase Expresion %prec lowerCase
+--    {}
+--  | Expresion "++"
+--    {}
+--  | "++" Expresion 
+--    {}
+--  | Expresion "--"
+--    {}
+--  | "--" Expresion
+--    {}
   
   -- Literales
   | true
-    {}
+    { Literal (Booleano True) TBool }
   | false
-    {}
+    { Literal (Booleano False) TBool }
   | entero
-    {}
-  | flotante
-    {}
+    { Literal (Entero (read $1::Int)) TInt }
+--  | flotante
+--    {}
   | caracter
-    {}
-  | string
-    {}
-  | null
-    {}
-  | Lvalue
-    {}
+    { Literal (Caracter $ $1 !! 0) TChar }
+--  | string
+--    {}
+--  | null
+--    {}
+--  | Lvalue
+--    { Variables $1 (typeVar $1) }
 
 
 --------------------------------------------------------------------------------
