@@ -26,29 +26,28 @@ import Data.List(intercalate)
 
 -- Conjuntos de caracteres
 
-$digitos        = [0-9]
-$abecedario     = [a-zA-Z]
-$simbolos       = [\! \" \# \$ \% \& \' \( \) \* \+ \, \- \. \/ \: \; \< \= \> \? \@]
-$especial       = [\[ \\ \] \^ \_ \` \{ \| \} \~ '\0' '\t' '\n' '\\' '\'' '\"' '\~' '\*']
-$validos        = [$digitos $abecedario $simbolos $especial  $white]
--- $comentarios    = [$validos ~$validos]
-$char_texto     = [$validos # [\* \~ \\]]
-$char_id        = [$digitos $abecedario \_ \']
+$digitos      = [0-9]
+$abecedario   = [a-zA-Z]
+$simbolos     = [\! \" \# \$ \% \& \' \( \) \* \+ \, \- \. \/ \: \; \< \= \> \? \@
+              \[ \\ \] \^ \_ \` \{ \| \} \~ '\0' '\t' '\n' '\\' '\'' '\"' '\~' '\*']
+$validos      = [$digitos $abecedario $simbolos  $white]
+$char_texto   = [$validos # [\* \~ \\]]
+$char_id      = [$digitos $abecedario \_ \']
 
 -- Expresiones regulares
 
-@scape          = "\\" | "\0" | "\n" | "\t" | "\~" | "\*"
-@caracteres      = $char_texto | @scape
-@texto          = @caracteres*
-@caracter       = "*" @caracteres "*"
-@strings        = \~ @texto \~
-@id             = $abecedario $char_id*
-@programas      = \% $char_id+ \%
-@endLine        = ($white* \n)+ 
-@float          = $digitos+ \' $digitos+
-@comments       = \"\' ( . # [\'\"] | \n)* \'\"
-@comment        = \@ [. # \n]* \n 
-@error          = .
+@scape        = "\\" | "\0" | "\n" | "\t" | "\~" | "\*"
+@caracteres   = $char_texto | @scape
+@texto        = @caracteres*
+@caracter     = "*" @caracteres "*"
+@strings      = \~ @texto \~
+@id           = $abecedario $char_id*
+@programas    = \% $char_id+ \%
+@endLine      = ($white* \n)+ 
+@float        = $digitos+ \' $digitos+
+@comments     = \"\' ( . # [\'\"] | \n)* \'\"
+@comment      = \@ [. # \n]* \n 
+@error        = .
 
 tokens :-
 

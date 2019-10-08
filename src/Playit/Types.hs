@@ -46,7 +46,7 @@ data IdInfo = IdInfo {getType :: Tipo, getVal :: Literal, getScope :: Alcance}
 
 -- Tipo de dato que pueden ser las expresiones
 data Tipo   = TInt | TFloat | TBool | TChar | TStr | TArray Expr Tipo
-            | TLista Tipo | TRegister | TUnion | TApuntador
+            | TLista Tipo | TRegistro | TUnion | TApuntador
             | TError    -- Tipo error, no machean los tipos como deben
             | TDummy    -- Tipo temporal cuando todavia no se lee el tipo de la
                         -- variable en una asignacion en las declaraciones o no
@@ -61,10 +61,12 @@ data Vars   = VarIndex Vars Expr Tipo
 
 
 data Instr  = Asignacion Vars Expr
+            | Registro Nombre SecDeclaraciones Tipo
+            | Union Nombre SecDeclaraciones Tipo
             | BloqueInstr SecuenciaInstr SymTab
             | For Nombre Expr Expr SecuenciaInstr SymTab
             | ForEach Nombre Expr SecuenciaInstr SymTab
-            | SecuenciaDeclaraciones SecuenciaInstr SymTab
+            | SecDeclaraciones SecuenciaInstr SymTab
             | While Expr SecuenciaInstr
             | ButtonIF [(Expr,SecuenciaInstr)] 
             | Proc Nombre Parametros SecuenciaInstr SymTab
@@ -97,10 +99,6 @@ data Literal    = Entero Int
                 | Lista 
                 | ValorVacio
                 deriving (Eq, Show, Ord)
-
-
-data Compuesto  = Registro Nombre SecuenciaInstr
-                deriving (Eq, Show)
 
 
 -- Operadores binarios

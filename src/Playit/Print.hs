@@ -70,7 +70,7 @@ printAST n instr =
         (Read vars) -> putStrLn (t ++ "Lectura:") >> printVar (n + 1) vars
         ------------------------------------------------------------------------
         -- Leer valor
-        (SecuenciaDeclaraciones seq symTab) -> do
+        (SecDeclaraciones seq symTab) -> do
             --printSymTab symTab t
             putStrLn (t ++ "\tDeclaraciones:") >> printSeq (n + 2) seq
         ------------------------------------------------------------------------

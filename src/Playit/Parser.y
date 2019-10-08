@@ -78,7 +78,7 @@ import Playit.AST
   -- Literares numericos
   
   entero            { TkINT _ $$ }
-  flotante          { TkFLOAT _ _ }
+  flotante          { TkFLOAT _ $$ }
 
   -- Simbolos
 
@@ -189,7 +189,7 @@ Declaracion :: {Instr}
         in do
             (actualSymTab, scope) <- get
             addToSymTab ids $1 vals actualSymTab scope
-            return $ SecuenciaDeclaraciones asigs actualSymTab }
+            return $ SecDeclaraciones asigs actualSymTab }
 
 {-Dummy tipo (1,2)-}
 
@@ -571,14 +571,14 @@ Expresion :: {Expr}
     { Literal (Booleano False) TBool }
   | entero
     { Literal (Entero (read $1::Int)) TInt }
---  | flotante
---    {}
+  | flotante
+    { Loteral (Flotante $1) TFloat }
   | caracter
     { Literal (Caracter $ $1 !! 0) TChar }
   | string
-    {Literal (Str $1) TStr}
---  | null
---    {}
+    { Literal (Str $1) TStr }
+  | null
+    { ValorVacio }
   | Lvalue
     { Variables $1 (typeVar $1) }
 
@@ -592,21 +592,21 @@ Expresion :: {Expr}
 
 --------------------------------------------------------------------------------
 -- Registros
-DefinirRegistro
+DefinirRegistro :: Instr
   : registro nombre ":" endLine Declaraciones endLine ".~"
-    {}
+    { definirRegistro $2 $5 TRegistro }
   | registro nombre ":" endLine ".~"
-    {}
+    { definirRegistro $2 [] TRegistro }
 --------------------------------------------------------------------------------
 
 
 --------------------------------------------------------------------------------
 -- Uniones
-DefinirUnion
+DefinirUnion :: Instr
   : union nombre ":" endLine Declaraciones endLine ".~"
-    {}
+    { definirUnion $2 $5 TUnion }
   | union nombre ":" endLine ".~"
-    {}
+    { definirUnion $2 [] TUnion }
 --------------------------------------------------------------------------------
 
 
