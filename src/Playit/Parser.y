@@ -166,7 +166,7 @@ ProgramaWrapper
     {$1}
 
 Programa 
-    : world programa ":" endLine Instrucciones EndLines ".~"  
+    : world programa ":" EndLines Instrucciones EndLines ".~"  
     {% do
         (symTab,_) <- get
         return $ BloqueInstr $5 symTab }
