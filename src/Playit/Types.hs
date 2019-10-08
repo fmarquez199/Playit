@@ -46,7 +46,7 @@ data IdInfo = IdInfo {getType :: Tipo, getVal :: Literal, getScope :: Alcance}
 
 -- Tipo de dato que pueden ser las expresiones
 data Tipo   = TInt | TFloat | TBool | TChar | TStr | TArray Expr Tipo
-            | TLista Tipo | TRegister | TUnion | TApuntador
+            | TLista Tipo | TRegistro | TUnion | TApuntador
             | TError    -- Tipo error, no machean los tipos como deben
             | TDummy    -- Tipo temporal cuando todavia no se lee el tipo de la
                         -- variable en una asignacion en las declaraciones o no
@@ -85,7 +85,7 @@ data Expr   = OpBinario BinOp Expr Expr Tipo
             | ListaExpr [Expr] Tipo
             | Variables Vars Tipo
             | Literal Literal Tipo
-            | Read Vars
+            | Read Expr
             | ExprVacia
             deriving (Eq, Show, Ord)
 

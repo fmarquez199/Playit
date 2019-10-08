@@ -155,7 +155,6 @@ import Playit.AST
 --------------------------------------------------------------------------------
 
 ProgramaWrapper :: {Instr}
-ProgramaWrapper
   :  EndLines Programa EndLines
     {$2}
   |  EndLines Programa
@@ -388,7 +387,6 @@ Play
 --------------------------------------------------------------------------------
 -- Instrucciones de E/S 'drop' y 'joystick'
 EntradaSalida :: {Instr}
-EntradaSalida
   : print Expresiones
     {crearPrint (crearListaExpr $2) (posicion $1) }
 --------------------------------------------------------------------------------
@@ -580,13 +578,13 @@ Expresion :: {Expr}
   | entero
     { Literal (Entero (read $1::Int)) TInt }
   | flotante
-    { Loteral (Flotante (read $1::Float)) TFloat }
+    { Literal (Flotante (read $1::Float)) TFloat }
   | caracter
     { Literal (Caracter $ $1 !! 0) TChar }
   | string
     { Literal (Str $1) TStr }
   | null
-    { ValorVacio }
+    { ExprVacia }
   | Lvalue
     { Variables $1 (typeVar $1) }
 
