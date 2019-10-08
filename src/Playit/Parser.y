@@ -493,8 +493,8 @@ Expresion :: {Expr}
     { crearOpBin TInt TInt TInt Modulo $1 $3 }
   | Expresion "/" Expresion
     { crearOpBin TInt TInt TInt Division $1 $3 }
---  | Expresion "//" Expresion
---    {}
+  | Expresion "//" Expresion
+    {crearOpBin  TInt  TInt TInt DivEntera $1 $3 }
   | Expresion "&&" Expresion
     { crearOpBin TBool TBool TBool And $1 $3 }
   | Expresion "||" Expresion

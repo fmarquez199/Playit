@@ -25,6 +25,8 @@ import Data.List (intercalate)
 -- Identificador de variable, registros, uniones y subrutinas
 type Nombre = String
 
+type Parametros = [Expr]
+
 -- Identificador del nombre de un programa
 type Programa = String
 
@@ -61,7 +63,7 @@ data Vars   = VarIndex Vars Expr Tipo
 data Instr  = Asignacion Vars Expr
             | BloqueInstr SecuenciaInstr SymTab
             | For Nombre Expr Expr SecuenciaInstr SymTab
-            | ForEach Nombre Expr SecuenciaInstr SymTab
+            | ForEach Nombre Expr Expr Expr SecuenciaInstr SymTab
             | While Expr SecuenciaInstr
             | If Expr SecuenciaInstr
             | IfElse Expr SecuenciaInstr SecuenciaInstr
@@ -76,7 +78,6 @@ data Instr  = Asignacion Vars Expr
             | Print Expr
             | Read Vars
             deriving (Eq, Show)
-
 
 data Expr   = OpBinario BinOp Expr Expr Tipo
             | OpUnario UnOp Expr Tipo
