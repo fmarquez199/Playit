@@ -65,8 +65,7 @@ data Instr  = Asignacion Vars Expr
             | For Nombre Expr Expr SecuenciaInstr SymTab
             | ForEach Nombre Expr Expr Expr SecuenciaInstr SymTab
             | While Expr SecuenciaInstr
-            | If Expr SecuenciaInstr
-            | IfElse Expr SecuenciaInstr SecuenciaInstr
+            | ButtonIF [(Expr,SecuenciaInstr)] 
             | Proc Parametros SecuenciaInstr
             | Func Parametros Tipo SecuenciaInstr
             | Free Nombre

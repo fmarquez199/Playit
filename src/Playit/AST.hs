@@ -151,29 +151,29 @@ crearListaExpr e =
 
 
 -- Crea el nodo para una instruccion If
-crearIf :: Expr -> SecuenciaInstr -> Posicion -> Instr
-crearIf e i (line,_)
-    | tE == TBool = If e i
+crearGuardiaIF :: Expr -> SecuenciaInstr -> Posicion -> Instr
+crearGuardiaIF exprCond seqInstrs (line,_)
+    | tExpreCondicional == TBool = ButtonIF [(exprCond, seqInstrs)]
     | otherwise = 
-        error ("\n\nError semantico en la expresion del if: '" ++ showE e
-                ++ "', de tipo: " ++ showType tE ++ ". En la linea: "
+        error ("\n\nError semantico en la expresion del if: '" ++ showE exprCond
+                ++ "', de tipo: " ++ showType tExpreCondicional ++ ". En la linea: "
                 ++ show line ++ "\n")
 
     where
-        tE = typeE e
+        tExpreCondicional = typeE exprCond
 
 
 -- Crea el nodo para una instruccion IfElse
-crearIfOtherwise :: Expr -> SecuenciaInstr -> SecuenciaInstr -> Posicion -> Instr
-crearIfOtherwise e i1 i2 (line,_)
-    | tE == TBool = IfElse e i1 i2
-    | otherwise = 
-        error ("\n\nError semantico en la expresion del if: '" ++ showE e
-                ++ "', de tipo: " ++ showType tE ++ ". En la linea: "
-                ++ show line ++ "\n")
+--crearIfOtherwise :: Expr -> SecuenciaInstr -> SecuenciaInstr -> Posicion -> Instr
+--crearIfOtherwise e i1 i2 (line,_)
+--    | tE == TBool = IfElse e i1 i2
+--    | otherwise = 
+--        error ("\n\nError semantico en la expresion del if: '" ++ showE e
+--                ++ "', de tipo: " ++ showType tE ++ ". En la linea: "
+--                ++ show line ++ "\n")
 
-    where
-        tE = typeE e
+--    where
+--        tE = typeE e
 
 
 --------------------------------------------------------------------------------

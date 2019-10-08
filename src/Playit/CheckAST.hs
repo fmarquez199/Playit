@@ -249,7 +249,7 @@ changeTDummyFor t symTab scope (While e seqI) =
         newSeqI = map (changeTDummyFor t symTab scope) seqI
     in While newE newSeqI
 --------------------------------------------------------------------------
-changeTDummyFor t symTab scope (If e seqI) =
+{-changeTDummyFor t symTab scope (If e seqI) =
     let newE = changeTDummyExpr t e
         newSeqI = map (changeTDummyFor t symTab scope) seqI
     in If newE newSeqI
@@ -258,7 +258,7 @@ changeTDummyFor t symTab scope (IfElse e seqI1 seqI2) =
     let newE = changeTDummyExpr t e
         newSeqI1 = map (changeTDummyFor t symTab scope) seqI1
         newSeqI2 = map (changeTDummyFor t symTab scope) seqI2
-    in IfElse newE newSeqI1 newSeqI2
+    in IfElse newE newSeqI1 newSeqI2 -}
 --------------------------------------------------------------------------
 changeTDummyFor t symTab scope (Print e) =
     let newE = changeTDummyExpr t e

@@ -260,40 +260,39 @@ Tipo
 Instrucciones :: {SecuenciaInstr}
 Instrucciones
   : Instrucciones endLine Instruccion
-    {$1 ++ [$3]}
+    { $1 ++ [$3] }
   | Instruccion
-    {[$1]}
+    { [$1] }
 
-Instruccion :: {Instr}
-Instruccion:
+Instruccion
 --  : Declaracion
---    {}
---  | DefinirSubrutina
---    {}
+--    { $1 }
+  --| DefinirSubrutina
+--    { $1 }
 --  | DefinirRegistro
---    {}
+--    { $1 }
 --  | DefinirUnion
---    {}
+--    { $1 }
 --  | Controller
---   {}
+--    { $1 }
 --  | Play
---    {}
---  | Button
---    {}
-   Asignacion
-    {$1}
+--    { $1 }
+  : Button
+    { $1 }
+  | Asignacion
+    { $1 }
 --  | EntradaSalida
---    {}
+--    { $1 }
 --  | Free
---    {}
+--    { $1 }
 --  | FuncCall
---    {}
+--    { $1 }
 --  | return Expresion
---    {}
+--    { $2 }
 --  | break
---    {}
+--    { $1 }
 --  | continue
---    {}
+--    { $1 }
 
 
 --------------------------------------------------------------------------------
@@ -307,25 +306,32 @@ Asignacion
 
 --------------------------------------------------------------------------------
 -- Instrucciones de condicionales 'Button', '|' y 'notPressed'
+Button :: {Instr}
 Button
   : if ":" endLine Guardias ".~"
-    {}
+    { $4 }
 
+Guardias::{Instr}
 Guardias
   : Guardia
-    {}
+    { $1 }
   | Guardias Guardia
-    {}
+    {% do
+        (symTab,_) <- get
+        let ButtonIF bloq1 = $1
+        let ButtonIF bloq2 = $2
+        return $ ButtonIF $ bloq1 ++ bloq2 }
 
+Guardia:: {Instr}
 Guardia
   : "|" Expresion "}" EndLines Instrucciones endLine
-    {}
+    { crearGuardiaIF $2 $5 (posicion $1) }
   | "|" else "}" EndLines Instrucciones endLine
-    {}
+    { crearGuardiaIF (Literal (Booleano True) TBool) $5 (posicion $1) }
   | "|" Expresion "}" Instrucciones endLine
-    {}
+    { crearGuardiaIF $2 $4 (posicion $1) }
   | "|" else "}" Instrucciones endLine
-    {}
+    { crearGuardiaIF (Literal (Booleano True) TBool) $4 (posicion $1) }
 --------------------------------------------------------------------------------
 
 

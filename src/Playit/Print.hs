@@ -61,17 +61,10 @@ printAST n instr =
             putStrLn (t ++ "\tCiclo:") >> printSeq (n + 2) seq
         ------------------------------------------------------------------------
         -- Condicional
-        (If exp seq) -> do
-            putStrLn $ t ++ "Condicional:"
-            putStrLn (t ++ "\tGuardia: ") >> printExpr (n + 2) exp
-            putStrLn (t ++ "\tExito:") >> printSeq (n + 2) seq
-        ------------------------------------------------------------------------
-        -- Condicional con fracaso
-        (IfElse exp seq1 seq2) -> do
-            putStrLn $ t ++ "Condicional con Fracaso:"
-            putStrLn (t ++ "\tGuardia: ") >> printExpr (n + 2) exp
-            putStrLn (t ++ "\tExito:") >> printSeq (n + 2) seq1
-            putStrLn (t ++ "\tFracaso:") >> printSeq (n + 2) seq2
+        (ButtonIF bloques) -> do
+            putStrLn $ t ++ "Condicional encontrado:"
+            --putStrLn (t ++ "\tGuardia: ") >> printExpr (n + 2) exp
+            --putStrLn (t ++ "\tExito:") >> printSeq (n + 2) seq
         ------------------------------------------------------------------------
         -- Imprimir expresion
         (Print exp) -> putStrLn (t ++ "Impresion:") >> printExpr (n + 1) exp
