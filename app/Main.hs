@@ -36,7 +36,7 @@ checkExt [file] =  if strEndsWith file ".game" then Right file else  Left "\nErr
 main :: IO ()
 main = do
 
-    args <- getArgs                           -- Tomar argumentos de la terminal.
+    args <- getArgs                           -- Tomar argumentos del terminal.
     case checkExt args of
         Left msg -> putStrLn msg
         Right checkedFile -> do

@@ -62,8 +62,6 @@ printAST n instr =
         (ButtonIF bloques) -> do
             putStrLn $ t ++ "Condicional encontrado:"
             printSeqButtonGuardias (n + 1) bloques
---            putStrLn (t ++ "\tGuardia: ") >> printExpr (n + 2) exp
-  --          putStrLn (t ++ "\tExito:") >> printSeq (n + 2) seq
         ------------------------------------------------------------------------
         -- Imprimir expresion
         (Print exp) -> putStrLn (t ++ "Impresion:") >> printExpr (n + 1) exp
