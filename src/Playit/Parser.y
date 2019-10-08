@@ -154,8 +154,7 @@ import Playit.AST
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 
-Programa:: {Instr}
-Programa 
+Programa :: {Instr}
   :  EndLines world programa ":" endLine Instrucciones EndLines ".~" EndLines
     {% do
         (symTab,_) <- get
@@ -179,14 +178,12 @@ EndLines
 --------------------------------------------------------------------------------
 
 Declaraciones :: {SecuenciaInstr}
-Declaraciones
   : Declaracion 
     {[$1]}
   | Declaraciones endLine Declaracion
     {$1 ++ [$3]}
 
 Declaracion :: {Instr}
-Declaracion
   :  Tipo Identificadores
     {%  let (ids, asigs, vals) = $2 
         in do
@@ -202,7 +199,6 @@ Declaracion
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 Identificadores ::{([Nombre], SecuenciaInstr, [Literal])}
-Identificadores
   : Identificador
     { let (id, asigs, e) = $1 in ([id], asigs, [e]) }
   | Identificadores "," Identificador
@@ -210,7 +206,6 @@ Identificadores
                   in (ids ++ [id], asigs ++ asig, exprs ++ [e])}
 
 Identificador::{(Nombre, SecuenciaInstr, Literal)}
-Identificador
   : nombre "=" Expresion
     {($1, [Asignacion (Var $1 TDummy) $3],ValorVacio) }
   | nombre
@@ -225,7 +220,6 @@ Identificador
 
 -- Lvalues, contenedores que identifican a las variables
 Lvalue  ::  {Vars}
-Lvalue
 --  : Lvalue "." nombre
 --    {}
     -- Tokens indexacion
@@ -241,7 +235,6 @@ Lvalue
 
 -- Tipos de datos
 Tipo :: {Tipo}
-Tipo
   : Tipo "|}" Expresion "{|" %prec "|}"
     {TArray $3 $1}
   | list of Tipo
@@ -256,10 +249,10 @@ Tipo
     {TChar}
   | str
     {TStr}
---  | nombre
---    {}
---  | Tipo pointer
---    {}
+  | nombre
+    {TDummy} -- No se sabe si es un Registro o Union
+  | Tipo pointer
+    {TApuntador}
 
 
 --------------------------------------------------------------------------------
@@ -269,14 +262,12 @@ Tipo
 --------------------------------------------------------------------------------
 
 Instrucciones :: {SecuenciaInstr}
-Instrucciones
   : Instrucciones endLine Instruccion
     { $1 ++ [$3] }
   | Instruccion
     { [$1] }
 
 Instruccion :: {Instr}
-Instruccion
   : Declaracion
     { $1 }
   -- | DefinirSubrutina
@@ -310,7 +301,6 @@ Instruccion
 --------------------------------------------------------------------------------
 -- Instruccion de asignacion '='
 Asignacion :: {Instr}
-Asignacion
   : Lvalue "=" Expresion
     { crearAsignacion $1 $3 (0,0) }
 --------------------------------------------------------------------------------
@@ -319,12 +309,10 @@ Asignacion
 --------------------------------------------------------------------------------
 -- Instrucciones de condicionales 'Button', '|' y 'notPressed'
 Button :: {Instr}
-Button
   : if ":" endLine Guardias ".~"
     { $4 }
 
 Guardias::{Instr}
-Guardias
   : Guardia
     { $1 }
   | Guardias Guardia
@@ -335,7 +323,6 @@ Guardias
         return $ ButtonIF $ bloq1 ++ bloq2 }
 
 Guardia:: {Instr}
-Guardia
   : "|" Expresion "}" EndLines Instrucciones endLine
     { crearGuardiaIF $2 $5 (posicion $1) }
   | "|" else "}" EndLines Instrucciones endLine
@@ -415,7 +402,7 @@ Free
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 
-DefinirSubrutina
+DefinirSubrutina 
   : Boss
     {}
   | Monster
@@ -423,9 +410,9 @@ DefinirSubrutina
 
 --------------------------------------------------------------------------------
 -- Procedimientos
-Boss
+Boss 
   : proc nombre "(" Parametros ")" ":" endLine Instrucciones endLine ".~"
-    {}
+    {  }
   | proc nombre "(" Parametros ")" ":" endLine ".~"
     {}
 --------------------------------------------------------------------------------
@@ -433,7 +420,7 @@ Boss
 
 --------------------------------------------------------------------------------
 -- Funciones
-Monster
+Monster 
   : function nombre "(" Parametros ")" Tipo ":" endLine Instrucciones endLine ".~"
     {}
   | function nombre "(" Parametros ")" Tipo ":" endLine ".~"
@@ -443,47 +430,47 @@ Monster
 
 --------------------------------------------------------------------------------
 -- Definicion de los parametros de las subrutinas
-Parametros
+Parametros :: {[Expr]}
   : Parametros "," Parametro
-    {}
+    { $1 ++ [$3] }
   | Parametro
-    {}
+    { [$1] }
 
 
-Parametro
+Parametro :: {Expr}
   : Tipo nombre
-    {}
+    { Variables (Param $2) $1 }
   | Tipo "?" nombre
-    {}
+    { Variables (Param $3) $1 }
   | {- Lambda -}
-    {}
+    { ExprVacia }
 --------------------------------------------------------------------------------
 
 
 --------------------------------------------------------------------------------
 -- Llamada a subrutinas
-FuncCall
-: funcCall nombre "(" PasarParametros ")" 
-{}
+FuncCall :: {Instr}
+  : funcCall nombre "(" PasarParametros ")" 
+  { llamarSubrutina $2 $4 }
 --------------------------------------------------------------------------------
 
 
 --------------------------------------------------------------------------------
 -- Pasaje de los parametros a las subrutinas
-PasarParametros
+PasarParametros :: {Parametros}
   : PasarParametros "," ParametroPasado
-    {}
+    { $1 ++ [$3] }
   | ParametroPasado
-    {}
+    { [$1] }
 
 
-ParametroPasado
+ParametroPasado :: {Expr}
   : Expresion
-    {}
+    { $1 }
   | "?" Expresion
-    {}
+    { $2 }
   | {- Lambda -}
-    {}
+    { ExprVacia }
 --------------------------------------------------------------------------------
 
 
