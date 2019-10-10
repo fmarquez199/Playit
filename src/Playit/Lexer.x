@@ -11,38 +11,43 @@
 module Playit.Lexer (
     Token(..),
     AlexPosn(..), 
+    hasError,
     alexScanTokens,
+    tkErrorToString,
+    isError,
     posicion
 ) where
+
+import Data.List(intercalate)
+
 }
 
 %wrapper "posn"
 
 -- Conjuntos de caracteres
 
-$digitos        = [0-9]
-$abecedario     = [a-zA-Z]
--- $simbolos       = [\! '"' \# \[ \] \$ \% \& \' \( \) \* \+ \, \- \. \/ \: \; \< \= \> \? \@]
--- $especial       = [\\ \^ \_ \` \{ \| \} \~ '\0' '\t' '\n' '\\' '\'' '\"' '\~' '\*']
-$validos        = [$digitos $abecedario $white]
--- $comentarios    = [$validos ~$validos]
-$char_texto     = [$validos # [\* \~ \\]]
-$char_id        = [$digitos $abecedario \_ \']
+$digitos      = [0-9]
+$abecedario   = [a-zA-Z]
+$simbolos     = [\! \" \# \$ \% \& \' \( \) \* \+ \, \- \. \/ \: \; \< \= \> \? \@
+              \[ \\ \] \^ \_ \` \{ \| \} \~ '\0' '\t' '\n' '\\' '\'' '\"' '\~' '\*']
+$validos      = [$digitos $abecedario $simbolos  $white]
+$char_texto   = [$validos # [\* \~ \\]]
+$char_id      = [$digitos $abecedario \_ \']
 
 -- Expresiones regulares
 
-@scape          = "\\" | "\0" | "\n" | "\t" | "\~" | "\*"
-@caracters      = $char_texto | @scape
-@caracter       = "*" @caracters "*"
-@texto          = @caracters*
-@id    = $abecedario $char_id*
-@programas      = \% $char_id+ \%
-@strings        = \~ @texto \~
-@endLine        = ($white* \n)+ -- Revisar
-@float          = $digitos+ \' $digitos+
-@comments       = \"\' ( . # [\'\"] | \n)* \'\"
-@comment        = \@ [. # \n]* \n 
-@error          = .
+@scape        = "\\" | "\0" | "\n" | "\t" | "\~" | "\*"
+@caracteres   = $char_texto | @scape
+@texto        = @caracteres*
+@caracter     = "*" @caracteres "*"
+@strings      = \~ @texto \~
+@id           = $abecedario $char_id*
+@programas    = \% $char_id+ \%
+@endLine      = ($white* \n)+ 
+@float        = $digitos+ \' $digitos+
+@comments     = \"\' ( . # [\'\"] | \n)* \'\"
+@comment      = \@ [. # \n]* \n 
+@error        = .
 
 tokens :-
 
@@ -151,7 +156,7 @@ tokens :-
 
   -- Caracteres invalidos
 
-  @error               { tok (\p s -> TkERR p s) }
+  @error               { createTkError}
 
 {
 tok :: (AlexPosn -> String -> Token) -> AlexPosn -> String -> Token
@@ -238,10 +243,41 @@ data Token = TkWORLD AlexPosn String
            | TkCloseArray AlexPosn String
            | TkOpenArrayIndex AlexPosn String
            | TkCloseArrayIndex AlexPosn String
-           | TkERR AlexPosn String
+           | TkError {mensaje :: String}
            | TkCONCAT AlexPosn String
            | TkEndLine AlexPosn String
            deriving (Eq)
+
+
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--                       Manejo de los tokens erroneos
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+
+
+createTkError alex_pos err           = TkError $ tokerr err alex_pos
+
+
+-- 'hasError' : Determina si en una lista de tokens existe al menos un error.
+hasError :: [Token] -> Bool
+hasError [] = False
+hasError ((TkError _):tks) = True
+hasError (_:tks) = hasError tks
+
+--  'isError' : Determina si un token es un error.
+isError :: Token -> Bool
+isError (TkError _) = True
+isError _ = False
+
+-- 'tokerr' : Traduce los errores al formato especificado en el proyecto.
+tokerr s (AlexPn _ l c) = 
+    "Error: Caracter inesperado " ++ s ++ 
+    " en la linea " ++ (show l) ++ ", columna " ++ (show c) ++ "."
+
+-- 'tkErrorToString': Inserta nuevas lineas entre los errores para ser impresos.
+tkErrorToString :: [Token] -> String
+tkErrorToString tk = intercalate "\n" $ map mensaje tk
 
 instance Show Token where
     show (TkWORLD p s) = "Token " ++ s ++ (pos p) -- world
@@ -322,7 +358,7 @@ instance Show Token where
     show (TkCloseArray p s) = "Token " ++ s ++ (pos p) -- "{|"
     show (TkOpenArrayIndex p s) = "Token " ++ s ++ (pos p) -- "|)"
     show (TkCloseArrayIndex p s) = "Token " ++ s ++ (pos p) -- "(|"
-    show (TkERR p s) = "Error, caracter inesperado " ++ s ++ (pos p) -- Error
+
 
 posicion :: Token -> (Int, Int)
 posicion (TkWORLD (AlexPn _ f c) _) = (f, c)
@@ -403,7 +439,6 @@ posicion (TkOpenArray (AlexPn _ f c) _) = (f, c)
 posicion (TkCloseArray (AlexPn _ f c) _) = (f, c)
 posicion (TkOpenArrayIndex (AlexPn _ f c) _) = (f, c)
 posicion (TkCloseArrayIndex (AlexPn _ f c) _) = (f, c)
-posicion (TkERR (AlexPn _ f c) _) = (f, c)
 posicion (TkCONCAT (AlexPn _ f c) _) = (f, c)
 posicion (TkEndLine (AlexPn _ f c) _) = (f, c)
 

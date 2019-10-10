@@ -11,8 +11,8 @@
 module Playit.Parser (parse, {-parseRead,-} error) where
 import Control.Monad.Trans.State
 import Control.Monad.IO.Class
--- import SymbolTable
--- import CheckAST
+import Playit.SymbolTable
+import Playit.CheckAST
 import Playit.Lexer
 import Playit.Types
 -- import Eval
@@ -24,7 +24,7 @@ import Playit.AST
 -- %name parseRead Expr
 %tokentype { Token }
 %error { parseError }
--- %monad { MonadSymTab }
+%monad { MonadSymTab }
 
 
 %token
@@ -68,17 +68,17 @@ import Playit.AST
   -- Identificadores
 
   programa          { TkProgramName _ _ }
-  nombre            { TkID _ _ }
+  nombre            { TkID _ $$ }
 
   -- Caracteres
 
-  caracter          { TkCARACTER _ _ }
-  string            { TkSTRINGS _ _ }
+  caracter          { TkCARACTER _ $$ }
+  string            { TkSTRINGS _ $$ }
   
   -- Literares numericos
   
-  entero            { TkINT _ _ }
-  flotante          { TkFLOAT _ _ }
+  entero            { TkINT _ $$ }
+  flotante          { TkFLOAT _ $$ }
 
   -- Simbolos
 
@@ -154,11 +154,22 @@ import Playit.AST
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 
-Programa
-  :  EndLines world programa ":" endLine Instrucciones EndLines ".~" EndLines
-    {}
-  |  EndLines world programa ":" endLine Instrucciones EndLines ".~"
-    {}
+ProgramaWrapper :: {Instr}
+  :  EndLines Programa EndLines
+    {$2}
+  |  EndLines Programa
+    {$2}
+  |  Programa EndLines
+    {$1}
+  |  Programa
+    {$1}
+
+Programa 
+    : world programa ":" EndLines Instrucciones EndLines ".~"  
+    {% do
+        (symTab,_) <- get
+        return $ BloqueInstr $5 symTab }
+    
 
 EndLines
   : endLine
@@ -173,33 +184,39 @@ EndLines
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 
-Declaraciones
+Declaraciones :: {SecuenciaInstr}
   : Declaracion 
-    {}
+    {[$1]}
   | Declaraciones endLine Declaracion
-    {}
+    {$1 ++ [$3]}
 
-Declaracion
+Declaracion :: {Instr}
   :  Tipo Identificadores
-    {}
+    {%  let (ids, asigs, vals) = $2 
+        in do
+            (actualSymTab, scope) <- get
+            addToSymTab ids $1 vals actualSymTab scope
+            return $ SecDeclaraciones asigs actualSymTab }
+
+{-Dummy tipo (1,2)-}
 
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 --                  Identificadores de las declaraciones
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
-
-Identificadores
+Identificadores ::{([Nombre], SecuenciaInstr, [Literal])}
   : Identificador
-    {}
+    { let (id, asigs, e) = $1 in ([id], asigs, [e]) }
   | Identificadores "," Identificador
-    {}
+    {let ((ids, asigs, exprs),(id, asig, e)) = ($1, $3) 
+                  in (ids ++ [id], asigs ++ asig, exprs ++ [e])}
 
-Identificador
+Identificador::{(Nombre, SecuenciaInstr, Literal)}
   : nombre "=" Expresion
-    {}
+    {($1, [Asignacion (Var $1 TDummy) $3],ValorVacio) }
   | nombre
-    {}
+    {($1, [], ValorVacio) }
 
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
@@ -209,40 +226,40 @@ Identificador
 
 
 -- Lvalues, contenedores que identifican a las variables
-Lvalue
-  : Lvalue "." nombre
-    {}
+Lvalue  ::  {Vars}
+--  : Lvalue "." nombre
+--    {}
     -- Tokens indexacion
-  | Lvalue "|)" Expresion "(|"
-    {}
-  | Lvalue "|>" Expresion "<|"
-    {}
-  | pointer Lvalue
-    {}
-  | nombre
-    {}
+--  | Lvalue "|)" Expresion "(|"
+--    {}
+--  | Lvalue "|>" Expresion "<|"
+--    {}
+--  | pointer Lvalue
+--    {}
+  : nombre
+    {% crearIdvar $1 }
 
 
 -- Tipos de datos
-Tipo
+Tipo :: {Tipo}
   : Tipo "|}" Expresion "{|" %prec "|}"
-    {}
+    {TArray $3 $1}
   | list of Tipo
-    {}
+    {TLista $3}
   | int
-    {}
+    {TInt}
   | float
-    {}
+    {TFloat}
   | bool
-    {}
+    {TBool}
   | char
-    {}
+    {TChar}
   | str
-    {}
+    {TStr}
   | nombre
-    {}
+    {TDummy} -- No se sabe si es un Registro o Union
   | Tipo pointer
-    {}
+    {TApuntador}
 
 
 --------------------------------------------------------------------------------
@@ -251,72 +268,76 @@ Tipo
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 
-Instrucciones
+Instrucciones :: {SecuenciaInstr}
   : Instrucciones endLine Instruccion
     { $1 ++ [$3] }
   | Instruccion
     { [$1] }
 
-Instruccion
+Instruccion :: {Instr}
   : Declaracion
     { $1 }
-  | DefinirSubrutina
-    { $1 }
-  | DefinirRegistro
-    { $1 }
-  | DefinirUnion
-    { $1 }
-  | Controller
-    { $1 }
-  | Play
-    { $1 }
+  -- | DefinirSubrutina
+--    { $1 }
+--  | DefinirRegistro
+--    { $1 }
+--  | DefinirUnion
+--    { $1 }
+--  | Controller
+--    { $1 }
+--  | Play
+--    { $1 }
   | Button
     { $1 }
   | Asignacion
     { $1 }
   | EntradaSalida
     { $1 }
-  | Free
-    { $1 }
-  | FuncCall
-    { $1 }
-  | return Expresion
-    { $2 }
-  | break
-    { $1 }
-  | continue
-    { $1 }
+--  | Free
+--    { $1 }
+--  | FuncCall
+--    { $1 }
+--  | return Expresion
+--    { $2 }
+--  | break
+--    { $1 }
+--  | continue
+--    { $1 }
 
 
 --------------------------------------------------------------------------------
 -- Instruccion de asignacion '='
-Asignacion
+Asignacion :: {Instr}
   : Lvalue "=" Expresion
-    {}
+    { crearAsignacion $1 $3 (0,0) }
 --------------------------------------------------------------------------------
 
 
 --------------------------------------------------------------------------------
 -- Instrucciones de condicionales 'Button', '|' y 'notPressed'
-Button
+Button :: {Instr}
   : if ":" endLine Guardias ".~"
     { $4 }
 
-Guardias
+Guardias::{Instr}
   : Guardia
     { $1 }
   | Guardias Guardia
-    { $1 ++ [$2] }
+    {% do
+        (symTab,_) <- get
+        let ButtonIF bloq1 = $1
+        let ButtonIF bloq2 = $2
+        return $ ButtonIF $ bloq1 ++ bloq2 }
 
-Guardia
+Guardia:: {Instr}
   : "|" Expresion "}" EndLines Instrucciones endLine
-    { crearIf $2 $5 (posicion $1) }
+    { crearGuardiaIF $2 $5 (posicion $1) }
   | "|" else "}" EndLines Instrucciones endLine
-    { crearIf (Literal (Booleano True) TBool) $5 (posicion $1) }
+    { crearGuardiaIF (Literal (Booleano True) TBool) $5 (posicion $1) }
   | "|" Expresion "}" Instrucciones endLine
-    { crearIf $2 $4 (posicion $1) }
+    { crearGuardiaIF $2 $4 (posicion $1) }
   | "|" else "}" Instrucciones endLine
-    { crearIf (Literal (Booleano True) TBool) $4 (posicion $1) }
+    { crearGuardiaIF (Literal (Booleano True) TBool) $4 (posicion $1) }
 --------------------------------------------------------------------------------
 
 
@@ -365,9 +386,9 @@ Play
 
 --------------------------------------------------------------------------------
 -- Instrucciones de E/S 'drop' y 'joystick'
-EntradaSalida
+EntradaSalida :: {Instr}
   : print Expresiones
-    {}
+    {crearPrint (crearListaExpr $2) (posicion $1) }
 --------------------------------------------------------------------------------
 
 --------------------------------------------------------------------------------
@@ -388,7 +409,7 @@ Free
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 
-DefinirSubrutina
+DefinirSubrutina 
   : Boss
     {}
   | Monster
@@ -396,9 +417,9 @@ DefinirSubrutina
 
 --------------------------------------------------------------------------------
 -- Procedimientos
-Boss
+Boss 
   : proc nombre "(" Parametros ")" ":" endLine Instrucciones endLine ".~"
-    {}
+    {  }
   | proc nombre "(" Parametros ")" ":" endLine ".~"
     {}
 --------------------------------------------------------------------------------
@@ -406,7 +427,7 @@ Boss
 
 --------------------------------------------------------------------------------
 -- Funciones
-Monster
+Monster 
   : function nombre "(" Parametros ")" Tipo ":" endLine Instrucciones endLine ".~"
     {}
   | function nombre "(" Parametros ")" Tipo ":" endLine ".~"
@@ -416,47 +437,47 @@ Monster
 
 --------------------------------------------------------------------------------
 -- Definicion de los parametros de las subrutinas
-Parametros
+Parametros :: {[Expr]}
   : Parametros "," Parametro
-    {}
+    { $1 ++ [$3] }
   | Parametro
-    {}
+    { [$1] }
 
 
-Parametro
+Parametro :: {Expr}
   : Tipo nombre
-    {}
+    { Variables (Param $2) $1 }
   | Tipo "?" nombre
-    {}
+    { Variables (Param $3) $1 }
   | {- Lambda -}
-    {}
+    { ExprVacia }
 --------------------------------------------------------------------------------
 
 
 --------------------------------------------------------------------------------
 -- Llamada a subrutinas
-FuncCall
-: funcCall nombre "(" PasarParametros ")" 
-{}
+FuncCall :: {Instr}
+  : funcCall nombre "(" PasarParametros ")" 
+  { llamarSubrutina $2 $4 }
 --------------------------------------------------------------------------------
 
 
 --------------------------------------------------------------------------------
 -- Pasaje de los parametros a las subrutinas
-PasarParametros
+PasarParametros :: {Parametros}
   : PasarParametros "," ParametroPasado
-    {}
+    { $1 ++ [$3] }
   | ParametroPasado
-    {}
+    { [$1] }
 
 
-ParametroPasado
+ParametroPasado :: {Expr}
   : Expresion
-    {}
+    { $1 }
   | "?" Expresion
-    {}
+    { $2 }
   | {- Lambda -}
-    {}
+    { ExprVacia }
 --------------------------------------------------------------------------------
 
 
@@ -466,106 +487,106 @@ ParametroPasado
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 
-Expresiones
+Expresiones::{[Expr]}
   : Expresiones "," Expresion
-    {}
+    {$1 ++ [$3]}
   | Expresion
-    {}
+    {[$1]}
 
 
-Expresion
+Expresion :: {Expr}
   : Expresion "+" Expresion
-    {}
+    { crearOpBin TInt TInt TInt Suma $1 $3 }
   | Expresion "-" Expresion
-    {}
+    { crearOpBin TInt TInt TInt Resta $1 $3 }
   | Expresion "*" Expresion
-    {}
+    { crearOpBin TInt TInt TInt Multiplicacion $1 $3  }
   | Expresion "%" Expresion
-    {}
+    { crearOpBin TInt TInt TInt Modulo $1 $3 }
   | Expresion "/" Expresion
-    {}
+    { crearOpBin TInt TInt TInt Division $1 $3 }
   | Expresion "//" Expresion
-    {}
+    {crearOpBin  TInt  TInt TInt DivEntera $1 $3 }
   | Expresion "&&" Expresion
-    {}
+    { crearOpBin TBool TBool TBool And $1 $3 }
   | Expresion "||" Expresion
-    {}
+    { crearOpBin TBool TBool TBool Or $1 $3 }
   | Expresion "==" Expresion
-    {}
+    { crearOpBin TInt TInt TBool Igual $1 $3 }
   | Expresion "!=" Expresion
-    {}
+    { crearOpBin TInt TInt TBool Desigual $1 $3 }
   | Expresion ">=" Expresion
-    {}
+    { crearOpBin TInt TInt TBool MayorIgual $1 $3 }
   | Expresion "<=" Expresion
-    {}
+    { crearOpBin TInt TInt TBool MenorIgual $1 $3 }
   | Expresion ">" Expresion
-    {}
+    { crearOpBin TInt TInt TBool Mayor $1 $3 }
   | Expresion "<" Expresion
-    {}
-  | Expresion ":" Expresion %prec ":"
-    {}
-  | Expresion "::" Expresion
-    {}
+    { crearOpBin TInt TInt TBool Menor $1 $3 }
+--  | Expresion ":" Expresion %prec ":"
+--    {}
+--  | Expresion "::" Expresion
+--    { crearOpConcat Concatenacion $1 $3 }
   
   --
-  | Expresion "?" Expresion ":" Expresion %prec "?"
-    {}
-  | "(" Expresion ")"
-    {}
-  | "{" Expresiones "}"
-    {}
-  | "|}" Expresiones "{|"
-    {}
-  | "<<" Expresiones ">>"
-    {}
-  | "<<"  ">>"
-    {}
-  | FuncCall
-    {}
-  | new Tipo
-    {}
+--  | Expresion "?" Expresion ":" Expresion %prec "?"
+--    {}
+--  | "(" Expresion ")"
+--    {$2}
+--  | "{" Expresiones "}"
+--    {crearListaExpr $2 }
+--  | "|}" Expresiones "{|"
+--    {crearListaExpr $2 }
+--  | "<<" Expresiones ">>"
+--    {crearListaExpr $2 }
+--  | "<<"  ">>"
+--    {}
+--  | FuncCall
+--    {}
+--  | new Tipo
+--    {}
   | input
-    {}
+    { crearRead (posicion $1) (Literal ValorVacio TStr) }
   | input Expresion %prec input
-    {}
+    { crearRead (posicion $1) $2 }
 
   -- Operadores unarios
   | "-" Expresion %prec negativo
-    {}
-  | "#" Expresion
-    {}
+    { crearOpUn TInt TInt Negativo $2 }
+--  | "#" Expresion
+--    {}
   | "!" Expresion
-    {}
-  | upperCase Expresion %prec upperCase
-    {}
-  | lowerCase Expresion %prec lowerCase
-    {}
-  | Expresion "++"
-    {}
-  | "++" Expresion 
-    {}
-  | Expresion "--"
-    {}
-  | "--" Expresion
-    {}
+    { crearOpUn TBool TBool Not $2 }
+--  | upperCase Expresion %prec upperCase
+--    {}
+--  | lowerCase Expresion %prec lowerCase
+--    {}
+--  | Expresion "++"
+--    {}
+--  | "++" Expresion 
+--    {}
+--  | Expresion "--"
+--    {}
+--  | "--" Expresion
+--    {}
   
   -- Literales
   | true
-    {}
+    { Literal (Booleano True) TBool }
   | false
-    {}
+    { Literal (Booleano False) TBool }
   | entero
-    {}
+    { Literal (Entero (read $1::Int)) TInt }
   | flotante
-    {}
+    { Literal (Flotante (read $1::Float)) TFloat }
   | caracter
-    {}
+    { Literal (Caracter $ $1 !! 0) TChar }
   | string
-    {}
+    { Literal (Str $1) TStr }
   | null
-    {}
+    { ExprVacia }
   | Lvalue
-    {}
+    { Variables $1 (typeVar $1) }
 
 
 --------------------------------------------------------------------------------
@@ -577,26 +598,26 @@ Expresion
 
 --------------------------------------------------------------------------------
 -- Registros
-DefinirRegistro
+DefinirRegistro :: {Instr}
   : registro nombre ":" endLine Declaraciones endLine ".~"
-    {}
+    { definirRegistro $2 $5 TRegistro }
   | registro nombre ":" endLine ".~"
-    {}
+    { definirRegistro $2 [] TRegistro }
 --------------------------------------------------------------------------------
 
 
 --------------------------------------------------------------------------------
 -- Uniones
-DefinirUnion
+DefinirUnion :: {Instr}
   : union nombre ":" endLine Declaraciones endLine ".~"
-    {}
+    { definirUnion $2 $5 TUnion }
   | union nombre ":" endLine ".~"
-    {}
+    { definirUnion $2 [] TUnion }
 --------------------------------------------------------------------------------
 
 
 {
 parseError :: [Token] -> a
 parseError (h:rs) = 
-    error $ "\n\nError sintactico del parser antes de: " ++ (show h) ++ "\n"
+    error $ "\n\nError sintactico del parser antes del : " ++ (show h) ++ "\n"
 }

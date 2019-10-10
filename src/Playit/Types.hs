@@ -34,6 +34,7 @@ type Alcance = Integer
 -- Posicion donde se encuentra la instruccion
 type Posicion = (Int, Int)
 
+type Parametros = [Expr]
 
 type SecuenciaInstr = [Instr]
 
@@ -45,7 +46,7 @@ data IdInfo = IdInfo {getType :: Tipo, getVal :: Literal, getScope :: Alcance}
 
 -- Tipo de dato que pueden ser las expresiones
 data Tipo   = TInt | TFloat | TBool | TChar | TStr | TArray Expr Tipo
-            | TLista Tipo | TRegister | TUnion | TApuntador
+            | TLista Tipo | TRegistro | TUnion | TApuntador
             | TError    -- Tipo error, no machean los tipos como deben
             | TDummy    -- Tipo temporal cuando todavia no se lee el tipo de la
                         -- variable en una asignacion en las declaraciones o no
@@ -55,31 +56,37 @@ data Tipo   = TInt | TFloat | TBool | TChar | TStr | TArray Expr Tipo
 
 data Vars   = VarIndex Vars Expr Tipo
             | Var Nombre Tipo
+            | Param Nombre
             deriving (Eq, Show, Ord)
 
 
 data Instr  = Asignacion Vars Expr
+            | Registro Nombre SecuenciaInstr Tipo
+            | Union Nombre SecuenciaInstr Tipo
             | BloqueInstr SecuenciaInstr SymTab
             | For Nombre Expr Expr SecuenciaInstr SymTab
-            | ForEach Nombre Expr Expr Expr SecuenciaInstr SymTab
+            | ForEach Nombre Expr SecuenciaInstr SymTab
+            | SecDeclaraciones SecuenciaInstr SymTab
             | While Expr SecuenciaInstr
-            | If Expr SecuenciaInstr
-            | IfElse Expr SecuenciaInstr SecuenciaInstr
-            | Func
-            | Proc
-            | Free
-            | CrearSubrutina
-            | SubrutinaCall
+            | ButtonIF [(Expr,SecuenciaInstr)] 
+            | Proc Nombre Parametros SecuenciaInstr SymTab
+            | Func Nombre Parametros Tipo SecuenciaInstr SymTab
+            | Free Nombre
+            | CrearSubrutina Nombre Parametros
+            | SubrutinaCall Nombre Parametros
+            | Break
+            | Continue
+            | Return Expr
             | Print Expr
-            | Read Vars
             deriving (Eq, Show)
-
 
 data Expr   = OpBinario BinOp Expr Expr Tipo
             | OpUnario UnOp Expr Tipo
             | ListaExpr [Expr] Tipo
             | Variables Vars Tipo
             | Literal Literal Tipo
+            | Read Expr
+            | ExprVacia
             deriving (Eq, Show, Ord)
 
 
@@ -93,9 +100,6 @@ data Literal    = Entero Int
                 | ValorVacio
                 deriving (Eq, Show, Ord)
 
-data Compuesto  = Registro
-                | Union
-                deriving (Eq, Show)
 
 -- Operadores binarios
 data BinOp  = Suma
@@ -110,21 +114,24 @@ data BinOp  = Suma
             | MayorIgual
             | Igual
             | Desigual
+            | Anexo
             | Concatenacion
             | And
             | Or
+            | IfSimple
             deriving (Eq, Show, Ord)
 
 
 -- Operadores unarios
 data UnOp   = Negativo
             | TamArregloLista
-            | UpperCarse
-            | LowerCarse
+            | UpperCase
+            | LowerCase
             | Incremento
             | Decremento
             | Desreferenciar
             | Not
+            | New
             deriving (Eq, Show, Ord)
 
 
