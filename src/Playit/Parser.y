@@ -306,7 +306,11 @@ Instruccion :: { Instr }
 -- Instruccion de asignacion '='
 Asignacion :: { Instr }
   : Lvalue "=" Expresion
-    { crearAsignacion $1 $3 (0, 0) }
+    { crearAsignacion $1 $3 (posicion $2) }
+  | Lvalue "++"
+    { crearIncremento $1 (posicion $2) }
+  | Lvalue "--"
+    { crearDecremento $1 (posicion $2) }
 --------------------------------------------------------------------------------
 
 
@@ -340,7 +344,7 @@ Guardia:: { Instr }
 
 --------------------------------------------------------------------------------
 -- Instruccion de iteracion determinada 'control'
-Controller :: { Instr }
+Controller :: {}
  : for InitVar1 "->" Expresion ":" EndLines Instrucciones EndLines ".~"
     {}
  | for InitVar1 "->" Expresion while Expresion ":" EndLines Instrucciones EndLines ".~"
