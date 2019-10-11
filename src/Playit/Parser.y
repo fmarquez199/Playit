@@ -193,6 +193,7 @@ Declaracion :: {Instr}
         in do
             (actualSymTab, scope) <- get
             addToSymTab ids $1 vals actualSymTab scope
+            -- SACAR ASIGNACIONES VACIAS
             return $ SecDeclaraciones asigs actualSymTab }
 
 
@@ -290,8 +291,6 @@ Instruccion :: { Instr }
   | EntradaSalida
     { $1 }
   | Free
-    { $1 }
-  | FuncCall
     { $1 }
   | return Expresion
     { Return $2 }
@@ -446,7 +445,7 @@ Parametro :: { Expr }
 
 -------------------------------------------------------------------------------
 -- Llamada a subrutinas
-FuncCall :: {Instr}
+FuncCall :: {Expr}
   : funcCall nombre "(" PasarParametros ")" 
   { llamarSubrutina $2 (reverse $4) }
   | funcCall nombre "(" ")"
@@ -533,8 +532,8 @@ Expresion :: {Expr}
     {crearListaExpr $2 }
 --  | "<<"  ">>"
 --    {}
---  | FuncCall
---    { $1}
+  | FuncCall
+    { $1}
 --  | new Tipo
 --    { crearOpUn TDummy TDummy New $2 }
   | input
@@ -603,5 +602,5 @@ DefinirUnion :: {Instr}
 {
 parseError :: [Token] -> a
 parseError (h:rs) = 
-    error $ "\n\nError sintactico del parser antes del: " ++ (show h) ++ "\n"
+    error $ "\n\nError sintactico del parser antes de " ++ (show h) ++ "\n"
 }

@@ -29,14 +29,15 @@ import Playit.Types
 --------------------------------------------------------------------------------
 -- Crea el nodo para identificadores de variables
 crearIdvar :: Nombre -> MonadSymTab Vars
-crearIdvar name = do
+crearIdvar name = return $ Var name TDummy
+{-crearIdvar name = do
     (symTab, scope) <- get
     let info = lookupInSymTab name symTab
 
     if isJust info then return $ Var name (getType $ fromJust info)
     else 
         error ("\n\nError semantico, la variable: '" ++ name ++ 
-                "', no esta declarada.\n")
+                "', no esta declarada.\n") -}
 --------------------------------------------------------------------------------
 
 
@@ -267,7 +268,7 @@ crearFuncion name params returnT i st scope pos@(line,_) =
 
 --------------------------------------------------------------------------------
 -- Crea el nodo para la instruccion que llama a la subrutina
-llamarSubrutina :: Nombre -> Parametros -> Instr
+llamarSubrutina :: Nombre -> Parametros -> Expr
 llamarSubrutina = SubrutinaCall
 --------------------------------------------------------------------------------
 

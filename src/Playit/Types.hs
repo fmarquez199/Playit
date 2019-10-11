@@ -73,7 +73,6 @@ data Instr  = Asignacion Vars Expr
             | Func Nombre Parametros Tipo SecuenciaInstr SymTab
             | Free Nombre
             | CrearSubrutina Nombre Parametros SecuenciaInstr
-            | SubrutinaCall Nombre Parametros
             | Break
             | Continue
             | Return Expr
@@ -84,6 +83,7 @@ data Expr   = OpBinario BinOp Expr Expr Tipo
             | OpUnario UnOp Expr Tipo
             | ListaExpr [Expr] Tipo
             | Variables Vars Tipo
+            | SubrutinaCall Nombre Parametros
             | Literal Literal Tipo
             | Read Expr
             | ExprVacia
