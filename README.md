@@ -197,18 +197,18 @@ admiten listas multidimensionales.
 El formato para  `Kit of <tipo de la lista>`
 Para acceder a un elemento de la lista se utiliza el operador de indexación `|><|`. 
 
-Se inicializan por default con la lista vacía `<<>>`.
+No se inicializan por default.
 
 **Ejemplos de declaraciones válidas:**
 
 ```sh
 Kit of Power lista1 = <<2, 3>>
-Kit of Kit of Skill lista2
+Kit of Kit of Skill lista2 = <<<<2'1, 3'1>>,<<>>>>
 
 lista1|>0<| == 2
 ```
 
-En este código se declaran dos variables del tipo `Kit`, `lista1` que solo podrá contener enteros, inicializada con 2 y 3.`lista2` es inicializada con la lista de lista de flotantes vacía, la cual si se indexa en posición cero da un error y tiene tamaño cero .
+En este código se declaran dos variables del tipo `Kit`, `lista1` que solo podrá contener enteros, inicializada con 2 y 3.`lista2` es inicializada con una lista de `Skill` y una `lista vacia` que solo podrá contener tipos flotantes.
 
 #### Registros.
 
