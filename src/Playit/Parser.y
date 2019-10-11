@@ -131,7 +131,7 @@ import Playit.AST
 -------------------------------------------------------------------------------
 
 
-%nonassoc nombre of pointer
+%nonassoc nombre of
 %left "=" ":" "<-"
 %right "."
 %left "||"
@@ -143,7 +143,7 @@ import Playit.AST
 %right negativo "!" upperCase lowerCase input
 %left "++" "|}" "{|" "<<" ">>" "::" "|)" "(|" "|>" "<|"
 %left "--"
-%right "#"
+%right "#" pointer
 %left "?"
 
 %%
@@ -190,7 +190,7 @@ Declaraciones :: { SecuenciaInstr }
     { $3 : $1 }
 
 Declaracion :: { Instr }
-  :  Tipo Identificadores
+  : Tipo Identificadores
     { %  let (ids, asigs, vals) = $2 
         in do
             (actualSymTab, scope) <- get
@@ -233,8 +233,8 @@ Lvalue :: { Vars }
     { % crearIdvar $ getNombre $1 }
   | Lvalue "|>" Expresion "<|"
     { % crearIdvar $ getNombre $1 }
-  | pointer Lvalue
-    { % crearIdvar $ getNombre $2 }
+  -- | pointer Lvalue
+  --   { % crearIdvar $ getNombre $2 }
   | nombre
     { % crearIdvar $1 }
 
@@ -259,6 +259,8 @@ Tipo :: { Tipo }
     { TDummy } -- No se sabe si es un Registro o Union
   | Tipo pointer
     { TApuntador }
+  | "(" Tipo ")"
+    { $2 }
 
 
 --------------------------------------------------------------------------------
