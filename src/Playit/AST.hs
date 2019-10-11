@@ -112,13 +112,38 @@ crearOpConcat op e1 e2 =
         t1 = typeE e1
         t2 = typeE e2
         tr = if t1 == t2 then case t1 of
-                                (TArray _ _) -> t1
+                                (TLista _) -> t1
                                 _ -> TError
              else TError
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+
+crearOpUpper :: UnOp -> Expr -> Expr
+crearOpUpper op e = OpUnario op e t
+  where t = if typeE e == TChar then TChar else TError
 
 
---------------------------------------------------------------------------------
+
+crearOpLower :: UnOp -> Expr -> Expr
+crearOpLower op e = OpUnario op e t
+  where t = if typeE e == TChar then TChar else TError
+
+crearOpLen :: UnOp -> Expr -> Expr
+crearOpLen op e =
+    OpUnario op e tr
+    
+    where
+        t = typeE e
+        tr = if isArray t || isList t then t else TError
+
+crearOpAnexo :: BinOp -> Expr -> Expr -> Expr
+crearOpAnexo op e1 e2 =
+    OpBinario op e1 e2 t
+
+    where
+        t2 = typeE e2
+        t = if isList t2 then t2 else TError 
+
+-------------------------------------------------------------------------------
 -- Crea el nodo para el operador shift de arreglos, caso especial
 crearOpShift :: UnOp -> Expr -> Expr
 crearOpShift op e =
@@ -267,7 +292,7 @@ crearFuncion name params returnT i st scope pos@(line,_) =
 
 --------------------------------------------------------------------------------
 -- Crea el nodo para la instruccion que llama a la subrutina
-llamarSubrutina :: Nombre -> Parametros -> Instr
+llamarSubrutina :: Nombre -> Parametros -> Expr
 llamarSubrutina = SubrutinaCall
 --------------------------------------------------------------------------------
 
@@ -319,3 +344,9 @@ crearPrint e (line,_)
 crearRead :: Posicion -> Expr -> Expr
 crearRead _ = Read
 --------------------------------------------------------------------------------
+
+crearIfSimple :: Expr -> Expr -> Expr -> Posicion -> Expr
+crearIfSimple con v f (linea, col) = IfSimple con v f
+  {-| t con == TBool && t v == t f && t v /= TError = IfSimple con v f
+  | otherwise = error ("\n\nError semantico en el operador ternario '? :' en la linea: " ++ show linea ++ " tipo de verdad: " ++ (show $ t v) ++ " tipo de mentira: " ++ (show $ t f))
+  where t = typeE-}

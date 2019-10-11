@@ -183,13 +183,13 @@ EndLines
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 
-Declaraciones :: {SecuenciaInstr}
+Declaraciones :: { SecuenciaInstr }
   : Declaracion 
     { [$1] }
   | Declaraciones EndLines Declaracion
     { $3 : $1 }
 
-Declaracion :: {Instr}
+Declaracion :: { Instr }
   :  Tipo Identificadores
     { %  let (ids, asigs, vals) = $2 
         in do
@@ -204,16 +204,16 @@ Declaracion :: {Instr}
 --                  Identificadores de las declaraciones
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
-Identificadores ::{ ([Nombre], SecuenciaInstr, [Literal]) }
+Identificadores :: { ([Nombre], SecuenciaInstr, [Literal]) }
   : Identificador
     { let (id, asigs, e) = $1 in ([id], asigs, [e]) }
   | Identificadores "," Identificador
     { let ((ids, asigs, exprs),(id, asig, e)) = ($1, $3) 
                   in (ids ++ [id], asigs ++ asig, exprs ++ [e]) }
 
-Identificador::{ (Nombre, SecuenciaInstr, Literal) }
+Identificador :: { (Nombre, SecuenciaInstr, Literal) }
   : nombre "=" Expresion
-    { ($1, [Asignacion (Var $1 TDummy) $3],ValorVacio) }
+    { ($1, [Asignacion (Var $1 TDummy) $3], ValorVacio) }
   | nombre
     { ($1, [], ValorVacio) }
 
@@ -225,17 +225,17 @@ Identificador::{ (Nombre, SecuenciaInstr, Literal) }
 
 
 -- Lvalues, contenedores que identifican a las variables
-Lvalue  ::  { Vars }
---  : Lvalue "." nombre
---    {}
-    -- Tokens indexacion
---  | Lvalue "|)" Expresion "(|"
---    {}
---  | Lvalue "|>" Expresion "<|"
---    {}
---  | pointer Lvalue
---    {}
-  : nombre
+Lvalue :: { Vars }
+  : Lvalue "." nombre
+    { % crearIdvar $ getNombre $1 }
+  -- Tokens indexacion
+  | Lvalue "|)" Expresion "(|"
+    { % crearIdvar $ getNombre $1 }
+  | Lvalue "|>" Expresion "<|"
+    { % crearIdvar $ getNombre $1 }
+  | pointer Lvalue
+    { % crearIdvar $ getNombre $2 }
+  | nombre
     { % crearIdvar $1 }
 
 
@@ -267,7 +267,7 @@ Tipo :: { Tipo }
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 
-Instrucciones :: {SecuenciaInstr}
+Instrucciones :: { SecuenciaInstr }
   : Instrucciones EndLines Instruccion
     { $3 : $1 }
   | Instruccion
@@ -278,10 +278,10 @@ Instruccion :: { Instr }
     { $1 }
   | DefinirSubrutina
     { $1 }
---  | DefinirRegistro
---    { $1 }
---  | DefinirUnion
---    { $1 }
+  | DefinirRegistro
+    { $1 }
+  | DefinirUnion
+    { $1 }
 --  | Controller
 --    { $1 }
   | Play
@@ -292,16 +292,14 @@ Instruccion :: { Instr }
     { $1 }
   | EntradaSalida
     { $1 }
---  | Free
---    { $1 }
-  | FuncCall
+  | Free
     { $1 }
---  | return Expresion
---    { $2 }
---  | break
---    { $1 }
---  | continue
---    { $1 }
+  | return Expresion
+    { Return $2 }
+  | break
+    { Break }
+  | continue
+    { Continue }
 
 
 --------------------------------------------------------------------------------
@@ -342,7 +340,7 @@ Guardia:: { Instr }
 
 --------------------------------------------------------------------------------
 -- Instruccion de iteracion determinada 'control'
-Controller
+Controller :: { Instr }
  : for InitVar1 "->" Expresion ":" EndLines Instrucciones EndLines ".~"
     {}
  | for InitVar1 "->" Expresion while Expresion ":" EndLines Instrucciones EndLines ".~"
@@ -394,11 +392,11 @@ EntradaSalida :: { Instr }
 -- Instrucciones para liberar la memoria de los apuntadores 'free'
 Free
   : free nombre
-    {}
+    { Free $2 }
   | free "|}" "{|" nombre
-    {}
+    { Free $4 }
   | free "<<" ">>" nombre
-    {}
+    { Free $4 }
 -------------------------------------------------------------------------------
 
 
@@ -446,7 +444,7 @@ Parametro :: { Expr }
 
 -------------------------------------------------------------------------------
 -- Llamada a subrutinas
-FuncCall :: {Instr}
+FuncCall :: { Expr }
   : funcCall nombre "(" PasarParametros ")" 
   { llamarSubrutina $2 (reverse $4) }
   | funcCall nombre "(" ")"
@@ -462,7 +460,7 @@ PasarParametros :: { Parametros }
   | ParametroPasado
     { [$1] }
 
-ParametroPasado :: {Expr}
+ParametroPasado :: { Expr }
   : Expresion
     { $1 }
   | "?" Expresion
@@ -483,7 +481,7 @@ Expresiones::{ [Expr] }
     { [$1] }
 
 
-Expresion :: {Expr}
+Expresion :: { Expr }
   : Expresion "+" Expresion
     { crearOpBin TInt TInt TInt Suma $1 $3 }
   | Expresion "-" Expresion
@@ -495,7 +493,7 @@ Expresion :: {Expr}
   | Expresion "/" Expresion
     { crearOpBin TInt TInt TInt Division $1 $3 }
   | Expresion "//" Expresion
-    {crearOpBin  TInt  TInt TInt DivEntera $1 $3 }
+    {crearOpBin TInt TInt TInt DivEntera $1 $3 }
   | Expresion "&&" Expresion
     { crearOpBin TBool TBool TBool And $1 $3 }
   | Expresion "||" Expresion
@@ -512,28 +510,26 @@ Expresion :: {Expr}
     { crearOpBin TInt TInt TBool Mayor $1 $3 }
   | Expresion "<" Expresion
     { crearOpBin TInt TInt TBool Menor $1 $3 }
---  | Expresion ":" Expresion %prec ":"
---    {}
---  | Expresion "::" Expresion
---    { crearOpConcat Concatenacion $1 $3 }
-  
-  --
---  | Expresion "?" Expresion ":" Expresion %prec "?"
---    {}
---  | "(" Expresion ")"
---    {$2}
---  | "{" Expresiones "}"
---    {crearListaExpr $2 }
---  | "|}" Expresiones "{|"
---    {crearListaExpr $2 }
---  | "<<" Expresiones ">>"
---    {crearListaExpr $2 }
---  | "<<"  ">>"
---    {}
---  | FuncCall
---    {}
---  | new Tipo
---    {}
+  | Expresion ":" Expresion %prec ":"
+    { crearOpAnexo Anexo $1 $3 }
+  | Expresion "::" Expresion
+    { crearOpConcat Concatenacion $1 $3 }
+  | Expresion "?" Expresion ":" Expresion %prec "?"
+    { crearIfSimple $1 $3 $5 (posicion $2) }
+  | "(" Expresion ")"
+    { $2 }
+  | "{" Expresiones "}"
+    { crearListaExpr $2 }
+  | "|}" Expresiones "{|"
+    { crearListaExpr $2 }
+  | "<<" Expresiones ">>"
+    { crearListaExpr $2 }
+  | "<<"  ">>"
+    { crearListaExpr [] }
+  | FuncCall
+    { $1 }
+  | new Tipo
+    { OpUnario New ExprVacia $2 }
   | input
     { crearRead (posicion $1) (Literal ValorVacio TStr) }
   | input Expresion %prec input
@@ -542,22 +538,14 @@ Expresion :: {Expr}
   -- Operadores unarios
   | "-" Expresion %prec negativo
     { crearOpUn TInt TInt Negativo $2 }
---  | "#" Expresion
---    {}
+  | "#" Expresion
+    { crearOpLen Longitud $2 }
   | "!" Expresion
     { crearOpUn TBool TBool Not $2 }
---  | upperCase Expresion %prec upperCase
---    {}
---  | lowerCase Expresion %prec lowerCase
---    {}
---  | Expresion "++"
---    {}
---  | "++" Expresion 
---    {}
---  | Expresion "--"
---    {}
---  | "--" Expresion
---    {}
+  | upperCase Expresion %prec upperCase
+    { crearOpUpper UpperCase $2 }
+  | lowerCase Expresion %prec lowerCase
+    { crearOpUpper LowerCase $2 }
   
   -- Literales
   | true
@@ -587,7 +575,7 @@ Expresion :: {Expr}
 
 --------------------------------------------------------------------------------
 -- Registros
-DefinirRegistro :: {Instr}
+DefinirRegistro :: { Instr }
   : registro nombre ":" EndLines Declaraciones EndLines ".~"
     { definirRegistro $2 $5 TRegistro }
   | registro nombre ":" EndLines ".~"
@@ -597,7 +585,7 @@ DefinirRegistro :: {Instr}
 
 --------------------------------------------------------------------------------
 -- Uniones
-DefinirUnion :: {Instr}
+DefinirUnion :: { Instr }
   : union nombre ":" EndLines Declaraciones EndLines ".~"
     { definirUnion $2 $5 TUnion }
   | union nombre ":" EndLines ".~"

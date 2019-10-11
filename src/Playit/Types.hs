@@ -73,7 +73,6 @@ data Instr  = Asignacion Vars Expr
             | Func Nombre Parametros Tipo SecuenciaInstr SymTab
             | Free Nombre
             | CrearSubrutina Nombre Parametros SecuenciaInstr
-            | SubrutinaCall Nombre Parametros
             | Break
             | Continue
             | Return Expr
@@ -82,6 +81,8 @@ data Instr  = Asignacion Vars Expr
 
 data Expr   = OpBinario BinOp Expr Expr Tipo
             | OpUnario UnOp Expr Tipo
+            | IfSimple Expr Expr Expr
+            | SubrutinaCall Nombre Parametros
             | ListaExpr [Expr] Tipo
             | Variables Vars Tipo
             | Literal Literal Tipo
@@ -118,13 +119,12 @@ data BinOp  = Suma
             | Concatenacion
             | And
             | Or
-            | IfSimple
             deriving (Eq, Show, Ord)
 
 
 -- Operadores unarios
 data UnOp   = Negativo
-            | TamArregloLista
+            | Longitud
             | UpperCase
             | LowerCase
             | Incremento
@@ -216,3 +216,8 @@ showType TStr         = "String(s)"
 showType TBool        = "Booleano(s)"
 showType (TArray e t) = "Arreglo de tamaño " ++ showE e ++ " de " ++ showType t
 showType _            = "Ivalido"
+
+getNombre :: Vars -> Nombre
+getNombre (Param n) = n
+getNombre (Var n _) = n
+getNombre (VarIndex v _ _) = getNombre v
