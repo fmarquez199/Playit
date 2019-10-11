@@ -132,6 +132,7 @@ data UnOp   = Negativo
             | Desreferenciar
             | Not
             | New
+            | Len
             deriving (Eq, Show, Ord)
 
 

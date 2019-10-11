@@ -8,20 +8,18 @@
  *  Natascha Gamboa     12-11250
 -}
 
-module Playit.Parser (parse, {-parseRead,-} error) where
+module Playit.Parser (parse, error) where
 import Control.Monad.Trans.State
 import Control.Monad.IO.Class
 import Playit.SymbolTable
 import Playit.CheckAST
 import Playit.Lexer
 import Playit.Types
--- import Eval
 import Playit.AST
 
 }
 
 %name parse
--- %name parseRead Expr
 %tokentype { Token }
 %error { parseError }
 %monad { MonadSymTab }
@@ -198,7 +196,6 @@ Declaracion :: {Instr}
             addToSymTab ids $1 vals actualSymTab scope
             return $ SecDeclaraciones asigs actualSymTab }
 
-{-Dummy tipo (1,2)-}
 
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
@@ -277,12 +274,12 @@ Instrucciones :: {SecuenciaInstr}
 Instruccion :: {Instr}
   : Declaracion
     { $1 }
-  -- | DefinirSubrutina
---    { $1 }
---  | DefinirRegistro
---    { $1 }
---  | DefinirUnion
---    { $1 }
+ | DefinirSubrutina
+    { $1 }
+  | DefinirRegistro
+    { $1 }
+  | DefinirUnion
+    { $1 }
 --  | Controller
 --    { $1 }
 --  | Play
@@ -293,16 +290,18 @@ Instruccion :: {Instr}
     { $1 }
   | EntradaSalida
     { $1 }
---  | Free
---    { $1 }
---  | FuncCall
---    { $1 }
---  | return Expresion
---    { $2 }
---  | break
---    { $1 }
---  | continue
---    { $1 }
+  | Free
+    { $1 }
+  | FuncCall
+    { $1 }
+  | return Expresion
+    { Return $2 }
+  | break
+    { Break }
+  | continue
+    { Continue }
+--  | nombre "++"
+--    {}
 
 
 --------------------------------------------------------------------------------
@@ -393,13 +392,14 @@ EntradaSalida :: {Instr}
 
 --------------------------------------------------------------------------------
 -- Instrucciones para liberar la memoria de los apuntadores 'free'
+Free :: {Instr}
 Free
   : free nombre
-    {}
+    {Free $2}
   | free "|}" "{|" nombre
-    {}
+    {Free $4}
   | free "<<" ">>" nombre
-    {}
+    {Free $4}
 --------------------------------------------------------------------------------
 
 
@@ -493,6 +493,10 @@ Expresiones::{[Expr]}
   | Expresion
     {[$1]}
 
+-- crearOpBin : 
+--      TipoExpresion1 x TipoExpresion2 x TipoRetorno x Operacion x Expresion1 x Expresion2 =>
+--      Chequea tipos
+--      Crea la estructura de la operacion
 
 Expresion :: {Expr}
   : Expresion "+" Expresion
@@ -523,28 +527,27 @@ Expresion :: {Expr}
     { crearOpBin TInt TInt TBool Mayor $1 $3 }
   | Expresion "<" Expresion
     { crearOpBin TInt TInt TBool Menor $1 $3 }
---  | Expresion ":" Expresion %prec ":"
---    {}
---  | Expresion "::" Expresion
---    { crearOpConcat Concatenacion $1 $3 }
+  | Expresion ":" Expresion %prec ":"
+    { crearOpBin  TDummy TDummy (TLista TDummy) Anexo $1 $3 }
+  | Expresion "::" Expresion
+    { crearOpConcat Concatenacion $1 $3 }
   
-  --
 --  | Expresion "?" Expresion ":" Expresion %prec "?"
---    {}
---  | "(" Expresion ")"
---    {$2}
---  | "{" Expresiones "}"
---    {crearListaExpr $2 }
---  | "|}" Expresiones "{|"
---    {crearListaExpr $2 }
---  | "<<" Expresiones ">>"
---    {crearListaExpr $2 }
+--    { crearOpBin  TDummy TDummy (TLista TDummy) IfSimple $1 $3 }
+  | "(" Expresion ")"
+    {$2}
+  | "{" Expresiones "}"
+    {crearListaExpr $2 }
+  | "|}" Expresiones "{|"
+    {crearListaExpr $2 }
+  | "<<" Expresiones ">>"
+    {crearListaExpr $2 }
 --  | "<<"  ">>"
 --    {}
 --  | FuncCall
---    {}
+--    { $1}
 --  | new Tipo
---    {}
+--    { crearOpUn TDummy TDummy New $2 }
   | input
     { crearRead (posicion $1) (Literal ValorVacio TStr) }
   | input Expresion %prec input
@@ -554,22 +557,14 @@ Expresion :: {Expr}
   | "-" Expresion %prec negativo
     { crearOpUn TInt TInt Negativo $2 }
 --  | "#" Expresion
---    {}
+--    { crearOpUn (TArray Expr Tipo) (TArray Expr Tipo) Len $2 }
   | "!" Expresion
     { crearOpUn TBool TBool Not $2 }
---  | upperCase Expresion %prec upperCase
---    {}
---  | lowerCase Expresion %prec lowerCase
---    {}
---  | Expresion "++"
---    {}
---  | "++" Expresion 
---    {}
---  | Expresion "--"
---    {}
---  | "--" Expresion
---    {}
-  
+  | upperCase Expresion %prec upperCase
+    { crearOpUn TChar TChar UpperCase $2 }
+  | lowerCase Expresion %prec lowerCase
+    { crearOpUn TChar TChar LowerCase $2 }
+
   -- Literales
   | true
     { Literal (Booleano True) TBool }
