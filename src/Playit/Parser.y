@@ -186,7 +186,7 @@ EndLines
 Declaraciones :: {SecuenciaInstr}
   : Declaracion 
     { [$1] }
-  | Declaraciones endLine Declaracion
+  | Declaraciones EndLines Declaracion
     { $3 : $1 }
 
 Declaracion :: {Instr}
@@ -268,7 +268,7 @@ Tipo :: { Tipo }
 --------------------------------------------------------------------------------
 
 Instrucciones :: {SecuenciaInstr}
-  : Instrucciones endLine Instruccion
+  : Instrucciones EndLines Instruccion
     { $3 : $1 }
   | Instruccion
     { [$1] }
@@ -315,7 +315,7 @@ Asignacion :: { Instr }
 --------------------------------------------------------------------------------
 -- Instrucciones de condicionales 'Button', '|' y 'notPressed'
 Button :: { Instr }
-  : if ":" endLine Guardias ".~"
+  : if ":" EndLines Guardias ".~"
     { $4 }
 
 Guardias::{ Instr }
@@ -329,13 +329,13 @@ Guardias::{ Instr }
         return $ ButtonIF $ bloq1 ++ bloq2 }
 
 Guardia:: { Instr }
-  : "|" Expresion "}" EndLines Instrucciones endLine
+  : "|" Expresion "}" EndLines Instrucciones EndLines
     { crearGuardiaIF $2 $5 (posicion $1) }
-  | "|" else "}" EndLines Instrucciones endLine
+  | "|" else "}" EndLines Instrucciones EndLines
     { crearGuardiaIF (Literal (Booleano True) TBool) $5 (posicion $1) }
-  | "|" Expresion "}" Instrucciones endLine
+  | "|" Expresion "}" Instrucciones EndLines
     { crearGuardiaIF $2 $4 (posicion $1) }
-  | "|" else "}" Instrucciones endLine
+  | "|" else "}" Instrucciones EndLines
     { crearGuardiaIF (Literal (Booleano True) TBool) $4 (posicion $1) }
 --------------------------------------------------------------------------------
 
@@ -343,17 +343,17 @@ Guardia:: { Instr }
 --------------------------------------------------------------------------------
 -- Instruccion de iteracion determinada 'control'
 Controller
- : for InitVar1 "->" Expresion ":" endLine Instrucciones endLine ".~"
+ : for InitVar1 "->" Expresion ":" EndLines Instrucciones EndLines ".~"
     {}
- | for InitVar1 "->" Expresion while Expresion ":" endLine Instrucciones endLine ".~"
+ | for InitVar1 "->" Expresion while Expresion ":" EndLines Instrucciones EndLines ".~"
     {}
- | for InitVar2 ":" endLine Instrucciones endLine ".~"
+ | for InitVar2 ":" EndLines Instrucciones EndLines ".~"
     {}
- | for InitVar1 "->" Expresion ":" endLine ".~"
+ | for InitVar1 "->" Expresion ":" EndLines ".~"
     {}
- | for InitVar1 "->" Expresion while Expresion ":" endLine ".~"
+ | for InitVar1 "->" Expresion while Expresion ":" EndLines ".~"
     {}
- | for InitVar2 ":" endLine ".~"
+ | for InitVar2 ":" EndLines ".~"
     {}
 
 
@@ -376,9 +376,9 @@ InitVar2
 -------------------------------------------------------------------------------
 -- Instruccion de iteracion indeterminada 'play lock'
 Play :: { Instr }
-  : do ":" endLine Instrucciones endLine while Expresion endLine ".~"
+  : do ":" EndLines Instrucciones EndLines while Expresion EndLines ".~"
     { crearWhile $7 $4 (posicion $1) }
-  | do ":" endLine while Expresion endLine ".~"
+  | do ":" EndLines while Expresion EndLines ".~"
     { crearWhile $5 [] (posicion $1) }
 -------------------------------------------------------------------------------
 
@@ -409,22 +409,22 @@ Free
 -------------------------------------------------------------------------------
 
 DefinirSubrutina :: { Instr } -- Procedimientos
-  : proc nombre "(" Parametros ")" ":" endLine Instrucciones endLine ".~"
+  : proc nombre "(" Parametros ")" ":" EndLines Instrucciones EndLines ".~"
     { CrearSubrutina $2 (reverse $4) $8 }
-  | proc nombre "(" Parametros ")" ":" endLine ".~"
+  | proc nombre "(" Parametros ")" ":" EndLines ".~"
     { CrearSubrutina $2 (reverse $4) [] }
-  | proc nombre "(" ")" ":" endLine Instrucciones endLine ".~"
+  | proc nombre "(" ")" ":" EndLines Instrucciones EndLines ".~"
     { CrearSubrutina $2 [] $7 }
-  | proc nombre "(" ")" ":" endLine ".~"
+  | proc nombre "(" ")" ":" EndLines ".~"
     { CrearSubrutina $2 [] [] }
   -- Ahora funciones.  
-  | function nombre "(" Parametros ")" Tipo ":" endLine Instrucciones endLine ".~"
+  | function nombre "(" Parametros ")" Tipo ":" EndLines Instrucciones EndLines ".~"
     { CrearSubrutina $2 (reverse $ (Literal ValorVacio $6) : $4) $9 }
-  | function nombre "(" Parametros ")" Tipo ":" endLine ".~"
+  | function nombre "(" Parametros ")" Tipo ":" EndLines ".~"
     { CrearSubrutina $2 (reverse $ (Literal ValorVacio $6) : $4) [] }
-  | function nombre "(" ")" Tipo ":" endLine Instrucciones endLine ".~"
+  | function nombre "(" ")" Tipo ":" EndLines Instrucciones EndLines ".~"
     { CrearSubrutina $2 [Literal ValorVacio $5] $8 }
-  | function nombre "(" ")" Tipo ":" endLine ".~"
+  | function nombre "(" ")" Tipo ":" EndLines ".~"
     { CrearSubrutina $2 [Literal ValorVacio $5] [] }
 
 -------------------------------------------------------------------------------
@@ -588,9 +588,9 @@ Expresion :: {Expr}
 --------------------------------------------------------------------------------
 -- Registros
 DefinirRegistro :: {Instr}
-  : registro nombre ":" endLine Declaraciones endLine ".~"
+  : registro nombre ":" EndLines Declaraciones EndLines ".~"
     { definirRegistro $2 $5 TRegistro }
-  | registro nombre ":" endLine ".~"
+  | registro nombre ":" EndLines ".~"
     { definirRegistro $2 [] TRegistro }
 --------------------------------------------------------------------------------
 
@@ -598,9 +598,9 @@ DefinirRegistro :: {Instr}
 --------------------------------------------------------------------------------
 -- Uniones
 DefinirUnion :: {Instr}
-  : union nombre ":" endLine Declaraciones endLine ".~"
+  : union nombre ":" EndLines Declaraciones EndLines ".~"
     { definirUnion $2 $5 TUnion }
-  | union nombre ":" endLine ".~"
+  | union nombre ":" EndLines ".~"
     { definirUnion $2 [] TUnion }
 --------------------------------------------------------------------------------
 
