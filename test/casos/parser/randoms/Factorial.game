@@ -1,5 +1,6 @@
 world %Factorial%:
   monster factorial(Power n) Power:
+  "'Hola soy un comentario, ignorame'"
     Button:
       | n < 0 } unlock 0
       | n == 0 } unlock 1
