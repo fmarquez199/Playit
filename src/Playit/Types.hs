@@ -68,11 +68,11 @@ data Instr  = Asignacion Vars Expr
             | ForEach Nombre Expr SecuenciaInstr SymTab
             | SecDeclaraciones SecuenciaInstr SymTab
             | While Expr SecuenciaInstr
-            | ButtonIF [(Expr,SecuenciaInstr)] 
+            | ButtonIF [(Expr, SecuenciaInstr)] 
             | Proc Nombre Parametros SecuenciaInstr SymTab
             | Func Nombre Parametros Tipo SecuenciaInstr SymTab
             | Free Nombre
-            | CrearSubrutina Nombre Parametros
+            | CrearSubrutina Nombre Parametros SecuenciaInstr
             | SubrutinaCall Nombre Parametros
             | Break
             | Continue
