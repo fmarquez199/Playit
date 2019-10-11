@@ -74,6 +74,23 @@ printAST n instr =
         -----------------------------------------------------------------------
         -- Retornar de una función.
         (Return exp) -> putStrLn (t ++ "Retorno:") >> printExpr (n + 1) exp
+        -----------------------------------------------------------------------
+        -- Procedimientos.
+        (Proc name params seq symTab) -> do
+            putStrLn (t ++ "Procedimiento: ")
+            printSymTab symTab t
+            putStrLn (t ++ "Nombre: " ++ name)
+            putStrLn (t ++ "Parametros: ") >> printExprs (n + 1) params
+            putStrLn (t ++ "Instrucciones: ") >> printSeq (n + 1) seq
+        -----------------------------------------------------------------------
+        -- Funciones.
+        (Func name params returnT seq symTab) -> do
+            putStrLn (t ++ "Funcion: ")
+            printSymTab symTab t
+            putStrLn (t ++ "Nombre: " ++ name)
+            putStrLn (t ++ "Parametros: ") >> printExprs (n + 1) params
+            putStrLn (t ++ "Tipo de retorno: " ++ showType returnT)
+            putStrLn (t ++ "Instrucciones: ") >> printSeq (n + 1) seq
     
     where t = replicate (2 * n) ' '
 -------------------------------------------------------------------------------
@@ -91,7 +108,7 @@ printSeq n seq =
 
 -------------------------------------------------------------------------------
 -- Subrutina para imprimir secuencias de guardias
-printButtonGuardia :: Int -> (Expr,SecuenciaInstr) -> IO()
+printButtonGuardia :: Int -> (Expr, SecuenciaInstr) -> IO()
 printButtonGuardia n (cond,seq) =  do
     putStrLn (t ++ "Condicion: ") >> printExpr (n + 1) cond
     putStrLn (t ++ "Instrucciones: ") >> mapM_ (printAST $ n + 1) seq
@@ -99,7 +116,7 @@ printButtonGuardia n (cond,seq) =  do
     where t = replicate (2 * n) ' '
 
 
-printSeqButtonGuardias :: Int -> [(Expr,SecuenciaInstr)] -> IO()
+printSeqButtonGuardias :: Int -> [(Expr, SecuenciaInstr)] -> IO()
 printSeqButtonGuardias n bloques = 
     putStrLn (t ++ "Guardias IF: ") >> mapM_ (printButtonGuardia (n + 1)) bloques
     
@@ -116,12 +133,13 @@ printVar n vars =
     case vars of
         -- Variable simple
         (Var name _) -> putStrLn $ t ++ "Variable: " ++ name
-        ------------------------------------------------------------------------
+        -----------------------------------------------------------------------
         -- Arreglo variable
         (VarIndex vars exp _) -> do
             putStrLn (t ++ "Variable de indexacion:") >> printVar (n + 1) vars
             putStrLn $ t ++ "  Indice: " ++ showE exp
-        ------------------------------------------------------------------------
+        -----------------------------------------------------------------------
+        (Param name typ r) -> putStrLn $ t ++ "Variable: " ++ name ++ " de tipo: " ++ showType typ ++ " pasado por: " ++ show r
     
     where t = replicate (2 * n) ' '
 -------------------------------------------------------------------------------

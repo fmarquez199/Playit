@@ -56,14 +56,15 @@ data Tipo   = TInt | TFloat | TBool | TChar | TStr | TArray Expr Tipo
 
 data Vars   = VarIndex Vars Expr Tipo
             | Var Nombre Tipo
-            | Param Nombre
+            | Param Nombre Tipo Ref
             deriving (Eq, Show, Ord)
 
+data Ref = Valor | Referencia deriving(Eq, Show, Ord)
 
 data Instr  = Asignacion Vars Expr
+            | BloqueInstr SecuenciaInstr SymTab
             | Registro Nombre SecuenciaInstr Tipo
             | Union Nombre SecuenciaInstr Tipo
-            | BloqueInstr SecuenciaInstr SymTab
             | For Nombre Expr Expr SecuenciaInstr SymTab
             | ForEach Nombre Expr SecuenciaInstr SymTab
             | SecDeclaraciones SecuenciaInstr SymTab
@@ -72,7 +73,7 @@ data Instr  = Asignacion Vars Expr
             | Proc Nombre Parametros SecuenciaInstr SymTab
             | Func Nombre Parametros Tipo SecuenciaInstr SymTab
             | Free Nombre
-            | CrearSubrutina Nombre Parametros SecuenciaInstr
+            -- | CrearSubrutina Nombre Parametros SecuenciaInstr
             | Break
             | Continue
             | Return Expr
@@ -218,6 +219,6 @@ showType (TArray e t) = "Arreglo de tamaño " ++ showE e ++ " de " ++ showType t
 showType _            = "Ivalido"
 
 getNombre :: Vars -> Nombre
-getNombre (Param n) = n
+getNombre (Param n _ _) = n
 getNombre (Var n _) = n
 getNombre (VarIndex v _ _) = getNombre v

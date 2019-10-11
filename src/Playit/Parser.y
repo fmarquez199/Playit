@@ -154,7 +154,7 @@ import Playit.AST
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 
-ProgramaWrapper :: {Instr}
+ProgramaWrapper :: { Instr }
   : EndLines Programa EndLines
     { $2 }
   | EndLines Programa
@@ -282,8 +282,8 @@ Instruccion :: { Instr }
     { $1 }
   | DefinirUnion
     { $1 }
---  | Controller
---    { $1 }
+  | Controller
+    { $1 }
   | Play
     { $1 }
   | Button
@@ -344,34 +344,51 @@ Guardia:: { Instr }
 
 --------------------------------------------------------------------------------
 -- Instruccion de iteracion determinada 'control'
-Controller :: {}
+Controller :: { Instr }
  : for InitVar1 "->" Expresion ":" EndLines Instrucciones EndLines ".~"
-    {}
+    { % do
+      (symTab, scope) <- get
+      let (varIter, e1) = $2
+      crearFor varIter e1 $4 $7 symTab scope (posicion $1) }
  | for InitVar1 "->" Expresion while Expresion ":" EndLines Instrucciones EndLines ".~"
-    {}
- | for InitVar2 ":" EndLines Instrucciones EndLines ".~"
-    {}
+    { % do
+      (symTab, scope) <- get
+      let (varIter, e1) = $2
+      crearForWhile varIter e1 $4 $6 $9 symTab scope (posicion $1) }
  | for InitVar1 "->" Expresion ":" EndLines ".~"
-    {}
+    { % do
+      (symTab, scope) <- get
+      let (varIter, e1) = $2
+      crearFor varIter e1 $4 [] symTab scope (posicion $1) }
  | for InitVar1 "->" Expresion while Expresion ":" EndLines ".~"
-    {}
+    { % do
+      (symTab, scope) <- get
+      let (varIter, e1) = $2
+      crearForWhile varIter e1 $4 $6 [] symTab scope (posicion $1) }
+ | for InitVar2 ":" EndLines Instrucciones EndLines ".~"
+    { % do
+      (symTab, scope) <- get
+      let (varIter, e1) = $2
+      crearForEachDetermined varIter e1 $5 symTab scope (posicion $1) }
  | for InitVar2 ":" EndLines ".~"
-    {}
-
+    { % do
+      (symTab, scope) <- get
+      let (varIter, e1) = $2
+      crearForEachDetermined varIter e1 [] symTab scope (posicion $1) }
 
 -- Se inserta la variable de iteracion en la tabla de simbolos junto con su
 -- valor inicial, antes de construir el arbol de instrucciones del 'for'
-InitVar1
+InitVar1 :: { (Nombre, Expr) }
   : nombre "=" Expresion
-    {}
+    { ($1, $3) }
   | Tipo nombre "=" Expresion
-    {}
+    { ($2, $4) }
 
-InitVar2
+InitVar2 :: { (Nombre, Expr) }
   : nombre "<-" Expresion %prec "<-"
-    {}
+    { ($1, $3) }
   | Tipo nombre "<-" Expresion %prec "<-"
-    {}
+    { ($2, $4) }
 -------------------------------------------------------------------------------
 
 
@@ -412,22 +429,38 @@ Free
 
 DefinirSubrutina :: { Instr } -- Procedimientos
   : proc nombre "(" Parametros ")" ":" EndLines Instrucciones EndLines ".~"
-    { CrearSubrutina $2 (reverse $4) $8 }
+    { % do
+      (symTab, scope) <- get
+      crearProcedimiento $2 (reverse $4) $8 symTab scope (posicion $1) }
   | proc nombre "(" Parametros ")" ":" EndLines ".~"
-    { CrearSubrutina $2 (reverse $4) [] }
+    { % do
+      (symTab, scope) <- get
+      crearProcedimiento $2 (reverse $4) [] symTab scope (posicion $1) }
   | proc nombre "(" ")" ":" EndLines Instrucciones EndLines ".~"
-    { CrearSubrutina $2 [] $7 }
+    { % do
+      (symTab, scope) <- get
+      crearProcedimiento $2 [] $7 symTab scope (posicion $1) }
   | proc nombre "(" ")" ":" EndLines ".~"
-    { CrearSubrutina $2 [] [] }
-  -- Ahora funciones.  
+    { % do
+      (symTab, scope) <- get
+      crearProcedimiento $2 [] [] symTab scope (posicion $1) }
+  -- Ahora funciones.
   | function nombre "(" Parametros ")" Tipo ":" EndLines Instrucciones EndLines ".~"
-    { CrearSubrutina $2 (reverse $ (Literal ValorVacio $6) : $4) $9 }
+    {  % do
+      (symTab, scope) <- get
+      crearFuncion $2 $4 $6 $9 symTab scope (posicion $1) }
   | function nombre "(" Parametros ")" Tipo ":" EndLines ".~"
-    { CrearSubrutina $2 (reverse $ (Literal ValorVacio $6) : $4) [] }
+    {  % do
+      (symTab, scope) <- get
+      crearFuncion $2 $4 $6 [] symTab scope (posicion $1) }
   | function nombre "(" ")" Tipo ":" EndLines Instrucciones EndLines ".~"
-    { CrearSubrutina $2 [Literal ValorVacio $5] $8 }
+    {  % do
+      (symTab, scope) <- get
+      crearFuncion $2 [] $5 $8 symTab scope (posicion $1) }
   | function nombre "(" ")" Tipo ":" EndLines ".~"
-    { CrearSubrutina $2 [Literal ValorVacio $5] [] }
+    {  % do
+      (symTab, scope) <- get
+      crearFuncion $2 [] $5 [] symTab scope (posicion $1) }
 
 -------------------------------------------------------------------------------
 -- Definicion de los parametros de las subrutinas
@@ -440,9 +473,9 @@ Parametros :: { [Expr] }
 
 Parametro :: { Expr }
   : Tipo nombre
-    { Variables (Param $2) $1 }
+    { Variables (Param $2 $1 Valor) $1 }
   | Tipo "?" nombre
-    { Variables (Param $3) $1 }
+    { Variables (Param $3 $1 Referencia) $1 }
 -------------------------------------------------------------------------------
 
 

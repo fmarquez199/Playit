@@ -266,6 +266,45 @@ crearFor var e1 e2 i st scope pos@(line,_)
         tE2 = typeE e2
 -------------------------------------------------------------------------------
 
+crearForWhile :: Nombre -> Expr -> Expr -> Expr -> SecuenciaInstr -> SymTab -> Alcance -> Posicion 
+            -> MonadSymTab Instr
+crearForWhile var e1 e2 e3 i st scope pos@(line,_)
+    | tE1 == TInt && tE2 == TInt && tE3 == TBool =
+        do
+            let newI = map (changeTDummyFor TInt st scope) i
+            checkInfSup e1 e2 pos st
+            return $ For var e1 e2 newI st
+    --------------------------------------------------------------------------
+    | tE1 == TInt =
+        error ("\n\nError semantico en segunda la expresion del 'for': '"
+                ++ expr2 ++ "', de tipo: " ++ showType tE2
+                ++ ". En la linea: " ++ show line ++ "\n")
+    --------------------------------------------------------------------------
+    | tE2 == TInt =
+        error ("\n\nError semantico en la primera expresion del 'for': '"
+                ++ expr1 ++ "', de tipo: " ++ showType tE1 ++ ". En la linea: "
+                ++ show line ++ "\n")
+    --------------------------------------------------------------------------
+    | tE3 == TBool =
+        error ("\n\nError semantico en la primera expresion: '" ++ expr1 ++
+                "', de tipo: " ++ showType tE1 ++ ", y segunda expresion: '"
+                ++ expr2 ++ "', de tipo: " ++ showType tE2 ++
+                ", del 'for'. En la linea: " ++ show line ++ "\n")
+    --------------------------------------------------------------------------
+    | otherwise =
+        error ("\n\nError semantico en la primera expresion: '" ++ expr1 ++
+                "', de tipo: " ++ showType tE1 ++ ", segunda expresion: '"
+                ++ expr2 ++ "', de tipo: " ++ showType tE2 ++
+                ", y tercera expresion: '" ++ expr3 ++ "', de tipo: " ++ showType tE3 ++", del 'for'. En la linea: " ++ show line ++ "\n")
+
+    where
+        expr1 = showE e1
+        expr2 = showE e2
+        expr3 = showE e3
+        tE1 = typeE e1
+        tE2 = typeE e2
+        tE3 = typeE e3
+
 
 -------------------------------------------------------------------------------
 -- Crea el nodo para una instruccion ForEach
