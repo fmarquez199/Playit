@@ -129,7 +129,7 @@ import Playit.AST
 -------------------------------------------------------------------------------
 
 
-%nonassoc nombre of pointer
+%nonassoc nombre of 
 %left "=" ":" "<-"
 %right "."
 %left "||"
@@ -140,6 +140,7 @@ import Playit.AST
 %left "*" "/" "//" "%"
 %right negativo "!" upperCase lowerCase input
 %left "++" "|}" "{|" "<<" ">>" "::" "|)" "(|" "|>" "<|"
+%left pointer
 %left "--"
 %right "#"
 %left "?"
@@ -226,15 +227,17 @@ Identificador::{ (Nombre, SecuenciaInstr, Literal) }
 Lvalue  ::  { Vars }
 --  : Lvalue "." nombre
 --    {}
-    -- Tokens indexacion
+    -- Tokens indexacion array
 --  | Lvalue "|)" Expresion "(|"
 --    {}
+    -- Tokens indexacion lista
 --  | Lvalue "|>" Expresion "<|"
 --    {}
 --  | pointer Lvalue
 --    {}
   : nombre
     { % crearIdvar $1 }
+
 
 
 -- Tipos de datos
@@ -256,8 +259,7 @@ Tipo :: { Tipo }
   | nombre
     { TDummy } -- No se sabe si es un Registro o Union
   | Tipo pointer
-    { TApuntador }
-
+    { TApuntador $1 }
 
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
@@ -407,7 +409,9 @@ Free
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 
-DefinirSubrutina :: { Instr } -- Procedimientos
+DefinirSubrutina :: { Instr }
+
+ -- Procedimientos
   : proc nombre "(" Parametros ")" ":" EndLines Instrucciones EndLines ".~"
     { CrearSubrutina $2 (reverse $4) $8 }
   | proc nombre "(" Parametros ")" ":" EndLines ".~"
@@ -416,14 +420,15 @@ DefinirSubrutina :: { Instr } -- Procedimientos
     { CrearSubrutina $2 [] $7 }
   | proc nombre "(" ")" ":" EndLines ".~"
     { CrearSubrutina $2 [] [] }
+
   -- Ahora funciones.  
   | function nombre "(" Parametros ")" Tipo ":" EndLines Instrucciones EndLines ".~"
     { CrearSubrutina $2 (reverse $ (Literal ValorVacio $6) : $4) $9 }
-  | function nombre "(" Parametros ")" Tipo ":" EndLines ".~"
+  | function nombre "(" Parametros ")" Tipo ":" EndLines ".~"    --- Función con cuerpo vacio
     { CrearSubrutina $2 (reverse $ (Literal ValorVacio $6) : $4) [] }
   | function nombre "(" ")" Tipo ":" EndLines Instrucciones EndLines ".~"
     { CrearSubrutina $2 [Literal ValorVacio $5] $8 }
-  | function nombre "(" ")" Tipo ":" EndLines ".~"
+  | function nombre "(" ")" Tipo ":" EndLines ".~"   -- Función sin parametros
     { CrearSubrutina $2 [Literal ValorVacio $5] [] }
 
 -------------------------------------------------------------------------------
@@ -439,7 +444,7 @@ Parametro :: { Expr }
   : Tipo nombre
     { Variables (Param $2) $1 }
   | Tipo "?" nombre
-    { Variables (Param $3) $1 }
+    { Variables (ParamRef $3) $1 }
 -------------------------------------------------------------------------------
 
 

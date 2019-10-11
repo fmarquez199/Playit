@@ -46,7 +46,7 @@ data IdInfo = IdInfo {getType :: Tipo, getVal :: Literal, getScope :: Alcance}
 
 -- Tipo de dato que pueden ser las expresiones
 data Tipo   = TInt | TFloat | TBool | TChar | TStr | TArray Expr Tipo
-            | TLista Tipo | TRegistro | TUnion | TApuntador
+            | TLista Tipo | TRegistro | TUnion | TApuntador Tipo
             | TError    -- Tipo error, no machean los tipos como deben
             | TDummy    -- Tipo temporal cuando todavia no se lee el tipo de la
                         -- variable en una asignacion en las declaraciones o no
@@ -57,6 +57,7 @@ data Tipo   = TInt | TFloat | TBool | TChar | TStr | TArray Expr Tipo
 data Vars   = VarIndex Vars Expr Tipo
             | Var Nombre Tipo
             | Param Nombre
+            | ParamRef Nombre
             deriving (Eq, Show, Ord)
 
 
@@ -68,9 +69,9 @@ data Instr  = Asignacion Vars Expr
             | ForEach Nombre Expr SecuenciaInstr SymTab
             | SecDeclaraciones SecuenciaInstr SymTab
             | While Expr SecuenciaInstr
-            | ButtonIF [(Expr, SecuenciaInstr)] 
-            | Proc Nombre Parametros SecuenciaInstr SymTab
-            | Func Nombre Parametros Tipo SecuenciaInstr SymTab
+            | ButtonIF [(Expr, SecuenciaInstr)]  -- [(cond,instruc)]
+--            | Proc Nombre Parametros SecuenciaInstr SymTab
+--            | Func Nombre Parametros Tipo SecuenciaInstr SymTab
             | Free Nombre
             | CrearSubrutina Nombre Parametros SecuenciaInstr
             | Break
@@ -78,6 +79,7 @@ data Instr  = Asignacion Vars Expr
             | Return Expr
             | Print Expr
             deriving (Eq, Show)
+
 
 data Expr   = OpBinario BinOp Expr Expr Tipo
             | OpUnario UnOp Expr Tipo

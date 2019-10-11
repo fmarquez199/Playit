@@ -153,7 +153,8 @@ crearListaExpr e =
 
 -- Crea el nodo para una instruccion If
 crearGuardiaIF :: Expr -> SecuenciaInstr -> Posicion -> Instr
-crearGuardiaIF exprCond seqInstrs (line,_)
+crearGuardiaIF exprCond seqInstrs (line,_) = ButtonIF [(exprCond, seqInstrs)]
+{-crearGuardiaIF exprCond seqInstrs (line,_)
     | tExpreCondicional == TBool = ButtonIF [(exprCond, seqInstrs)]
     | otherwise = 
         error ("\n\nError semantico en la expresion del if: '" ++ showE exprCond
@@ -163,7 +164,7 @@ crearGuardiaIF exprCond seqInstrs (line,_)
     where
         tExpreCondicional = typeE exprCond
 
-
+-}
 -- Crea el nodo para una instruccion IfElse
 --crearIfOtherwise :: Expr -> SecuenciaInstr -> SecuenciaInstr -> Posicion -> Instr
 --crearIfOtherwise e i1 i2 (line,_)
@@ -250,7 +251,7 @@ crearWhile e i (line,_)
 
 --------------------------------------------------------------------------------
 -- Crea el nodo para la instruccion que crea un procedimiento
-crearProcedimiento :: Nombre -> Parametros -> SecuenciaInstr -> SymTab -> Alcance
+{-crearProcedimiento :: Nombre -> Parametros -> SecuenciaInstr -> SymTab -> Alcance
                     -> Posicion -> MonadSymTab Instr
 crearProcedimiento name params i st scope pos@(line,_) =
     return $ Proc name params i st
@@ -262,7 +263,7 @@ crearProcedimiento name params i st scope pos@(line,_) =
 crearFuncion :: Nombre -> Parametros -> Tipo -> SecuenciaInstr -> SymTab -> Alcance
                     -> Posicion -> MonadSymTab Instr
 crearFuncion name params returnT i st scope pos@(line,_) =
-    return $ Func name params returnT i st
+    return $ Func name params returnT i st -}
 --------------------------------------------------------------------------------
 
 
