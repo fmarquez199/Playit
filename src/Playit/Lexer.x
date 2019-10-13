@@ -27,6 +27,8 @@ import Data.List(intercalate)
 -- Conjuntos de caracteres
 
 $digitos      = [0-9]
+$abece_minus  = [a-z]
+$abece_mayus  = [A-Z]
 $abecedario   = [a-zA-Z]
 $simbolos     = [\! \" \# \$ \% \& \' \( \) \* \+ \, \- \. \/ \: \; \< \= \> \? \@
               \[ \\ \] \^ \_ \` \{ \| \} \~ '\0' '\t' '\n' '\\' '\'' '\"' '\~' '\*']
@@ -41,7 +43,8 @@ $char_id      = [$digitos $abecedario \_ \']
 @texto        = @caracteres*
 @caracter     = "*" @caracteres "*"
 @strings      = \~ @texto \~
-@id           = $abecedario $char_id*
+@id_tipo      = $abece_mayus $char_id*
+@id           = $abece_minus $char_id*
 @programas    = \% $char_id+ \%
 @endLine      = ($white* \n)+ 
 @float        = $digitos+ \' $digitos+
@@ -93,7 +96,8 @@ tokens :-
   -- Identificadores
 
   @programas           { tok (\p s -> TkProgramName p s) }
-  @id                  { tok (\p s -> TkID p s) }
+  @id              { tok (\p s -> TkID  p s) }
+  @id_tipo             { tok (\p s -> TkIDTipo p s) }
 
   -- Caracteres
 
@@ -198,6 +202,7 @@ data Token = TkWORLD AlexPosn String
            | TkBOSS AlexPosn String
            | TkProgramName AlexPosn String
            | TkID AlexPosn String
+           | TkIDTipo AlexPosn String
            | TkCARACTER AlexPosn String
            | TkSTRINGS AlexPosn String
            | TkINT AlexPosn String
@@ -315,6 +320,7 @@ instance Show Token where
     show (TkBOSS p s) = "Token " ++ s ++ (pos p) -- boss
     show (TkProgramName p s) = "Token nombre programa " ++ s ++ (pos p) -- Nombre programa
     show (TkID p s) = "Token identificador \"" ++ s ++ "\"" ++ (pos p) -- Id
+    show (TkIDTipo p s) = "Token identificador de tipo \"" ++ s ++ "\"" ++ (pos p) -- Id
     show (TkCARACTER p s) = "Token caracter " ++ s ++ (pos p) -- carActer
     show (TkSTRINGS p s) = "Token string " ++ s ++ (pos p) -- String
     show (TkINT p s) = "Token entero " ++ s ++ (pos p) -- Entero
@@ -394,6 +400,7 @@ posicion (TkMONSTER (AlexPn _ f c) _) = (f, c)
 posicion (TkBOSS (AlexPn _ f c) _) = (f, c)
 posicion (TkProgramName (AlexPn _ f c) _) = (f, c)
 posicion (TkID (AlexPn _ f c) _) = (f, c)
+posicion (TkIDTipo (AlexPn _ f c) _) = (f, c)
 posicion (TkCARACTER (AlexPn _ f c) _) = (f, c)
 posicion (TkSTRINGS (AlexPn _ f c) _) = (f, c)
 posicion (TkINT (AlexPn _ f c) _) = (f, c)

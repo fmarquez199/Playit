@@ -54,26 +54,30 @@ data Tipo   = TInt | TFloat | TBool | TChar | TStr | TArray Expr Tipo
             deriving(Eq, Show, Ord)
 
 
-data Vars   = VarIndex Vars Expr Tipo
+data Vars   = VarIndex Vars Expr Tipo       --- Indice para array , listas
+            | VarCompIndex Vars Nombre Tipo --- Indice para registros, uniones
             | Var Nombre Tipo
-            | Param Nombre
-            | ParamRef Nombre
+            | Param Nombre Tipo Ref
+            | PuffValue Vars Tipo           -- Variable deferenciada con puff
             deriving (Eq, Show, Ord)
 
+data Ref = Valor | Referencia deriving(Eq, Show, Ord)
 
 data Instr  = Asignacion Vars Expr
+            | BloqueInstr SecuenciaInstr SymTab
             | Registro Nombre SecuenciaInstr Tipo
             | Union Nombre SecuenciaInstr Tipo
-            | BloqueInstr SecuenciaInstr SymTab
+            -- For (Nombre) = (Expr) <- (Expr) : (Instrucciones) (scope) 
             | For Nombre Expr Expr SecuenciaInstr SymTab
+            -- For (Nombre) = (Expr)  <- (Expr) while (Expr) : (Instrucciones) (scope) 
+            | ForWhile Nombre Expr Expr Expr SecuenciaInstr SymTab
             | ForEach Nombre Expr SecuenciaInstr SymTab
             | SecDeclaraciones SecuenciaInstr SymTab
             | While Expr SecuenciaInstr
             | ButtonIF [(Expr, SecuenciaInstr)]  -- [(cond,instruc)]
---            | Proc Nombre Parametros SecuenciaInstr SymTab
---            | Func Nombre Parametros Tipo SecuenciaInstr SymTab
+            | Proc Nombre Parametros SecuenciaInstr SymTab
+            | Func Nombre Parametros Tipo SecuenciaInstr SymTab
             | Free Nombre
-            | CrearSubrutina Nombre Parametros SecuenciaInstr
             | Break
             | Continue
             | Return Expr
@@ -83,9 +87,10 @@ data Instr  = Asignacion Vars Expr
 
 data Expr   = OpBinario BinOp Expr Expr Tipo
             | OpUnario UnOp Expr Tipo
+            | IfSimple Expr Expr Expr
+            | SubrutinaCall Nombre Parametros
             | ListaExpr [Expr] Tipo
             | Variables Vars Tipo
-            | SubrutinaCall Nombre Parametros
             | Literal Literal Tipo
             | Read Expr
             | ExprVacia
@@ -120,13 +125,12 @@ data BinOp  = Suma
             | Concatenacion
             | And
             | Or
-            | IfSimple
             deriving (Eq, Show, Ord)
 
 
 -- Operadores unarios
 data UnOp   = Negativo
-            | TamArregloLista
+            | Longitud
             | UpperCase
             | LowerCase
             | Incremento
@@ -171,33 +175,34 @@ type MonadSymTab a = StateT (SymTab, Alcance) IO a
 -- Show de las variables
 showVar :: Vars -> String
 showVar (Var name _) = name
-showVar (VarIndex vars e _) =
-    showVar vars ++ "|}" ++ showE e ++ "{|"
+showVar (VarIndex vars e t) =
+    showVar vars ++ "|)" ++ showE e ++ "(|" 
+    -- TODO : Falta mostrar lista
 
 
 -- Show de las expresiones
 showE :: Expr -> String
 showE (Literal lit _)                           = showL lit
 showE (Variables vars _)                        = showVar vars
-showE (OpBinario Suma e1 e2 _)           = showE e1 ++ " + " ++ showE e2
+showE (OpBinario Suma e1 e2 _)           = "(" ++ showE e1 ++ " + " ++ showE e2 ++ ")"
 -- showE (OpBinario Punto e1 e2 _)          = showE e1 ++ " . " ++ showE e2
-showE (OpBinario Resta e1 e2 _)          = showE e1 ++ " - " ++ showE e2
-showE (OpBinario Modulo e1 e2 _)         = showE e1 ++ " % " ++ showE e2
-showE (OpBinario Division e1 e2 _)       = showE e1 ++ " / " ++ showE e2
-showE (OpBinario Multiplicacion e1 e2 _) = showE e1 ++ " * " ++ showE e2
-showE (OpBinario Menor e1 e2 _)          = showE e1 ++ " < " ++ showE e2
-showE (OpBinario Mayor e1 e2 _)          = showE e1 ++ " > " ++ showE e2
-showE (OpBinario Igual e1 e2 _)          = showE e1 ++ " == " ++ showE e2
-showE (OpBinario Desigual e1 e2 _)       = showE e1 ++ " != " ++ showE e2
-showE (OpBinario MenorIgual e1 e2 _)     = showE e1 ++ " <= " ++ showE e2
-showE (OpBinario MayorIgual e1 e2 _)     = showE e1 ++ " >= " ++ showE e2
-showE (OpBinario Concatenacion e1 e2 _)  = showE e1 ++ " :: " ++ showE e2
-showE (OpBinario Or e1 e2 _)             = showE e1 ++ " || " ++ showE e2
-showE (OpBinario And e1 e2 _)            = showE e1 ++ " && " ++ showE e2
+showE (OpBinario Resta e1 e2 _)          = "(" ++ showE e1 ++ " - " ++ showE e2 ++ ")"
+showE (OpBinario Modulo e1 e2 _)         = "(" ++ showE e1 ++ " % " ++ showE e2 ++ ")"
+showE (OpBinario Division e1 e2 _)       = "(" ++ showE e1 ++ " / " ++ showE e2 ++ ")"
+showE (OpBinario Multiplicacion e1 e2 _) = "(" ++ showE e1 ++ " * " ++ showE e2 ++ ")"
+showE (OpBinario Menor e1 e2 _)          = "(" ++ showE e1 ++ " < " ++ showE e2 ++ ")"
+showE (OpBinario Mayor e1 e2 _)          = "(" ++ showE e1 ++ " > " ++ showE e2 ++ ")"
+showE (OpBinario Igual e1 e2 _)          = "(" ++ showE e1 ++ " == " ++ showE e2 ++ ")"
+showE (OpBinario Desigual e1 e2 _)       = "(" ++ showE e1 ++ " != " ++ showE e2 ++ ")"
+showE (OpBinario MenorIgual e1 e2 _)     = "(" ++ showE e1 ++ " <= " ++ showE e2 ++ ")"
+showE (OpBinario MayorIgual e1 e2 _)     = "(" ++ showE e1 ++ " >= " ++ showE e2 ++ ")"
+showE (OpBinario Concatenacion e1 e2 _)  = "(" ++ showE e1 ++ " :: " ++ showE e2 ++ ")"
+showE (OpBinario Or e1 e2 _)             = "(" ++ showE e1 ++ " || " ++ showE e2 ++ ")"
+showE (OpBinario And e1 e2 _)            = "(" ++ showE e1 ++ " && " ++ showE e2 ++ ")"
 showE (OpUnario Negativo e _)            = "-" ++ showE e
 showE (OpUnario Not e _)                 = "!" ++ showE e
 showE (ListaExpr lst _)                  = "[" ++ intercalate "," (map showE lst) ++ "]"
-
+showE (IfSimple e1 e2 e3)                = "(" ++ showE e1 ++ " ? " ++ showE e2 ++ " : " ++ showE e3 ++ ")"
 
 -- 
 showL :: Literal -> String
@@ -219,3 +224,8 @@ showType TStr         = "String(s)"
 showType TBool        = "Booleano(s)"
 showType (TArray e t) = "Arreglo de tamaño " ++ showE e ++ " de " ++ showType t
 showType _            = "Ivalido"
+
+getNombre :: Vars -> Nombre
+getNombre (Param n _ _) = n
+getNombre (Var n _) = n
+getNombre (VarIndex v _ _) = getNombre v

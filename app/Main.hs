@@ -54,5 +54,5 @@ main = do
                         (ast, lastState) <- runStateT (parse tokens) initState
                         putStrLn $ show ast
                         return ()
-                        --printAST 0 ast -- >> evalStateT (runAST ast) lastState
+                        printAST 0 ast -- >> evalStateT (runAST ast) lastState
 

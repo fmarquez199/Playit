@@ -67,6 +67,7 @@ import Playit.AST
 
   programa          { TkProgramName _ _ }
   nombre            { TkID _ $$ }
+  idtipo              { TkIDTipo _ $$ }
 
   -- Caracteres
 
@@ -90,16 +91,16 @@ import Playit.AST
   ">="              { TkGreaterEqual _ _ }
   "<<"              { TkOpenList _ _ }
   ">>"              { TkCloseList _ _ }
-  "|>"              { TkOpenListIndex _ _ }
-  "<|"              { TkCloseListIndex _ _ }
   "++"              { TkINCREMENT _ _ }
   "--"              { TkDECREMENT _ _ }
   "<-"              { TkIN  _ _ }
   "->"              { TkTO  _ _ }
   "|}"              { TkOpenArray _ _ }
   "{|"              { TkCloseArray _ _ }
-  "|)"              { TkOpenArray _ _ }
-  "(|"              { TkCloseArray _ _ }
+  "|>"              { TkOpenListIndex _ _ }
+  "<|"              { TkCloseListIndex _ _ }
+  "|)"              { TkOpenArrayIndex _ _ }
+  "(|"              { TkCloseArrayIndex _ _ }
   "+"               { TkSUM _ _ }
   "-"               { TkMIN _ _ }
   "*"               { TkMULT _ _ }
@@ -140,9 +141,9 @@ import Playit.AST
 %left "*" "/" "//" "%"
 %right negativo "!" upperCase lowerCase input
 %left "++" "|}" "{|" "<<" ">>" "::" "|)" "(|" "|>" "<|"
-%left pointer
+
 %left "--"
-%right "#"
+%right "#" pointer
 %left "?"
 
 %%
@@ -153,7 +154,7 @@ import Playit.AST
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 
-ProgramaWrapper :: {Instr}
+ProgramaWrapper :: { Instr }
   : EndLines Programa EndLines
     { $2 }
   | EndLines Programa
@@ -182,19 +183,18 @@ EndLines
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 
-Declaraciones :: {SecuenciaInstr}
+Declaraciones :: { SecuenciaInstr }
   : Declaracion 
     { [$1] }
   | Declaraciones EndLines Declaracion
     { $3 : $1 }
 
-Declaracion :: {Instr}
-  :  Tipo Identificadores
+Declaracion :: { Instr }
+  : Tipo Identificadores
     { %  let (ids, asigs, vals) = $2 
         in do
             (actualSymTab, scope) <- get
             addToSymTab ids $1 vals actualSymTab scope
-            -- SACAR ASIGNACIONES VACIAS
             return $ SecDeclaraciones asigs actualSymTab }
 
 
@@ -203,16 +203,16 @@ Declaracion :: {Instr}
 --                  Identificadores de las declaraciones
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
-Identificadores ::{ ([Nombre], SecuenciaInstr, [Literal]) }
+Identificadores :: { ([Nombre], SecuenciaInstr, [Literal]) }
   : Identificador
     { let (id, asigs, e) = $1 in ([id], asigs, [e]) }
   | Identificadores "," Identificador
     { let ((ids, asigs, exprs),(id, asig, e)) = ($1, $3) 
                   in (ids ++ [id], asigs ++ asig, exprs ++ [e]) }
 
-Identificador::{ (Nombre, SecuenciaInstr, Literal) }
+Identificador :: { (Nombre, SecuenciaInstr, Literal) }
   : nombre "=" Expresion
-    { ($1, [Asignacion (Var $1 TDummy) $3],ValorVacio) }
+    { ($1, [Asignacion (Var $1 TDummy) $3], ValorVacio) }
   | nombre
     { ($1, [], ValorVacio) }
 
@@ -224,18 +224,16 @@ Identificador::{ (Nombre, SecuenciaInstr, Literal) }
 
 
 -- Lvalues, contenedores que identifican a las variables
-Lvalue  ::  { Vars }
---  : Lvalue "." nombre
---    {}
-    -- Tokens indexacion array
---  | Lvalue "|)" Expresion "(|"
---    {}
-    -- Tokens indexacion lista
---  | Lvalue "|>" Expresion "<|"
---    {}
---  | pointer Lvalue
---    {}
-  : nombre
+Lvalue :: { Vars }
+  : Lvalue "." nombre
+    {VarCompIndex $1 $3 TDummy}  
+  | Lvalue "|)" Expresion "(|" -- Token indexacion arreglo
+    { crearVarIndex $1 $3 }
+  | Lvalue "|>" Expresion "<|" -- Token indexacion lista
+    {crearVarIndex $1 $3 }
+  | pointer Lvalue
+    {PuffValue $2 TDummy }
+  | nombre
     { % crearIdvar $1 }
 
 
@@ -256,10 +254,13 @@ Tipo :: { Tipo }
     { TChar }
   | str
     { TStr }
-  | nombre
+  | idtipo
     { TDummy } -- No se sabe si es un Registro o Union
   | Tipo pointer
     { TApuntador $1 }
+--  | "(" Tipo ")"
+--    { $2 }
+
 
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
@@ -267,7 +268,7 @@ Tipo :: { Tipo }
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 
-Instrucciones :: {SecuenciaInstr}
+Instrucciones :: { SecuenciaInstr }
   : Instrucciones EndLines Instruccion
     { $3 : $1 }
   | Instruccion
@@ -282,8 +283,8 @@ Instruccion :: { Instr }
     { $1 }
   | DefinirUnion
     { $1 }
---  | Controller
---    { $1 }
+  | Controller
+    { $1 }
   | Play
     { $1 }
   | Button
@@ -300,15 +301,17 @@ Instruccion :: { Instr }
     { Break }
   | continue
     { Continue }
---  | nombre "++"
---    {}
 
 
 --------------------------------------------------------------------------------
 -- Instruccion de asignacion '='
 Asignacion :: { Instr }
   : Lvalue "=" Expresion
-    { crearAsignacion $1 $3 (0, 0) }
+    { crearAsignacion $1 $3 (posicion $2) }
+  | Lvalue "++"
+    { crearIncremento $1 (posicion $2) }
+  | Lvalue "--"
+    { crearDecremento $1 (posicion $2) }
 --------------------------------------------------------------------------------
 
 
@@ -342,34 +345,51 @@ Guardia:: { Instr }
 
 --------------------------------------------------------------------------------
 -- Instruccion de iteracion determinada 'control'
-Controller
+Controller :: { Instr }
  : for InitVar1 "->" Expresion ":" EndLines Instrucciones EndLines ".~"
-    {}
+    { % do
+      (symTab, scope) <- get
+      let (varIter, e1) = $2
+      crearFor varIter e1 $4 $7 symTab scope (posicion $1) }
  | for InitVar1 "->" Expresion while Expresion ":" EndLines Instrucciones EndLines ".~"
-    {}
- | for InitVar2 ":" EndLines Instrucciones EndLines ".~"
-    {}
+    { % do
+      (symTab, scope) <- get
+      let (varIter, e1) = $2
+      crearForWhile varIter e1 $4 $6 $9 symTab scope (posicion $1) }
  | for InitVar1 "->" Expresion ":" EndLines ".~"
-    {}
+    { % do
+      (symTab, scope) <- get
+      let (varIter, e1) = $2
+      crearFor varIter e1 $4 [] symTab scope (posicion $1) }
  | for InitVar1 "->" Expresion while Expresion ":" EndLines ".~"
-    {}
+    { % do
+      (symTab, scope) <- get
+      let (varIter, e1) = $2
+      crearForWhile varIter e1 $4 $6 [] symTab scope (posicion $1) }
+ | for InitVar2 ":" EndLines Instrucciones EndLines ".~"
+    { % do
+      (symTab, scope) <- get
+      let (varIter, e1) = $2
+      crearForEachDetermined varIter e1 $5 symTab scope (posicion $1) }
  | for InitVar2 ":" EndLines ".~"
-    {}
-
+    { % do
+      (symTab, scope) <- get
+      let (varIter, e1) = $2
+      crearForEachDetermined varIter e1 [] symTab scope (posicion $1) }
 
 -- Se inserta la variable de iteracion en la tabla de simbolos junto con su
 -- valor inicial, antes de construir el arbol de instrucciones del 'for'
-InitVar1
+InitVar1 :: { (Nombre, Expr) }
   : nombre "=" Expresion
-    {}
+    { ($1, $3) }
   | Tipo nombre "=" Expresion
-    {}
+    { ($2, $4) }  -- CREAR nueva VARIABLE EN LA TABLA DE SIMBOLOS
 
-InitVar2
+InitVar2 :: { (Nombre, Expr) }
   : nombre "<-" Expresion %prec "<-"
-    {}
+    { ($1, $3) }
   | Tipo nombre "<-" Expresion %prec "<-"
-    {}
+    { ($2, $4) }  -- CREAR nueva VARIABLE EN LA TABLA DE SIMBOLOS
 -------------------------------------------------------------------------------
 
 
@@ -395,12 +415,12 @@ EntradaSalida :: { Instr }
 Free :: {Instr}
 Free
   : free nombre
-    {Free $2}
+    { Free $2 }
   | free "|}" "{|" nombre
-    {Free $4}
+    { Free $4 }
   | free "<<" ">>" nombre
-    {Free $4}
---------------------------------------------------------------------------------
+    { Free $4 }
+-------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
@@ -413,23 +433,38 @@ DefinirSubrutina :: { Instr }
 
  -- Procedimientos
   : proc nombre "(" Parametros ")" ":" EndLines Instrucciones EndLines ".~"
-    { CrearSubrutina $2 (reverse $4) $8 }
+    { % do
+      (symTab, scope) <- get
+      crearProcedimiento $2 (reverse $4) $8 symTab scope (posicion $1) }
   | proc nombre "(" Parametros ")" ":" EndLines ".~"
-    { CrearSubrutina $2 (reverse $4) [] }
+    { % do
+      (symTab, scope) <- get
+      crearProcedimiento $2 (reverse $4) [] symTab scope (posicion $1) }
   | proc nombre "(" ")" ":" EndLines Instrucciones EndLines ".~"
-    { CrearSubrutina $2 [] $7 }
+    { % do
+      (symTab, scope) <- get
+      crearProcedimiento $2 [] $7 symTab scope (posicion $1) }
   | proc nombre "(" ")" ":" EndLines ".~"
-    { CrearSubrutina $2 [] [] }
-
-  -- Ahora funciones.  
+    { % do
+      (symTab, scope) <- get
+      crearProcedimiento $2 [] [] symTab scope (posicion $1) }
+  -- Ahora funciones.
   | function nombre "(" Parametros ")" Tipo ":" EndLines Instrucciones EndLines ".~"
-    { CrearSubrutina $2 (reverse $ (Literal ValorVacio $6) : $4) $9 }
-  | function nombre "(" Parametros ")" Tipo ":" EndLines ".~"    --- Función con cuerpo vacio
-    { CrearSubrutina $2 (reverse $ (Literal ValorVacio $6) : $4) [] }
+    {  % do
+      (symTab, scope) <- get
+      crearFuncion $2 $4 $6 $9 symTab scope (posicion $1) }
+  | function nombre "(" Parametros ")" Tipo ":" EndLines ".~"
+    {  % do
+      (symTab, scope) <- get
+      crearFuncion $2 $4 $6 [] symTab scope (posicion $1) }
   | function nombre "(" ")" Tipo ":" EndLines Instrucciones EndLines ".~"
-    { CrearSubrutina $2 [Literal ValorVacio $5] $8 }
-  | function nombre "(" ")" Tipo ":" EndLines ".~"   -- Función sin parametros
-    { CrearSubrutina $2 [Literal ValorVacio $5] [] }
+    {  % do
+      (symTab, scope) <- get
+      crearFuncion $2 [] $5 $8 symTab scope (posicion $1) }
+  | function nombre "(" ")" Tipo ":" EndLines ".~"
+    {  % do
+      (symTab, scope) <- get
+      crearFuncion $2 [] $5 [] symTab scope (posicion $1) }
 
 -------------------------------------------------------------------------------
 -- Definicion de los parametros de las subrutinas
@@ -442,18 +477,20 @@ Parametros :: { [Expr] }
 
 Parametro :: { Expr }
   : Tipo nombre
-    { Variables (Param $2) $1 }
+    { Variables (Param $2 $1 Valor) $1 }
   | Tipo "?" nombre
-    { Variables (ParamRef $3) $1 }
+    { Variables (Param $3 $1 Referencia) $1 }
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
 -- Llamada a subrutinas
-FuncCall :: {Expr}
+FuncCall :: { Expr }
   : funcCall nombre "(" PasarParametros ")" 
   { llamarSubrutina $2 (reverse $4) }
   | funcCall nombre "(" ")"
+  { llamarSubrutina $2 [] }
+  | funcCall nombre
   { llamarSubrutina $2 [] }
 -------------------------------------------------------------------------------
 
@@ -466,7 +503,7 @@ PasarParametros :: { Parametros }
   | ParametroPasado
     { [$1] }
 
-ParametroPasado :: {Expr}
+ParametroPasado :: { Expr }
   : Expresion
     { $1 }
   | "?" Expresion
@@ -491,7 +528,7 @@ Expresiones::{ [Expr] }
 --      Chequea tipos
 --      Crea la estructura de la operacion
 
-Expresion :: {Expr}
+Expresion :: { Expr }
   : Expresion "+" Expresion
     { crearOpBin TInt TInt TInt Suma $1 $3 }
   | Expresion "-" Expresion
@@ -503,7 +540,7 @@ Expresion :: {Expr}
   | Expresion "/" Expresion
     { crearOpBin TInt TInt TInt Division $1 $3 }
   | Expresion "//" Expresion
-    {crearOpBin  TInt  TInt TInt DivEntera $1 $3 }
+    {crearOpBin TInt TInt TInt DivEntera $1 $3 }
   | Expresion "&&" Expresion
     { crearOpBin TBool TBool TBool And $1 $3 }
   | Expresion "||" Expresion
@@ -521,26 +558,25 @@ Expresion :: {Expr}
   | Expresion "<" Expresion
     { crearOpBin TInt TInt TBool Menor $1 $3 }
   | Expresion ":" Expresion %prec ":"
-    { crearOpBin  TDummy TDummy (TLista TDummy) Anexo $1 $3 }
+    { crearOpAnexo Anexo $1 $3 }
   | Expresion "::" Expresion
     { crearOpConcat Concatenacion $1 $3 }
-  
---  | Expresion "?" Expresion ":" Expresion %prec "?"
---    { crearOpBin  TDummy TDummy (TLista TDummy) IfSimple $1 $3 }
+  | Expresion "?" Expresion ":" Expresion %prec "?"
+    { crearIfSimple $1 $3 $5 (posicion $2) }
   | "(" Expresion ")"
-    {$2}
+    { $2 }
   | "{" Expresiones "}"
-    {crearListaExpr $2 }
+    { crearListaExpr $2 }
   | "|}" Expresiones "{|"
-    {crearListaExpr $2 }
+    { crearListaExpr $2 }
   | "<<" Expresiones ">>"
-    {crearListaExpr $2 }
---  | "<<"  ">>"
---    {}
+    { crearListaExpr $2 }
+  | "<<"  ">>"
+    { crearListaExpr [] }
   | FuncCall
-    { $1}
---  | new Tipo
---    { crearOpUn TDummy TDummy New $2 }
+    { $1 }
+  | new Tipo
+    { OpUnario New ExprVacia $2 }
   | input
     { crearRead (posicion $1) (Literal ValorVacio TStr) }
   | input Expresion %prec input
@@ -549,15 +585,16 @@ Expresion :: {Expr}
   -- Operadores unarios
   | "-" Expresion %prec negativo
     { crearOpUn TInt TInt Negativo $2 }
---  | "#" Expresion
---    { crearOpUn (TArray Expr Tipo) (TArray Expr Tipo) Len $2 }
+
+  | "#" Expresion
+    { crearOpLen Longitud $2 }
   | "!" Expresion
     { crearOpUn TBool TBool Not $2 }
   | upperCase Expresion %prec upperCase
-    { crearOpUn TChar TChar UpperCase $2 }
+    { crearOpUpper UpperCase $2 }
   | lowerCase Expresion %prec lowerCase
-    { crearOpUn TChar TChar LowerCase $2 }
-
+    { crearOpUpper LowerCase $2 }
+  
   -- Literales
   | true
     { Literal (Booleano True) TBool }
@@ -566,7 +603,7 @@ Expresion :: {Expr}
   | entero
     { Literal (Entero (read $1 :: Int)) TInt }
   | flotante
-    { Literal (Flotante (read $1 :: Float)) TFloat }
+    { Literal (Flotante (read (map (\c -> if c == '\'' then '.' else c) $1) :: Float)) TFloat }
   | caracter
     { Literal (Caracter $ $1 !! 0) TChar }
   | string
@@ -586,20 +623,20 @@ Expresion :: {Expr}
 
 --------------------------------------------------------------------------------
 -- Registros
-DefinirRegistro :: {Instr}
-  : registro nombre ":" EndLines Declaraciones EndLines ".~"
+DefinirRegistro :: { Instr }
+  : registro idtipo ":" EndLines Declaraciones EndLines ".~"
     { definirRegistro $2 $5 TRegistro }
-  | registro nombre ":" EndLines ".~"
+  | registro idtipo ":" EndLines ".~"
     { definirRegistro $2 [] TRegistro }
 --------------------------------------------------------------------------------
 
 
 --------------------------------------------------------------------------------
 -- Uniones
-DefinirUnion :: {Instr}
-  : union nombre ":" EndLines Declaraciones EndLines ".~"
+DefinirUnion :: { Instr }
+  : union idtipo ":" EndLines Declaraciones EndLines ".~"
     { definirUnion $2 $5 TUnion }
-  | union nombre ":" EndLines ".~"
+  | union idtipo ":" EndLines ".~"
     { definirUnion $2 [] TUnion }
 --------------------------------------------------------------------------------
 
