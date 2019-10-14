@@ -307,9 +307,6 @@ las siguientes condiciones:
 Siendo así, son ***nombres válidos***: `test1`, `yes_we_can`, `maybe'not`. Y son
 ***nombres inválidos***: `1test1`, `yes_we_cañ`, `maybe not`.
 
-Se diferencian mayúsculas de minúsculas así, `test1`, `tEst1` son
-identificadores diferentes.
-
 ### **Declaración e inicialización de variables.**
 
 Se permite la declaración de variables sin previa inicialización. Si la
@@ -440,9 +437,10 @@ minúscula.
 Corresponden a las expresiones que devuelven un arreglo o lista después de su
 evaluación. Son aquellas en las cuales están involucrados los operadores de:
 
-* **Indexación (`|}{|`):** toma un arreglo o lista y un entero `i` en el rango
-`[0..#<arreglo o lista> - 1]` y devuelve el elemento contenido en la posición
-`i`.
+* **Indexación (`|)(|`):** toma un arreglo y un entero `i` en el rango
+`[0..#<arreglo> - 1]` y devuelve el elemento contenido en la posición `i`.
+* **Indexación (`|><|`):** toma un lista y un entero `i` en el rango
+`[0..#<lista> - 1]` y devuelve el elemento contenido en la posición `i`.
 * **Concatenación (`::`):** toma dos listas y concatena la segunda a la cola del
 primero.
 * **Anexo (`:`):** toma un elemento cualquiera y lo agrega a la cabeza de la lista.
