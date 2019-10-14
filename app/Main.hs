@@ -52,5 +52,7 @@ main = do
                         putStrLn $ tkErrorToString $ filter isError tokens
                     else do
                         (ast, lastState) <- runStateT (parse tokens) initState
+                        putStrLn $ show ast
+                        return ()
                         printAST 0 ast -- >> evalStateT (runAST ast) lastState
 

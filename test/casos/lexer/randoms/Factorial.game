@@ -1,4 +1,4 @@
-world %Factorial%:
+﻿world %Factorial%:
   monster factorial(Power n) Power:
     Button:
       | n < 0 } unlock 0
