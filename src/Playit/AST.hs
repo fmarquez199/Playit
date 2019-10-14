@@ -360,7 +360,7 @@ crearFuncion name params returnT i st scope pos@(line,_) =
 
 -------------------------------------------------------------------------------
 -- Crea el nodo para la instruccion que llama a la subrutina
-llamarSubrutina :: Nombre -> Parametros -> Expr
+llamarSubrutina :: Nombre -> Parametros->Tipo -> Expr
 llamarSubrutina = SubrutinaCall
 -------------------------------------------------------------------------------
 
@@ -413,8 +413,8 @@ crearRead :: Posicion -> Expr -> Expr
 crearRead _ = Read
 -------------------------------------------------------------------------------
 
-crearIfSimple :: Expr -> Expr -> Expr -> Posicion -> Expr
-crearIfSimple con v f (linea, col) = IfSimple con v f
+crearIfSimple :: Expr -> Expr -> Expr->Tipo -> Posicion -> Expr
+crearIfSimple con v f t (linea, col) = IfSimple con v f t
   {-| t con == TBool && t v == t f && t v /= TError = IfSimple con v f
   | otherwise = error ("\n\nError semantico en el operador ternario '? :' en la linea: " ++ show linea ++ " tipo de verdad: " ++ (show $ t v) ++ " tipo de mentira: " ++ (show $ t f))
   where t = typeE-}

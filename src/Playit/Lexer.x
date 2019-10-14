@@ -365,7 +365,6 @@ instance Show Token where
     show (TkOpenArrayIndex p s) = "Token " ++ s ++ (pos p) -- "|)"
     show (TkCloseArrayIndex p s) = "Token " ++ s ++ (pos p) -- "(|"
 
-
 posicion :: Token -> (Int, Int)
 posicion (TkWORLD (AlexPn _ f c) _) = (f, c)
 posicion (TkRUNE (AlexPn _ f c) _) = (f, c)
