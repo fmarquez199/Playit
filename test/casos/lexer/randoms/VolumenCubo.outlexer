@@ -8,13 +8,11 @@ Token identificador "arista" en la fila: 3, columna: 9
 Token , en la fila: 3, columna: 15
 Token identificador "volumen" en la fila: 3, columna: 17
 Token End Instruction \n en la fila: 3, columna: 24
-Token End Instruction \n en la fila: 4, columna: 3
 Token identificador "arista" en la fila: 5, columna: 3
 Token = en la fila: 5, columna: 10
 Token joystick en la fila: 5, columna: 12
 Token string ~Introduzca arista: ~ en la fila: 5, columna: 21
 Token End Instruction \n en la fila: 5, columna: 42
-Token End Instruction \n en la fila: 6, columna: 3
 Token identificador "volumen" en la fila: 7, columna: 3
 Token = en la fila: 7, columna: 11
 Token identificador "arista" en la fila: 7, columna: 13
@@ -23,7 +21,6 @@ Token identificador "arista" en la fila: 7, columna: 22
 Token * en la fila: 7, columna: 29
 Token identificador "arista" en la fila: 7, columna: 31
 Token End Instruction \n en la fila: 7, columna: 37
-Token End Instruction \n en la fila: 8, columna: 3
 Token drop en la fila: 9, columna: 3
 Token string ~el volumen del cubo es: ~ en la fila: 9, columna: 8
 Token , en la fila: 9, columna: 34

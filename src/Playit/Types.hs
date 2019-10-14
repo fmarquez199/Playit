@@ -88,8 +88,8 @@ data Instr  = Asignacion Vars Expr
 
 data Expr   = OpBinario BinOp Expr Expr Tipo
             | OpUnario UnOp Expr Tipo
-            | IfSimple Expr Expr Expr
-            | SubrutinaCall Nombre Parametros
+            | IfSimple Expr Expr Expr Tipo
+            | SubrutinaCall Nombre Parametros Tipo
             | ListaExpr [Expr] Tipo
             | Variables Vars Tipo
             | Literal Literal Tipo
@@ -204,7 +204,7 @@ showE (OpBinario And e1 e2 _)            = "(" ++ showE e1 ++ " && " ++ showE e2
 showE (OpUnario Negativo e _)            = "-" ++ showE e
 showE (OpUnario Not e _)                 = "!" ++ showE e
 showE (ListaExpr lst _)                  = "[" ++ intercalate "," (map showE lst) ++ "]"
-showE (IfSimple e1 e2 e3)                = "(" ++ showE e1 ++ " ? " ++ showE e2 ++ " : " ++ showE e3 ++ ")"
+showE (IfSimple e1 e2 e3 t)                = "(" ++ showE e1 ++ " ? " ++ showE e2 ++ " : " ++ showE e3 ++ ")"
 
 -- 
 showL :: Literal -> String

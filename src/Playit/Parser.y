@@ -485,11 +485,11 @@ Parametro :: { Expr }
 -- Llamada a subrutinas
 FuncCall :: { Expr }
   : funcCall nombre "(" PasarParametros ")" 
-  { llamarSubrutina $2 (reverse $4) }
+  { llamarSubrutina $2 (reverse $4) TDummy }
   | funcCall nombre "(" ")"
-  { llamarSubrutina $2 [] }
+  { llamarSubrutina $2 [] TDummy}
   | funcCall nombre
-  { llamarSubrutina $2 [] }
+  { llamarSubrutina $2 [] TDummy}
 -------------------------------------------------------------------------------
 
 
@@ -560,7 +560,7 @@ Expresion :: { Expr }
   | Expresion "::" Expresion
     { crearOpConcat Concatenacion $1 $3 }
   | Expresion "?" Expresion ":" Expresion %prec "?"
-    { crearIfSimple $1 $3 $5 (posicion $2) }
+    { crearIfSimple $1 $3 $5 TDummy (posicion $2) }
   | "(" Expresion ")"
     { $2 }
   | "{" Expresiones "}"

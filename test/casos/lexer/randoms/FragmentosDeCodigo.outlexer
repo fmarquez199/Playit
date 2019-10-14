@@ -106,7 +106,7 @@ Token Rune en la fila: 17, columna: 10
 Token identificador "lista2" en la fila: 17, columna: 15
 Token End Instruction \n en la fila: 17, columna: 21
 Token Inventory en la fila: 18, columna: 3
-Token identificador "Registro" en la fila: 18, columna: 13
+Token identificador de tipo "Registro" en la fila: 18, columna: 13
 Token : en la fila: 18, columna: 21
 Token End Instruction \n en la fila: 18, columna: 22
 Token Power en la fila: 19, columna: 5
@@ -117,7 +117,7 @@ Token identificador "tip" en la fila: 20, columna: 10
 Token End Instruction \n en la fila: 20, columna: 13
 Token .~ en la fila: 21, columna: 3
 Token End Instruction \n en la fila: 21, columna: 5
-Token identificador "Registro" en la fila: 22, columna: 3
+Token identificador de tipo "Registro" en la fila: 22, columna: 3
 Token identificador "r" en la fila: 22, columna: 12
 Token = en la fila: 22, columna: 14
 Token { en la fila: 22, columna: 16
@@ -127,7 +127,7 @@ Token caracter *f* en la fila: 22, columna: 20
 Token } en la fila: 22, columna: 23
 Token End Instruction \n en la fila: 22, columna: 24
 Token Inventory en la fila: 23, columna: 3
-Token identificador "Contacto" en la fila: 23, columna: 13
+Token identificador de tipo "Contacto" en la fila: 23, columna: 13
 Token : en la fila: 23, columna: 21
 Token End Instruction \n en la fila: 23, columna: 22
 Token Runes en la fila: 24, columna: 5
@@ -141,8 +141,8 @@ Token identificador "tieneTrabajo" en la fila: 26, columna: 12
 Token End Instruction \n en la fila: 26, columna: 24
 Token .~ en la fila: 27, columna: 3
 Token End Instruction \n en la fila: 27, columna: 5
-Token identificador "Contacto" en la fila: 29, columna: 3
-Token identificador "Alex" en la fila: 29, columna: 12
+Token identificador de tipo "Contacto" en la fila: 29, columna: 3
+Token identificador de tipo "Alex" en la fila: 29, columna: 12
 Token = en la fila: 29, columna: 17
 Token { en la fila: 29, columna: 19
 Token string ~Alex~ en la fila: 29, columna: 20
@@ -152,7 +152,7 @@ Token , en la fila: 29, columna: 30
 Token Lose en la fila: 29, columna: 32
 Token } en la fila: 29, columna: 36
 Token End Instruction \n en la fila: 29, columna: 37
-Token identificador "Contacto" en la fila: 30, columna: 3
+Token identificador de tipo "Contacto" en la fila: 30, columna: 3
 Token identificador "sofia" en la fila: 30, columna: 12
 Token End Instruction \n en la fila: 30, columna: 17
 Token identificador "sofia" en la fila: 31, columna: 3
@@ -181,7 +181,7 @@ Token spawn en la fila: 35, columna: 23
 Token identificador "nombre" en la fila: 35, columna: 29
 Token End Instruction \n en la fila: 35, columna: 35
 Token Inventory en la fila: 37, columna: 3
-Token identificador "Circle" en la fila: 37, columna: 13
+Token identificador de tipo "Circle" en la fila: 37, columna: 13
 Token : en la fila: 37, columna: 19
 Token End Instruction \n en la fila: 37, columna: 20
 Token Skill en la fila: 38, columna: 5
@@ -196,7 +196,7 @@ Token End Instruction \n en la fila: 40, columna: 17
 Token .~ en la fila: 41, columna: 3
 Token End Instruction \n en la fila: 41, columna: 5
 Token Inventory en la fila: 43, columna: 3
-Token identificador "Rectangle" en la fila: 43, columna: 13
+Token identificador de tipo "Rectangle" en la fila: 43, columna: 13
 Token : en la fila: 43, columna: 22
 Token End Instruction \n en la fila: 43, columna: 23
 Token Skill en la fila: 44, columna: 5
@@ -216,7 +216,7 @@ Token End Instruction \n en la fila: 48, columna: 5
 Token boss en la fila: 51, columna: 3
 Token identificador "areaCirculo" en la fila: 51, columna: 8
 Token ( en la fila: 51, columna: 19
-Token identificador "Circle" en la fila: 51, columna: 20
+Token identificador de tipo "Circle" en la fila: 51, columna: 20
 Token ? en la fila: 51, columna: 27
 Token identificador "c" en la fila: 51, columna: 28
 Token ) en la fila: 51, columna: 29
@@ -236,7 +236,7 @@ Token identificador "radius" en la fila: 52, columna: 44
 Token End Instruction \n en la fila: 52, columna: 50
 Token .~ en la fila: 53, columna: 3
 Token End Instruction \n en la fila: 53, columna: 5
-Token identificador "Shape" en la fila: 55, columna: 3
+Token identificador de tipo "Shape" en la fila: 55, columna: 3
 Token identificador "sh" en la fila: 55, columna: 9
 Token End Instruction \n en la fila: 55, columna: 11
 Token identificador "sh" en la fila: 56, columna: 5
@@ -271,7 +271,6 @@ Token identificador "radius" en la fila: 59, columna: 22
 Token = en la fila: 59, columna: 29
 Token entero 15 en la fila: 59, columna: 31
 Token End Instruction \n en la fila: 59, columna: 33
-Token End Instruction \n en la fila: 60, columna: 2
 Token drop en la fila: 61, columna: 5
 Token string ~el area del circulo es ~ en la fila: 61, columna: 10
 Token , en la fila: 61, columna: 35
@@ -408,7 +407,7 @@ Token string ~40~ en la fila: 89, columna: 43
 Token , en la fila: 89, columna: 47
 Token string ~15~ en la fila: 89, columna: 49
 Token {| en la fila: 89, columna: 53
-Token End Instruction \n en la fila: 89, columna: 56
+Token End Instruction \n en la fila: 89, columna: 55
 Token Runes en la fila: 90, columna: 3
 Token |} en la fila: 90, columna: 8
 Token entero 5 en la fila: 90, columna: 10
@@ -426,7 +425,7 @@ Token string ~Ricardo~ en la fila: 90, columna: 61
 Token , en la fila: 90, columna: 70
 Token string ~Haskell~ en la fila: 90, columna: 72
 Token {| en la fila: 90, columna: 81
-Token End Instruction \n en la fila: 90, columna: 84
+Token End Instruction \n en la fila: 90, columna: 83
 Token controller en la fila: 92, columna: 3
 Token identificador "i" en la fila: 92, columna: 14
 Token = en la fila: 92, columna: 16
@@ -526,7 +525,7 @@ Token End Instruction \n en la fila: 112, columna: 57
 Token monster en la fila: 114, columna: 3
 Token identificador "calcularGanancia" en la fila: 114, columna: 11
 Token ( en la fila: 114, columna: 27
-Token identificador "Producto" en la fila: 114, columna: 28
+Token identificador de tipo "Producto" en la fila: 114, columna: 28
 Token ? en la fila: 114, columna: 37
 Token identificador "producto" en la fila: 114, columna: 38
 Token , en la fila: 114, columna: 46
@@ -546,7 +545,7 @@ Token End Instruction \n en la fila: 115, columna: 53
 Token .~ en la fila: 116, columna: 3
 Token End Instruction \n en la fila: 116, columna: 5
 Token Inventory en la fila: 118, columna: 3
-Token identificador "Producto" en la fila: 118, columna: 13
+Token identificador de tipo "Producto" en la fila: 118, columna: 13
 Token : en la fila: 118, columna: 21
 Token End Instruction \n en la fila: 118, columna: 22
 Token Power en la fila: 119, columna: 5
@@ -554,7 +553,7 @@ Token identificador "precioReal" en la fila: 119, columna: 11
 Token End Instruction \n en la fila: 119, columna: 21
 Token .~ en la fila: 120, columna: 3
 Token End Instruction \n en la fila: 120, columna: 5
-Token identificador "Producto" en la fila: 122, columna: 3
+Token identificador de tipo "Producto" en la fila: 122, columna: 3
 Token identificador "p" en la fila: 122, columna: 12
 Token End Instruction \n en la fila: 122, columna: 13
 Token identificador "p" en la fila: 123, columna: 3

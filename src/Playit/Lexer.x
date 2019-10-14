@@ -19,6 +19,7 @@ module Playit.Lexer (
 ) where
 
 import Data.List(intercalate)
+-- import Data.List.Split (splitOn)
 
 }
 
@@ -275,10 +276,25 @@ isError :: Token -> Bool
 isError (TkError _) = True
 isError _ = False
 
--- 'tokerr' : Traduce los errores al formato especificado en el proyecto.
+-- 'tokerr' : Traduce los errores a un formato.
 tokerr s (AlexPn _ l c) = 
     "Error: Caracter inesperado " ++ s ++ 
     " en la linea " ++ (show l) ++ ", columna " ++ (show c) ++ "."
+    -- "\x1b[1m\x1b[31mGAME OVER!!\x1b[0m Lexical error at line \x1b[1m\x1b[31m%d\x1b[0m, column \x1b[1m\x1b[31m%d\x1b[0m:\n%s\n"
+    -- ++ (show l) ++ (show c) ++ fs
+    -- where
+    --     allLines = splitOn "\n" s
+    --     maxSize = foldl max (-1) $ map length allLines
+    --     buildRuler = flip replicate '~'
+    --     rule = buildRuler maxSize ++ "\n"
+    --     relevantLines = drop (l-1) allLines
+    --     firstLine = head relevantLines ++ "\n"
+    --     restLines = take 4 $ tail relevantLines
+    --     errorRuler = "\x1b[1m\x1b[31m" ++ (buildRuler (c-1)) ++ "^" ++ buildRuler (maxSize - c) ++ "\x1b[0m\n"
+    --     fs = firstLine ++ errorRuler ++ (intercalate "\n" restLines)
+
+
+
 
 -- 'tkErrorToString': Inserta nuevas lineas entre los errores para ser impresos.
 tkErrorToString :: [Token] -> String
@@ -364,7 +380,6 @@ instance Show Token where
     show (TkCloseArray p s) = "Token " ++ s ++ (pos p) -- "{|"
     show (TkOpenArrayIndex p s) = "Token " ++ s ++ (pos p) -- "|)"
     show (TkCloseArrayIndex p s) = "Token " ++ s ++ (pos p) -- "(|"
-
 
 posicion :: Token -> (Int, Int)
 posicion (TkWORLD (AlexPn _ f c) _) = (f, c)

@@ -1,17 +1,11 @@
-Token End Instruction \n en la fila: 1, columna: 25
-Token End Instruction \n en la fila: 2, columna: 64
-Token End Instruction \n en la fila: 3, columna: 55
-Token End Instruction \n en la fila: 4, columna: 34
-Token End Instruction \n en la fila: 5, columna: 47
-Token End Instruction \n en la fila: 6, columna: 20
-Token End Instruction \n en la fila: 7, columna: 55
+Token End Instruction \n en la fila: 8, columna: 1
 Token identificador "a0123456789" en la fila: 10, columna: 1
 Token End Instruction \n en la fila: 10, columna: 12
 Token identificador "a91248619906153209213" en la fila: 11, columna: 1
 Token End Instruction \n en la fila: 11, columna: 22
 Token identificador "ahga672ghas61mklas01an18" en la fila: 12, columna: 1
 Token End Instruction \n en la fila: 12, columna: 25
-Token identificador "Ahs7sad2daDs128sd'd621Das1" en la fila: 13, columna: 1
+Token identificador de tipo "Ahs7sad2daDs128sd'd621Das1" en la fila: 13, columna: 1
 Token End Instruction \n en la fila: 13, columna: 27
 Token identificador "a_b'c_d'e_f'g_h'i_j'k_l'm_n'opqrstuvwxyz0123456789ABCDFGHIJKLMNOPQRSTUVWXYZ_'" en la fila: 14, columna: 1
 Token End Instruction \n en la fila: 14, columna: 78

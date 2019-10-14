@@ -362,7 +362,7 @@ crearFuncion name params returnT i st scope pos@(line,_) =
 
 -------------------------------------------------------------------------------
 -- Crea el nodo para la instruccion que llama a la subrutina
-llamarSubrutina :: Nombre -> Parametros -> Expr
+llamarSubrutina :: Nombre -> Parametros->Tipo -> Expr
 llamarSubrutina = SubrutinaCall
 -------------------------------------------------------------------------------
 
