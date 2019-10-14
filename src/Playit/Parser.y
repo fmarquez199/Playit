@@ -67,7 +67,7 @@ import Playit.AST
 
   programa          { TkProgramName _ _ }
   nombre            { TkID _ $$ }
-  idtipo              { TkIDTipo _ $$ }
+  idtipo            { TkIDTipo _ $$ }
 
   -- Caracteres
 
@@ -141,7 +141,6 @@ import Playit.AST
 %left "*" "/" "//" "%"
 %right negativo "!" upperCase lowerCase input
 %left "++" "|}" "{|" "<<" ">>" "::" "|)" "(|" "|>" "<|"
-
 %left "--"
 %right "#" pointer
 %left "?"
@@ -164,12 +163,11 @@ ProgramaWrapper :: { Instr }
   | Programa
     { $1 }
 
-Programa 
-    : world programa ":" EndLines Instrucciones EndLines ".~"
-      { % do
-          (symTab, _) <- get
-          return $ BloqueInstr (reverse $5) symTab }
-    
+Programa
+  : world programa ":" EndLines Instrucciones EndLines ".~"
+    { % do
+        (symTab, _) <- get
+        return $ BloqueInstr (reverse $5) symTab }
 
 EndLines
   : endLine
@@ -191,18 +189,18 @@ Declaraciones :: { SecuenciaInstr }
 
 Declaracion :: { Instr }
   : Tipo Identificadores
-    { %  let (ids, asigs, vals) = $2 
+    { % let (ids, asigs, vals) = $2 
         in do
             (actualSymTab, scope) <- get
             addToSymTab ids $1 vals actualSymTab scope
             return $ SecDeclaraciones asigs actualSymTab }
-
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 --                  Identificadores de las declaraciones
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
+
 Identificadores :: { ([Nombre], SecuenciaInstr, [Literal]) }
   : Identificador
     { let (id, asigs, e) = $1 in ([id], asigs, [e]) }
@@ -226,7 +224,7 @@ Identificador :: { (Nombre, SecuenciaInstr, Literal) }
 -- Lvalues, contenedores que identifican a las variables
 Lvalue :: { Vars }
   : Lvalue "." nombre
-    {VarCompIndex $1 $3 TDummy}  
+    {VarCompIndex $1 $3 TDummy}
   | Lvalue "|)" Expresion "(|" -- Token indexacion arreglo
     { crearVarIndex $1 $3 }
   | Lvalue "|>" Expresion "<|" -- Token indexacion lista
@@ -235,7 +233,6 @@ Lvalue :: { Vars }
     {PuffValue $2 TDummy }
   | nombre
     { % crearIdvar $1 }
-
 
 
 -- Tipos de datos
@@ -277,7 +274,7 @@ Instrucciones :: { SecuenciaInstr }
 Instruccion :: { Instr }
   : Declaracion
     { $1 }
- | DefinirSubrutina
+  | DefinirSubrutina
     { $1 }
   | DefinirRegistro
     { $1 }
@@ -370,12 +367,12 @@ Controller :: { Instr }
     { % do
       (symTab, scope) <- get
       let (varIter, e1) = $2
-      crearForEachDetermined varIter e1 $5 symTab scope (posicion $1) }
+      crearForEach varIter e1 $5 symTab scope (posicion $1) }
  | for InitVar2 ":" EndLines ".~"
     { % do
       (symTab, scope) <- get
       let (varIter, e1) = $2
-      crearForEachDetermined varIter e1 [] symTab scope (posicion $1) }
+      crearForEach varIter e1 [] symTab scope (posicion $1) }
 
 -- Se inserta la variable de iteracion en la tabla de simbolos junto con su
 -- valor inicial, antes de construir el arbol de instrucciones del 'for'
@@ -448,7 +445,8 @@ DefinirSubrutina :: { Instr }
     { % do
       (symTab, scope) <- get
       crearProcedimiento $2 [] [] symTab scope (posicion $1) }
-  -- Ahora funciones.
+  
+  -- Funciones.
   | function nombre "(" Parametros ")" Tipo ":" EndLines Instrucciones EndLines ".~"
     {  % do
       (symTab, scope) <- get

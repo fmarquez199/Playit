@@ -85,12 +85,14 @@ crearIncremento lval (line, _) = Asignacion lval (crearSuma (Variables lval TInt
         Asignacion lval (crearSuma (Variables lval TInt) (Literal (Entero 1) TInt))
     | otherwise = error("Error semantico en el incremento, variable no es de tipo Entero, en la linea " ++ show line)
 -}
+
 crearDecremento :: Vars -> Posicion -> Instr
 crearDecremento lval (line, _) = Asignacion lval (crearResta (Variables lval TInt) (Literal (Entero 1) TInt))
 {-    | typeVar lval == TInt =
         Asignacion lval (crearResta (Variables lval TInt) (Literal (Entero 1) TInt))
     | otherwise = error("Error semantico en el decremento, variable no es de tipo Entero, en la linea " ++ show line)
 -}
+
 crearSuma :: Expr -> Expr -> Expr
 crearSuma e1 e2 = OpBinario Suma e1 e2 t
     where
@@ -143,10 +145,12 @@ crearOpConcat op e1 e2 =
              else TError
 -------------------------------------------------------------------------------
 
+
+-------------------------------------------------------------------------------
+---- >>>>>>>> Se pueden juntar en opUn ??????
 crearOpUpper :: UnOp -> Expr -> Expr
 crearOpUpper op e = OpUnario op e t
   where t = if typeE e == TChar then TChar else TError
-
 
 
 crearOpLower :: UnOp -> Expr -> Expr
@@ -160,6 +164,7 @@ crearOpLen op e =
     where
         t = typeE e
         tr = if isArray t || isList t then t else TError
+-------------------------------------------------------------------------------
 
 crearOpAnexo :: BinOp -> Expr -> Expr -> Expr
 crearOpAnexo op e1 e2 =
@@ -168,17 +173,6 @@ crearOpAnexo op e1 e2 =
     where
         t2 = typeE e2
         t = if isList t2 then t2 else TError 
-
--------------------------------------------------------------------------------
--- Crea el nodo para el operador shift de arreglos, caso especial
-crearOpShift :: UnOp -> Expr -> Expr
-crearOpShift op e =
-    let t = typeE e
-        tr = case t of 
-                (TArray _ _) -> t
-                _ -> TError
-    in OpUnario op e tr
--------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
@@ -226,6 +220,14 @@ crearGuardiaIF exprCond seqInstrs (line,_) = ButtonIF [(exprCond, seqInstrs)]
 
 --    where
 --        tE = typeE e
+
+
+
+crearIfSimple :: Expr -> Expr -> Expr -> Posicion -> Expr
+crearIfSimple con v f (linea, col) = IfSimple con v f
+  {-| t con == TBool && t v == t f && t v /= TError = IfSimple con v f
+  | otherwise = error ("\n\nError semantico en el operador ternario '? :' en la linea: " ++ show linea ++ " tipo de verdad: " ++ (show $ t v) ++ " tipo de mentira: " ++ (show $ t f))
+  where t = typeE-}
 
 
 -------------------------------------------------------------------------------
@@ -311,9 +313,9 @@ crearForWhile var e1 e2 e3 i st scope pos@(line,_) = return $ ForWhile var e1 e2
 -}
 -------------------------------------------------------------------------------
 -- Crea el nodo para una instruccion ForEach
-crearForEachDetermined :: Nombre -> Expr -> SecuenciaInstr -> SymTab -> Alcance
+crearForEach :: Nombre -> Expr -> SecuenciaInstr -> SymTab -> Alcance
                         -> Posicion -> MonadSymTab Instr
-crearForEachDetermined var e1 i st scope pos@(line,_) =
+crearForEach var e1 i st scope pos@(line,_) =
     return $ ForEach var e1 i st 
     
 
@@ -412,9 +414,3 @@ crearPrint e (line,_)
 crearRead :: Posicion -> Expr -> Expr
 crearRead _ = Read
 -------------------------------------------------------------------------------
-
-crearIfSimple :: Expr -> Expr -> Expr -> Posicion -> Expr
-crearIfSimple con v f (linea, col) = IfSimple con v f
-  {-| t con == TBool && t v == t f && t v /= TError = IfSimple con v f
-  | otherwise = error ("\n\nError semantico en el operador ternario '? :' en la linea: " ++ show linea ++ " tipo de verdad: " ++ (show $ t v) ++ " tipo de mentira: " ++ (show $ t f))
-  where t = typeE-}

@@ -74,12 +74,11 @@ eqTypesAsigs asigs t = all (\(Asignacion _ expr) -> typeE expr == t) asigs
 --------------------------------------------------------------------------------
 -- Obtiene el tipo asociado a la expresion 
 typeE :: Expr -> Tipo
-typeE (Variables _ t)            = t
-typeE (Literal _ t)              = t
-typeE (OpBinario _ _ _ t) = t
---typeE (OpBinario _ _ t)    = t
-typeE (ListaExpr _ t)            = t
-typeE (Read _)            = TStr
+typeE (Variables _ t)       = t
+typeE (Literal _ t)         = t
+typeE (OpBinario _ _ _ t)   = t
+typeE (ListaExpr _ t)       = t
+typeE (Read _)              = TStr
 --------------------------------------------------------------------------------
 
 isArray (TArray _ _) = True

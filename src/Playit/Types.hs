@@ -55,13 +55,14 @@ data Tipo   = TInt | TFloat | TBool | TChar | TStr | TArray Expr Tipo
 
 
 data Vars   = VarIndex Vars Expr Tipo       --- Indice para array , listas
-            | VarCompIndex Vars Nombre Tipo --- Indice para registros, uniones
+            | VarCompIndex Vars Nombre Tipo --- Variable de acceso a registros, uniones
             | Var Nombre Tipo
             | Param Nombre Tipo Ref
             | PuffValue Vars Tipo           -- Variable deferenciada con puff
             deriving (Eq, Show, Ord)
 
-data Ref = Valor | Referencia deriving(Eq, Show, Ord)
+data Ref    = Valor | Referencia
+            deriving(Eq, Show, Ord)
 
 data Instr  = Asignacion Vars Expr
             | BloqueInstr SecuenciaInstr SymTab
@@ -102,8 +103,9 @@ data Literal    = Entero Int
                 | Caracter Char
                 | Str String
                 | Booleano Bool
+                -- >>>> Se pueden juntar??????
                 | Arreglo [Literal]
-                | Lista 
+                | Lista [Literal]
                 | ValorVacio
                 deriving (Eq, Show, Ord)
 

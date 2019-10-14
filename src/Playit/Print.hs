@@ -80,9 +80,9 @@ printAST n instr =
         -- Leer valor
         (SecDeclaraciones seq symTab) ->
             --printSymTab symTab t >>
-            if not $ isEmptySequence seq then do
+            if not $ isEmptySequence seq then
                 putStrLn (t ++ "  Declaraciones:") >> printSeq (n + 2) seq
-            else do 
+            else
                 return ()
         -----------------------------------------------------------------------
         -- Retornar de una función.
@@ -137,8 +137,6 @@ printSeqButtonGuardias n bloques =
     putStrLn (t ++ "Guardias IF: ") >> mapM_ (printButtonGuardia (n + 1)) bloques
     
     where t = replicate (2 * n) ' '
-
-
 ------------------------------------------------------------------------------
 
 
@@ -155,7 +153,8 @@ printVar n vars =
             putStrLn (t ++ "Variable de indexacion:") >> printVar (n + 1) vars
             putStrLn $ t ++ "  Indice: " ++ showE exp
         -----------------------------------------------------------------------
-        (Param name typ r) -> putStrLn $ t ++ "Variable: " ++ name ++ " de tipo: " ++ showType typ ++ " pasado por: " ++ show r
+        (Param name typ r) -> putStrLn $ t ++ "Variable: " ++ name ++ " de tipo: " 
+            ++ showType typ ++ " pasado por: " ++ show r
     
     where t = replicate (2 * n) ' '
 -------------------------------------------------------------------------------
@@ -196,7 +195,6 @@ printExpr n e =
         -- Expresion de arreglo explicito
         (ListaExpr exps _) ->
             putStrLn (t ++ "Arreglo:") >> mapM_ (printExpr $ n + 1) exps
-        -----------------------------------------------------------------------
         -----------------------------------------------------------------------
         -- Leer valor
         (Read expre) -> putStrLn (t ++ "Lectura con prompt:") >> printExpr (n + 1) expre
