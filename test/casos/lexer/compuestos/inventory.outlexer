@@ -23,7 +23,7 @@ Token entero 10 en la fila: 7, columna: 10
 Token {| en la fila: 7, columna: 12
 Token identificador "sk" en la fila: 7, columna: 15
 Token End Instruction \n en la fila: 7, columna: 17
-Token identificador "Contacto" en la fila: 8, columna: 3
+Token identificador de tipo "Contacto" en la fila: 8, columna: 3
 Token identificador "c" en la fila: 8, columna: 12
 Token End Instruction \n en la fila: 8, columna: 13
 Token Kit en la fila: 9, columna: 3
@@ -37,7 +37,7 @@ Token identificador "p" en la fila: 10, columna: 14
 Token End Instruction \n en la fila: 10, columna: 15
 Token .~ en la fila: 11, columna: 1
 Token End Instruction \n en la fila: 11, columna: 3
-Token identificador "Registro" en la fila: 12, columna: 1
+Token identificador de tipo "Registro" en la fila: 12, columna: 1
 Token identificador "r" en la fila: 12, columna: 10
 Token = en la fila: 12, columna: 12
 Token { en la fila: 12, columna: 14

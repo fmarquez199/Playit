@@ -25,7 +25,6 @@ Token Win en la fila: 8, columna: 23
 Token End Instruction \n en la fila: 8, columna: 26
 Token .~ en la fila: 9, columna: 5
 Token End Instruction \n en la fila: 9, columna: 7
-Token End Instruction \n en la fila: 10, columna: 5
 Token Button en la fila: 11, columna: 5
 Token : en la fila: 11, columna: 11
 Token End Instruction \n en la fila: 11, columna: 12
@@ -51,7 +50,6 @@ Token Win en la fila: 15, columna: 23
 Token End Instruction \n en la fila: 15, columna: 26
 Token .~ en la fila: 16, columna: 5
 Token End Instruction \n en la fila: 16, columna: 7
-Token End Instruction \n en la fila: 17, columna: 5
 Token Button en la fila: 18, columna: 5
 Token : en la fila: 18, columna: 11
 Token End Instruction \n en la fila: 18, columna: 12
@@ -84,6 +82,6 @@ Token = en la fila: 24, columna: 21
 Token Win en la fila: 24, columna: 23
 Token End Instruction \n en la fila: 24, columna: 26
 Token .~ en la fila: 25, columna: 5
-Token End Instruction \n en la fila: 25, columna: 13
+Token End Instruction \n en la fila: 25, columna: 7
 Token .~ en la fila: 26, columna: 1
 Token End Instruction \n en la fila: 26, columna: 3
