@@ -81,9 +81,7 @@ typeE (OpUnario _ _ t)          = t
 typeE (ListaExpr _ t)           = t
 typeE (Read _)                  = TStr
 typeE (IfSimple _ _ _ t)        = t
-typeE (ListaExpr _  t)          = t
 typeE (SubrutinaCall _  _ t)    = t
---typeE (IfSimple _ _ _ t)      = t
 
 
 --------------------------------------------------------------------------------
