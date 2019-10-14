@@ -44,15 +44,15 @@ main = do
             if (null code) || (isEmptyFile code) then
                 putStrLn "\nArchivo vacio. Nada que hacer\n"
             else
-                let tokens = alexScanTokens code in do
+                let tokens = alexScanTokens code in
                 
-                    mapM_ putStrLn $ map  show tokens
+                    -- mapM_ (putStrLn . show) tokens
 
                     if hasError tokens then
                         putStrLn $ tkErrorToString $ filter isError tokens
                     else do
                         (ast, lastState) <- runStateT (parse tokens) initState
-                        putStrLn $ show ast
-                        return ()
+                        print ast
+                        -- return ()
                         printAST 0 ast -- >> evalStateT (runAST ast) lastState
 

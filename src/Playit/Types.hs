@@ -135,6 +135,8 @@ data UnOp   = Negativo
             | Longitud
             | UpperCase
             | LowerCase
+            | Incremento
+            | Decremento
             | Desreferenciar
             | Not
             | New
