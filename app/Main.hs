@@ -11,19 +11,19 @@ module Main where
 import qualified Control.Exception as Exc------------------------------------- > (*)
 import Control.Monad (forM)
 import Control.Monad.Trans.State
-import Playit.SymbolTable
 import System.Environment
 import System.IO
 import System.IO.Error
 import Control.Exception
+import Data.Strings (strEndsWith,strBreak)
+import Playit.SymbolTable
 import Playit.Lexer
 import Playit.Parser (parse)
 import Playit.Print
-import Data.Strings (strEndsWith,strBreak)
 
 -- Determina si un archivo esta vacio
 isEmptyFile :: String -> Bool
-isEmptyFile file = all (== '\n') file
+isEmptyFile = all (== '\n')
 
 
 -- Determina que el archivo tenga la extension conrrecta, '.bt'
@@ -41,7 +41,7 @@ main = do
         Left msg -> putStrLn msg
         Right checkedFile -> do
             code <- readFile checkedFile
-            if (null code) || (isEmptyFile code) then
+            if null code || isEmptyFile code then
                 putStrLn "\nArchivo vacio. Nada que hacer\n"
             else
                 let tokens = alexScanTokens code in

@@ -125,7 +125,7 @@ notEmptyValue :: Vars -> SymTab -> Bool
 notEmptyValue (VarIndex vars _ _) symTab = notEmptyValue vars symTab
 notEmptyValue var symTab =
     let varInfo = getVarInfo var symTab
-    in  getVal varInfo /= (ValorVacio)
+    in  getVal varInfo /= ValorVacio
 --------------------------------------------------------------------------------
 
 
