@@ -1,7 +1,7 @@
 world %FragmentosDeCodigo%:
-  01
-  003
-  0000000000000000000000000000000000000005
+  a = 01
+  b = 003
+  c = 0000000000000000000000000000000000000005
   Power a
   Rune c
   Battle esMayor = Lose
@@ -11,21 +11,20 @@ world %FragmentosDeCodigo%:
   Rune|}3{| abc
   Runes|}3{| nombres = |}~Natascha~, ~Francisco~, ~Manuel~{|
   Skill|}3{| indices = |}3'67, 3'20, 3'0{|
-  |}*s*, *t*, *r*, *i*, *n*, *g*, *s*{| == ~strings~
   Kit of Rune lista1 = <<*C*, *3*>>
   Kit of Power lista2
   Inventory Registro:
     Power up
     Rune tip
   .~
-  Registro r = {0, *f*}
+  Registro r2 = {0, *f*}
   Inventory Contacto:
     Runes nombre
-    Power edad
+    Power edad2
     Battle tieneTrabajo
   .~
 
-  Contacto Alex = {~Alex~, 15, Lose}
+  Contacto alex = {~Alex~, 15, Lose}
   Contacto sofia
   sofia spawn nombre = ~Sofia~
   sofia spawn edad = 29
@@ -56,13 +55,13 @@ world %FragmentosDeCodigo%:
     sh spawn c spawn radius = 15
     drop ~el area del circulo es ~, kill areaCirculo(sh spawn c)
 
-  Power puff p = summon Power|}20{|
-  puff p|}1{| = 15
-  free|}{| p
+  Power puff p1 = summon Power|}20{|
+  puff p1|)1(| = 15
+  free|}{| p1
 
-  Power puff p = summon Power
-  puff p = 15
-  free p
+  Power puff p2 = summon Power
+  puff p2 = 15
+  free p2
 
   p = summon Power
   puff p = 18
@@ -73,7 +72,7 @@ world %FragmentosDeCodigo%:
   n2--
   Power n3 = n1, n4 = n2
 
-  bool ? true : false
+  a = bool ? true : false
 
   Battle puedeConducir = Lose
   Power edad = 18
@@ -83,16 +82,16 @@ world %FragmentosDeCodigo%:
   .~
 
   Runes|}5{| edades = |}~12~, ~23~, ~15~, ~40~, ~15~{| 
-  Runes|}5{| nombres = |}~Natascha~, ~Francisco~, ~Manuel~, ~Ricardo~, ~Haskell~{| 
+  Runes|}5{| nombres2 = |}~Natascha~, ~Francisco~, ~Manuel~, ~Ricardo~, ~Haskell~{| 
 
   controller i = 0 -> 4:
-    drop ~Hola ~, nombres|}i{|, ~ tienes ~, edad|}i{|, ~ anios!~
+    drop ~Hola ~, nombres|)i(|, ~ tienes ~, edad|)i(|, ~ anios!~
   .~
 
   Power i = 0
 
   play:
-    drop ~Hola ~, nombres|}i{|, ~ tienes ~, edad|}i{|, ~ anios!~
+    drop ~Hola ~, nombres|)i(|, ~ tienes ~, edad|)i(|, ~ anios!~
     i++
   lock i < 5
   .~
@@ -115,7 +114,7 @@ world %FragmentosDeCodigo%:
     Power precioReal
   .~
 
-  Producto p
+  Producto p3
   p spawn precioReal = 1500
   drop ~Ganancia de ~, kill calcularGanancia(p, 2000)
 

@@ -29,14 +29,15 @@ import Playit.Types
 --------------------------------------------------------------------------------
 -- Crea el nodo para identificadores de variables
 crearIdvar :: Nombre -> MonadSymTab Vars
-crearIdvar name = do
+crearIdvar name = return $ Var name TDummy
+{-crearIdvar name = do
     (symTab, scope) <- get
     let info = lookupInSymTab name symTab
 
     if isJust info then return $ Var name (getType $ fromJust info)
     else 
         error ("\n\nError semantico, la variable: '" ++ name ++ 
-                "', no esta declarada.\n")
+                "', no esta declarada.\n") -}
 --------------------------------------------------------------------------------
 
 
@@ -79,16 +80,18 @@ crearAsignacion lval e (line, _)
 -------------------------------------------------------------------------------
 
 crearIncremento :: Vars -> Posicion -> Instr
-crearIncremento lval (line, _)
-    | typeVar lval == TInt =
+crearIncremento lval (line, _) = Asignacion lval (crearSuma (Variables lval TInt) (Literal (Entero 1) TInt))
+{-    | typeVar lval == TInt =
         Asignacion lval (crearSuma (Variables lval TInt) (Literal (Entero 1) TInt))
     | otherwise = error("Error semantico en el incremento, variable no es de tipo Entero, en la linea " ++ show line)
+-}
 
 crearDecremento :: Vars -> Posicion -> Instr
-crearDecremento lval (line, _)
-    | typeVar lval == TInt =
+crearDecremento lval (line, _) = Asignacion lval (crearResta (Variables lval TInt) (Literal (Entero 1) TInt))
+{-    | typeVar lval == TInt =
         Asignacion lval (crearResta (Variables lval TInt) (Literal (Entero 1) TInt))
     | otherwise = error("Error semantico en el decremento, variable no es de tipo Entero, en la linea " ++ show line)
+-}
 
 crearSuma :: Expr -> Expr -> Expr
 crearSuma e1 e2 = OpBinario Suma e1 e2 t
@@ -142,10 +145,12 @@ crearOpConcat op e1 e2 =
              else TError
 -------------------------------------------------------------------------------
 
+
+-------------------------------------------------------------------------------
+---- >>>>>>>> Se pueden juntar en opUn ??????
 crearOpUpper :: UnOp -> Expr -> Expr
 crearOpUpper op e = OpUnario op e t
   where t = if typeE e == TChar then TChar else TError
-
 
 
 crearOpLower :: UnOp -> Expr -> Expr
@@ -159,6 +164,7 @@ crearOpLen op e =
     where
         t = typeE e
         tr = if isArray t || isList t then t else TError
+-------------------------------------------------------------------------------
 
 crearOpAnexo :: BinOp -> Expr -> Expr -> Expr
 crearOpAnexo op e1 e2 =
@@ -167,17 +173,6 @@ crearOpAnexo op e1 e2 =
     where
         t2 = typeE e2
         t = if isList t2 then t2 else TError 
-
--------------------------------------------------------------------------------
--- Crea el nodo para el operador shift de arreglos, caso especial
-crearOpShift :: UnOp -> Expr -> Expr
-crearOpShift op e =
-    let t = typeE e
-        tr = case t of 
-                (TArray _ _) -> t
-                _ -> TError
-    in OpUnario op e tr
--------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
@@ -202,7 +197,8 @@ crearListaExpr e =
 
 -- Crea el nodo para una instruccion If
 crearGuardiaIF :: Expr -> SecuenciaInstr -> Posicion -> Instr
-crearGuardiaIF exprCond seqInstrs (line,_)
+crearGuardiaIF exprCond seqInstrs (line,_) = ButtonIF [(exprCond, seqInstrs)]
+{-crearGuardiaIF exprCond seqInstrs (line,_)
     | tExpreCondicional == TBool = ButtonIF [(exprCond, seqInstrs)]
     | otherwise = 
         error ("\n\nError semantico en la expresion del if: '" ++ showE exprCond
@@ -212,7 +208,7 @@ crearGuardiaIF exprCond seqInstrs (line,_)
     where
         tExpreCondicional = typeE exprCond
 
-
+-}
 -- Crea el nodo para una instruccion IfElse
 --crearIfOtherwise :: Expr -> SecuenciaInstr -> SecuenciaInstr -> Posicion -> Instr
 --crearIfOtherwise e i1 i2 (line,_)
@@ -224,6 +220,14 @@ crearGuardiaIF exprCond seqInstrs (line,_)
 
 --    where
 --        tE = typeE e
+
+
+
+crearIfSimple :: Expr -> Expr -> Expr -> Tipo ->  Posicion -> Expr
+crearIfSimple con v f t (linea, col) = IfSimple con v f t
+  {-| t con == TBool && t v == t f && t v /= TError = IfSimple con v f
+  | otherwise = error ("\n\nError semantico en el operador ternario '? :' en la linea: " ++ show linea ++ " tipo de verdad: " ++ (show $ t v) ++ " tipo de mentira: " ++ (show $ t f))
+  where t = typeE-}
 
 
 -------------------------------------------------------------------------------
@@ -268,7 +272,8 @@ crearFor var e1 e2 i st scope pos@(line,_)
 
 crearForWhile :: Nombre -> Expr -> Expr -> Expr -> SecuenciaInstr -> SymTab -> Alcance -> Posicion 
             -> MonadSymTab Instr
-crearForWhile var e1 e2 e3 i st scope pos@(line,_)
+crearForWhile var e1 e2 e3 i st scope pos@(line,_) = return $ ForWhile var e1 e2 e3 i st
+{-crearForWhile var e1 e2 e3 i st scope pos@(line,_)
     | tE1 == TInt && tE2 == TInt && tE3 == TBool =
         do
             let newI = map (changeTDummyFor TInt st scope) i
@@ -305,12 +310,12 @@ crearForWhile var e1 e2 e3 i st scope pos@(line,_)
         tE2 = typeE e2
         tE3 = typeE e3
 
-
+-}
 -------------------------------------------------------------------------------
 -- Crea el nodo para una instruccion ForEach
-crearForEachDetermined :: Nombre -> Expr -> SecuenciaInstr -> SymTab -> Alcance
+crearForEach :: Nombre -> Expr -> SecuenciaInstr -> SymTab -> Alcance
                         -> Posicion -> MonadSymTab Instr
-crearForEachDetermined var e1 i st scope pos@(line,_) =
+crearForEach var e1 i st scope pos@(line,_) =
     return $ ForEach var e1 i st 
     
 
@@ -318,14 +323,15 @@ crearForEachDetermined var e1 i st scope pos@(line,_) =
 -- Crea el nodo para una instruccion While
 -- crearWhile' = observe "Que pasa con while " crearWhile
 crearWhile :: Expr -> SecuenciaInstr -> Posicion -> Instr
-crearWhile e i (line,_)
-    | tE == TBool = While e i
+crearWhile e i (line,_) = While e i
+{-    | tE == TBool = While e i
     | otherwise = 
         error ("\n\nError semantico en la expresion del 'while': '" ++
                 showE e ++ "', de tipo: " ++ showType tE ++
                 ". En la linea: " ++ show line ++ "\n")
     where
         tE = typeE e
+        -}
 -------------------------------------------------------------------------------
 
 
@@ -356,7 +362,7 @@ crearFuncion name params returnT i st scope pos@(line,_) =
 
 -------------------------------------------------------------------------------
 -- Crea el nodo para la instruccion que llama a la subrutina
-llamarSubrutina :: Nombre -> Parametros -> Expr
+llamarSubrutina :: Nombre -> Parametros->Tipo -> Expr
 llamarSubrutina = SubrutinaCall
 -------------------------------------------------------------------------------
 
@@ -408,9 +414,3 @@ crearPrint e (line,_)
 crearRead :: Posicion -> Expr -> Expr
 crearRead _ = Read
 -------------------------------------------------------------------------------
-
-crearIfSimple :: Expr -> Expr -> Expr -> Posicion -> Expr
-crearIfSimple con v f (linea, col) = IfSimple con v f
-  {-| t con == TBool && t v == t f && t v /= TError = IfSimple con v f
-  | otherwise = error ("\n\nError semantico en el operador ternario '? :' en la linea: " ++ show linea ++ " tipo de verdad: " ++ (show $ t v) ++ " tipo de mentira: " ++ (show $ t f))
-  where t = typeE-}

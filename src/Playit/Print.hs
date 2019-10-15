@@ -36,6 +36,28 @@ printAST n instr =
             putStrLn (t ++ "Bloque:") >> printSymTab symTab t
             printSeq (n + 1) seq
         -----------------------------------------------------------------------
+        -- liberar memoria
+        (Free nombre) ->
+            putStrLn (t ++ "Liberar memoria de: " ++ nombre)
+        -----------------------------------------------------------------------
+        -- salir bucle
+        Break ->
+            putStrLn (t ++ "Salir de bucle break")
+        -----------------------------------------------------------------------
+        -- salir bucle
+        Continue ->
+            putStrLn (t ++ "Saltar resto de bucle continue")
+        -----------------------------------------------------------------------
+        -- Registro
+        (Registro nombre seq _) -> do
+            putStrLn (t ++ "Declaracion Registro " ++ nombre ++ " :")
+            printSeq (n + 1) seq
+        -----------------------------------------------------------------------
+        -- Uniones
+        (Union nombre seq _) -> do
+            putStrLn (t ++ "Declaracion Union " ++ nombre ++ " :")
+            printSeq (n + 1) seq
+        -----------------------------------------------------------------------
         -- Iteracion definida
         (For iter desd hast seq symTab) -> do
             putStrLn $ t ++ "Ciclo Definido:"
@@ -43,6 +65,16 @@ printAST n instr =
             putStrLn (t ++ "  Variable de Iteracion: ") >> printId (n + 2) iter
             putStrLn (t ++ "  Desde:") >> printExpr (n + 2) desd
             putStrLn (t ++ "  Hasta:") >> printExpr (n + 2) hast
+            putStrLn (t ++ "  Ciclo:") >> printSeq (n + 2) seq
+        -----------------------------------------------------------------------
+        -- Iteracion definida
+        (ForWhile iter desd hast cond seq symTab) -> do
+            putStrLn $ t ++ "Ciclo Definido con condicion:"
+            printSymTab symTab t
+            putStrLn (t ++ "  Variable de Iteracion: ") >> printId (n + 2) iter
+            putStrLn (t ++ "  Desde:") >> printExpr (n + 2) desd
+            putStrLn (t ++ "  Hasta:") >> printExpr (n + 2) hast
+            putStrLn (t ++ "  Condicion:") >> printExpr (n + 2) cond
             putStrLn (t ++ "  Ciclo:") >> printSeq (n + 2) seq
         -----------------------------------------------------------------------
         -- Iteracion definida con saltos
@@ -69,8 +101,11 @@ printAST n instr =
         -----------------------------------------------------------------------
         -- Leer valor
         (SecDeclaraciones seq symTab) ->
-            --printSymTab symTab t
-            putStrLn (t ++ "  Declaraciones:") >> printSeq (n + 2) seq
+            --printSymTab symTab t >>
+            if not $ isEmptySequence seq then
+                putStrLn (t ++ "  Declaraciones:") >> printSeq (n + 2) seq
+            else
+                return ()
         -----------------------------------------------------------------------
         -- Retornar de una función.
         (Return exp) -> putStrLn (t ++ "Retorno:") >> printExpr (n + 1) exp
@@ -103,6 +138,9 @@ printSeq n seq =
     putStrLn (t ++ "Secuencia: ") >> mapM_ (printAST $ n + 1) seq
     
     where t = replicate (2 * n) ' '
+
+isEmptySequence :: [Instr] -> Bool
+isEmptySequence s = s == []
 -------------------------------------------------------------------------------
 
 
@@ -121,10 +159,7 @@ printSeqButtonGuardias n bloques =
     putStrLn (t ++ "Guardias IF: ") >> mapM_ (printButtonGuardia (n + 1)) bloques
     
     where t = replicate (2 * n) ' '
-
-
 ------------------------------------------------------------------------------
-
 
 ------------------------------------------------------------------------------
 -- Subrutina para imprimir variables simples y arreglos
@@ -140,6 +175,15 @@ printVar n vars =
             putStrLn $ t ++ "  Indice: " ++ showE exp
         -----------------------------------------------------------------------
         (Param name typ r) -> putStrLn $ t ++ "Variable: " ++ name ++ " de tipo: " ++ showType typ ++ " pasado por: " ++ show r
+        -----------------------------------------------------------------------
+        (PuffValue vars typ) -> do
+            putStrLn (t ++ "Variable a deferenciar:") >> printVar (n + 1) vars
+            putStrLn $ t ++ "Tipo: " ++ showType typ
+        -----------------------------------------------------------------------
+        (VarCompIndex vars nombre typ) -> do
+            putStrLn (t ++ "Variable contenedora:") >> printVar (n + 1) vars
+            putStrLn (t ++ "Variable a acceder:" ++ nombre) 
+            putStrLn $ t ++ "Tipo: " ++ showType typ
     
     where t = replicate (2 * n) ' '
 -------------------------------------------------------------------------------
@@ -181,13 +225,20 @@ printExpr n e =
         (ListaExpr exps _) ->
             putStrLn (t ++ "Arreglo:") >> mapM_ (printExpr $ n + 1) exps
         -----------------------------------------------------------------------
-        -----------------------------------------------------------------------
         -- Leer valor
         (Read expre) -> putStrLn (t ++ "Lectura con prompt:") >> printExpr (n + 1) expre
         -----------------------------------------------------------------------
         -- Invocación subrutina
-        (SubrutinaCall nom exps) -> putStrLn (t ++ "Subrutina: " ++ show nom ++ " de parametros: ") >> p exps
-    
+        (SubrutinaCall nom exps _) -> putStrLn (t ++ "Subrutina: " ++ show nom ++ " de parametros: ") >> p exps
+        -----------------------------------------------------------------------
+        -- Condicion ? valor1 : valor2
+        -- IfSimple Expr Expr Expr    
+        (IfSimple e1 e2 e3 _) -> do
+            putStrLn (t ++ "CondicionalTernario:")
+            putStrLn (t ++ "Condicion: ") >> printExpr (n + 1) e1
+            putStrLn (t ++ "Valor caso True: ") >> printExpr (n + 1) e2
+            putStrLn (t ++ "Valor caso False: ") >> printExpr (n + 1) e3
+        ExprVacia -> putStrLn (t ++ "Exprecion vacia")
     where
         t = replicate (2 * n) ' '
         p = printExprs n

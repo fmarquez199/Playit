@@ -12,7 +12,6 @@ Token identificador "i" en la fila: 3, columna: 9
 Token , en la fila: 3, columna: 10
 Token identificador "numero" en la fila: 3, columna: 12
 Token End Instruction \n en la fila: 3, columna: 18
-Token End Instruction \n en la fila: 4, columna: 3
 Token play en la fila: 5, columna: 3
 Token : en la fila: 5, columna: 7
 Token End Instruction \n en la fila: 5, columna: 8
@@ -21,7 +20,6 @@ Token = en la fila: 6, columna: 12
 Token joystick en la fila: 6, columna: 14
 Token string ~Introduzca un numero entero: ~ en la fila: 6, columna: 23
 Token End Instruction \n en la fila: 6, columna: 54
-Token End Instruction \n en la fila: 7, columna: 3
 Token drop en la fila: 8, columna: 5
 Token string ~La tabla de multiplicar del ~ en la fila: 8, columna: 10
 Token , en la fila: 8, columna: 40
@@ -29,12 +27,10 @@ Token identificador "numero" en la fila: 8, columna: 41
 Token , en la fila: 8, columna: 47
 Token string ~ es:~ en la fila: 8, columna: 48
 Token End Instruction \n en la fila: 8, columna: 54
-Token End Instruction \n en la fila: 9, columna: 3
-Token End Instruction \n en la fila: 10, columna: 29
 Token identificador "i" en la fila: 11, columna: 5
 Token = en la fila: 11, columna: 7
 Token entero 1 en la fila: 11, columna: 9
-Token End Instruction \n en la fila: 11, columna: 11
+Token End Instruction \n en la fila: 11, columna: 10
 Token play en la fila: 12, columna: 5
 Token : en la fila: 12, columna: 9
 Token End Instruction \n en la fila: 12, columna: 10
@@ -61,8 +57,7 @@ Token entero 10 en la fila: 15, columna: 15
 Token End Instruction \n en la fila: 15, columna: 17
 Token .~ en la fila: 16, columna: 5
 Token End Instruction \n en la fila: 16, columna: 7
-Token End Instruction \n en la fila: 17, columna: 26
-Token End Instruction \n en la fila: 18, columna: 3
+Token End Instruction \n en la fila: 18, columna: 1
 Token identificador "seguir" en la fila: 19, columna: 5
 Token = en la fila: 19, columna: 12
 Token kill en la fila: 19, columna: 14

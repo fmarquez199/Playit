@@ -74,12 +74,16 @@ eqTypesAsigs asigs t = all (\(Asignacion _ expr) -> typeE expr == t) asigs
 --------------------------------------------------------------------------------
 -- Obtiene el tipo asociado a la expresion 
 typeE :: Expr -> Tipo
-typeE (Variables _ t)            = t
-typeE (Literal _ t)              = t
-typeE (OpBinario _ _ _ t) = t
---typeE (OpBinario _ _ t)    = t
-typeE (ListaExpr _ t)            = t
-typeE (Read _)            = TStr
+typeE (Variables _ t)           = t
+typeE (Literal _ t)             = t
+typeE (OpBinario _ _ _ t)       = t
+typeE (OpUnario _ _ t)          = t
+typeE (ListaExpr _ t)           = t
+typeE (Read _)                  = TStr
+typeE (IfSimple _ _ _ t)        = t
+typeE (SubrutinaCall _  _ t)    = t
+
+
 --------------------------------------------------------------------------------
 
 isArray (TArray _ _) = True
@@ -100,6 +104,9 @@ typeArray (TArray _ t) = t
 typeVar :: Vars -> Tipo
 typeVar (Var _ t)          = t
 typeVar (VarIndex _ _ t)   = t
+typeVar (Param _ t _)   = t
+typeVar (VarCompIndex _ _ t)   = t
+typeVar (PuffValue _ t)   = t
 --------------------------------------------------------------------------------
 
 
