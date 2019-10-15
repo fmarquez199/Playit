@@ -1,10 +1,10 @@
 world %Caso9%:
-  monster fibonnaci(Power primero, Power segundo, Power limite):
+  boss fibonnaci(Power primero, Power segundo, Power limite):
     drop primero
     drop segundo
     Power n = primero
     Power i = 1
-    play
+    play:
       drop primero + segundo
       primero = segundo
       segundo = n + segundo

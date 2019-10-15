@@ -1,5 +1,5 @@
 @ Esto no debería afectar nada.
 world %Caso5%:
-  Runes esto = ~\* Esto deberia funcionar \*~
+  Runes esto = "' Esto deberia funcionar '"
   drop ~Este programa tiene que compilar, suerte!~
 .~
