@@ -1,6 +1,6 @@
 world %Factorial%:
   monster factorial(Power n) Power:
-  Power n
+  @Power n
   Kit of Power puff a = 2
   "'Hola soy un comentario, ignorame'"
     Button:
