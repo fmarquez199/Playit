@@ -255,8 +255,8 @@ Tipo :: { Tipo }
     { TDummy } -- No se sabe si es un Registro o Union
   | Tipo pointer
     { TApuntador $1 }
---  | "(" Tipo ")"
---    { $2 }
+  | "(" Tipo ")"
+    { $2 }
 
 
 --------------------------------------------------------------------------------
@@ -274,11 +274,13 @@ Instrucciones :: { SecuenciaInstr }
 Instruccion :: { Instr }
   : Declaracion
     { $1 }
+  -- Poner en el nivel global
   | DefinirSubrutina
     { $1 }
   | DefinirRegistro
     { $1 }
   | DefinirUnion
+  -- No debe estar aqui
     { $1 }
   | Controller
     { $1 }

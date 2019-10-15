@@ -8,8 +8,7 @@
 -}
 module Playit.Types where
 
-import Control.Monad.State
---import Control.Monad.Trans.RWS
+import Control.Monad.Trans.RWS
 import Control.Monad.IO.Class
 import qualified Data.Map as M
 import Data.List (intercalate)
@@ -28,20 +27,12 @@ type Nombre = String
 -- Identificador del nombre de un programa
 type Programa = String
 
--- Alcance de la tabla de simbolos actual y de una variable
-type Alcance = Integer
-
 -- Posicion donde se encuentra la instruccion
 type Posicion = (Int, Int)
 
 type Parametros = [Expr]
 
 type SecuenciaInstr = [Instr]
-
-
--- Informacion del identificador de variable
-data IdInfo = IdInfo {getType :: Tipo, getVal :: Literal, getScope :: Alcance}
-                deriving (Eq, Show, Ord)
 
 
 -- Tipo de dato que pueden ser las expresiones
@@ -54,9 +45,9 @@ data Tipo   = TInt | TFloat | TBool | TChar | TStr | TArray Expr Tipo
             deriving(Eq, Show, Ord)
 
 
-data Vars   = VarIndex Vars Expr Tipo       --- Indice para array , listas
+data Vars   = Var Nombre Tipo
+            | VarIndex Vars Expr Tipo       --- Indice para array , listas
             | VarCompIndex Vars Nombre Tipo --- Variable de acceso a registros, uniones
-            | Var Nombre Tipo
             | Param Nombre Tipo Ref
             | PuffValue Vars Tipo           -- Variable deferenciada con puff
             deriving (Eq, Show, Ord)
@@ -103,9 +94,7 @@ data Literal    = Entero Int
                 | Caracter Char
                 | Str String
                 | Booleano Bool
-                -- >>>> Se pueden juntar??????
-                | Arreglo [Literal]
-                | Lista [Literal]
+                | ArrLst [Literal]      -- >> Arreglos y listas
                 | ValorVacio
                 deriving (Eq, Show, Ord)
 
@@ -151,20 +140,33 @@ data UnOp   = Negativo
 --------------------------------------------------------------------------------
 
 
--- Nuevo tipo de dato para representar la tabla de simbolos
--- Primer elemento del par: Tabla donde se guardaran las declaraciones de las
---      variables con su tipo
--- 
--- Segundo elemento del par: Tabla padre del alcance externo justo anterior
--- 
-newtype SymTab  = SymTab { getSymTab :: (M.Map Nombre IdInfo, Maybe SymTab) }
+-- Alcance de un identificador
+type Alcance = Integer
+
+-- Pila de alcances
+type StackScopes = [Alcance]
+
+-- Informacion pertinente a la entrada de la tabla de simbolos
+data SymbolInfo = SymbolInfo {
+    getVal :: Literal,
+    getType :: Tipo,
+    getScope :: Alcance
+    }
+    deriving (Eq, Show, Ord)
+
+
+{- Nuevo tipo de dato para representar la tabla de simbolos
+* Tabla de hash:
+*   Key: Nombre
+*   Value: Lista de la informacion pertinente
+-}
+newtype SymTab  = SymTab { getSymTab :: M.Map Nombre [SymbolInfo] }
                 deriving (Eq, Show)
 
 
--- Transformador monadico para crear y manejar la tabla de simbolos en el 
--- alcance actual
-type MonadSymTab a = StateT (SymTab, Alcance) IO a
-
+-- Transformador monadico para crear y manejar la tabla de simbolos junto con 
+-- la pila de alcances
+type MonadSymTab a = RWST (SymTab, StackScopes) IO a
 
 
 --------------------------------------------------------------------------------
