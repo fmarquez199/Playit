@@ -240,9 +240,9 @@ changeTDummyFor t symTab scope (Asignacion lval e)
             newE = changeTDummyExpr t e
         in Asignacion newLval newE
 --------------------------------------------------------------------------
-changeTDummyFor t symTab scope (BloqueInstr seqI st) =
+changeTDummyFor t symTab scope (Programa seqI st) =
     let newSeqI = map (changeTDummyFor t symTab scope) seqI
-    in BloqueInstr newSeqI st
+    in Programa newSeqI st
 --------------------------------------------------------------------------
 changeTDummyFor t symTab scope (For name e1 e2 seqI st) =
     let newE1 = changeTDummyExpr t e1

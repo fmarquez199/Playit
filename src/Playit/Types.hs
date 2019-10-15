@@ -35,6 +35,13 @@ type Parametros = [Expr]
 type SecuenciaInstr = [Instr]
 
 
+data Categoria  = Variables
+                | Parametros
+                | Constructores
+                | ConstructoresTipos
+                | Tipos
+                | Apunatdores
+
 -- Tipo de dato que pueden ser las expresiones
 data Tipo   = TInt | TFloat | TBool | TChar | TStr | TArray Expr Tipo
             | TLista Tipo | TRegistro | TUnion | TApuntador Tipo
@@ -56,25 +63,32 @@ data Ref    = Valor | Referencia
             deriving(Eq, Show, Ord)
 
 data Instr  = Asignacion Vars Expr
-            | BloqueInstr SecuenciaInstr SymTab
-            | Registro Nombre SecuenciaInstr Tipo
-            | Union Nombre SecuenciaInstr Tipo
+            | Programa Cosas
+            | SecDeclaraciones SecuenciaInstr
             -- For (Nombre) = (Expr) <- (Expr) : (Instrucciones) (scope) 
-            | For Nombre Expr Expr SecuenciaInstr SymTab
+            | For Nombre Expr Expr SecuenciaInstr
             -- For (Nombre) = (Expr)  <- (Expr) while (Expr) : (Instrucciones) (scope) 
-            | ForWhile Nombre Expr Expr Expr SecuenciaInstr SymTab
-            | ForEach Nombre Expr SecuenciaInstr SymTab
-            | SecDeclaraciones SecuenciaInstr SymTab
+            | ForWhile Nombre Expr Expr Expr SecuenciaInstr
+            | ForEach Nombre Expr SecuenciaInstr
             | While Expr SecuenciaInstr
             | ButtonIF [(Expr, SecuenciaInstr)]  -- [(cond,instruc)]
-            | Proc Nombre Parametros SecuenciaInstr SymTab
-            | Func Nombre Parametros Tipo SecuenciaInstr SymTab
             | Free Nombre
             | Break
             | Continue
             | Return Expr
             | Print Expr
             deriving (Eq, Show)
+
+
+-- Lo que se puede escribir dentro de un programa
+data Cosas = SecuenciaInstr | Definiciones
+
+
+-- Definiciones de las subrutinas, registros y uniones
+data Definiciones   = Proc Nombre Parametros SecuenciaInstr
+                    | Func Nombre Parametros Tipo SecuenciaInstr
+                    | Registro Nombre SecuenciaInstr Tipo
+                    | Union Nombre SecuenciaInstr Tipo
 
 
 data Expr   = OpBinario BinOp Expr Expr Tipo
@@ -149,7 +163,8 @@ type StackScopes = [Alcance]
 -- Informacion pertinente a la entrada de la tabla de simbolos
 data SymbolInfo = SymbolInfo {
     getType :: Tipo,
-    getScope :: Alcance
+    getScope :: Alcance,
+    getCategory :: Categoria
     }
     deriving (Eq, Show, Ord)
 
@@ -165,7 +180,7 @@ newtype SymTab  = SymTab { getSymTab :: M.Map Nombre [SymbolInfo] }
 
 -- Transformador monadico para crear y manejar la tabla de simbolos junto con 
 -- la pila de alcances
-type MonadSymTab a = RWST (SymTab, StackScopes) IO a
+type MonadSymTab a = RWST Read WriteLog (SymTab, StackScopes) IO a
 
 
 --------------------------------------------------------------------------------

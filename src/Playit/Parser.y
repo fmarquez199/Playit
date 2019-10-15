@@ -154,20 +154,29 @@ import Playit.AST
 -------------------------------------------------------------------------------
 
 ProgramaWrapper :: { Instr }
-  : EndLines Programa EndLines
-    { $2 }
-  | EndLines Programa
-    { $2 }
-  | Programa EndLines
-    { $1 }
-  | Programa
-    { $1 }
+  : EndLines Programa EndLines  { $2 }
+  | EndLines Programa           { $2 }
+  | Programa EndLines           { $1 }
+  | Programa                    { $1 }
 
-Programa
-  : world programa ":" EndLines Instrucciones EndLines ".~"
+  
+Programa :: {Instr}
+  : world programa ":" EndLines Cosas EndLines ".~"
     { % do
         (symTab, _) <- get
-        return $ BloqueInstr (reverse $5) symTab }
+        return $ Programa $5 symTab }
+
+
+Cosas :: {Cosas}
+  : Instrucciones   { reverse $1 }
+  | Definiciones    { $1 }
+
+
+Definiciones :: {Definiciones}
+  : DefinirSubrutina  { $1 }
+  | DefinirRegistro   { $1 }
+  | DefinirUnion      { $1 }
+
 
 EndLines
   : endLine
@@ -182,18 +191,16 @@ EndLines
 -------------------------------------------------------------------------------
 
 Declaraciones :: { SecuenciaInstr }
-  : Declaracion 
-    { [$1] }
-  | Declaraciones EndLines Declaracion
-    { $3 : $1 }
+  : Declaracion                         { [$1] }
+  | Declaraciones EndLines Declaracion  { $3 : $1 }
 
 Declaracion :: { Instr }
   : Tipo Identificadores
-    { % let (ids, asigs, vals) = $2 
+    { % let (ids, asigs) = $2 
         in do
-            (actualSymTab, scope) <- get
-            addToSymTab ids $1 vals actualSymTab scope
-            return $ SecDeclaraciones asigs actualSymTab }
+            (actualSymTab, scopes) <- get
+            addToSymTab ids $1 actualSymTab scopes
+            return $ SecDeclaraciones asigs }
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
@@ -201,18 +208,17 @@ Declaracion :: { Instr }
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 
-Identificadores :: { ([Nombre], SecuenciaInstr, [Literal]) }
+Identificadores :: { ([Nombre], SecuenciaInstr) }
   : Identificador
-    { let (id, asigs, e) = $1 in ([id], asigs, [e]) }
+    { let (id, asigs) = $1
+      in ([id], asigs) }
   | Identificadores "," Identificador
-    { let ((ids, asigs, exprs),(id, asig, e)) = ($1, $3) 
-                  in (ids ++ [id], asigs ++ asig, exprs ++ [e]) }
+    { let ((ids, asigs), (id, asig)) = ($1, $3) 
+      in (ids ++ [id], asigs ++ [asig]) }
 
-Identificador :: { (Nombre, SecuenciaInstr, Literal) }
-  : nombre "=" Expresion
-    { ($1, [Asignacion (Var $1 TDummy) $3], ValorVacio) }
-  | nombre
-    { ($1, [], ValorVacio) }
+Identificador :: { (Nombre, SecuenciaInstr) }
+  : nombre "=" Expresion  { ($1, [Asignacion (Var $1 TDummy) $3]) }
+  | nombre                { ($1, []) }
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
@@ -228,35 +234,25 @@ Lvalue :: { Vars }
   | Lvalue "|)" Expresion "(|" -- Token indexacion arreglo
     { crearVarIndex $1 $3 }
   | Lvalue "|>" Expresion "<|" -- Token indexacion lista
-    {crearVarIndex $1 $3 }
+    { crearVarIndex $1 $3 }
   | pointer Lvalue
-    {PuffValue $2 TDummy }
+    { PuffValue $2 TDummy }
   | nombre
     { % crearIdvar $1 }
 
 
 -- Tipos de datos
 Tipo :: { Tipo }
-  : Tipo "|}" Expresion "{|" %prec "|}"
-    { TArray $3 $1 }
-  | list of Tipo
-    { TLista $3 }
-  | int
-    { TInt }
-  | float
-    { TFloat }
-  | bool
-    { TBool }
-  | char
-    { TChar }
-  | str
-    { TStr }
-  | idtipo
-    { TDummy } -- No se sabe si es un Registro o Union
-  | Tipo pointer
-    { TApuntador $1 }
-  | "(" Tipo ")"
-    { $2 }
+  : Tipo "|}" Expresion "{|" %prec "|}"   { TArray $3 $1 }
+  | list of Tipo                          { TLista $3 }
+  | int                                   { TInt }
+  | float                                 { TFloat }
+  | bool                                  { TBool }
+  | char                                  { TChar }
+  | str                                   { TStr }
+  | idtipo                                { TDummy } -- No se sabe si es un Registro o Union
+  | Tipo pointer                          { TApuntador $1 }
+  | "(" Tipo ")"                          { $2 }
 
 
 --------------------------------------------------------------------------------
@@ -266,21 +262,11 @@ Tipo :: { Tipo }
 --------------------------------------------------------------------------------
 
 Instrucciones :: { SecuenciaInstr }
-  : Instrucciones EndLines Instruccion
-    { $3 : $1 }
-  | Instruccion
-    { [$1] }
+  : Instrucciones EndLines Instruccion  { $3 : $1 }
+  | Instruccion                         { [$1] }
 
 Instruccion :: { Instr }
   : Declaracion
-    { $1 }
-  -- Poner en el nivel global
-  | DefinirSubrutina
-    { $1 }
-  | DefinirRegistro
-    { $1 }
-  | DefinirUnion
-  -- No debe estar aqui
     { $1 }
   | Controller
     { $1 }

@@ -8,6 +8,7 @@ Modulo para la creacion y manejo de la tabla de simbolos
 -}
 module Playit.SymbolTable where
 
+import Control.Monad (void)
 import Control.Monad.Trans.State
 import Control.Monad.IO.Class
 import qualified Data.Map as M
@@ -33,9 +34,10 @@ createInitSymTab = addToSymTab ["Power"] TInt
 createInitSymTab = addToSymTab ["Skill"] TFloat
 createInitSymTab = addToSymTab ["Rune"] TChar
 createInitSymTab = addToSymTab ["Runes"] TStr
-createInitSymTab = addToSymTab ["Battle"] TBool
+createInitSymTab = addToSymTab ["Battle","Win","Lose"] TBool
 createInitSymTab = addToSymTab ["Inventory"] TRegistro
 createInitSymTab = addToSymTab ["Items"] TUnion
+createInitSymTab = addToSymTab ["free","puff"] TApuntador
 --------------------------------------------------------------------------------
 
 
@@ -64,7 +66,7 @@ closeScope = do
 --  Tipo, alcance
 addToSymTab :: [Nombre] -> Tipo -> SymTab -> StackScopes -> MonadSymTab ()
 addToSymTab ids t actualSymTab scopes@(scope:_) = 
-    put (insertSymbols ids t actualSymTab scope, scopes) >> return ()
+    void $ put (insertSymbols ids t actualSymTab scope, scopes)
 --------------------------------------------------------------------------------
 
 
