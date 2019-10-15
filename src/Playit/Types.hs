@@ -148,7 +148,6 @@ type StackScopes = [Alcance]
 
 -- Informacion pertinente a la entrada de la tabla de simbolos
 data SymbolInfo = SymbolInfo {
-    getVal :: Literal,
     getType :: Tipo,
     getScope :: Alcance
     }

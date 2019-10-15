@@ -13,7 +13,7 @@ import Control.Monad.IO.Class
 import Control.Monad.Trans.State
 import qualified Data.Map as M
 import Data.List(intercalate)
-import Data.Maybe (fromJust, isJust)
+import Data.Maybe (fromJust, isJust, isNothing)
 import Playit.SymbolTable
 import Playit.CheckAST
 import Playit.Types
