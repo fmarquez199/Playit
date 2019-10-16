@@ -46,7 +46,7 @@ import Playit.AST
   break             { TkGameOver _ _ }
   input             { TkJOYSTICK _ _ }
   continue          { TkKeepPlaying _ _ }
-  funcCall          { TkKILL _ _ }
+  call          { TkKILL _ _ }
   while             { TkLOCK _ _ }
   function          { TkMONSTER _ _ }
   do                { TkPLAY _ _ }
@@ -130,8 +130,8 @@ import Playit.AST
 -------------------------------------------------------------------------------
 
 
-%nonassoc nombre of 
-%left "=" ":" "<-" end
+%nonassoc nombre of
+%left "=" ":" "<-"
 %right "."
 %left "||"
 %left "&&"
@@ -143,7 +143,7 @@ import Playit.AST
 %left "++" "|}" "{|" "<<" ">>" "::" "|)" "(|" "|>" "<|"
 %left "--"
 %right "#" pointer
-%left "?" 
+%left "?"
 
 %%
 
@@ -168,21 +168,21 @@ Programa :: {Instr}
 
 
 Cosas :: {Cosas}
-  : Instrucciones   { reverse $1 }
-  | Definiciones    { $1 }
+  : Cosas EndLines Instruccion { reverse $3 }
+  | Cosas EndLines Definicion  { $3 }
+  | Instruccion        { reverse $1 }
+  | Definicion         { $1 }
 
 
-Definiciones :: {Definiciones}
+Definicion :: {Definicion}
   : DefinirSubrutina  { $1 }
   | DefinirRegistro   { $1 }
   | DefinirUnion      { $1 }
 
 
 EndLines
-  : endLine %prec end
-    {}
-  | EndLines endLine
-    {}
+  : EndLines endLine  {}
+  | endLine           {}
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
@@ -229,16 +229,11 @@ Identificador :: { (Nombre, SecuenciaInstr) }
 
 -- Lvalues, contenedores que identifican a las variables
 Lvalue :: { Vars }
-  : Lvalue "." nombre
-    {VarCompIndex $1 $3 TDummy}
-  | Lvalue "|)" Expresion "(|" -- Token indexacion arreglo
-    { crearVarIndex $1 $3 }
-  | Lvalue "|>" Expresion "<|" -- Token indexacion lista
-    { crearVarIndex $1 $3 }
-  | pointer Lvalue
-    { PuffValue $2 TDummy }
-  | nombre
-    { % crearIdvar $1 }
+  : Lvalue "." nombre           { VarCompIndex $1 $3 TDummy }
+  | Lvalue "|)" Expresion "(|"  { crearVarIndex $1 $3 }       -- Indexacion arreglo
+  | Lvalue "|>" Expresion "<|"  { crearVarIndex $1 $3 }       -- Indexacion lista
+  | pointer Lvalue              { PuffValue $2 }
+  | nombre                      { % crearIdvar $1 }
 
 
 -- Tipos de datos
@@ -463,18 +458,14 @@ Parametro :: { Expr }
 -------------------------------------------------------------------------------
 -- Llamada a subrutinas
 ProcCall :: { Instr }
-  : SubrutinaCall   { ProcCall $1 }
+  : SubrutinaCall     { ProcCall $1 }
+
 FuncCall :: { Expr }
-  : SubrutinaCall   { FuncCall $1 }
+  : SubrutinaCall     { FuncCall $1 TDummy }
 
 SubrutinaCall :: { Subrutina }
-  : funcCall nombre "(" PasarParametros ")" 
-  { SubrutinaCall $2 (reverse $4) TDummy }
-  | funcCall nombre "(" ")"
-  { SubrutinaCall $2 [] TDummy}
-  -- | funcCall nombre
-  -- { SubrutinaCall $2 [] TDummy}
-
+  : call nombre "(" PasarParametros ")"   { SubrutinaCall $2 (reverse $4) }
+  | call nombre "(" ")"                   { SubrutinaCall $2 [] }
 -------------------------------------------------------------------------------
 
 

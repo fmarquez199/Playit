@@ -95,8 +95,10 @@ isList _ = False
 
 -------------------------------------------------------------------------------
 -- Determina el tipo base de los elementos del arreglo
-typeArray (TArray _ t@(TArray _ _)) = typeArray t
-typeArray (TArray _ t) = t
+typeArrLst (TArray _ t@(TArray _ _)) = typeArrLst tl
+typeArrLst (TArray _ t) = t
+typeArrLst (TLista t@(TLista _)) = typeArrLst tl
+typeArrLst (TLista t) = t
 -------------------------------------------------------------------------------
 
 --------------------------------------------------------------------------------

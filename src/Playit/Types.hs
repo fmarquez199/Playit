@@ -35,12 +35,16 @@ type Parametros = [Expr]
 type SecuenciaInstr = [Instr]
 
 
-data Categoria  = Variables
+data Categoria  = Variable
                 | Parametros
                 | Constructores
                 | ConstructoresTipos
                 | Tipos
                 | Apunatdores
+                | Procedimientos
+                | Funciones
+                deriving (Eq, Show, Ord)
+
 
 -- Tipo de dato que pueden ser las expresiones
 data Tipo   = TInt | TFloat | TBool | TChar | TStr | TArray Expr Tipo
@@ -53,14 +57,17 @@ data Tipo   = TInt | TFloat | TBool | TChar | TStr | TArray Expr Tipo
 
 
 data Vars   = Var Nombre Tipo
-            | VarIndex Vars Expr Tipo       --- Indice para array , listas
-            | VarCompIndex Vars Nombre Tipo --- Variable de acceso a registros, uniones
+            | VarIndex Vars Expr Tipo       -- Indice para array, listas
+            | VarCompIndex Vars Nombre Tipo -- Variable de acceso a registros, uniones
             | Param Nombre Tipo Ref
-            | PuffValue Vars Tipo           -- Variable deferenciada con puff
+            | PuffValue Vars                -- Variable deferenciada con puff
             deriving (Eq, Show, Ord)
 
+
+-- Especifica si un parametro es pasado como valor o por referencia
 data Ref    = Valor | Referencia
             deriving(Eq, Show, Ord)
+
 
 data Instr  = Asignacion Vars Expr
             | Programa Cosas
@@ -83,23 +90,28 @@ data Instr  = Asignacion Vars Expr
 
 -- Lo que se puede escribir dentro de un programa
 data Cosas = SecuenciaInstr | Definiciones
+            deriving (Eq, Show)
 
-data Subrutina = SubrutinaCall Nombre Parametros Tipo
+-- 
+data Subrutina = SubrutinaCall Nombre Parametros
+                deriving (Eq, Show, Ord)
+
 
 -- Definiciones de las subrutinas, registros y uniones
-data Definiciones   = Proc Nombre Parametros SecuenciaInstr
-                    | Func Nombre Parametros Tipo SecuenciaInstr
-                    | Registro Nombre SecuenciaInstr Tipo
-                    | Union Nombre SecuenciaInstr Tipo
+data Definicion = Proc Nombre Parametros SecuenciaInstr
+                | Func Nombre Parametros Tipo SecuenciaInstr
+                | Registro Nombre SecuenciaInstr Tipo
+                | Union Nombre SecuenciaInstr Tipo
+                deriving (Eq, Show)
 
 
 data Expr   = OpBinario BinOp Expr Expr Tipo
             | OpUnario UnOp Expr Tipo
             | IfSimple Expr Expr Expr Tipo
-            | FuncCall Subrutina
             | ListaExpr [Expr] Tipo
             | Variables Vars Tipo
             | Literal Literal Tipo
+            | FuncCall Subrutina Tipo
             | Read Expr
             | ExprVacia
             deriving (Eq, Show, Ord)
@@ -182,7 +194,7 @@ newtype SymTab  = SymTab { getSymTab :: M.Map Nombre [SymbolInfo] }
 
 -- Transformador monadico para crear y manejar la tabla de simbolos junto con 
 -- la pila de alcances
-type MonadSymTab a = RWST Read WriteLog (SymTab, StackScopes) IO a
+type MonadSymTab a = RWST () () (SymTab, StackScopes) IO a
 
 
 --------------------------------------------------------------------------------
@@ -230,10 +242,10 @@ showL ValorVacio      = "Valor vacio"
 showL (Entero val)    = show val
 showL (Caracter val)  = show val
 showL (Booleano val)  = show val
-showL (Arreglo lst@(Entero _:_)) = show $ map ((\x->read x::Int) . showL) lst
-showL (Arreglo lst@(Booleano _:_)) = show $ map ((\x->read x::Bool) . showL) lst
-showL (Arreglo lst@(Caracter _:_)) = show $ map ((\x->read x::Char) . showL) lst
-showL (Arreglo lst@(Arreglo _:_)) = show $ map showL lst
+showL (ArrLst lst@(Entero _:_)) = show $ map ((\x->read x::Int) . showL) lst
+showL (ArrLst lst@(Booleano _:_)) = show $ map ((\x->read x::Bool) . showL) lst
+showL (ArrLst lst@(Caracter _:_)) = show $ map ((\x->read x::Char) . showL) lst
+showL (ArrLst lst@(ArrLst _:_)) = show $ map showL lst
 
 -- Show para los tipos
 showType :: Tipo -> String

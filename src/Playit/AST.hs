@@ -27,7 +27,7 @@ import Playit.Types
 
 
 --------------------------------------------------------------------------------
--- Crea el nodo para identificadores de variables
+-- Crea el nodo para identificadores de variables y verifica que estén declarados
 crearIdvar :: Nombre -> MonadSymTab Vars
 crearIdvar name = return $ Var name TDummy
 {-crearIdvar name = do
@@ -46,7 +46,8 @@ crearIdvar name = return $ Var name TDummy
 crearVarIndex :: Vars -> Expr -> Vars
 crearVarIndex v e = 
     let t = case typeVar v of 
-                tipo@(TArray _ _) -> typeArray tipo
+                tipo@(TArray _ _) -> typeArrLst tipo
+                tipo@(TLista _) -> typeArrLst tipo
                 _ -> TError
     in VarIndex v e t
 --------------------------------------------------------------------------------
