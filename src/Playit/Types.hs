@@ -72,6 +72,7 @@ data Instr  = Asignacion Vars Expr
             | ForEach Nombre Expr SecuenciaInstr
             | While Expr SecuenciaInstr
             | ButtonIF [(Expr, SecuenciaInstr)]  -- [(cond,instruc)]
+            | ProcCall Subrutina
             | Free Nombre
             | Break
             | Continue
@@ -83,6 +84,7 @@ data Instr  = Asignacion Vars Expr
 -- Lo que se puede escribir dentro de un programa
 data Cosas = SecuenciaInstr | Definiciones
 
+data Subrutina = SubrutinaCall Nombre Parametros Tipo
 
 -- Definiciones de las subrutinas, registros y uniones
 data Definiciones   = Proc Nombre Parametros SecuenciaInstr
@@ -94,7 +96,7 @@ data Definiciones   = Proc Nombre Parametros SecuenciaInstr
 data Expr   = OpBinario BinOp Expr Expr Tipo
             | OpUnario UnOp Expr Tipo
             | IfSimple Expr Expr Expr Tipo
-            | SubrutinaCall Nombre Parametros Tipo
+            | FuncCall Subrutina
             | ListaExpr [Expr] Tipo
             | Variables Vars Tipo
             | Literal Literal Tipo

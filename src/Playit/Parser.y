@@ -131,7 +131,7 @@ import Playit.AST
 
 
 %nonassoc nombre of 
-%left "=" ":" "<-"
+%left "=" ":" "<-" end
 %right "."
 %left "||"
 %left "&&"
@@ -143,7 +143,7 @@ import Playit.AST
 %left "++" "|}" "{|" "<<" ">>" "::" "|)" "(|" "|>" "<|"
 %left "--"
 %right "#" pointer
-%left "?"
+%left "?" 
 
 %%
 
@@ -179,7 +179,7 @@ Definiciones :: {Definiciones}
 
 
 EndLines
-  : endLine
+  : endLine %prec end
     {}
   | EndLines endLine
     {}
@@ -266,26 +266,17 @@ Instrucciones :: { SecuenciaInstr }
   | Instruccion                         { [$1] }
 
 Instruccion :: { Instr }
-  : Declaracion
-    { $1 }
-  | Controller
-    { $1 }
-  | Play
-    { $1 }
-  | Button
-    { $1 }
-  | Asignacion
-    { $1 }
-  | EntradaSalida
-    { $1 }
-  | Free
-    { $1 }
-  | return Expresion
-    { Return $2 }
-  | break
-    { Break }
-  | continue
-    { Continue }
+  : Declaracion       { $1 }
+  | Asignacion        { $1 }
+  | Controller        { $1 }
+  | Play              { $1 }
+  | Button            { $1 }
+  | ProcCall          { $1 }
+  | EntradaSalida     { $1 }
+  | Free              { $1 }
+  | return Expresion  { Return $2 }
+  | break             { Break }
+  | continue          { Continue }
 
 
 --------------------------------------------------------------------------------
@@ -471,29 +462,31 @@ Parametro :: { Expr }
 
 -------------------------------------------------------------------------------
 -- Llamada a subrutinas
+ProcCall :: { Instr }
+  : SubrutinaCall   { ProcCall $1 }
 FuncCall :: { Expr }
+  : SubrutinaCall   { FuncCall $1 }
+
+SubrutinaCall :: { Subrutina }
   : funcCall nombre "(" PasarParametros ")" 
-  { llamarSubrutina $2 (reverse $4) TDummy }
+  { SubrutinaCall $2 (reverse $4) TDummy }
   | funcCall nombre "(" ")"
-  { llamarSubrutina $2 [] TDummy}
-  | funcCall nombre
-  { llamarSubrutina $2 [] TDummy}
+  { SubrutinaCall $2 [] TDummy}
+  -- | funcCall nombre
+  -- { SubrutinaCall $2 [] TDummy}
+
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
 -- Pasaje de los parametros a las subrutinas
 PasarParametros :: { Parametros }
-  : PasarParametros "," ParametroPasado
-    { $3 : $1 }
-  | ParametroPasado
-    { [$1] }
+  : PasarParametros "," ParametroPasado   { $3 : $1 }
+  | ParametroPasado                       { [$1] }
 
 ParametroPasado :: { Expr }
-  : Expresion
-    { $1 }
-  | "?" Expresion
-    { $2 }
+  : Expresion       { $1 }
+  | "?" Expresion   { $2 }
 -------------------------------------------------------------------------------
 
 
