@@ -441,8 +441,8 @@ evaluación. Son aquellas en las cuales están involucrados los operadores de:
 `[0..#<arreglo> - 1]` y devuelve el elemento contenido en la posición `i`.
 * **Indexación (`|><|`):** toma un lista y un entero `i` en el rango
 `[0..#<lista> - 1]` y devuelve el elemento contenido en la posición `i`.
-* **Concatenación (`::`):** toma dos listas y concatena la segunda a la cola del
-primero.
+* **Concatenación (`::`):** toma dos listas y concatena la segunda a la cola de
+la primera.
 * **Anexo (`:`):** toma un elemento cualquiera y lo agrega a la cabeza de la lista.
 
 ---

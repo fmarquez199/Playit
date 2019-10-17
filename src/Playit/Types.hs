@@ -8,8 +8,7 @@
 -}
 module Playit.Types where
 
-import Control.Monad.State
---import Control.Monad.Trans.RWS
+import Control.Monad.Trans.RWS
 import Control.Monad.IO.Class
 import qualified Data.Map as M
 import Data.List (intercalate)
@@ -28,9 +27,6 @@ type Nombre = String
 -- Identificador del nombre de un programa
 type Programa = String
 
--- Alcance de la tabla de simbolos actual y de una variable
-type Alcance = Integer
-
 -- Posicion donde se encuentra la instruccion
 type Posicion = (Int, Int)
 
@@ -39,14 +35,21 @@ type Parametros = [Expr]
 type SecuenciaInstr = [Instr]
 
 
--- Informacion del identificador de variable
-data IdInfo = IdInfo {getType :: Tipo, getVal :: Literal, getScope :: Alcance}
+-- Categorias a las que pertenecen los simbolos de la tabla de simbolos
+data Categoria  = Variable
+                | Parametros
+                | Constructores
+                | ConstructoresTipos
+                | Tipos
+                | Apuntadores
+                | Procedimientos
+                | Funciones
                 deriving (Eq, Show, Ord)
 
 
 -- Tipo de dato que pueden ser las expresiones
-data Tipo   = TInt | TFloat | TBool | TChar | TStr | TArray Expr Tipo
-            | TLista Tipo | TRegistro | TUnion | TApuntador Tipo
+data Tipo   = TInt | TFloat | TBool | TChar | TStr | TRegistro | TUnion
+            | TArray Expr Tipo | TLista Tipo | TApuntador Tipo
             | TError    -- Tipo error, no machean los tipos como deben
             | TDummy    -- Tipo temporal cuando todavia no se lee el tipo de la
                         -- variable en una asignacion en las declaraciones o no
@@ -54,47 +57,64 @@ data Tipo   = TInt | TFloat | TBool | TChar | TStr | TArray Expr Tipo
             deriving(Eq, Show, Ord)
 
 
-data Vars   = VarIndex Vars Expr Tipo       --- Indice para array , listas
-            | VarCompIndex Vars Nombre Tipo --- Variable de acceso a registros, uniones
-            | Var Nombre Tipo
+data Vars   = Var Nombre Tipo
+            | VarIndex Vars Expr Tipo       -- Indice para array, listas
+            | VarCompIndex Vars Nombre Tipo -- Campos de los registros y uniones
             | Param Nombre Tipo Ref
             | PuffValue Vars Tipo           -- Variable deferenciada con puff
             deriving (Eq, Show, Ord)
 
+
+-- Especifica si un parametro es pasado como valor o por referencia
 data Ref    = Valor | Referencia
             deriving(Eq, Show, Ord)
 
+
 data Instr  = Asignacion Vars Expr
-            | BloqueInstr SecuenciaInstr SymTab
-            | Registro Nombre SecuenciaInstr Tipo
-            | Union Nombre SecuenciaInstr Tipo
-            -- For (Nombre) = (Expr) <- (Expr) : (Instrucciones) (scope) 
-            | For Nombre Expr Expr SecuenciaInstr SymTab
-            -- For (Nombre) = (Expr)  <- (Expr) while (Expr) : (Instrucciones) (scope) 
-            | ForWhile Nombre Expr Expr Expr SecuenciaInstr SymTab
-            | ForEach Nombre Expr SecuenciaInstr SymTab
-            | SecDeclaraciones SecuenciaInstr SymTab
+            | Programa Cosas
+            | SecDeclaraciones SecuenciaInstr
+            -- For var = (Expr) -> (Expr) while (Expr) : (Instrucciones)
+            | ForWhile Nombre Expr Expr Expr SecuenciaInstr
+            -- For var = (Expr) -> (Expr) : (Instrucciones)
+            | For Nombre Expr Expr SecuenciaInstr
+            | ForEach Nombre Expr SecuenciaInstr
+            | IF [(Expr, SecuenciaInstr)]  -- [(cond,instruc)]
             | While Expr SecuenciaInstr
-            | ButtonIF [(Expr, SecuenciaInstr)]  -- [(cond,instruc)]
-            | Proc Nombre Parametros SecuenciaInstr SymTab
-            | Func Nombre Parametros Tipo SecuenciaInstr SymTab
+            | ProcCall Subrutina
             | Free Nombre
-            | Break
-            | Continue
             | Return Expr
             | Print Expr
+            | Break
+            | Continue
             deriving (Eq, Show)
+
+
+-- Lo que se puede escribir dentro de un programa
+data Cosas = SecInstr SecuenciaInstr | Definiciones Definicion
+            deriving (Eq, Show)
+
+-- 
+data Subrutina = SubrutinaCall Nombre Parametros
+                deriving (Eq, Show, Ord)
+
+
+-- Definiciones de las subrutinas, registros y uniones
+data Definicion = Proc Nombre Parametros SecuenciaInstr
+                | Func Nombre Parametros Tipo SecuenciaInstr
+                | Registro Nombre SecuenciaInstr Tipo
+                | Union Nombre SecuenciaInstr Tipo
+                deriving (Eq, Show)
 
 
 data Expr   = OpBinario BinOp Expr Expr Tipo
             | OpUnario UnOp Expr Tipo
             | IfSimple Expr Expr Expr Tipo
-            | SubrutinaCall Nombre Parametros Tipo
-            | ListaExpr [Expr] Tipo
+            | FuncCall Subrutina Tipo
+            | ArrLstExpr [Expr] Tipo
             | Variables Vars Tipo
             | Literal Literal Tipo
             | Read Expr
-            | ExprVacia
+            | Null
             deriving (Eq, Show, Ord)
 
 
@@ -103,9 +123,7 @@ data Literal    = Entero Int
                 | Caracter Char
                 | Str String
                 | Booleano Bool
-                -- >>>> Se pueden juntar??????
-                | Arreglo [Literal]
-                | Lista [Literal]
+                | ArrLst [Literal]      -- >> Arreglos y listas
                 | ValorVacio
                 deriving (Eq, Show, Ord)
 
@@ -151,20 +169,33 @@ data UnOp   = Negativo
 --------------------------------------------------------------------------------
 
 
--- Nuevo tipo de dato para representar la tabla de simbolos
--- Primer elemento del par: Tabla donde se guardaran las declaraciones de las
---      variables con su tipo
--- 
--- Segundo elemento del par: Tabla padre del alcance externo justo anterior
--- 
-newtype SymTab  = SymTab { getSymTab :: (M.Map Nombre IdInfo, Maybe SymTab) }
+-- Alcance de un identificador
+type Alcance = Integer
+
+-- Pila de alcances. El ultimo alcance agregado es el primero de la lista
+type StackScopes = [Alcance]
+
+-- Informacion pertinente a la entrada de la tabla de simbolos
+data SymbolInfo = SymbolInfo {
+    getType :: Tipo,
+    getScope :: Alcance,
+    getCategory :: Categoria
+    }
+    deriving (Eq, Show, Ord)
+
+
+{- Nuevo tipo de dato para representar la tabla de simbolos
+* Tabla de hash:
+*   Key: Nombre
+*   Value: Lista de la informacion pertinente
+-}
+newtype SymTab  = SymTab { getSymTab :: M.Map Nombre [SymbolInfo] }
                 deriving (Eq, Show)
 
 
--- Transformador monadico para crear y manejar la tabla de simbolos en el 
--- alcance actual
-type MonadSymTab a = StateT (SymTab, Alcance) IO a
-
+-- Transformador monadico para crear y manejar la tabla de simbolos junto con 
+-- la pila de alcances
+type MonadSymTab a = RWST () () (SymTab, StackScopes) IO a
 
 
 --------------------------------------------------------------------------------
@@ -203,7 +234,7 @@ showE (OpBinario Or e1 e2 _)             = "(" ++ showE e1 ++ " || " ++ showE e2
 showE (OpBinario And e1 e2 _)            = "(" ++ showE e1 ++ " && " ++ showE e2 ++ ")"
 showE (OpUnario Negativo e _)            = "-" ++ showE e
 showE (OpUnario Not e _)                 = "!" ++ showE e
-showE (ListaExpr lst _)                  = "[" ++ intercalate "," (map showE lst) ++ "]"
+showE (ArrLstExpr lst _)                  = "[" ++ intercalate "," (map showE lst) ++ "]"
 showE (IfSimple e1 e2 e3 t)                = "(" ++ showE e1 ++ " ? " ++ showE e2 ++ " : " ++ showE e3 ++ ")"
 
 -- 
@@ -212,10 +243,10 @@ showL ValorVacio      = "Valor vacio"
 showL (Entero val)    = show val
 showL (Caracter val)  = show val
 showL (Booleano val)  = show val
-showL (Arreglo lst@(Entero _:_)) = show $ map ((\x->read x::Int) . showL) lst
-showL (Arreglo lst@(Booleano _:_)) = show $ map ((\x->read x::Bool) . showL) lst
-showL (Arreglo lst@(Caracter _:_)) = show $ map ((\x->read x::Char) . showL) lst
-showL (Arreglo lst@(Arreglo _:_)) = show $ map showL lst
+showL (ArrLst lst@(Entero _:_)) = show $ map ((\x->read x::Int) . showL) lst
+showL (ArrLst lst@(Booleano _:_)) = show $ map ((\x->read x::Bool) . showL) lst
+showL (ArrLst lst@(Caracter _:_)) = show $ map ((\x->read x::Char) . showL) lst
+showL (ArrLst lst@(ArrLst _:_)) = show $ map showL lst
 
 -- Show para los tipos
 showType :: Tipo -> String

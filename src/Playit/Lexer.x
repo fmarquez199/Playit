@@ -11,11 +11,11 @@
 module Playit.Lexer (
     Token(..),
     AlexPosn(..), 
-    hasError,
-    alexScanTokens,
     tkErrorToString,
-    isError,
-    posicion
+    alexScanTokens,
+    posicion,
+    hasError,
+    isError
 ) where
 
 import Data.List(intercalate)

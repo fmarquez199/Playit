@@ -8,11 +8,11 @@ Modulo para la creacion y manejo de la tabla de simbolos
 -}
 module Playit.SymbolTable where
 
-import Control.Monad.Trans.State
-import Control.Monad.IO.Class
+import Control.Monad.Trans.RWS
+import Control.Monad (void)
 import qualified Data.Map as M
 -- import Data.List.Split (splitOn)
-import Data.Maybe (fromJust)
+import Data.Maybe (fromJust, isJust, isNothing)
 import Playit.Types
 
 
@@ -24,157 +24,87 @@ import Playit.Types
 
 
 --------------------------------------------------------------------------------
--- Estado inicial
-initState = (SymTab (M.empty, Nothing), 0)
+-- Estado inicial con todo lo predefinido del lenguaje
+initState :: (SymTab,StackScopes)
+initState = createInitSymTab (SymTab M.empty) [0]
+
+
+createInitSymTab :: SymTab -> StackScopes -> (SymTab,StackScopes)
+createInitSymTab st scopes = (insertSymbols symbols info st,scopes)
+    where
+        symbols = ["Power","Skill","Rune","Runes","Battle","Inventory","Items",
+            "Win","Lose","free","puff"]
+        info = [powerInfo,skillInfo,runeInfo,runesInfo,battleInfo,inventoryInfo,
+            itemsInfo,boolsInfo,boolsInfo,aptInfo,aptInfo]
+        powerInfo = SymbolInfo TInt 0 Tipos
+        skillInfo = SymbolInfo TFloat 0 Tipos
+        runeInfo = SymbolInfo TChar 0 Tipos
+        runesInfo = SymbolInfo TStr 0 Tipos
+        battleInfo = SymbolInfo TBool 0 Tipos
+        inventoryInfo = SymbolInfo TRegistro 0 ConstructoresTipos
+        itemsInfo = SymbolInfo TUnion 0 ConstructoresTipos
+        boolsInfo = SymbolInfo TBool 0 Variable
+        aptInfo = SymbolInfo (TApuntador TDummy) 0 Apuntadores
 --------------------------------------------------------------------------------
 
 
 --------------------------------------------------------------------------------
--- Se crea el alacance interno con su tabla y padre asociado
-openInnerScope :: MonadSymTab ()
-openInnerScope = do
-    (actualSymTab, actualScope) <- get
-    put $ (SymTab (M.empty, Just actualSymTab), actualScope + 1)
+-- Se empila el nuevo alcance
+pushNewScope :: MonadSymTab ()
+pushNewScope = do
+    (actualSymTab, scopes@(actualScope:_)) <- get
+    let newScope = actualScope + 1
+    put (actualSymTab, newScope:scopes)
 --------------------------------------------------------------------------------
 
 
 --------------------------------------------------------------------------------
--- Se cierra el alcance actual devolviendo el mando al padre
-closeScope :: MonadSymTab ()
-closeScope = do
-    (SymTab (_, father), actualScope) <- get
-    case father of
-        (Just st) -> put (st, actualScope - 1)
-        Nothing -> {-error "\n\nNo hay tabla padre.\n"-} return ()
+-- Se desempila el alcance actual
+popScope :: MonadSymTab ()
+popScope = do
+    (actualSymTab, _:scopes) <- get
+    put (actualSymTab, scopes)
 --------------------------------------------------------------------------------
 
 
 --------------------------------------------------------------------------------
 -- Agrega a la tabla de simbolos la lista de identificadores con su informcaion:
---  Tipo, Valor y alcance
-addToSymTab :: [Nombre] -> Tipo -> [Literal] -> SymTab -> Alcance
-            -> MonadSymTab ()
-addToSymTab ids t idsVal actualSymTab scope = 
-    put ((insertSymbols ids t idsVal actualSymTab scope), scope) >> return ()
+--  Tipo, alcance
+addToSymTab :: [Nombre] -> [SymbolInfo] -> SymTab -> StackScopes -> MonadSymTab ()
+addToSymTab ids info actualSymTab scopes = 
+    put (insertSymbols ids info actualSymTab, scopes)
 --------------------------------------------------------------------------------
 
 
 --------------------------------------------------------------------------------
 -- Inserta los identificadores con su tipo en la tabla de simbolos dada
-insertSymbols :: [Nombre] -> Tipo -> [Literal] -> SymTab -> Alcance -> SymTab
-insertSymbols [] _ [] symTab _ = symTab
-insertSymbols (id:ids) t (val:vals) (SymTab (table, father)) scope
-    | (M.lookup id table) == Nothing =
-        insertSymbols ids t vals newSymTab scope
+insertSymbols :: [Nombre] -> [SymbolInfo] -> SymTab -> SymTab
+insertSymbols [] _ symTab = symTab
+insertSymbols (id:ids) (info:infos) (SymTab table)
+    | isNothing (M.lookup id table) = insertSymbols ids infos newSymTab
 
     | otherwise = 
-        error ("\n\nError semantico al insertar la variable: '" ++ id ++
-                "', ya esta declarada.\n")
+        error ("\n\nActualizar info de la variable: '" ++ id ++
+                "', junto con su otra info.\n")
     
     where
         -- Tabla de simbolos con el identificador insertado
-        newSymTab = SymTab (M.insert id idInfo table, father)
-        idInfo = IdInfo t val scope
+        newSymTab = SymTab $ M.insert id [info] table
 --------------------------------------------------------------------------------
 
 
 --------------------------------------------------------------------------------
 -- Busca el identificador de una variable en la tabla de simbolos dada.
-lookupInSymTab :: Nombre -> SymTab -> Maybe IdInfo
-lookupInSymTab var (SymTab (table, Nothing)) = M.lookup var table
-lookupInSymTab var (SymTab (table, (Just father)))
-    | varInfo /= Nothing = varInfo
-    | otherwise = lookupInSymTab var father
-
-    where   varInfo = M.lookup var table
+lookupInSymTab :: Nombre -> SymTab -> Maybe [SymbolInfo]
+lookupInSymTab var (SymTab table) = M.lookup var table
 --------------------------------------------------------------------------------
 
 
---------------------------------------------------------------------------------
---------------------------------------------------------------------------------
---        Manejo de la tabla de simbolos al 'correr' las instrucciones
---------------------------------------------------------------------------------
---------------------------------------------------------------------------------
-
-
---------------------------------------------------------------------------------
--- Obtiene la informacion asociada a la variable
-getVarInfo :: Vars -> SymTab -> IdInfo
-getVarInfo (Var n _) (SymTab (table, Nothing)) = fromJust $ M.lookup n table
-getVarInfo var@(Var name _) (SymTab (table, (Just father)))
-    | varInfo /= Nothing = fromJust varInfo
-    | otherwise = getVarInfo var father
-    
-    where   varInfo = M.lookup name table
-getVarInfo (VarIndex var _ _) st = getVarInfo var st
---------------------------------------------------------------------------------
-
-
---------------------------------------------------------------------------------
--- Determina si una variable esta inicializada o no
-notEmptyValue :: Vars -> SymTab -> Bool
-notEmptyValue (VarIndex vars _ _) symTab = notEmptyValue vars symTab
-notEmptyValue var symTab =
-    let varInfo = getVarInfo var symTab
-    in  if getVal varInfo /= (ValorVacio) then True else False
---------------------------------------------------------------------------------
-
-
---------------------------------------------------------------------------------
--- Actualiza el valor de la variable
-updateVarVal :: Vars -> Literal -> Int -> SymTab -> Alcance -> SymTab
-updateVarVal var@(Var name _) value _ st@(SymTab (table, _)) scope =
-    updatedTable
-
-    where
-        varInfo = getVarInfo var st
-        newVal (IdInfo t _ scope) = IdInfo t value scope
-        updatedTable = addVarInScope name (newVal varInfo) st scope
-
-updateVarVal var@(VarIndex _ _ _) value index st@(SymTab (table, _)) scope
-    | index > 0 && index <= tamArray = updatedTable
-    | otherwise =
-        error ("\n\nError: El indice: " ++ show (index - 1) ++
-                " esta fuera de rango.\n")
-
-    where
-        varInfo = getVarInfo var st
-        (Arreglo lst) = getVal varInfo
-        (lst1, lst2) = splitAt index lst
-        tamArray = length lst
-        newLst = Arreglo $ init lst1 ++ [value] ++ lst2
-        newVal (IdInfo t _ scope) = IdInfo t newLst scope
-        -- name = head $ splitOn "[" $ showVar var
-        name = takeWhile (/= '[') $ showVar var
-        updatedTable = addVarInScope name (newVal varInfo) st scope
---------------------------------------------------------------------------------
-
-
---------------------------------------------------------------------------------
--- Agrega la variable en la tabla con el alcance correspondiente
-addVarInScope :: Nombre -> IdInfo -> SymTab -> Alcance -> SymTab
-addVarInScope var val@(IdInfo _ _ varScope) (SymTab (table, Nothing)) scope =
-    let freshTable = M.delete var table
-        updatedTable = M.insert var val freshTable
-    in SymTab (updatedTable, Nothing)
-
-addVarInScope var val@(IdInfo _ _ varScope) st@(SymTab (table, father)) scope
-    | varScope == scope =
-        let freshTable = M.delete var table
-            updatedTable = M.insert var val freshTable
-        in SymTab (updatedTable, father)
-    --  varScope > scope && father == Nothing =
-    --     addVarInScope var val st (scope - 1)
-    | otherwise =
-        let updatedSymTab = addVarInScope var val (fromJust father) (scope - 1)
-        in SymTab (table, Just updatedSymTab)
---------------------------------------------------------------------------------
-
-
---------------------------------------------------------------------------------
--- Actualiza la tabla de simbolos padre con la modificada
-updateSymTab :: SymTab -> SymTab -> SymTab
-updateSymTab symTab@(SymTab (table, Nothing)) _ = symTab
-updateSymTab (SymTab (table, _)) updatedF = SymTab (table, Just updatedF)
---------------------------------------------------------------------------------
-
+-------------------------------------------------------------------------------
+-- Añade las variables a la tabla de simbolos
+insertDeclarations :: [Nombre] -> Tipo -> MonadSymTab ()
+insertDeclarations ids t = do
+    (actualSymTab, scopes@(scope:_)) <- get
+    let info = [SymbolInfo t scope Variable]
+    addToSymTab ids info actualSymTab scopes
+-------------------------------------------------------------------------------

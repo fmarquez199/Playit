@@ -32,7 +32,7 @@ printAST n instr =
             putStrLn (t ++ "  Valor: ") >> printExpr (n + 2) exp
         -----------------------------------------------------------------------
         -- Bloque de instrucciones
-        (BloqueInstr seq symTab) -> do
+        (Programa seq symTab) -> do
             putStrLn (t ++ "Bloque:") >> printSymTab symTab t
             printSeq (n + 1) seq
         -----------------------------------------------------------------------
