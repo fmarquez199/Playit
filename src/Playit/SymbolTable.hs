@@ -8,10 +8,8 @@ Modulo para la creacion y manejo de la tabla de simbolos
 -}
 module Playit.SymbolTable where
 
+import Control.Monad.Trans.RWS
 import Control.Monad (void)
-import qualified Control.Monad.Trans.RWS as R
-import qualified Control.Monad.State as S
-import Control.Monad.IO.Class
 import qualified Data.Map as M
 -- import Data.List.Split (splitOn)
 import Data.Maybe (fromJust, isJust, isNothing)
@@ -51,11 +49,30 @@ createInitSymTab st scopes = (insertSymbols symbols info st,scopes)
 
 
 --------------------------------------------------------------------------------
+-- Se empila el nuevo alcance
+pushNewScope :: MonadSymTab ()
+pushNewScope = do
+    (actualSymTab, scopes@(actualScope:_)) <- get
+    let newScope = actualScope + 1
+    put (actualSymTab, newScope:scopes)
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+-- Se desempila el alcance actual
+popScope :: MonadSymTab ()
+popScope = do
+    (actualSymTab, _:scopes) <- get
+    put (actualSymTab, scopes)
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
 -- Agrega a la tabla de simbolos la lista de identificadores con su informcaion:
 --  Tipo, alcance
 addToSymTab :: [Nombre] -> [SymbolInfo] -> SymTab -> StackScopes -> MonadSymTab ()
 addToSymTab ids info actualSymTab scopes = 
-    R.put (insertSymbols ids info actualSymTab, scopes)
+    put (insertSymbols ids info actualSymTab, scopes)
 --------------------------------------------------------------------------------
 
 
@@ -64,8 +81,7 @@ addToSymTab ids info actualSymTab scopes =
 insertSymbols :: [Nombre] -> [SymbolInfo] -> SymTab -> SymTab
 insertSymbols [] _ symTab = symTab
 insertSymbols (id:ids) (info:infos) (SymTab table)
-    | isNothing (M.lookup id table) =
-        insertSymbols ids infos newSymTab
+    | isNothing (M.lookup id table) = insertSymbols ids infos newSymTab
 
     | otherwise = 
         error ("\n\nActualizar info de la variable: '" ++ id ++
@@ -79,7 +95,16 @@ insertSymbols (id:ids) (info:infos) (SymTab table)
 
 --------------------------------------------------------------------------------
 -- Busca el identificador de una variable en la tabla de simbolos dada.
--- lookupInSymTab :: Nombre -> SymTab -> Maybe SymbolInfo
--- lookupInSymTab var (SymTab table) = M.lookup var table
+lookupInSymTab :: Nombre -> SymTab -> Maybe [SymbolInfo]
+lookupInSymTab var (SymTab table) = M.lookup var table
 --------------------------------------------------------------------------------
 
+
+-------------------------------------------------------------------------------
+-- Añade las variables a la tabla de simbolos
+insertDeclarations :: [Nombre] -> Tipo -> MonadSymTab ()
+insertDeclarations ids t = do
+    (actualSymTab, scopes@(scope:_)) <- get
+    let info = [SymbolInfo t scope Variable]
+    addToSymTab ids info actualSymTab scopes
+-------------------------------------------------------------------------------

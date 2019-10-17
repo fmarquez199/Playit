@@ -8,18 +8,15 @@
 -}
 module Main where
 
-import qualified Control.Exception as Exc------------------------------------- > (*)
+import Data.Strings (strEndsWith)
 import Control.Monad.Trans.RWS
-import Control.Monad (forM)
-import Control.Exception
 import System.Environment
-import System.IO
+import Control.Exception
 import System.IO.Error
-import qualified Data.Map as M
-import Data.Strings (strEndsWith, strBreak)
-import Playit.Lexer
-import Playit.Parser (parse)
+import System.IO
 import Playit.SymbolTable
+import Playit.Parser
+import Playit.Lexer
 import Playit.Types
 -- import Playit.Print
 
@@ -38,8 +35,8 @@ checkExt [file] =   if strEndsWith file ".game" then Right file
 
 main :: IO ()
 main = do
-
-    args <- getArgs                           -- Tomar argumentos del terminal.
+    -- Tomar argumentos del terminal.
+    args <- getArgs
     case checkExt args of
         Left msg -> putStrLn msg
         Right checkedFile -> do
@@ -50,13 +47,10 @@ main = do
                 let tokens = alexScanTokens code in
                 
                     -- mapM_ (putStrLn . show) tokens
-
                     if hasError tokens then
                         putStrLn $ tkErrorToString $ filter isError tokens
                     else do
-                        (ast, (st,_), _) <- runRWST (parse tokens) () initState
+                        (ast,(st,_), _) <- runRWST (parse tokens) () initState
                         print ast
                         print st
-                        -- return ()
-                        -- printAST 0 ast -- >> evalStateT (runAST ast) lastState
 

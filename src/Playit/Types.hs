@@ -35,6 +35,7 @@ type Parametros = [Expr]
 type SecuenciaInstr = [Instr]
 
 
+-- Categorias a las que pertenecen los simbolos de la tabla de simbolos
 data Categoria  = Variable
                 | Parametros
                 | Constructores
@@ -47,8 +48,8 @@ data Categoria  = Variable
 
 
 -- Tipo de dato que pueden ser las expresiones
-data Tipo   = TInt | TFloat | TBool | TChar | TStr | TArray Expr Tipo
-            | TLista Tipo | TRegistro | TUnion | TApuntador Tipo
+data Tipo   = TInt | TFloat | TBool | TChar | TStr | TRegistro | TUnion
+            | TArray Expr Tipo | TLista Tipo | TApuntador Tipo
             | TError    -- Tipo error, no machean los tipos como deben
             | TDummy    -- Tipo temporal cuando todavia no se lee el tipo de la
                         -- variable en una asignacion en las declaraciones o no
@@ -58,9 +59,9 @@ data Tipo   = TInt | TFloat | TBool | TChar | TStr | TArray Expr Tipo
 
 data Vars   = Var Nombre Tipo
             | VarIndex Vars Expr Tipo       -- Indice para array, listas
-            | VarCompIndex Vars Nombre Tipo -- Variable de acceso a registros, uniones
+            | VarCompIndex Vars Nombre Tipo -- Campos de los registros y uniones
             | Param Nombre Tipo Ref
-            | PuffValue Vars                -- Variable deferenciada con puff
+            | PuffValue Vars Tipo           -- Variable deferenciada con puff
             deriving (Eq, Show, Ord)
 
 
@@ -72,19 +73,19 @@ data Ref    = Valor | Referencia
 data Instr  = Asignacion Vars Expr
             | Programa Cosas
             | SecDeclaraciones SecuenciaInstr
-            -- For (Nombre) = (Expr) <- (Expr) : (Instrucciones) (scope) 
-            | For Nombre Expr Expr SecuenciaInstr
-            -- For (Nombre) = (Expr)  <- (Expr) while (Expr) : (Instrucciones) (scope) 
+            -- For var = (Expr) -> (Expr) while (Expr) : (Instrucciones)
             | ForWhile Nombre Expr Expr Expr SecuenciaInstr
+            -- For var = (Expr) -> (Expr) : (Instrucciones)
+            | For Nombre Expr Expr SecuenciaInstr
             | ForEach Nombre Expr SecuenciaInstr
+            | IF [(Expr, SecuenciaInstr)]  -- [(cond,instruc)]
             | While Expr SecuenciaInstr
-            | ButtonIF [(Expr, SecuenciaInstr)]  -- [(cond,instruc)]
             | ProcCall Subrutina
             | Free Nombre
-            | Break
-            | Continue
             | Return Expr
             | Print Expr
+            | Break
+            | Continue
             deriving (Eq, Show)
 
 
@@ -108,12 +109,12 @@ data Definicion = Proc Nombre Parametros SecuenciaInstr
 data Expr   = OpBinario BinOp Expr Expr Tipo
             | OpUnario UnOp Expr Tipo
             | IfSimple Expr Expr Expr Tipo
-            | ListaExpr [Expr] Tipo
+            | FuncCall Subrutina Tipo
+            | ArrLstExpr [Expr] Tipo
             | Variables Vars Tipo
             | Literal Literal Tipo
-            | FuncCall Subrutina Tipo
             | Read Expr
-            | ExprVacia
+            | Null
             deriving (Eq, Show, Ord)
 
 
@@ -233,7 +234,7 @@ showE (OpBinario Or e1 e2 _)             = "(" ++ showE e1 ++ " || " ++ showE e2
 showE (OpBinario And e1 e2 _)            = "(" ++ showE e1 ++ " && " ++ showE e2 ++ ")"
 showE (OpUnario Negativo e _)            = "-" ++ showE e
 showE (OpUnario Not e _)                 = "!" ++ showE e
-showE (ListaExpr lst _)                  = "[" ++ intercalate "," (map showE lst) ++ "]"
+showE (ArrLstExpr lst _)                  = "[" ++ intercalate "," (map showE lst) ++ "]"
 showE (IfSimple e1 e2 e3 t)                = "(" ++ showE e1 ++ " ? " ++ showE e2 ++ " : " ++ showE e3 ++ ")"
 
 -- 

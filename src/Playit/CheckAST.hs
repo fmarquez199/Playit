@@ -12,7 +12,6 @@ module Playit.CheckAST where
 import Data.Maybe (fromJust)
 --import Playit.SymbolTable
 import Playit.Types
---import Playit.Eval
 
 
 --------------------------------------------------------------------------------
@@ -78,7 +77,7 @@ typeE (Variables _ t)           = t
 typeE (Literal _ t)             = t
 typeE (OpBinario _ _ _ t)       = t
 typeE (OpUnario _ _ t)          = t
-typeE (ListaExpr _ t)           = t
+typeE (ArrLstExpr _ t)           = t
 typeE (Read _)                  = TStr
 typeE (IfSimple _ _ _ t)        = t
 -- typeE (SubrutinaCall _  _ t)    = t
@@ -95,20 +94,20 @@ isList _ = False
 
 -------------------------------------------------------------------------------
 -- Determina el tipo base de los elementos del arreglo
-typeArrLst (TArray _ t@(TArray _ _)) = typeArrLst t
-typeArrLst (TArray _ t) = t
-typeArrLst (TLista t@(TLista _)) = typeArrLst t
-typeArrLst (TLista t) = t
+typeArrLst (TArray _ t@(TArray _ _))    = typeArrLst t
+typeArrLst (TArray _ t)                 = t
+typeArrLst (TLista t@(TLista _))        = typeArrLst t
+typeArrLst (TLista t)                   = t
 -------------------------------------------------------------------------------
 
 --------------------------------------------------------------------------------
 -- Obtiene el tipo asociado a una variable
 typeVar :: Vars -> Tipo
-typeVar (Var _ t)          = t
-typeVar (VarIndex _ _ t)   = t
-typeVar (Param _ t _)   = t
-typeVar (VarCompIndex _ _ t)   = t
--- typeVar (PuffValue _ t)   = t
+typeVar (Var _ t)               = t
+typeVar (VarIndex _ _ t)        = t
+typeVar (Param _ t _)           = t
+typeVar (VarCompIndex _ _ t)    = t
+typeVar (PuffValue _ t)         = t
 --------------------------------------------------------------------------------
 
 
@@ -153,7 +152,7 @@ checkStep e (line,_) symTab = return True
 
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
---       Cambiar el tipo 'TDummy' cuando se lee el tipo de la declacio
+--       Cambiar el tipo 'TDummy' cuando se lee el tipo de la declacion
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 
@@ -162,7 +161,7 @@ checkStep e (line,_) symTab = return True
 -- Cambia el TDummy de una variable en las declaraciones
 changeTDummyLvalAsigs :: Vars -> Tipo -> Vars
 changeTDummyLvalAsigs (Var n TDummy) t       = Var n t
-changeTDummyLvalAsigs var@(Var _ _) _       = var
+changeTDummyLvalAsigs var@(Var _ _) _        = var
 changeTDummyLvalAsigs (VarIndex var e t') t  =
     let newVar = changeTDummyLvalAsigs var t
     in VarIndex newVar e t'
@@ -209,11 +208,11 @@ changeTDummyExpr t (Variables var TDummy) =
 --------------------------------------------------------------------------
 changeTDummyExpr _ vars@(Variables _ _) = vars
 --------------------------------------------------------------------------
-changeTDummyExpr t (ListaExpr exprs TDummy) =
+changeTDummyExpr t (ArrLstExpr exprs TDummy) =
     let newExprs = map (changeTDummyExpr t) exprs
-    in ListaExpr newExprs t
+    in ArrLstExpr newExprs t
 --------------------------------------------------------------------------
-changeTDummyExpr _ lst@(ListaExpr _ _) = lst
+changeTDummyExpr _ lst@(ArrLstExpr _ _) = lst
 --------------------------------------------------------------------------
 changeTDummyExpr t (OpUnario op e TDummy) =
     let newE = changeTDummyExpr t e
@@ -226,7 +225,7 @@ changeTDummyExpr t (OpBinario op e1 e2 TDummy) =
         newE2 = changeTDummyExpr t e2
     in OpBinario op newE1 newE2 t
 --------------------------------------------------------------------------
-changeTDummyExpr _ opBin@(OpBinario _ _ _ _) = opBin
+changeTDummyExpr _ opBin@OpBinario{} = opBin
 --------------------------------------------------------------------------------
 
 
@@ -298,6 +297,4 @@ isVarIter (Var name _) symTab scope  = False
     
 --    where info = lookupInSymTab name symTab
 --isVarIter (VarIndex var _ _) symTab scope = isVarIter var symTab scope
-
-
 --------------------------------------------------------------------------------
