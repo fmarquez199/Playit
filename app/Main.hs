@@ -15,11 +15,13 @@ import Control.Exception
 import System.Environment
 import System.IO
 import System.IO.Error
+import qualified Data.Map as M
 import Data.Strings (strEndsWith, strBreak)
 import Playit.Lexer
 import Playit.Parser (parse)
 import Playit.SymbolTable
-import Playit.Print
+import Playit.Types
+-- import Playit.Print
 
 -- Determina si un archivo esta vacio
 isEmptyFile :: String -> Bool
@@ -52,8 +54,9 @@ main = do
                     if hasError tokens then
                         putStrLn $ tkErrorToString $ filter isError tokens
                     else do
-                        (ast, lastState) <- runStateT (parse tokens) initState
+                        (ast, (st,_), _) <- runRWST (parse tokens) () initState
                         print ast
+                        print st
                         -- return ()
-                        printAST 0 ast -- >> evalStateT (runAST ast) lastState
+                        -- printAST 0 ast -- >> evalStateT (runAST ast) lastState
 

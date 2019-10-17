@@ -10,7 +10,7 @@ la verificacion de tipos
 module Playit.AST where
 
 import Control.Monad.IO.Class
-import Control.Monad.Trans.State
+import Control.Monad.Trans.RWS
 import qualified Data.Map as M
 import Data.List(intercalate)
 import Data.Maybe (fromJust, isJust, isNothing)
@@ -57,27 +57,27 @@ crearVarIndex v e =
 -- Crear el nodo para asignar a un identificador de variable una expresion
 crearAsignacion :: Vars -> Expr -> Posicion -> Instr
 -- crearAsignacion lval (ListaExpr [] _)
-crearAsignacion lval e (line, _)
-    | True = Asignacion lval e
-    | otherwise =
-        error ("\n\nError semantico en la asignacion: '" ++ var ++
-                " <- " ++ expr ++ "'.\nEl tipo de la variable: " ++
-                showType tV' ++ ",\n\tno es igual al de la expresion: " ++
-                showType tE' ++ ".\nEn la linea: " ++ show line ++ "\n")
+crearAsignacion lval e (line, _) = Asignacion lval e
+    -- | True = Asignacion lval e
+    -- | otherwise =
+    --     error ("\n\nError semantico en la asignacion: '" ++ var ++
+    --             " <- " ++ expr ++ "'.\nEl tipo de la variable: " ++
+    --             showType tV' ++ ",\n\tno es igual al de la expresion: " ++
+    --             showType tE' ++ ".\nEn la linea: " ++ show line ++ "\n")
 
-    where
-        expr   = showE e
-        var    = showVar lval
-        tE'    = typeE e
-        tE     =
-            case tE' of
-                t@(TArray _ _) -> typeArray t
-                _ -> tE'
-        tV'    = typeVar lval
-        tV     = 
-            case tV' of
-                t@(TArray _ _) -> typeArray t
-                _ -> tV'
+    -- where
+    --     expr   = showE e
+    --     var    = showVar lval
+    --     tE'    = typeE e
+    --     tE     =
+    --         case tE' of
+    --             t@(TArray _ _) -> typeArray t
+    --             _ -> tE'
+    --     tV'    = typeVar lval
+    --     tV     = 
+    --         case tV' of
+    --             t@(TArray _ _) -> typeArray t
+    --             _ -> tV'
 -------------------------------------------------------------------------------
 
 crearIncremento :: Vars -> Posicion -> Instr
@@ -241,39 +241,39 @@ crearIfSimple con v f t (linea, col) = IfSimple con v f t
 -- Crea el nodo para una instruccion For
 crearFor :: Nombre -> Expr -> Expr -> SecuenciaInstr -> SymTab -> Alcance -> Posicion 
             -> MonadSymTab Instr
-crearFor var e1 e2 i st scope pos@(line,_)
-    | tE1 == TInt && tE2 == TInt =
-        do
-            let newI = map (changeTDummyFor TInt st scope) i
-            checkInfSup e1 e2 pos st
-            return $ For var e1 e2 newI st
-    --------------------------------------------------------------------------
-    | tE1 == TInt =
-        error ("\n\nError semantico en segunda la expresion del 'for': '"
-                ++ expr2 ++ "', de tipo: " ++ showType tE2
-                ++ ". En la linea: " ++ show line ++ "\n")
-    --------------------------------------------------------------------------
-    | tE2 == TInt =
-        error ("\n\nError semantico en la primera expresion del 'for': '"
-                ++ expr1 ++ "', de tipo: " ++ showType tE1 ++ ". En la linea: "
-                ++ show line ++ "\n")
-    --------------------------------------------------------------------------
-    | otherwise =
-        error ("\n\nError semantico en la primera expresion: '" ++ expr1 ++
-                "', de tipo: " ++ showType tE1 ++ ", y segunda expresion: '"
-                ++ expr2 ++ "', de tipo: " ++ showType tE2 ++
-                ", del 'for'. En la linea: " ++ show line ++ "\n")
+crearFor var e1 e2 i st scope pos@(line,_) = return $ For var e1 e2 i
+    -- | tE1 == TInt && tE2 == TInt =
+    --     do
+    --         let newI = map (changeTDummyFor TInt st scope) i
+    --         checkInfSup e1 e2 pos st
+    --         return $ For var e1 e2 newI
+    -- --------------------------------------------------------------------------
+    -- | tE1 == TInt =
+    --     error ("\n\nError semantico en segunda la expresion del 'for': '"
+    --             ++ expr2 ++ "', de tipo: " ++ showType tE2
+    --             ++ ". En la linea: " ++ show line ++ "\n")
+    -- --------------------------------------------------------------------------
+    -- | tE2 == TInt =
+    --     error ("\n\nError semantico en la primera expresion del 'for': '"
+    --             ++ expr1 ++ "', de tipo: " ++ showType tE1 ++ ". En la linea: "
+    --             ++ show line ++ "\n")
+    -- --------------------------------------------------------------------------
+    -- | otherwise =
+    --     error ("\n\nError semantico en la primera expresion: '" ++ expr1 ++
+    --             "', de tipo: " ++ showType tE1 ++ ", y segunda expresion: '"
+    --             ++ expr2 ++ "', de tipo: " ++ showType tE2 ++
+    --             ", del 'for'. En la linea: " ++ show line ++ "\n")
 
-    where
-        expr1 = showE e1
-        expr2 = showE e2
-        tE1 = typeE e1
-        tE2 = typeE e2
+    -- where
+    --     expr1 = showE e1
+    --     expr2 = showE e2
+    --     tE1 = typeE e1
+    --     tE2 = typeE e2
 -------------------------------------------------------------------------------
 
 crearForWhile :: Nombre -> Expr -> Expr -> Expr -> SecuenciaInstr -> SymTab -> Alcance -> Posicion 
             -> MonadSymTab Instr
-crearForWhile var e1 e2 e3 i st scope pos@(line,_) = return $ ForWhile var e1 e2 e3 i st
+crearForWhile var e1 e2 e3 i st scope pos@(line,_) = return $ ForWhile var e1 e2 e3 i
 {-crearForWhile var e1 e2 e3 i st scope pos@(line,_)
     | tE1 == TInt && tE2 == TInt && tE3 == TBool =
         do
@@ -317,7 +317,7 @@ crearForWhile var e1 e2 e3 i st scope pos@(line,_) = return $ ForWhile var e1 e2
 crearForEach :: Nombre -> Expr -> SecuenciaInstr -> SymTab -> Alcance
                         -> Posicion -> MonadSymTab Instr
 crearForEach var e1 i st scope pos@(line,_) =
-    return $ ForEach var e1 i st 
+    return $ ForEach var e1 i
     
 
 -------------------------------------------------------------------------------
@@ -346,25 +346,25 @@ crearWhile e i (line,_) = While e i
 -------------------------------------------------------------------------------
 -- Crea el nodo para la instruccion que crea un procedimiento
 crearProcedimiento :: Nombre -> Parametros -> SecuenciaInstr -> SymTab -> Alcance
-                    -> Posicion -> MonadSymTab Instr
+                    -> Posicion -> Definicion
 crearProcedimiento name params i st scope pos@(line,_) =
-    return $ Proc name params i st
+    Proc name params i
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
 -- Crea el nodo para la instruccion que crea una funcion
 crearFuncion :: Nombre -> Parametros -> Tipo -> SecuenciaInstr -> SymTab -> Alcance
-                    -> Posicion -> MonadSymTab Instr
+                    -> Posicion -> Definicion
 crearFuncion name params returnT i st scope pos@(line,_) =
-    return $ Func name params returnT i st
+    Func name params returnT i
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
 -- Crea el nodo para la instruccion que llama a la subrutina
-llamarSubrutina :: Nombre -> Parametros->Tipo -> Expr
-llamarSubrutina = SubrutinaCall
+-- llamarSubrutina :: Nombre -> Parametros->Tipo -> Expr
+-- llamarSubrutina = SubrutinaCall
 -------------------------------------------------------------------------------
 
 
@@ -377,15 +377,15 @@ llamarSubrutina = SubrutinaCall
 
 --------------------------------------------------------------------------------
 -- Crea el nodo para la instruccion que crea los registros
-definirRegistro :: Nombre -> SecuenciaInstr -> Tipo -> Instr
-definirRegistro = Registro
+definirRegistro :: Nombre -> SecuenciaInstr -> Definicion
+definirRegistro id decls = Registro id decls TRegistro
 -------------------------------------------------------------------------------
 
 
 --------------------------------------------------------------------------------
 -- Crea el nodo para la instruccion que crea las uniones
-definirUnion :: Nombre -> SecuenciaInstr -> Tipo -> Instr
-definirUnion = Union
+definirUnion :: Nombre -> SecuenciaInstr -> Definicion
+definirUnion id decls = Registro id decls TUnion
 -------------------------------------------------------------------------------
 
 

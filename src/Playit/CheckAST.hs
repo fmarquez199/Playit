@@ -81,7 +81,7 @@ typeE (OpUnario _ _ t)          = t
 typeE (ListaExpr _ t)           = t
 typeE (Read _)                  = TStr
 typeE (IfSimple _ _ _ t)        = t
-typeE (SubrutinaCall _  _ t)    = t
+-- typeE (SubrutinaCall _  _ t)    = t
 
 
 --------------------------------------------------------------------------------
@@ -95,9 +95,9 @@ isList _ = False
 
 -------------------------------------------------------------------------------
 -- Determina el tipo base de los elementos del arreglo
-typeArrLst (TArray _ t@(TArray _ _)) = typeArrLst tl
+typeArrLst (TArray _ t@(TArray _ _)) = typeArrLst t
 typeArrLst (TArray _ t) = t
-typeArrLst (TLista t@(TLista _)) = typeArrLst tl
+typeArrLst (TLista t@(TLista _)) = typeArrLst t
 typeArrLst (TLista t) = t
 -------------------------------------------------------------------------------
 
@@ -108,7 +108,7 @@ typeVar (Var _ t)          = t
 typeVar (VarIndex _ _ t)   = t
 typeVar (Param _ t _)   = t
 typeVar (VarCompIndex _ _ t)   = t
-typeVar (PuffValue _ t)   = t
+-- typeVar (PuffValue _ t)   = t
 --------------------------------------------------------------------------------
 
 
@@ -242,15 +242,15 @@ changeTDummyFor t symTab scope (Asignacion lval e)
             newE = changeTDummyExpr t e
         in Asignacion newLval newE
 --------------------------------------------------------------------------
-changeTDummyFor t symTab scope (Programa seqI st) =
-    let newSeqI = map (changeTDummyFor t symTab scope) seqI
-    in Programa newSeqI st
+-- changeTDummyFor t symTab scope (Programa seqI) =
+--     let newSeqI = map (changeTDummyFor t symTab scope) seqI
+--     in Programa newSeqI
 --------------------------------------------------------------------------
-changeTDummyFor t symTab scope (For name e1 e2 seqI st) =
+changeTDummyFor t symTab scope (For name e1 e2 seqI) =
     let newE1 = changeTDummyExpr t e1
         newE2 = changeTDummyExpr t e2
         newSeqI = map (changeTDummyFor t symTab scope) seqI
-    in For name newE1 newE2 newSeqI st
+    in For name newE1 newE2 newSeqI
 --------------------------------------------------------------------------
 --changeTDummyFor t symTab scope (ForEach name e1 e2 e3 --seqI st) =
     --let newE1 = changeTDummyExpr t e1

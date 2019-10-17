@@ -40,7 +40,7 @@ data Categoria  = Variable
                 | Constructores
                 | ConstructoresTipos
                 | Tipos
-                | Apunatdores
+                | Apuntadores
                 | Procedimientos
                 | Funciones
                 deriving (Eq, Show, Ord)
@@ -89,7 +89,7 @@ data Instr  = Asignacion Vars Expr
 
 
 -- Lo que se puede escribir dentro de un programa
-data Cosas = SecuenciaInstr | Definiciones
+data Cosas = SecInstr SecuenciaInstr | Definiciones Definicion
             deriving (Eq, Show)
 
 -- 
@@ -171,7 +171,7 @@ data UnOp   = Negativo
 -- Alcance de un identificador
 type Alcance = Integer
 
--- Pila de alcances
+-- Pila de alcances. El ultimo alcance agregado es el primero de la lista
 type StackScopes = [Alcance]
 
 -- Informacion pertinente a la entrada de la tabla de simbolos

@@ -9,7 +9,7 @@
 -}
 
 module Playit.Parser (parse, error) where
-import Control.Monad.Trans.State
+import Control.Monad.Trans.RWS
 import Control.Monad.IO.Class
 import Playit.SymbolTable
 import Playit.CheckAST
@@ -161,17 +161,14 @@ ProgramaWrapper :: { Instr }
 
   
 Programa :: {Instr}
-  : world programa ":" EndLines Cosas EndLines ".~"
-    { % do
-        (symTab, _) <- get
-        return $ Programa $5 symTab }
+  : world programa ":" EndLines Cosas EndLines ".~"   { Programa $5 }
 
 
 Cosas :: {Cosas}
-  : Cosas EndLines Instruccion { reverse $3 }
-  | Cosas EndLines Definicion  { $3 }
-  | Instruccion        { reverse $1 }
-  | Definicion         { $1 }
+  : Cosas EndLines Instruccion  { SecInstr [$3] }
+  | Cosas EndLines Definicion   { Definiciones $3 }
+  | Instruccion                 { SecInstr [$1] }
+  | Definicion                  { Definiciones $1 }
 
 
 Definicion :: {Definicion}
@@ -196,10 +193,11 @@ Declaraciones :: { SecuenciaInstr }
 
 Declaracion :: { Instr }
   : Tipo Identificadores
-    { % let (ids, asigs) = $2 
-        in do
-            (actualSymTab, scopes) <- get
-            addToSymTab ids $1 actualSymTab scopes
+    { % let (ids, asigs) = $2
+        in
+          -- do
+          --   (actualSymTab, scopes) <- get
+          --   addToSymTab ids $1 actualSymTab scopes
             return $ SecDeclaraciones asigs }
 
 -------------------------------------------------------------------------------
@@ -214,7 +212,7 @@ Identificadores :: { ([Nombre], SecuenciaInstr) }
       in ([id], asigs) }
   | Identificadores "," Identificador
     { let ((ids, asigs), (id, asig)) = ($1, $3) 
-      in (ids ++ [id], asigs ++ [asig]) }
+      in (ids ++ [id], asigs ++ asig) }
 
 Identificador :: { (Nombre, SecuenciaInstr) }
   : nombre "=" Expresion  { ($1, [Asignacion (Var $1 TDummy) $3]) }
@@ -318,35 +316,23 @@ Guardia:: { Instr }
 -- Instruccion de iteracion determinada 'control'
 Controller :: { Instr }
  : for InitVar1 "->" Expresion ":" EndLines Instrucciones EndLines ".~"
-    { % do
-      (symTab, scope) <- get
-      let (varIter, e1) = $2
-      crearFor varIter e1 $4 $7 symTab scope (posicion $1) }
+    { let (varIter, e1) = $2
+      in For varIter e1 $4 $7  }
  | for InitVar1 "->" Expresion while Expresion ":" EndLines Instrucciones EndLines ".~"
-    { % do
-      (symTab, scope) <- get
-      let (varIter, e1) = $2
-      crearForWhile varIter e1 $4 $6 $9 symTab scope (posicion $1) }
+    { let (varIter, e1) = $2
+      in ForWhile varIter e1 $4 $6 $9  }
  | for InitVar1 "->" Expresion ":" EndLines ".~"
-    { % do
-      (symTab, scope) <- get
-      let (varIter, e1) = $2
-      crearFor varIter e1 $4 [] symTab scope (posicion $1) }
+    { let (varIter, e1) = $2
+      in For varIter e1 $4 [] }
  | for InitVar1 "->" Expresion while Expresion ":" EndLines ".~"
-    { % do
-      (symTab, scope) <- get
-      let (varIter, e1) = $2
-      crearForWhile varIter e1 $4 $6 [] symTab scope (posicion $1) }
+    { let (varIter, e1) = $2
+      in ForWhile varIter e1 $4 $6 [] }
  | for InitVar2 ":" EndLines Instrucciones EndLines ".~"
-    { % do
-      (symTab, scope) <- get
-      let (varIter, e1) = $2
-      crearForEach varIter e1 $5 symTab scope (posicion $1) }
+    { let (varIter, e1) = $2
+      in ForEach varIter e1 $5 }
  | for InitVar2 ":" EndLines ".~"
-    { % do
-      (symTab, scope) <- get
-      let (varIter, e1) = $2
-      crearForEach varIter e1 [] symTab scope (posicion $1) }
+    { let (varIter, e1) = $2
+      in ForEach varIter e1 [] }
 
 -- Se inserta la variable de iteracion en la tabla de simbolos junto con su
 -- valor inicial, antes de construir el arbol de instrucciones del 'for'
@@ -400,43 +386,27 @@ Free
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 
-DefinirSubrutina :: { Instr }
+DefinirSubrutina :: { Definicion }
 
  -- Procedimientos
   : proc nombre "(" Parametros ")" ":" EndLines Instrucciones EndLines ".~"
-    { % do
-      (symTab, scope) <- get
-      crearProcedimiento $2 (reverse $4) $8 symTab scope (posicion $1) }
+    { Proc $2 (reverse $4) $8 }
   | proc nombre "(" Parametros ")" ":" EndLines ".~"
-    { % do
-      (symTab, scope) <- get
-      crearProcedimiento $2 (reverse $4) [] symTab scope (posicion $1) }
+    { Proc $2 (reverse $4) []  }
   | proc nombre "(" ")" ":" EndLines Instrucciones EndLines ".~"
-    { % do
-      (symTab, scope) <- get
-      crearProcedimiento $2 [] $7 symTab scope (posicion $1) }
+    { Proc $2 [] $7 }
   | proc nombre "(" ")" ":" EndLines ".~"
-    { % do
-      (symTab, scope) <- get
-      crearProcedimiento $2 [] [] symTab scope (posicion $1) }
+    { Proc $2 [] [] }
   
   -- Funciones.
   | function nombre "(" Parametros ")" Tipo ":" EndLines Instrucciones EndLines ".~"
-    {  % do
-      (symTab, scope) <- get
-      crearFuncion $2 $4 $6 $9 symTab scope (posicion $1) }
+    {  Func $2 $4 $6 $9 }
   | function nombre "(" Parametros ")" Tipo ":" EndLines ".~"
-    {  % do
-      (symTab, scope) <- get
-      crearFuncion $2 $4 $6 [] symTab scope (posicion $1) }
+    { Func $2 $4 $6 []  }
   | function nombre "(" ")" Tipo ":" EndLines Instrucciones EndLines ".~"
-    {  % do
-      (symTab, scope) <- get
-      crearFuncion $2 [] $5 $8 symTab scope (posicion $1) }
+    { Func $2 [] $5 $8  }
   | function nombre "(" ")" Tipo ":" EndLines ".~"
-    {  % do
-      (symTab, scope) <- get
-      crearFuncion $2 [] $5 [] symTab scope (posicion $1) }
+    { Func $2 [] $5 []  }
 
 -------------------------------------------------------------------------------
 -- Definicion de los parametros de las subrutinas
@@ -593,21 +563,41 @@ Expresion :: { Expr }
 
 --------------------------------------------------------------------------------
 -- Registros
-DefinirRegistro :: { Instr }
+DefinirRegistro :: { Definicion }
   : registro idtipo ":" EndLines Declaraciones EndLines ".~"
-    { definirRegistro $2 $5 TRegistro }
-  | registro idtipo ":" EndLines ".~"
-    { definirRegistro $2 [] TRegistro }
+    {% do
+        (symTab, scopes@(scope:_)) <- get
+        let newScope = scope + 1
+        let info = [SymbolInfo TRegistro newScope ConstructoresTipos]
+        addToSymTab [$2] info symTab (newScope:scopes)
+        return $ definirRegistro $2 $5 }
+  | registro idtipo ":" EndLines ".~"                       
+    {% do
+        (symTab, scopes@(scope:_)) <- get
+        let newScope = scope + 1
+        let info = [SymbolInfo TRegistro newScope ConstructoresTipos]
+        addToSymTab [$2] info symTab (newScope:scopes)
+        return $ definirRegistro $2 [] }
 --------------------------------------------------------------------------------
 
 
 --------------------------------------------------------------------------------
 -- Uniones
-DefinirUnion :: { Instr }
+DefinirUnion :: { Definicion }
   : union idtipo ":" EndLines Declaraciones EndLines ".~"
-    { definirUnion $2 $5 TUnion }
-  | union idtipo ":" EndLines ".~"
-    { definirUnion $2 [] TUnion }
+    {% do
+        (symTab, scopes@(scope:_)) <- get
+        let newScope = scope + 1
+        let info = [SymbolInfo TUnion newScope ConstructoresTipos]
+        addToSymTab [$2] info symTab (newScope:scopes)
+        return $ definirUnion $2 $5 }
+  | union idtipo ":" EndLines ".~"                       
+    {% do
+        (symTab, scopes@(scope:_)) <- get
+        let newScope = scope + 1
+        let info = [SymbolInfo TUnion newScope ConstructoresTipos]
+        addToSymTab [$2] info symTab (newScope:scopes)
+        return $ definirUnion $2 [] }
 --------------------------------------------------------------------------------
 
 
