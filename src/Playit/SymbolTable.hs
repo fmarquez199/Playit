@@ -49,21 +49,23 @@ createInitSymTab st scopes = (insertSymbols symbols info st,scopes)
 
 
 -------------------------------------------------------------------------------
--- Se empila el nuevo alcance
+-- Se apila el nuevo alcance
 pushNewScope :: MonadSymTab ()
 pushNewScope = do
-    (actualSymTab, scopes@(actualScope:_)) <- get
-    let newScope = actualScope + 1
+    -- (actualSymTab, scopes@(actualScope:_)) <- get
+    (actualSymTab, scopes) <- get
+    let newScope = (head scopes) + 1
     put (actualSymTab, newScope:scopes)
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
--- Se desempila el alcance actual
+-- Se desapila el alcance actual
 popScope :: MonadSymTab ()
 popScope = do
-    (actualSymTab, _:scopes) <- get
-    put (actualSymTab, scopes)
+    -- (actualSymTab, _:scopes) <- get
+    (actualSymTab, scopes) <- get
+    put (actualSymTab, tail scopes)
 -------------------------------------------------------------------------------
 
 
@@ -83,13 +85,12 @@ insertSymbols [] _ symTab = symTab
 insertSymbols (id:ids) (info:infos) (SymTab table)
     -- | isNothing (M.lookup id table) = insertSymbols ids infos newSymTab
     -- | otherwise = SymTab $ M.insert id (info : (fromJust (M.lookup id table))) table
-    | isJust (M.lookup id table) = insertSymbols ids infos upd
-    | otherwise = insertSymbols ids infos new
-    
+    | M.member id table = insertSymbols ids infos updSymTab
+    | otherwise = insertSymbols ids infos newSymTab 
     where
         -- Tabla de simbolos con el identificador insertado
-        new = SymTab $ M.insert id [info] table
-        upd = SymTab $ M.insert id (info:(fromJust (M.lookup id table))) table
+        newSymTab = SymTab $ M.insert id [info] table
+        updSymTab = SymTab $ M.adjust (info:) id table
 -------------------------------------------------------------------------------
 
 
@@ -105,6 +106,6 @@ lookupInSymTab var (SymTab table) = M.lookup var table
 insertDeclarations :: [Nombre] -> Tipo -> MonadSymTab ()
 insertDeclarations ids t = do
     (actualSymTab, scopes@(scope:_)) <- get
-    let info = [SymbolInfo t scope Variable]
+    let info = replicate (length ids) (SymbolInfo t scope Variable)
     addToSymTab ids info actualSymTab scopes
 -------------------------------------------------------------------------------

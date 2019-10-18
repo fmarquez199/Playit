@@ -217,7 +217,7 @@ Identificadores :: { ([Nombre], SecuenciaInstr) }
   | Identificadores "," Identificador
     {
       let ((ids, asigs), (id, asig)) = ($1, $3) 
-      in (ids ++ [id], asigs ++ asig)
+      in (reverse $ id : ids, reverse $ asig ++ asigs)
     }
 
 Identificador :: { (Nombre, SecuenciaInstr) }
@@ -274,7 +274,7 @@ Instruccion :: { Instr }
   | EntradaSalida                     { $1 }
   | Free                              { $1 }
   | return Expresion                  { Return $2 }
-  | break PopScope                    { Break }
+  | break {-PopScope-}                { Break }
   | continue                          { Continue }
 
 
@@ -541,10 +541,7 @@ Expresion :: { Expr }
   | "<<"  ">>"                   { crearArrLstExpr [] }
   | new Tipo                     { OpUnario New Null $2 }
   | input Expresion %prec input  { crearRead $2 (posicion $1) }
-  | input
-    {
-      crearRead (Literal ValorVacio TStr) (posicion $1)
-    }
+  | input { crearRead (Literal ValorVacio TStr) (posicion $1) }
 
   -- Operadores unarios
   | "#" Expresion                        { crearOpLen Longitud $2 }

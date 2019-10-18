@@ -18,7 +18,7 @@ import Playit.SymbolTable
 import Playit.Parser
 import Playit.Lexer
 import Playit.Types
--- import Playit.Print
+import Playit.Print
 
 -- Determina si un archivo esta vacio
 isEmptyFile :: String -> Bool
@@ -52,5 +52,8 @@ main = do
                     else do
                         (ast,(st,_), _) <- runRWST (parse tokens) () initState
                         print ast
+                        putStrLn $ replicate 7 '\n'
                         print st
+                        printAST 0 ast
+                        printSymTab st "  "
 

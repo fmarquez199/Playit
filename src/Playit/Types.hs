@@ -36,25 +36,57 @@ type SecuenciaInstr = [Instr]
 
 
 -- Categorias a las que pertenecen los simbolos de la tabla de simbolos
-data Categoria  = Variable
-                | Parametros
+data Categoria  = Apuntadores
                 | Constructores
                 | ConstructoresTipos
-                | Tipos
-                | Apuntadores
-                | Procedimientos
                 | Funciones
-                deriving (Eq, Show, Ord)
+                | Parametros Ref
+                | Procedimientos
+                | Tipos
+                | Variable
+                deriving (Eq, Ord)
+
+instance Show Categoria where
+    show Apuntadores        = "Apuntador"
+    show Constructores      = "Constructor"
+    show ConstructoresTipos = "Constructor de Tipos"
+    show Funciones          = "Funciones"
+    show (Parametros r)     = "Parametro por " ++ show r
+    show Procedimientos     = "Procedimiento"
+    show Tipos              = "Tipo"
+    show Variable           = "Variable"
 
 
 -- Tipo de dato que pueden ser las expresiones
-data Tipo   = TInt | TFloat | TBool | TChar | TStr | TRegistro | TUnion
-            | TArray Expr Tipo | TLista Tipo | TApuntador Tipo
-            | TError    -- Tipo error, no machean los tipos como deben
-            | TDummy    -- Tipo temporal cuando todavia no se lee el tipo de la
-                        -- variable en una asignacion en las declaraciones o no
-                        -- esta inicializada todavia (no tiene valor asignado)
-            deriving(Eq, Show, Ord)
+data Tipo = TApuntador Tipo
+          | TArray Expr Tipo
+          | TBool
+          | TChar
+          | TDummy    -- Tipo temporal cuando todavia no se lee el tipo de la
+                      -- variable en una asignacion en las declaraciones o no
+                      -- esta inicializada todavia (no tiene valor asignado)
+          | TError    -- Tipo error, no machean los tipos como deben
+          | TFloat
+          | TInt
+          | TLista Tipo
+          | TRegistro
+          | TStr
+          | TUnion
+          deriving(Eq, Ord)
+
+instance Show Tipo where
+    show (TApuntador t) = "Apuntador de " ++ show t
+    show (TArray e t)   = "Arreglo de tamaño " ++ show e ++ " de " ++ show t
+    show TBool          = "Booleano"
+    show TChar          = "Caracter"
+    show TDummy         = "Sin tipo definido aun"
+    show TError         = "Mal tipado"   
+    show TFloat         = "Flotante"
+    show TInt           = "Entero"
+    show (TLista t)     = "Lista de " ++ show t
+    show TRegistro      = "Registro"
+    show TStr           = "String"
+    show TUnion         = "Union"
 
 
 data Vars   = Var Nombre Tipo
@@ -62,7 +94,13 @@ data Vars   = Var Nombre Tipo
             | VarCompIndex Vars Nombre Tipo -- Campos de los registros y uniones
             | Param Nombre Tipo Ref
             | PuffValue Vars Tipo           -- Variable deferenciada con puff
-            deriving (Eq, Show, Ord)
+            deriving (Eq, Ord)
+
+instance Show Vars where
+    show (Var n t)        = "Variable: " ++ n ++ " de tipo: " ++ show t
+    show (Param n t r)    = "Parametro: " ++ n ++ " de tipo: " ++ show t ++ " pasado por: " ++ show r
+    show (PuffValue v t)  = "Desreferenciacion de: " ++ show v ++ " de tipo: " ++ show t
+    show (VarIndex v e t) = "Indexacion de: " ++ show v ++ " en la posicion " ++ show e ++ "de tipo: " ++ show t
 
 
 -- Especifica si un parametro es pasado como valor o por referencia
@@ -71,95 +109,172 @@ data Ref    = Valor | Referencia
 
 
 data Instr  = Asignacion Vars Expr
-            | Programa Cosas
-            | SecDeclaraciones SecuenciaInstr
-            -- For var = (Expr) -> (Expr) while (Expr) : (Instrucciones)
-            | ForWhile Nombre Expr Expr Expr SecuenciaInstr
+            | Break
+            | Continue
             -- For var = (Expr) -> (Expr) : (Instrucciones)
             | For Nombre Expr Expr SecuenciaInstr
             | ForEach Nombre Expr SecuenciaInstr
+            -- For var = (Expr) -> (Expr) while (Expr) : (Instrucciones)
+            | ForWhile Nombre Expr Expr Expr SecuenciaInstr
+            | Free Nombre
+            | Print Expr
+            | ProcCall Subrutina
+            | Programa Cosas
+            | Return Expr
+            | SecDeclaraciones SecuenciaInstr
             | Switch [(Expr, SecuenciaInstr)]  -- [(cond, instruc)]
             | While Expr SecuenciaInstr
-            | ProcCall Subrutina
-            | Free Nombre
-            | Return Expr
-            | Print Expr
-            | Break
-            | Continue
-            deriving (Eq, Show)
+            deriving (Eq)
+
+instance Show Instr where
+    -- Esto imprime el tipo de instruccion pero no imprime la secuenciaInstr
+    show (Asignacion v e)        = "Asignacion de " ++ show e ++ "a " ++ show v
+    show Break                   = "Break"
+    show Continue                = "Continue"
+    show (For n e1 e2 s)         = "Ciclo for iterando sobre " ++ n ++ " desde: " ++ show e1 ++ " hasta: " ++ show e2 ++ ": " ++ show s
+    show (ForEach n e s)         = "Ciclo ForEach iterando sobre " ++ n ++ " referenciado los elementos de: " ++ show e ++ ": " ++ show s
+    show (ForWhile n e1 e2 e3 s) = "Ciclo For Logico iterando sobre " ++ n ++ "desde: " ++ show e1 ++ " hasta: " ++ show e2 ++ " mientras sea verdad: " ++ show e3 ++ ": " ++ show s
+    show (Free n)                = "Liberar memoria reservada por " ++ n
+    show (Print e)               = "Imprimir a la salida estandar " ++ show e
+    show (ProcCall s)            = "Llamada de: " ++ show s
+    show (Programa c)            = "Programa: " ++ show c
+    show (Return e)              = "Retornar " ++ show e
+    show (SecDeclaraciones s)    = "Declaraciones: Esto no es una instruccion: " ++ show s
+    show (Switch ls)             = "Switch/Case: " ++ show ls
+    show (While e s)             = "Ciclo While iterando mientras sea verdad: " ++ show e
 
 
 -- Lo que se puede escribir dentro de un programa
-data Cosas = SecInstr SecuenciaInstr | Definiciones Definicion {-| Nada-}
-            deriving (Eq, Show)
+data Cosas = Definiciones Definicion
+           | SecInstr SecuenciaInstr
+           -- | Nada
+           deriving (Eq)
+
+instance Show Cosas where
+    show (Definiciones d) = show d
+    show (SecInstr s)     = show s 
+    -- show Nada             = ""
 
 -- 
 data Subrutina = SubrutinaCall Nombre Parametros
-                deriving (Eq, Show, Ord)
+                deriving (Eq, Ord)
+
+instance Show Subrutina where
+    show (SubrutinaCall n p) = "Subrutina " ++ n ++ " de parametros " ++ show p
 
 
 -- Definiciones de las subrutinas, registros y uniones
-data Definicion = Proc Nombre Parametros SecuenciaInstr
-                | Func Nombre Parametros Tipo SecuenciaInstr
+data Definicion = Func Nombre Parametros Tipo SecuenciaInstr
+                | Proc Nombre Parametros SecuenciaInstr
                 | Registro Nombre SecuenciaInstr Tipo
                 | Union Nombre SecuenciaInstr Tipo
-                deriving (Eq, Show)
+                deriving (Eq)
+
+instance Show Definicion where
+    show (Func n p t s)   = "Funcion: " ++ n ++ " que recibe: " ++ show p ++ " y retorna un: " ++ show t ++ ": " ++ show s
+    show (Proc n p s)     = "Procedimiento: " ++ n ++ " que recibe: " ++ show p ++ ": " ++ show s
+    show (Registro n s t) = "Registro: " ++ n
+    show (Union n s t)    = "Union: " ++ n
 
 
-data Expr   = OpBinario BinOp Expr Expr Tipo
-            | OpUnario UnOp Expr Tipo
-            | IfSimple Expr Expr Expr Tipo
-            | FuncCall Subrutina Tipo
-            | ArrLstExpr [Expr] Tipo
-            | Variables Vars Tipo
-            | Literal Literal Tipo
-            | Read Expr
-            | Null
-            deriving (Eq, Show, Ord)
+data Expr = ArrLstExpr [Expr] Tipo
+          | FuncCall Subrutina Tipo
+          | IfSimple Expr Expr Expr Tipo
+          | Literal Literal Tipo
+          | Null
+          | OpBinario BinOp Expr Expr Tipo
+          | OpUnario UnOp Expr Tipo
+          | Read Expr
+          | Variables Vars Tipo
+          deriving (Eq, Ord)
 
+instance Show Expr where
+    show (ArrLstExpr lst _)     = "[" ++ intercalate "," (map show lst) ++ "]"
+    show (FuncCall s _)         = "Llamada de subrutina: " ++ show s
+    show (IfSimple e1 e2 e3 t)  = "(" ++ show e1 ++ " ? " ++ show e2 ++ " : " ++ show e3
+    show (Literal lit _)        = show lit
+    show Null                   = "Apuntador nada"
+    show (OpBinario op e1 e2 _) = "(" ++ show e1 ++ show op ++ show e2 ++ ")"
+    show (OpUnario op e1 _)     = show op ++ show e1
+    show (Read e1)              = "Leyendo dentrada estandar: " ++ show e1
+    show (Variables vars _)     = show vars
+    
+data Literal = ArrLst [Literal]      -- >> Arreglos y listas
+             | Booleano Bool
+             | Caracter Char
+             | Entero Int
+             | Flotante Float
+             | Str String
+             | ValorVacio
+             deriving (Eq, Ord)
 
-data Literal    = Entero Int
-                | Flotante Float
-                | Caracter Char
-                | Str String
-                | Booleano Bool
-                | ArrLst [Literal]      -- >> Arreglos y listas
-                | ValorVacio
-                deriving (Eq, Show, Ord)
+instance Show Literal where
+    show (ArrLst l@(ArrLst _:_))   = show $ map show l 
+    show (ArrLst l@(Booleano _:_)) = show $ map ((\x->read x::Bool) . show) l
+    show (ArrLst l@(Caracter _:_)) = show $ map ((\x->read x::Char) . show) l
+    show (ArrLst l@(Entero _:_))   = show $ map ((\x->read x::Int) . show) l
+    show (Booleano val)            = show val
+    show (Caracter val)            = show val
+    show (Entero val)              = show val
+    show ValorVacio                = "Valor vacio"
 
 
 -- Operadores binarios
-data BinOp  = Suma
-            | Resta
-            | Multiplicacion
-            | Division
-            | DivEntera
-            | Modulo
-            | Menor
-            | Mayor
-            | MenorIgual
-            | MayorIgual
-            | Igual
-            | Desigual
-            | Anexo
-            | Concatenacion
-            | And
-            | Or
-            deriving (Eq, Show, Ord)
+data BinOp = And
+           | Anexo
+           | Concatenacion
+           | Desigual
+           | DivEntera
+           | Division
+           | Igual
+           | Mayor
+           | MayorIgual
+           | Menor
+           | MenorIgual
+           | Modulo
+           | Multiplicacion
+           | Or
+           | Resta
+           | Suma
+           deriving (Eq, Ord)
+
+instance Show BinOp where
+    show And            = " && "
+    show Anexo          = " : "
+    show Concatenacion  = " :: "
+    show Desigual       = " != "
+    show DivEntera      = " // "
+    show Division       = " / "
+    show Igual          = " == "
+    show Mayor          = " > "
+    show MayorIgual     = " >= "
+    show Menor          = " < "
+    show MenorIgual     = " <= "
+    show Modulo         = " % "
+    show Multiplicacion = " * "
+    show Or             = " || "
+    show Resta          = " - "
+    show Suma           = " + "
 
 
 -- Operadores unarios
-data UnOp   = Negativo
-            | Longitud
-            | UpperCase
-            | LowerCase
-            | Incremento
-            | Decremento
-            | Desreferenciar
-            | Not
-            | New
-            | Len
-            deriving (Eq, Show, Ord)
+data UnOp = Desreferenciar
+          | Longitud
+          | LowerCase
+          | Negativo
+          | New
+          | Not
+          | UpperCase
+          deriving (Eq, Ord)
+
+instance Show UnOp where
+    show Desreferenciar = "puff "
+    show Longitud       = "#"
+    show LowerCase      = "."
+    show Negativo       = "-"
+    show New            = "summon "
+    show Not            = "!"
+    show UpperCase      = "^"
 
 
 -------------------------------------------------------------------------------
@@ -181,7 +296,10 @@ data SymbolInfo = SymbolInfo {
     getScope :: Alcance,
     getCategory :: Categoria
     }
-    deriving (Eq, Show, Ord)
+    deriving (Eq, Ord)
+
+instance Show SymbolInfo where
+    show (SymbolInfo t s c) = "Tipo: " ++ show t ++ ", en el alcance: " ++ show s ++ ", de categoria: " ++ show c 
 
 
 {- Nuevo tipo de dato para representar la tabla de simbolos
@@ -211,7 +329,7 @@ showVar (Var name _) = name
 showVar (Param name _ _) = name
 showVar (PuffValue vars _) = showVar vars
 showVar (VarIndex vars e _) =
-    showVar vars ++ "|)" ++ showE e ++ "(|" 
+    showVar vars ++ "|)" ++ show e ++ "(|" 
     -- TODO : Falta mostrar lista
 
 getTypeVar :: Vars -> Tipo
@@ -244,7 +362,7 @@ showE (OpUnario Not e _)                 = "!" ++ showE e
 showE (ArrLstExpr lst _)                  = "[" ++ intercalate "," (map showE lst) ++ "]"
 showE (IfSimple e1 e2 e3 t)                = "(" ++ showE e1 ++ " ? " ++ showE e2 ++ " : " ++ showE e3 ++ ")"
 
--- 
+
 showL :: Literal -> String
 showL ValorVacio      = "Valor vacio"
 showL (Entero val)    = show val
@@ -275,3 +393,22 @@ getTipoParametro _ = TError
 
 getNombreSubrutina :: Subrutina -> Nombre
 getNombreSubrutina (SubrutinaCall n _) = n
+
+getRef :: Vars -> Ref
+getRef (Param _ _ ref) = ref
+getRef _ = error "Esto no es un parametro, que haces aqui?"
+
+isVar :: Expr -> Bool
+isVar (Variables _ _) = True
+isVar (OpBinario _ x y _) = isVar x || isVar y
+isVar (OpUnario _ x _) = isVar x
+isVar (IfSimple x y z _) = isVar x || isVar y || isVar z
+isVar (ArrLstExpr x _) = any isVar x
+isVar _ = False
+
+getVar :: Expr -> [Vars]
+getVar (Variables v _) = [v]
+getVar (OpUnario _ x _) = getVar x
+getVar (OpBinario _ x y _) = concat $ map getVar $ filter isVar $ [x] ++ [y]
+getVar (ArrLstExpr x _) = concat $ map getVar $ filter isVar x
+getVar _ = error "Esto no tiene variables, que haces aqui?"

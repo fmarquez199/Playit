@@ -239,11 +239,7 @@ crearSwitch casos (line, col) = return $ Switch casos
 -------------------------------------------------------------------------------
 -- Crea el nodo para una instruccion For
 crearFor :: Nombre -> Expr -> Expr -> SecuenciaInstr -> SymTab -> Alcance -> Posicion -> MonadSymTab Instr
-crearFor var e1 e2 i st scope pos@(line,_) = do
-    (symtab, scopes) <- get
-    let info = SymbolInfo TInt (head scopes) Variable
-    addToSymTab [var] [info] symtab scopes
-    return $ For var e1 e2 i
+crearFor var e1 e2 i st scope pos@(line,_) = return $ For var e1 e2 i
     -- | tE1 == TInt && tE2 == TInt =
     --     do
     --         let newI = map (changeTDummyFor TInt st scope) i
@@ -275,10 +271,7 @@ crearFor var e1 e2 i st scope pos@(line,_) = do
 
 -------------------------------------------------------------------------------
 crearForWhile :: Nombre -> Expr -> Expr -> Expr -> SecuenciaInstr -> SymTab -> Alcance -> Posicion -> MonadSymTab Instr
-crearForWhile var e1 e2 e3 i st scope pos@(line,_) = do
-    (symtab, scopes) <- get
-    let info = SymbolInfo TInt (head scopes) Variable
-    addToSymTab [var] [info] symtab scopes
+crearForWhile var e1 e2 e3 i st scope pos@(line,_) =
     return $ ForWhile var e1 e2 e3 i
 {-crearForWhile var e1 e2 e3 i st scope pos@(line,_)
     | tE1 == TInt && tE2 == TInt && tE3 == TBool =
@@ -322,11 +315,7 @@ crearForWhile var e1 e2 e3 i st scope pos@(line,_) = do
 -------------------------------------------------------------------------------
 -- Crea el nodo para una instruccion ForEach
 crearForEach :: Nombre -> Expr -> SecuenciaInstr -> Posicion -> MonadSymTab Instr
-crearForEach var e i pos@(line,_) = do
-    (symtab, scopes) <- get
-    let info = SymbolInfo TDummy (head scopes) Variable
-    addToSymTab [var] [info] symtab scopes
-    return $ ForEach var e i
+crearForEach var e i pos@(line,_) = return $ ForEach var e i
 -------------------------------------------------------------------------------
     
 
@@ -359,7 +348,7 @@ crearWhile e i (line,_) = return $ While e i
 -- crearProc name params i = do
 --     -- TODO: Agregar la subrutina a la symtab
 --     (symtab, scopes) <- get
---     let info = [SymbolInfo TDummy (scopes !! 0) Procedimientos]
+--     let info = [SymbolInfo TDummy (head scopes) Procedimientos]
 --     addToSymTab [name] info symtab scopes
 --     return $ Proc name params i
 -------------------------------------------------------------------------------
@@ -375,7 +364,7 @@ crearSubrutina name params returnT i = return $ Func name params returnT i
 crearNombreSubrutina :: Nombre -> Tipo -> Categoria -> MonadSymTab ()
 crearNombreSubrutina nombre tipo categoria = do
     (symtab, scopes) <- get
-    let info = [SymbolInfo tipo (scopes !! 0) categoria]
+    let info = [SymbolInfo tipo (head scopes) categoria]
     addToSymTab [nombre] info symtab scopes
     return ()
 
@@ -385,7 +374,8 @@ crearSubrutinaCall :: Nombre -> Parametros -> MonadSymTab Subrutina
 crearSubrutinaCall nombre params = do
     -- TODO: Verificar que los parametros y la subrutina esten en la symtab y el scope concuerde con el actual
     (symtab, scopes) <- get
-    if all isJust $ inSymbTab [nombre] symtab then
+    let lista = nombre : (map showVar $ concat $ map getVar $ filter isVar params)
+    if all isJust $ inSymbTab lista symtab then
         return $ SubrutinaCall nombre params
     else
         error "Error semantico, al menos uno de los parametros o la subrutina no ha sido definida."
@@ -423,7 +413,8 @@ crearParam :: Vars -> Tipo -> MonadSymTab Expr
 crearParam param t = do
     -- TODO: Agregar el parametro a la symtab
     (symtab, scopes) <- get
-    let info = [SymbolInfo (getTypeVar param) (scopes !! 0) Parametros]
+    let tipo = getRef param
+    let info = [SymbolInfo (getTypeVar param) (head scopes) (Parametros tipo)]
     addToSymTab [showVar param] info symtab scopes
     return $ Variables param t
 -------------------------------------------------------------------------------
