@@ -222,7 +222,7 @@ printExpr n e =
             putStrLn (t ++ "Operando: ") >> printExpr (n + 1) exp
         -----------------------------------------------------------------------
         -- Expresion de arreglo explicito
-        (ListaExpr exps _) ->
+        (ArrLstExpr exps _) ->
             putStrLn (t ++ "Arreglo:") >> mapM_ (printExpr $ n + 1) exps
         -----------------------------------------------------------------------
         -- Leer valor
@@ -238,7 +238,7 @@ printExpr n e =
             putStrLn (t ++ "Condicion: ") >> printExpr (n + 1) e1
             putStrLn (t ++ "Valor caso True: ") >> printExpr (n + 1) e2
             putStrLn (t ++ "Valor caso False: ") >> printExpr (n + 1) e3
-        ExprVacia -> putStrLn (t ++ "Exprecion vacia")
+        Null -> putStrLn (t ++ "Exprecion vacia")
     where
         t = replicate (2 * n) ' '
         p = printExprs n
