@@ -37,7 +37,7 @@ import Playit.AST
   char              { TkRUNE _ _ }
   str               { TkRUNES _ _ }
   float             { TkSKILL _ _ }
-  if                { TkBUTTON _ _ }
+  switch            { TkBUTTON _ _ }
   proc              { TkBOSS _ _ }
   for               { TkCONTROLLER _ _ }
   print             { TkDROP _ _ }
@@ -46,7 +46,7 @@ import Playit.AST
   break             { TkGameOver _ _ }
   input             { TkJOYSTICK _ _ }
   continue          { TkKeepPlaying _ _ }
-  call          { TkKILL _ _ }
+  call              { TkKILL _ _ }
   while             { TkLOCK _ _ }
   function          { TkMONSTER _ _ }
   do                { TkPLAY _ _ }
@@ -154,14 +154,17 @@ import Playit.AST
 -------------------------------------------------------------------------------
 
 ProgramaWrapper :: { Instr }
-  : EndLines Programa EndLines  {% return $2 }
-  | EndLines Programa           {% return $2 }
-  | Programa EndLines           {% return $1 }
-  | Programa                    {% return $1 }
+  : EndLines Programa EndLines  { % return $2 }
+  | EndLines Programa           { % return $2 }
+  | Programa EndLines           { % return $1 }
+  | Programa                    { % return $1 }
 
   
 Programa :: { Instr }
-  : PushNewScope world programa ":" EndLines Cosas EndLines ".~"  { Programa $6 }
+  : PushNewScope world programa ":" EndLines Cosas EndLines ".~"  PopScope
+    { Programa $6 }
+  {-| PushNewScope world programa ":" EndLines EndLines ".~" PopScope
+    { Programa Nada }-}
 
 
 Cosas :: { Cosas }
@@ -193,7 +196,7 @@ Declaraciones :: { SecuenciaInstr }
 
 Declaracion :: { Instr }
   : Tipo Identificadores
-    {% do
+    { % do
       let (ids, asigs) = $2
       insertDeclarations ids $1
       return $ SecDeclaraciones asigs
@@ -230,9 +233,9 @@ Identificador :: { (Nombre, SecuenciaInstr) }
 
 -- Lvalues, contenedores que identifican a las variables
 Lvalue :: { Vars }
-  : Lvalue "." nombre           {% crearVarCompIndex $1 $3 }
-  | Lvalue "|)" Expresion "(|"  { crearVarIndex $1 $3 }       -- Indexacion arreglo
-  | Lvalue "|>" Expresion "<|"  { crearVarIndex $1 $3 }       -- Indexacion lista
+  : Lvalue "." nombre           { % crearVarCompIndex $1 $3 }
+  | Lvalue "|)" Expresion "(|"  { crearVarIndex $1 $3 }   -- Indexacion arreglo
+  | Lvalue "|>" Expresion "<|"  { crearVarIndex $1 $3 }   -- Indexacion lista
   | pointer Lvalue              { PuffValue $2 (typeVar $2) }
   | nombre                      { % crearIdvar $1 }
 
@@ -265,13 +268,13 @@ Instruccion :: { Instr }
   : Declaracion                       { $1 }
   | Asignacion                        { $1 }
   | PushNewScope Controller PopScope  { $2 }
-  | PushNewScope Play PopScope        { $2 }  -- Aqui se abre o no un nuevo scope? por las decls que puedas tener
+  | PushNewScope Play PopScope        { $2 }
   | Button                            { $1 }
   | ProcCall                          { $1 }
   | EntradaSalida                     { $1 }
   | Free                              { $1 }
   | return Expresion                  { Return $2 }
-  | break {-PopScope??-}                    { Break }
+  | break PopScope                    { Break }
   | continue                          { Continue }
 
 
@@ -295,33 +298,22 @@ Asignacion :: { Instr }
 --------------------------------------------------------------------------------
 -- Instrucciones de condicionales 'Button', '|' y 'notPressed'
 Button :: { Instr }
-  : if ":" EndLines Guardias ".~" { $4 }
+  : switch ":" EndLines Guardias ".~"
+    { % crearSwitch (reverse $4) (posicion $1 )}
 
-Guardias::{ Instr }
-  : Guardias Guardia
-    { 
-      let (IF bloq1,IF bloq2) = ($1,$2)
-      in IF $ bloq1 ++ bloq2
-    }
-  | Guardia { $1 }
+Guardias :: { [(Expr, SecuenciaInstr)] }
+  : Guardias Guardia { $2 : $1 }
+  | Guardia { [$1] }
 
-Guardia:: { Instr }
+Guardia :: { (Expr, SecuenciaInstr) }
   : "|" Expresion "}" EndLines Instrucciones EndLines
-    {
-      crearGuardiaIF $2 $5 (posicion $1)
-    }
+    { crearCasoSwitch $2 $5 (posicion $1) }
   | "|" Expresion "}" Instrucciones EndLines
-    {
-      crearGuardiaIF $2 $4 (posicion $1)
-    }
+    { crearCasoSwitch $2 $4 (posicion $1) }
   | "|" else "}" EndLines Instrucciones EndLines
-    {
-      crearGuardiaIF (Literal (Booleano True) TBool) $5 (posicion $1)
-    }
+    { crearCasoSwitch (Literal (Booleano True) TBool) $5 (posicion $1) }
   | "|" else "}" Instrucciones EndLines
-    {
-      crearGuardiaIF (Literal (Booleano True) TBool) $4 (posicion $1)
-    }
+    { crearCasoSwitch (Literal (Booleano True) TBool) $4 (posicion $1) }
 --------------------------------------------------------------------------------
 
 
@@ -357,12 +349,16 @@ Controller :: { Instr }
 -- valor inicial, antes de construir el arbol de instrucciones del 'for'
 InitVar1 :: { (Nombre, Expr) }
   : nombre "=" Expresion
-    {% do
+    { % do
       -- TODO: Verificar que nombre este en la symtab, asignar valor y el scope concuerde con el actual
+      -- Se supone que TDummy deberia cambiar por el tipo de Expresion
+      let var = Var $1 TDummy
+      insertDeclarations [$1] TDummy
+      return $ crearAsignacion var $3 (posicion $2) 
       return ($1, $3)
     }
   | Tipo nombre "=" Expresion
-    {% do
+    { % do
       let var = Var $2 $1
       insertDeclarations [$2] $1
       return $ crearAsignacion var $4 (posicion $3)
@@ -371,12 +367,16 @@ InitVar1 :: { (Nombre, Expr) }
 
 InitVar2 :: { (Nombre, Expr) }
   : nombre "<-" Expresion %prec "<-"
-    {% do
+    { % do
       -- TODO: Verificar que nombre este en la symtab, asignar valor y el scope concuerde con el actual
+      -- Se supone que TDummy deberia cambiar por el tipo de Expresion
+      let var = Var $1 TDummy
+      insertDeclarations [$1] TDummy
+      return $ crearAsignacion var $3 (posicion $2)
       return ($1, $3)
     }
   | Tipo nombre "<-" Expresion %prec "<-"
-    {% do
+    { % do
       let var = Var $2 $1
       insertDeclarations [$2] $1
       return $ crearAsignacion var $4 (posicion $3)
@@ -390,11 +390,11 @@ InitVar2 :: { (Nombre, Expr) }
 Play :: { Instr }
   : do ":" EndLines Instrucciones EndLines while Expresion EndLines ".~"
     {
-      crearWhile $7 $4 (posicion $1)
+      % crearWhile $7 $4 (posicion $1)
     }
   | do ":" EndLines while Expresion EndLines ".~"
     {
-      crearWhile $5 [] (posicion $1)
+      % crearWhile $5 [] (posicion $1)
     }
 -------------------------------------------------------------------------------
 
@@ -408,9 +408,9 @@ EntradaSalida :: { Instr }
 -------------------------------------------------------------------------------
 -- Instrucciones para liberar la memoria de los apuntadores 'free'
 Free :: { Instr }
-  : free nombre             {% crearFree $2 }
-  | free "|}" "{|" nombre   {% crearFree $4 }
-  | free "<<" ">>" nombre   {% crearFree $4 }
+  : free nombre             { % crearFree $2 }
+  | free "|}" "{|" nombre   { % crearFree $4 }
+  | free "<<" ">>" nombre   { % crearFree $4 }
 -------------------------------------------------------------------------------
 
 
@@ -421,41 +421,39 @@ Free :: { Instr }
 -------------------------------------------------------------------------------
 
 DefinirSubrutina :: { Definicion }
+  : Firma ":" EndLines Instrucciones EndLines ".~" 
+    { % do
+      let (nombre, parametros, tipo) = $1
+      crearSubrutina nombre (reverse parametros) tipo $4
+    }
+  | Firma ":" EndLines ".~"
+    { % do
+      let (nombre, parametros, tipo) = $1
+      crearSubrutina nombre (reverse parametros) tipo []
+    } 
 
- -- Procedimientos
-  : proc nombre "(" Parametros ")" ":" EndLines Instrucciones EndLines ".~"
-    {% 
-      crearProc $2 (reverse $4) $8
+-------------------------------------------------------------------------------
+-- Definicion de los parametros de las subrutinas
+Firma :: { (Nombre, [Expr], Tipo) }
+  : proc nombre "(" Parametros ")" 
+    { % do
+      crearNombreSubrutina $2 TDummy Procedimientos
+      return ($2, $4, TDummy)
     }
-  | proc nombre "(" Parametros ")" ":" EndLines ".~"
-    {% 
-      crearProc $2 (reverse $4) []
+  | proc nombre "(" ")" 
+    { % do
+      crearNombreSubrutina $2 TDummy Procedimientos
+      return ($2, [], TDummy)
     }
-  | proc nombre "(" ")" ":" EndLines Instrucciones EndLines ".~"
-    {% 
-      crearProc $2 [] $7
+  | function nombre "(" Parametros ")" Tipo 
+    { % do
+      crearNombreSubrutina $2 $6 Funciones
+      return ($2, $4, $6)
     }
-  | proc nombre "(" ")" ":" EndLines ".~"
-    {% 
-      crearProc $2 [] []
-    }
-  
-  -- Funciones.
-  | function nombre "(" Parametros ")" Tipo ":" EndLines Instrucciones EndLines ".~"
-    {% 
-      crearFunc $2 $4 $6 $9
-    }
-  | function nombre "(" Parametros ")" Tipo ":" EndLines ".~"
-    {% 
-      crearFunc $2 $4 $6 []
-    }
-  | function nombre "(" ")" Tipo ":" EndLines Instrucciones EndLines ".~"
-    {% 
-      crearFunc $2 [] $5 $8
-    }
-  | function nombre "(" ")" Tipo ":" EndLines ".~"
-    {% 
-      crearFunc $2 [] $5 []
+  | function nombre "(" ")" Tipo 
+    { % do
+      crearNombreSubrutina $2 $5 Funciones
+      return ($2, [], $5)
     }
 
 -------------------------------------------------------------------------------
@@ -466,8 +464,8 @@ Parametros :: { [Expr] }
 
 
 Parametro :: { Expr }
-  : Tipo nombre       {% crearParam (Param $2 $1 Valor) $1 }
-  | Tipo "?" nombre   {% crearParam (Param $3 $1 Referencia) $1 }
+  : Tipo nombre       { % crearParam (Param $2 $1 Valor) $1 }
+  | Tipo "?" nombre   { % crearParam (Param $3 $1 Referencia) $1 }
 -------------------------------------------------------------------------------
 
 
@@ -477,11 +475,11 @@ ProcCall :: { Instr }
   : SubrutinaCall     { ProcCall $1 }
 
 FuncCall :: { Expr }
-  : SubrutinaCall     {% crearFuncCall $1 }
+  : SubrutinaCall     { % crearFuncCall $1 }
 
 SubrutinaCall :: { Subrutina }
-  : call nombre "(" PasarParametros ")"   {% crearSubrutinaCall $2 (reverse $4) }
-  | call nombre "(" ")"                   {% crearSubrutinaCall $2 [] }
+  : call nombre "(" PasarParametros ")"   { % crearSubrutinaCall $2 (reverse $4) }
+  | call nombre "(" ")"                   { % crearSubrutinaCall $2 [] }
 -------------------------------------------------------------------------------
 
 
@@ -576,16 +574,16 @@ Expresion :: { Expr }
 --------------------------------------------------------------------------------
 -- Registros
 DefinirRegistro :: { Definicion }
-  : registro idtipo ":" EndLines Declaraciones EndLines ".~" {% definirRegistro $2 $5 }
-  | registro idtipo ":" EndLines ".~"                        {% definirRegistro $2 [] }
+  : registro idtipo ":" EndLines Declaraciones EndLines ".~" { % definirRegistro $2 $5 }
+  | registro idtipo ":" EndLines ".~"                        { % definirRegistro $2 [] }
 --------------------------------------------------------------------------------
 
 
 --------------------------------------------------------------------------------
 -- Uniones
 DefinirUnion :: { Definicion }
-  : union idtipo ":" EndLines Declaraciones EndLines ".~" {% definirUnion $2 $5 }
-  | union idtipo ":" EndLines ".~"                        {% definirUnion $2 [] }
+  : union idtipo ":" EndLines Declaraciones EndLines ".~" { % definirUnion $2 $5 }
+  | union idtipo ":" EndLines ".~"                        { % definirUnion $2 [] }
 --------------------------------------------------------------------------------
 
 
@@ -597,12 +595,12 @@ DefinirUnion :: { Definicion }
 
 -- Se desempila el alcance actual para pasar al anterior
 PopScope  ::  { () }
-          :   {- Lambda -}        {% popScope }
+          :   {- Lambda -}        { % popScope }
 
 
 -- Empila el nuevo alcance al inicio del anterior
 PushNewScope  ::  { () }
-              :   {- Lambda -}    {% pushNewScope }
+              :   {- Lambda -}    { % pushNewScope }
 
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------

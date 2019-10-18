@@ -14,11 +14,11 @@ import qualified Data.Map as M
 import Data.List (intercalate)
 
 
---------------------------------------------------------------------------------
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 --             Tipos de datos que representan la estructura del AST
---------------------------------------------------------------------------------
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 
 -- Identificador de variable, registros, uniones y subrutinas
@@ -78,7 +78,7 @@ data Instr  = Asignacion Vars Expr
             -- For var = (Expr) -> (Expr) : (Instrucciones)
             | For Nombre Expr Expr SecuenciaInstr
             | ForEach Nombre Expr SecuenciaInstr
-            | IF [(Expr, SecuenciaInstr)]  -- [(cond,instruc)]
+            | Switch [(Expr, SecuenciaInstr)]  -- [(cond, instruc)]
             | While Expr SecuenciaInstr
             | ProcCall Subrutina
             | Free Nombre
@@ -90,7 +90,7 @@ data Instr  = Asignacion Vars Expr
 
 
 -- Lo que se puede escribir dentro de un programa
-data Cosas = SecInstr SecuenciaInstr | Definiciones Definicion
+data Cosas = SecInstr SecuenciaInstr | Definiciones Definicion {-| Nada-}
             deriving (Eq, Show)
 
 -- 
@@ -162,11 +162,11 @@ data UnOp   = Negativo
             deriving (Eq, Show, Ord)
 
 
---------------------------------------------------------------------------------
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 --             Tipos de datos que representan la tabla de simbolos
---------------------------------------------------------------------------------
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 
 -- Alcance de un identificador
@@ -198,20 +198,27 @@ newtype SymTab  = SymTab { getSymTab :: M.Map Nombre [SymbolInfo] }
 type MonadSymTab a = RWST () () (SymTab, StackScopes) IO a
 
 
---------------------------------------------------------------------------------
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 --                      Para mostrar mejor los errores
---------------------------------------------------------------------------------
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 
 -- Show de las variables
 showVar :: Vars -> String
 showVar (Var name _) = name
-showVar (VarIndex vars e t) =
+showVar (Param name _ _) = name
+showVar (PuffValue vars _) = showVar vars
+showVar (VarIndex vars e _) =
     showVar vars ++ "|)" ++ showE e ++ "(|" 
     -- TODO : Falta mostrar lista
 
+getTypeVar :: Vars -> Tipo
+getTypeVar (Var _ t) = t
+getTypeVar (Param _ t _) = t
+getTypeVar (PuffValue _ t) = t
+getTypeVar (VarIndex _ _ t) = t
 
 -- Show de las expresiones
 showE :: Expr -> String
@@ -258,7 +265,13 @@ showType TBool        = "Booleano(s)"
 showType (TArray e t) = "Arreglo de tamaño " ++ showE e ++ " de " ++ showType t
 showType _            = "Ivalido"
 
-getNombre :: Vars -> Nombre
-getNombre (Param n _ _) = n
-getNombre (Var n _) = n
-getNombre (VarIndex v _ _) = getNombre v
+getNombreParametro :: Expr -> Nombre
+getNombreParametro (Variables x _) = showVar x
+getNombreParametro _ = ""
+
+getTipoParametro :: Expr -> Tipo
+getTipoParametro (Variables x _) = getTypeVar x
+getTipoParametro _ = TError
+
+getNombreSubrutina :: Subrutina -> Nombre
+getNombreSubrutina (SubrutinaCall n _) = n

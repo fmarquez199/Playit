@@ -1,13 +1,16 @@
 world %Factorial%:
   monster factorial(Power n) Power:
-  @Power n
-  Kit of Power puff a = 2
-  "'Hola soy un comentario, ignorame'"
     Button:
       | n < 0 } unlock 0
       | n == 0 } unlock 1
       | n > 0 } unlock n * kill factorial(n-1)
     .~
+    "'Power x = 1
+    play:
+      x = n * x
+      n--
+    lock (n > 1)
+    .~
+    unlock x'"
   .~
-    
 .~

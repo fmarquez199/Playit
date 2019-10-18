@@ -13,21 +13,16 @@ import Control.Monad.Trans.RWS
 import Control.Monad.IO.Class
 import Data.Maybe (fromJust, isJust, isNothing)
 import qualified Data.Map as M
-import Data.List(intercalate)
+import Data.List(intercalate, null)
 import Playit.SymbolTable
 import Playit.CheckAST
 import Playit.Types
 
 
---------------------------------------------------------------------------------
---------------------------------------------------------------------------------
---                        Crear nodos del AST
---------------------------------------------------------------------------------
---------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------------------------------------------------------------                        Crear nodos del AST
+--------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-
---------------------------------------------------------------------------------
--- Crea el nodo para identificadores de variables y verifica que estén declarados
+--------------------------------------------------------------------------------- Crea el nodo para identificadores de variables y verifica que estén declarados
 crearIdvar :: Nombre -> MonadSymTab Vars
 crearIdvar name = do
     (symTab, scopes) <- get
@@ -37,11 +32,9 @@ crearIdvar name = do
     else 
         error ("\n\nError semantico, la variable: '" ++ name ++ 
                 "', no esta declarada.\n")
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
-
---------------------------------------------------------------------------------
--- Crea el nodo para variables de indexacion
+--------------------------------------------------------------------------------- Crea el nodo para variables de indexacion
 crearVarIndex :: Vars -> Expr -> Vars
 crearVarIndex v e = 
     let t = case typeVar v of 
@@ -49,11 +42,9 @@ crearVarIndex v e =
                 tipo@(TLista _) -> typeArrLst tipo
                 _ -> TError
     in VarIndex v e t
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
-
---------------------------------------------------------------------------------
--- Crea el nodo para variables de acceso a registros, uniones (campos)
+--------------------------------------------------------------------------------- Crea el nodo para variables de acceso a registros, uniones (campos)
 crearVarCompIndex :: Vars -> Nombre -> MonadSymTab Vars
 crearVarCompIndex v campo = do
     (symTab, scopes) <- get
@@ -63,11 +54,9 @@ crearVarCompIndex v campo = do
     else 
         error ("\n\nError semantico, el campo: '" ++ campo ++ 
                 "', no esta declarado.\n")
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
-
---------------------------------------------------------------------------------
--- Crear el nodo para asignar a un identificador de variable una expresion
+--------------------------------------------------------------------------------- Crear el nodo para asignar a un identificador de variable una expresion
 -- TODO: Modificar para que asigne el primer elemento de un arreglo/lista a la variable
 crearAsignacion :: Vars -> Expr -> Posicion -> Instr
 -- crearAsignacion lval (ArrLstExpr [] _)
@@ -216,8 +205,8 @@ crearArrLstExpr e =
 
 
 -- Crea el nodo para una instruccion If
-crearGuardiaIF :: Expr -> SecuenciaInstr -> Posicion -> Instr
-crearGuardiaIF exprCond seqInstrs (line,_) = IF [(exprCond, seqInstrs)]
+crearCasoSwitch :: Expr -> SecuenciaInstr -> Posicion -> (Expr, SecuenciaInstr)
+crearCasoSwitch exprCond seqInstrs (line, _) = (exprCond, seqInstrs)
 {-crearGuardiaIF exprCond seqInstrs (line,_)
     | tExpreCondicional == TBool = IF [(exprCond, seqInstrs)]
     | otherwise = 
@@ -237,6 +226,8 @@ crearIfSimple con v f t (linea, col) = IfSimple con v f t
   | otherwise = error ("\n\nError semantico en el operador ternario '? :' en la linea: " ++ show linea ++ " tipo de verdad: " ++ (show $ t v) ++ " tipo de mentira: " ++ (show $ t f))
   where t = typeE-}
 
+crearSwitch :: [(Expr, SecuenciaInstr)] -> Posicion -> MonadSymTab Instr
+crearSwitch casos (line, col) = return $ Switch casos
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
@@ -247,9 +238,12 @@ crearIfSimple con v f t (linea, col) = IfSimple con v f t
 
 -------------------------------------------------------------------------------
 -- Crea el nodo para una instruccion For
-crearFor :: Nombre -> Expr -> Expr -> SecuenciaInstr -> SymTab -> Alcance -> Posicion 
-            -> MonadSymTab Instr
-crearFor var e1 e2 i st scope pos@(line,_) = return $ For var e1 e2 i
+crearFor :: Nombre -> Expr -> Expr -> SecuenciaInstr -> SymTab -> Alcance -> Posicion -> MonadSymTab Instr
+crearFor var e1 e2 i st scope pos@(line,_) = do
+    (symtab, scopes) <- get
+    let info = SymbolInfo TInt (head scopes) Variable
+    addToSymTab [var] [info] symtab scopes
+    return $ For var e1 e2 i
     -- | tE1 == TInt && tE2 == TInt =
     --     do
     --         let newI = map (changeTDummyFor TInt st scope) i
@@ -280,9 +274,12 @@ crearFor var e1 e2 i st scope pos@(line,_) = return $ For var e1 e2 i
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
-crearForWhile :: Nombre -> Expr -> Expr -> Expr -> SecuenciaInstr -> SymTab -> Alcance -> Posicion 
-            -> MonadSymTab Instr
-crearForWhile var e1 e2 e3 i st scope pos@(line,_) = return $ ForWhile var e1 e2 e3 i
+crearForWhile :: Nombre -> Expr -> Expr -> Expr -> SecuenciaInstr -> SymTab -> Alcance -> Posicion -> MonadSymTab Instr
+crearForWhile var e1 e2 e3 i st scope pos@(line,_) = do
+    (symtab, scopes) <- get
+    let info = SymbolInfo TInt (head scopes) Variable
+    addToSymTab [var] [info] symtab scopes
+    return $ ForWhile var e1 e2 e3 i
 {-crearForWhile var e1 e2 e3 i st scope pos@(line,_)
     | tE1 == TInt && tE2 == TInt && tE3 == TBool =
         do
@@ -325,7 +322,10 @@ crearForWhile var e1 e2 e3 i st scope pos@(line,_) = return $ ForWhile var e1 e2
 -------------------------------------------------------------------------------
 -- Crea el nodo para una instruccion ForEach
 crearForEach :: Nombre -> Expr -> SecuenciaInstr -> Posicion -> MonadSymTab Instr
-crearForEach var e i pos@(line,_) =
+crearForEach var e i pos@(line,_) = do
+    (symtab, scopes) <- get
+    let info = SymbolInfo TDummy (head scopes) Variable
+    addToSymTab [var] [info] symtab scopes
     return $ ForEach var e i
 -------------------------------------------------------------------------------
     
@@ -333,8 +333,8 @@ crearForEach var e i pos@(line,_) =
 -------------------------------------------------------------------------------
 -- Crea el nodo para una instruccion While
 -- crearWhile' = observe "Que pasa con while " crearWhile
-crearWhile :: Expr -> SecuenciaInstr -> Posicion -> Instr
-crearWhile e i (line,_) = While e i
+crearWhile :: Expr -> SecuenciaInstr -> Posicion -> MonadSymTab Instr
+crearWhile e i (line,_) = return $ While e i
 {-    | tE == TBool = While e i
     | otherwise = 
         error ("\n\nError semantico en la expresion del 'while': '" ++
@@ -355,37 +355,65 @@ crearWhile e i (line,_) = While e i
 
 -------------------------------------------------------------------------------
 -- Crea el nodo para la instruccion que crea un procedimiento
-crearProc :: Nombre -> Parametros -> SecuenciaInstr -> MonadSymTab Definicion
-crearProc name params i = do
-    -- TODO: Agregar la subrutina a la symtab
-    return $ Proc name params i
+-- crearProc :: Nombre -> Parametros -> SecuenciaInstr -> MonadSymTab Definicion
+-- crearProc name params i = do
+--     -- TODO: Agregar la subrutina a la symtab
+--     (symtab, scopes) <- get
+--     let info = [SymbolInfo TDummy (scopes !! 0) Procedimientos]
+--     addToSymTab [name] info symtab scopes
+--     return $ Proc name params i
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
--- Crea el nodo para la instruccion que crea una funcion
-crearFunc :: Nombre -> Parametros -> Tipo -> SecuenciaInstr -> MonadSymTab Definicion
-crearFunc name params returnT i = do
-    -- TODO: Agregar la subrutina a la symtab
-    return $ Func name params returnT i
+-- Crea el nodo para la definicion de una subrutina
+crearSubrutina :: Nombre -> Parametros -> Tipo -> SecuenciaInstr -> MonadSymTab Definicion
+crearSubrutina name params returnT i = return $ Func name params returnT i
 -------------------------------------------------------------------------------
 
+-- Agrega el nombre de la subrutina a la tabla de símbolos.
+crearNombreSubrutina :: Nombre -> Tipo -> Categoria -> MonadSymTab ()
+crearNombreSubrutina nombre tipo categoria = do
+    (symtab, scopes) <- get
+    let info = [SymbolInfo tipo (scopes !! 0) categoria]
+    addToSymTab [nombre] info symtab scopes
+    return ()
 
 -------------------------------------------------------------------------------
 -- Crea el nodo para la instruccion que llama a la subrutina
 crearSubrutinaCall :: Nombre -> Parametros -> MonadSymTab Subrutina
 crearSubrutinaCall nombre params = do
-    -- TODO: Verificar que los paramentros y la subrutina esten en la symtab y el scope concuerde con el actual
-    return $ SubrutinaCall nombre params
+    -- TODO: Verificar que los parametros y la subrutina esten en la symtab y el scope concuerde con el actual
+    (symtab, scopes) <- get
+    if all isJust $ inSymbTab [nombre] symtab then
+        return $ SubrutinaCall nombre params
+    else
+        error "Error semantico, al menos uno de los parametros o la subrutina no ha sido definida."
 -------------------------------------------------------------------------------
 
+inSymbTab :: [Nombre] -> SymTab -> [Maybe [SymbolInfo]]
+inSymbTab [] _ = [Nothing]
+inSymbTab [x] symtab = [lookupInSymTab x symtab]
+inSymbTab (x:xs) symtab = (lookupInSymTab x symtab):(inSymbTab xs symtab)  
 
 -------------------------------------------------------------------------------
 -- Crea el nodo para la instruccion que llama a la funcion
 crearFuncCall :: Subrutina -> MonadSymTab Expr
 crearFuncCall subrutina = do
     -- TODO: Colocar el tipo de retorno de la funcion, buscarlo en la symtab
-    return $ FuncCall subrutina TDummy
+    (symtab, scopes) <- get
+    let nombre = getNombreSubrutina subrutina
+    let datos = lookupInSymTab nombre symtab
+    let existe = isJust datos
+    if existe then do
+        let fs = filter (\i -> getCategory i == Funciones) $ fromJust datos
+        let found = filter (\i -> getScope i == (maximum $ map getScope fs)) fs
+        if not $ null found then
+            return $ FuncCall subrutina (getType $ head found)
+        else
+            error "Error semantico, funcion no definida."
+    else
+        error "Error semantico, funcion no definida."
 -------------------------------------------------------------------------------
 
 
@@ -394,6 +422,9 @@ crearFuncCall subrutina = do
 crearParam :: Vars -> Tipo -> MonadSymTab Expr
 crearParam param t = do
     -- TODO: Agregar el parametro a la symtab
+    (symtab, scopes) <- get
+    let info = [SymbolInfo (getTypeVar param) (scopes !! 0) Parametros]
+    addToSymTab [showVar param] info symtab scopes
     return $ Variables param t
 -------------------------------------------------------------------------------
 
@@ -405,7 +436,7 @@ crearParam param t = do
 -------------------------------------------------------------------------------
 
 
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 -- Crea el nodo para la instruccion que define los registros
 definirRegistro :: Nombre -> SecuenciaInstr -> MonadSymTab Definicion
 definirRegistro id decls = do
@@ -416,7 +447,7 @@ definirRegistro id decls = do
 -------------------------------------------------------------------------------
 
 
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 -- Crea el nodo para la instruccion que define las uniones
 definirUnion :: Nombre -> SecuenciaInstr -> MonadSymTab Definicion
 definirUnion id decls = do
@@ -466,5 +497,12 @@ crearRead e _ = Read e
 crearFree :: Nombre -> MonadSymTab Instr
 crearFree var = do
     -- TODO: verificar que nombre este en la symtab y el scope concuerde con el actual
-    return $ Free var
+    (symtab, scopes) <- get
+    let datos = lookupInSymTab var symtab
+    let existe = isJust datos
+    if existe then
+        -- Falta verificar el alcance
+        return $ Free var
+    else
+        error "Error semantico, variable fuera de alcance."
 -------------------------------------------------------------------------------
