@@ -32,15 +32,17 @@ initState = createInitSymTab (SymTab M.empty) [0]
 createInitSymTab :: SymTab -> StackScopes -> (SymTab,StackScopes)
 createInitSymTab st scopes = (insertSymbols symbols info st,scopes)
     where
-        symbols = ["Power","Skill","Rune","Runes","Battle","Inventory","Items",
-            "Win","Lose","free","puff"]
-        info = [powerInfo,skillInfo,runeInfo,runesInfo,battleInfo,inventoryInfo,
-            itemsInfo,boolsInfo,boolsInfo,aptInfo,aptInfo]
-        powerInfo = SymbolInfo TInt 0 Tipos
-        skillInfo = SymbolInfo TFloat 0 Tipos
-        runeInfo = SymbolInfo TChar 0 Tipos
-        runesInfo = SymbolInfo TStr 0 Tipos
-        battleInfo = SymbolInfo TBool 0 Tipos
+        symbols = t ++ words
+        t = ["Power", "Skill", "Rune", "Runes", "Battle", "Inventory", "Items"]
+        words = ["Win", "Lose", "free", "puff"]
+        info = ti ++ wi
+        ti = [pInfo, sInfo, rInfo, rsInfo, bInfo, inventoryInfo, itemsInfo]
+        wi = [boolsInfo, boolsInfo, aptInfo, aptInfo]
+        pInfo = SymbolInfo TInt 0 Tipos
+        sInfo = SymbolInfo TFloat 0 Tipos
+        rInfo = SymbolInfo TChar 0 Tipos
+        rsInfo = SymbolInfo TStr 0 Tipos
+        bInfo = SymbolInfo TBool 0 Tipos
         inventoryInfo = SymbolInfo TRegistro 0 ConstructoresTipos
         itemsInfo = SymbolInfo TUnion 0 ConstructoresTipos
         boolsInfo = SymbolInfo TBool 0 Variable

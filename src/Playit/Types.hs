@@ -34,6 +34,10 @@ type Parametros = [Expr]
 
 type SecuenciaInstr = [Instr]
 
+-- type Definiciones = [Definicion]
+
+type Sentencias = [Sentencia]
+
 
 -- Categorias a las que pertenecen los simbolos de la tabla de simbolos
 data Categoria  = Apuntadores
@@ -89,12 +93,12 @@ instance Show Tipo where
     show TUnion         = "Union"
 
 
-data Vars   = Var Nombre Tipo
-            | VarIndex Vars Expr Tipo       -- Indice para array, listas
-            | VarCompIndex Vars Nombre Tipo -- Campos de los registros y uniones
-            | Param Nombre Tipo Ref
-            | PuffValue Vars Tipo           -- Variable deferenciada con puff
-            deriving (Eq, Ord)
+data Vars = Var Nombre Tipo
+          | VarIndex Vars Expr Tipo       -- Indice para array, listas
+          | VarCompIndex Vars Nombre Tipo -- Campos de los registros y uniones
+          | Param Nombre Tipo Ref
+          | PuffValue Vars Tipo           -- Variable deferenciada con puff
+          deriving (Eq, Ord)
 
 instance Show Vars where
     show (Var n t)        = "Variable: " ++ n ++ " de tipo: " ++ show t
@@ -104,8 +108,7 @@ instance Show Vars where
 
 
 -- Especifica si un parametro es pasado como valor o por referencia
-data Ref    = Valor | Referencia
-            deriving(Eq, Show, Ord)
+data Ref = Valor | Referencia deriving(Eq, Show, Ord)
 
 
 data Instr  = Asignacion Vars Expr
@@ -119,7 +122,7 @@ data Instr  = Asignacion Vars Expr
             | Free Nombre
             | Print Expr
             | ProcCall Subrutina
-            | Programa Cosas
+            | Programa Sentencias
             | Return Expr
             | SecDeclaraciones SecuenciaInstr
             | Switch [(Expr, SecuenciaInstr)]  -- [(cond, instruc)]
@@ -145,36 +148,42 @@ instance Show Instr where
 
 
 -- Lo que se puede escribir dentro de un programa
-data Cosas = Definiciones Definicion
-           | SecInstr SecuenciaInstr
-           -- | Nada
-           deriving (Eq)
+data Sentencia = Def SecuenciaInstr
+               | Sec SecuenciaInstr
+               | Nada
+               deriving (Eq)
 
-instance Show Cosas where
-    show (Definiciones d) = show d
-    show (SecInstr s)     = show s 
-    -- show Nada             = ""
+instance Show Sentencia where
+    show (Def s) = show s
+    show (Sec s) = show s 
+    show Nada    = ""
+
+getInstr :: Sentencia -> SecuenciaInstr
+getInstr (Def s) = s
+getInstr (Sec s) = s
+getInstr Nada    = []
 
 -- 
-data Subrutina = SubrutinaCall Nombre Parametros
-                deriving (Eq, Ord)
+data Subrutina = SubrutinaCall Nombre Parametros deriving (Eq, Ord)
 
 instance Show Subrutina where
     show (SubrutinaCall n p) = "Subrutina " ++ n ++ " de parametros " ++ show p
 
 
 -- Definiciones de las subrutinas, registros y uniones
-data Definicion = Func Nombre Parametros Tipo SecuenciaInstr
+{-data Definicion = Defs
+                | Func Nombre Parametros Tipo SecuenciaInstr
                 | Proc Nombre Parametros SecuenciaInstr
                 | Registro Nombre SecuenciaInstr Tipo
                 | Union Nombre SecuenciaInstr Tipo
                 deriving (Eq)
 
 instance Show Definicion where
+    show Defs             = "Definiciones"
     show (Func n p t s)   = "Funcion: " ++ n ++ " que recibe: " ++ show p ++ " y retorna un: " ++ show t ++ ": " ++ show s
     show (Proc n p s)     = "Procedimiento: " ++ n ++ " que recibe: " ++ show p ++ ": " ++ show s
     show (Registro n s t) = "Registro: " ++ n
-    show (Union n s t)    = "Union: " ++ n
+    show (Union n s t)    = "Union: " ++ n-}
 
 
 data Expr = ArrLstExpr [Expr] Tipo
@@ -216,6 +225,8 @@ instance Show Literal where
     show (Booleano val)            = show val
     show (Caracter val)            = show val
     show (Entero val)              = show val
+    show (Flotante val)            = show val
+    show (Str val)                 = show val
     show ValorVacio                = "Valor vacio"
 
 

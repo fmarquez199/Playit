@@ -356,8 +356,8 @@ crearWhile e i (line,_) = return $ While e i
 
 -------------------------------------------------------------------------------
 -- Crea el nodo para la definicion de una subrutina
-crearSubrutina :: Nombre -> Parametros -> Tipo -> SecuenciaInstr -> MonadSymTab Definicion
-crearSubrutina name params returnT i = return $ Func name params returnT i
+-- crearSubrutina :: Nombre -> Parametros -> Tipo -> SecuenciaInstr -> MonadSymTab Definicion
+-- crearSubrutina name params returnT i = return $ Func name params returnT i
 -------------------------------------------------------------------------------
 
 -- Agrega el nombre de la subrutina a la tabla de símbolos.
@@ -429,23 +429,23 @@ crearParam param t = do
 
 -------------------------------------------------------------------------------
 -- Crea el nodo para la instruccion que define los registros
-definirRegistro :: Nombre -> SecuenciaInstr -> MonadSymTab Definicion
+definirRegistro :: Nombre -> SecuenciaInstr -> MonadSymTab SecuenciaInstr
 definirRegistro id decls = do
     (symTab, scopes@(scope:_)) <- get
     let info = [SymbolInfo TRegistro scope ConstructoresTipos]
     addToSymTab [id] info symTab scopes
-    return $ Registro id decls TRegistro
+    return $ [SecDeclaraciones decls]
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
 -- Crea el nodo para la instruccion que define las uniones
-definirUnion :: Nombre -> SecuenciaInstr -> MonadSymTab Definicion
+definirUnion :: Nombre -> SecuenciaInstr -> MonadSymTab SecuenciaInstr
 definirUnion id decls = do
     (symTab, scopes@(scope:_)) <- get
     let info = [SymbolInfo TUnion scope ConstructoresTipos]
     addToSymTab [id] info symTab scopes
-    return $ Registro id decls TUnion
+    return $ [SecDeclaraciones decls]
 -------------------------------------------------------------------------------
 
 
