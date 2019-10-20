@@ -37,9 +37,10 @@ type SecuenciaInstr = [Instr]
 
 -- Categorias a las que pertenecen los simbolos de la tabla de simbolos
 data Categoria  = Variable
-                | Parametros
-                | Constructores
+                | Constantes
+                | Parametros Ref
                 | ConstructoresTipos
+                | Campos
                 | Tipos
                 | Apuntadores
                 | Procedimientos
@@ -78,7 +79,7 @@ data Instr  = Asignacion Vars Expr
             -- For var = (Expr) -> (Expr) : (Instrucciones)
             | For Nombre Expr Expr SecuenciaInstr
             | ForEach Nombre Expr SecuenciaInstr
-            | IF [(Expr, SecuenciaInstr)]  -- [(cond,instruc)]
+            | Switch [(Expr, SecuenciaInstr)]  -- [(cond, instruc)]
             | While Expr SecuenciaInstr
             | ProcCall Subrutina
             | Free Nombre
@@ -90,7 +91,7 @@ data Instr  = Asignacion Vars Expr
 
 
 -- Lo que se puede escribir dentro de un programa
-data Cosas = SecInstr SecuenciaInstr | Definiciones Definicion
+data Cosas = SecInstr SecuenciaInstr | Definiciones Definicion {-| Nada-}
             deriving (Eq, Show)
 
 -- 
@@ -204,21 +205,36 @@ type MonadSymTab a = RWST () () (SymTab, StackScopes) IO a
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 
+getNameParam :: Expr -> Nombre
+getNameParam (OpBinario _ e1 e2 _) =
+    getNameParam e1
+getNameParam (Variables x _) = showVar x
+getNameParam _ = ""
+
+-- getTipoParametro :: Expr -> Tipo
+-- getTipoParametro (Variables x _) = getTypeVar x
+-- getTipoParametro _ = TError
+
+-- getTypeVar :: Vars -> Tipo
+-- getTypeVar (Var _ t) = t
+-- getTypeVar (Param _ t _) = t
+-- getTypeVar (PuffValue _ t) = t
+-- getTypeVar (VarIndex _ _ t) = t
 
 -- Show de las variables
 showVar :: Vars -> String
 showVar (Var name _) = name
-showVar (VarIndex vars e t) =
+showVar (Param name _ _) = name
+showVar (PuffValue vars _) = showVar vars
+showVar (VarIndex vars e _) =
     showVar vars ++ "|)" ++ showE e ++ "(|" 
     -- TODO : Falta mostrar lista
-
 
 -- Show de las expresiones
 showE :: Expr -> String
 showE (Literal lit _)                           = showL lit
 showE (Variables vars _)                        = showVar vars
 showE (OpBinario Suma e1 e2 _)           = "(" ++ showE e1 ++ " + " ++ showE e2 ++ ")"
--- showE (OpBinario Punto e1 e2 _)          = showE e1 ++ " . " ++ showE e2
 showE (OpBinario Resta e1 e2 _)          = "(" ++ showE e1 ++ " - " ++ showE e2 ++ ")"
 showE (OpBinario Modulo e1 e2 _)         = "(" ++ showE e1 ++ " % " ++ showE e2 ++ ")"
 showE (OpBinario Division e1 e2 _)       = "(" ++ showE e1 ++ " / " ++ showE e2 ++ ")"
@@ -257,8 +273,3 @@ showType TStr         = "String(s)"
 showType TBool        = "Booleano(s)"
 showType (TArray e t) = "Arreglo de tamaño " ++ showE e ++ " de " ++ showType t
 showType _            = "Ivalido"
-
-getNombre :: Vars -> Nombre
-getNombre (Param n _ _) = n
-getNombre (Var n _) = n
-getNombre (VarIndex v _ _) = getNombre v

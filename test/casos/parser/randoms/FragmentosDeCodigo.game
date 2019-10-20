@@ -1,8 +1,8 @@
 world %FragmentosDeCodigo%:
+  Power a
   a = 01
   b = 003
   c = 0000000000000000000000000000000000000005
-  Power a
   Rune c
   Battle esMayor = Lose
   a = 1

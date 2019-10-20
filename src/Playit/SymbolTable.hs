@@ -68,8 +68,8 @@ popScope = do
 
 
 --------------------------------------------------------------------------------
--- Agrega a la tabla de simbolos la lista de identificadores con su informcaion:
---  Tipo, alcance
+-- Agrega a la tabla de simbolos la lista de identificadores con su informacion:
+--  Tipo, alcance, categoria
 addToSymTab :: [Nombre] -> [SymbolInfo] -> SymTab -> StackScopes -> MonadSymTab ()
 addToSymTab ids info actualSymTab scopes = 
     put (insertSymbols ids info actualSymTab, scopes)
@@ -81,15 +81,15 @@ addToSymTab ids info actualSymTab scopes =
 insertSymbols :: [Nombre] -> [SymbolInfo] -> SymTab -> SymTab
 insertSymbols [] _ symTab = symTab
 insertSymbols (id:ids) (info:infos) (SymTab table)
-    | isNothing (M.lookup id table) = insertSymbols ids infos newSymTab
-
-    | otherwise = 
-        error ("\n\nActualizar info de la variable: '" ++ id ++
-                "', junto con su otra info.\n")
+    -- | isNothing (M.lookup id table) = insertSymbols ids infos newSymTab
+    -- | otherwise = SymTab $ M.insert id (info : (fromJust (M.lookup id table))) table
+    | isJust (M.lookup id table) = insertSymbols ids infos upd
+    | otherwise = insertSymbols ids infos new
     
     where
         -- Tabla de simbolos con el identificador insertado
-        newSymTab = SymTab $ M.insert id [info] table
+        new = SymTab $ M.insert id [info] table
+        upd = SymTab $ M.insert id (info:fromJust (M.lookup id table)) table
 --------------------------------------------------------------------------------
 
 
@@ -100,11 +100,20 @@ lookupInSymTab var (SymTab table) = M.lookup var table
 --------------------------------------------------------------------------------
 
 
--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+-- Busca los identificadores de una variable en la tabla de simbolos dada.
+lookupInSymTab' :: [Nombre] -> SymTab -> [Maybe [SymbolInfo]]
+lookupInSymTab' [] _ = [Nothing]
+lookupInSymTab' [x] symtab = [lookupInSymTab x symtab]
+lookupInSymTab' (x:xs) symtab = lookupInSymTab x symtab:lookupInSymTab' xs symtab
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
 -- Añade las variables a la tabla de simbolos
 insertDeclarations :: [Nombre] -> Tipo -> MonadSymTab ()
 insertDeclarations ids t = do
     (actualSymTab, scopes@(scope:_)) <- get
     let info = [SymbolInfo t scope Variable]
     addToSymTab ids info actualSymTab scopes
--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------

@@ -13,7 +13,7 @@ import Control.Monad.Trans.RWS
 import Control.Monad.IO.Class
 import Data.Maybe (fromJust, isJust, isNothing)
 import qualified Data.Map as M
-import Data.List(intercalate)
+import Data.List(intercalate, null)
 import Playit.SymbolTable
 import Playit.CheckAST
 import Playit.Types
@@ -72,7 +72,7 @@ crearVarCompIndex v campo = do
 crearAsignacion :: Vars -> Expr -> Posicion -> Instr
 -- crearAsignacion lval (ArrLstExpr [] _)
 crearAsignacion lval e (line, _) = Asignacion lval e
-    -- | True = Asignacion lval e
+-- | True = Asignacion lval e
     -- | otherwise =
     --     error ("\n\nError semantico en la asignacion: '" ++ var ++
     --             " <- " ++ expr ++ "'.\nEl tipo de la variable: " ++
@@ -216,8 +216,8 @@ crearArrLstExpr e =
 
 
 -- Crea el nodo para una instruccion If
-crearGuardiaIF :: Expr -> SecuenciaInstr -> Posicion -> Instr
-crearGuardiaIF exprCond seqInstrs (line,_) = IF [(exprCond, seqInstrs)]
+crearCasoSwitch :: Expr -> SecuenciaInstr -> Posicion -> (Expr, SecuenciaInstr)
+crearCasoSwitch exprCond seqInstrs (line, _) = (exprCond, seqInstrs)
 {-crearGuardiaIF exprCond seqInstrs (line,_)
     | tExpreCondicional == TBool = IF [(exprCond, seqInstrs)]
     | otherwise = 
@@ -226,17 +226,17 @@ crearGuardiaIF exprCond seqInstrs (line,_) = IF [(exprCond, seqInstrs)]
                 ++ show line ++ "\n")
 
     where
-        tExpreCondicional = typeE exprCond
-
--}
+        tExpreCondicional = typeE exprCond-}
 
 
 crearIfSimple :: Expr -> Expr -> Expr -> Tipo ->  Posicion -> Expr
 crearIfSimple con v f t (linea, col) = IfSimple con v f t
-  {-| t con == TBool && t v == t f && t v /= TError = IfSimple con v f
+{-| t con == TBool && t v == t f && t v /= TError = IfSimple con v f
   | otherwise = error ("\n\nError semantico en el operador ternario '? :' en la linea: " ++ show linea ++ " tipo de verdad: " ++ (show $ t v) ++ " tipo de mentira: " ++ (show $ t f))
   where t = typeE-}
 
+crearSwitch :: [(Expr, SecuenciaInstr)] -> Posicion -> Instr
+crearSwitch casos (line, col) = Switch casos
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
@@ -250,7 +250,7 @@ crearIfSimple con v f t (linea, col) = IfSimple con v f t
 crearFor :: Nombre -> Expr -> Expr -> SecuenciaInstr -> SymTab -> Alcance -> Posicion 
             -> MonadSymTab Instr
 crearFor var e1 e2 i st scope pos@(line,_) = return $ For var e1 e2 i
-    -- | tE1 == TInt && tE2 == TInt =
+-- | tE1 == TInt && tE2 == TInt =
     --     do
     --         let newI = map (changeTDummyFor TInt st scope) i
     --         checkInfSup e1 e2 pos st
@@ -354,20 +354,21 @@ crearWhile e i (line,_) = While e i
 
 
 -------------------------------------------------------------------------------
--- Crea el nodo para la instruccion que crea un procedimiento
-crearProc :: Nombre -> Parametros -> SecuenciaInstr -> MonadSymTab Definicion
-crearProc name params i = do
-    -- TODO: Agregar la subrutina a la symtab
-    return $ Proc name params i
+-- Crea el nodo para la definicion de una subrutina
+crearSubrutina :: Nombre -> Parametros -> Tipo -> SecuenciaInstr -> Definicion
+crearSubrutina name params TDummy i = Proc name params i
+crearSubrutina name params returnT i = Func name params returnT i
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
--- Crea el nodo para la instruccion que crea una funcion
-crearFunc :: Nombre -> Parametros -> Tipo -> SecuenciaInstr -> MonadSymTab Definicion
-crearFunc name params returnT i = do
-    -- TODO: Agregar la subrutina a la symtab
-    return $ Func name params returnT i
+-- Agrega el nombre de la subrutina a la tabla de símbolos.
+crearNombreSubrutina :: Nombre -> Tipo -> Categoria -> MonadSymTab ()
+crearNombreSubrutina nombre tipo categoria = do
+    (symtab, scopes@(scope:_)) <- get
+    let info = [SymbolInfo tipo scope categoria]
+    addToSymTab [nombre] info symtab scopes
+    return ()
 -------------------------------------------------------------------------------
 
 
@@ -375,25 +376,49 @@ crearFunc name params returnT i = do
 -- Crea el nodo para la instruccion que llama a la subrutina
 crearSubrutinaCall :: Nombre -> Parametros -> MonadSymTab Subrutina
 crearSubrutinaCall nombre params = do
-    -- TODO: Verificar que los paramentros y la subrutina esten en la symtab y el scope concuerde con el actual
-    return $ SubrutinaCall nombre params
+    -- TODO: Verificar que los parametros y la subrutina esten en la symtab y el scope concuerde con el actual
+    (symtab,scope:_) <- get
+    let isNombreDef = isJust $ lookupInSymTab nombre symtab
+    let params' = map getNameParam params
+    let isParamsDef = all isJust $ lookupInSymTab' params' symtab
+    if isNombreDef && isParamsDef then
+        -- let isScopeOk = 
+        return $ SubrutinaCall nombre params
+    else
+        if not isNombreDef then
+            error $ "Error semantico, la subrutina" ++ nombre ++ "no ha sido definida."
+        else
+            error ("Error semantico, al menos uno de los parametros no ha sido definido."
+                ++ show params')
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
 -- Crea el nodo para la instruccion que llama a la funcion
 crearFuncCall :: Subrutina -> MonadSymTab Expr
-crearFuncCall subrutina = do
+crearFuncCall subrutina@(SubrutinaCall nombre _) = do
     -- TODO: Colocar el tipo de retorno de la funcion, buscarlo en la symtab
-    return $ FuncCall subrutina TDummy
+    (symtab, scopes) <- get
+    let info = lookupInSymTab nombre symtab
+    if isJust info then do
+        let funs = filter (\i -> getCategory i == Funciones) $ fromJust info
+        let found = filter (\i -> getScope i == maximum (map getScope funs)) funs
+        if not $ null found then
+            return $ FuncCall subrutina (getType $ head found)
+        else
+            error "Error semantico, funcion no definida."
+    else
+        error "Error semantico, funcion no definida."
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
 -- Crea el nodo para la definicion de los parametros
-crearParam :: Vars -> Tipo -> MonadSymTab Expr
-crearParam param t = do
-    -- TODO: Agregar el parametro a la symtab
+crearParam :: Vars -> MonadSymTab Expr
+crearParam param@(Param name t ref) = do
+    (symtab, scopes@(scope:_)) <- get
+    let info = [SymbolInfo t scope (Parametros ref)]
+    addToSymTab [name] info symtab scopes
     return $ Variables param t
 -------------------------------------------------------------------------------
 
@@ -466,5 +491,12 @@ crearRead e _ = Read e
 crearFree :: Nombre -> MonadSymTab Instr
 crearFree var = do
     -- TODO: verificar que nombre este en la symtab y el scope concuerde con el actual
-    return $ Free var
+    (symtab, scopes) <- get
+    let datos = lookupInSymTab var symtab
+    let existe = isJust datos
+    if existe then
+        -- Falta verificar el alcance
+        return $ Free var
+    else
+        error "Error semantico, variable fuera de alcance."
 -------------------------------------------------------------------------------

@@ -218,7 +218,7 @@ changeTDummyExpr t (OpUnario op e TDummy) =
     let newE = changeTDummyExpr t e
     in OpUnario op newE t
 --------------------------------------------------------------------------
-changeTDummyExpr _ opUn@(OpUnario _ _ _) = opUn
+changeTDummyExpr _ opUn@OpUnario{} = opUn
 --------------------------------------------------------------------------
 changeTDummyExpr t (OpBinario op e1 e2 TDummy) =
     let newE1 = changeTDummyExpr t e1
