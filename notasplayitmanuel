@@ -1,0 +1,7 @@
+1) Creo se debería quitar SecDeclaraciones. Solo agregar a la tabla de simbolos 
+y crear instrucciones de asignaciones.
+2) No estoy ententiendo el symtab en SecDeclaraciones, tal vez es algo debido a 
+cómo era el lenguaje del proyecto de traductores? no le veo que sea apropiado a 
+playit o es que simplemente no lo estoy entendiendo como es.
+
+

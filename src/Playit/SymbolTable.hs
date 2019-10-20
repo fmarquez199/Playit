@@ -99,7 +99,33 @@ lookupInSymTab :: Nombre -> SymTab -> Maybe [SymbolInfo]
 lookupInSymTab var (SymTab table) = M.lookup var table
 --------------------------------------------------------------------------------
 
+--------------------------------------------------------------------------------
+-- Busca el (identificador,scope) de una variable en la tabla de simbolos dada.
+{-lookupNameScopeInSymTab :: Nombre -> Alcance -> SymTab -> Maybe [SymbolInfo]
+lookupNameScopeInSymTab name scope (SymTab table) = fmap (elem scope) (M.lookup name table)
+--------------------------------------------------------------------------------
 
+--------------------------------------------------------------------------------
+-- Busca el identificador de una variable en la tabla de simbolos dada.
+lookupNameScopeInSymTab :: [SymbolInfo] -> Alcance-> Boolean
+lookupNameScopeInSymTab (info:[]) scope = if getScope info == scope then True else False
+lookupNameScopeInSymTab (info:r) scope = if getScope info == scope then True else (lookupNameScopeInSymTab r scope)
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+-- Busca el identificador de una variable en la tabla de simbolos dada.
+lookupNameScopesInSymTab :: [SymbolInfo] -> Alcance-> Boolean
+lookupNameScopesInSymTab (info:[]) scopes = if getScope info == scope then True else False
+lookupNameScopesInSymTab (info:r)  scopes = if getScope info == scope then True else (lookupNameScopeInSymTab r scope)
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+-- Busca el identificador de una variable en la tabla de simbolos dada.
+lookupNameScopeInSymTab :: [SymbolInfo] -> Alcance-> Boolean
+lookupNameScopeInSymTab info (sc:[])    = if getScope info == scope then True else False
+lookupNameScopeInSymTab info (sc:scs)   = if getScope info == sc then info else (lookupNameScopeInSymTab r scope)
+--------------------------------------------------------------------------------
+-}
 --------------------------------------------------------------------------------
 -- Busca los identificadores de una variable en la tabla de simbolos dada.
 lookupInSymTab' :: [Nombre] -> SymTab -> [Maybe [SymbolInfo]]

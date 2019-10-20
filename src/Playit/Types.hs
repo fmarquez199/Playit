@@ -320,12 +320,12 @@ data SymbolInfo = SymbolInfo {
     getScope :: Alcance,
     getCategory :: Categoria
     }
-    deriving (Eq, Ord)
-
+    deriving (Eq, Ord,Show)
+{-
 instance Show SymbolInfo where
     show (SymbolInfo t s c) =
         "Tipo: " ++ show t ++ ", en el alcance: " ++ show s ++ ", de categoria: " ++ show c ++ "\n\t"
-
+-}
 
 {- Nuevo tipo de dato para representar la tabla de simbolos
 * Tabla de hash:
@@ -333,14 +333,14 @@ instance Show SymbolInfo where
 *   Value: Lista de la informacion pertinente
 -}
 newtype SymTab  = SymTab { getSymTab :: M.Map Nombre [SymbolInfo] }
-                deriving (Eq)
+                deriving (Eq,Show)
 
-instance Show SymTab where
+{-instance Show SymTab where
     show (SymTab map) = "----------\nTabla de simbolos\n----------\n" ++ symbols
         where
             tabla = M.toList map
             symbols = concatMap (\(k,v)-> k ++ " : " ++ concatMap show v) tabla
-
+-}
 
 -- Transformador monadico para crear y manejar la tabla de simbolos junto con 
 -- la pila de alcances

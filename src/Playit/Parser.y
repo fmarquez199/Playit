@@ -275,6 +275,7 @@ Instrucciones :: { SecuenciaInstr }
 Instruccion :: { Instr }
   : Asignacion                       { $1 }
   -- |                         { $1 }
+  | Declaracion {%return $ SecDeclaraciones $1 }
   | PushNewScope Controller PopScope  { $2 }
   | PushNewScope Play PopScope        { $2 }
   | Button                            { $1 }

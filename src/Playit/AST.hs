@@ -31,8 +31,9 @@ import Playit.Types
 crearIdvar :: Nombre -> MonadSymTab Vars
 crearIdvar name = do
     (symTab, scopes) <- get
+    
     let info = lookupInSymTab name symTab
-
+    
     if isJust info then return $ Var name (getType $ head $ fromJust info)
     else 
         error ("\n\nError semantico, la variable: '" ++ name ++ 
