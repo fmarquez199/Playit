@@ -5,10 +5,6 @@ world %Factorial%:
       | n == 0 } unlock 1
       | n > 0 } unlock n * kill factorial(n-1)
     .~
-    Power x = 1
-    play:
-      x = x * x
-    lock (x > 1)
-    .~
+    
   .~
 .~

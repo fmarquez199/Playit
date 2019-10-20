@@ -142,8 +142,9 @@ import Playit.AST
 %right negativo "!" upperCase lowerCase input
 %left "++" "|}" "{|" "<<" ">>" "::" "|)" "(|" "|>" "<|"
 %left "--"
-%right "#" pointer
+%right "#" pointer endLine
 %left "?"
+%right STMT
 
 %%
 
@@ -161,23 +162,32 @@ ProgramaWrapper :: { Instr }
 
   
 Programa :: { Instr }
-  : PushNewScope world programa ":" EndLines Cosas EndLines ".~"  PopScope
-    { Programa $6 }
-  {-| PushNewScope world programa ":" EndLines EndLines ".~" PopScope
-    { Programa Nada }-}
+  : PushNewScope world programa ":" EndLines Sentencias EndLines ".~"  PopScope
+    { Programa $ reverse $6 }
+  | PushNewScope world programa ":" EndLines ".~" PopScope
+    { Programa [Nada] }
 
 
-Cosas :: { Cosas }
-  : Cosas EndLines Instruccion  { SecInstr [$3] }
-  | Cosas EndLines Definicion   { Definiciones $3 }
-  | Instruccion                 { SecInstr [$1] }
-  | Definicion                  { Definiciones $1 }
+Sentencias :: { Sentencias }
+  : Sentencias EndLines Sentencia  { $3 : $1 }
+  | Sentencia                      { [Sec $ getInstr $1] }
 
 
-Definicion :: { Definicion }
+Sentencia :: { Sentencia }
+  : Instrucciones %prec STMT { Sec $ reverse $1 }
+  | Definiciones  %prec STMT { Def $ reverse $1 }
+
+
+Definiciones :: { SecuenciaInstr }
+  : Definiciones EndLines Definicion { $3 ++ $1 }
+  | Definicion                       { $1 }
+
+
+Definicion :: { SecuenciaInstr }
   : PushNewScope DefinirSubrutina PopScope  { $2 }
   | PushNewScope DefinirRegistro PopScope   { $2 }
   | PushNewScope DefinirUnion PopScope      { $2 }
+  | Declaraciones  %prec STMT               { $1 }
 
 
 EndLines :: { () }
@@ -191,15 +201,15 @@ EndLines :: { () }
 -------------------------------------------------------------------------------
 
 Declaraciones :: { SecuenciaInstr }
-  : Declaracion                         { [$1] }
-  | Declaraciones EndLines Declaracion  { $3 : $1 }
+  : Declaraciones EndLines Declaracion  { $3 ++ $1 }
+  | Declaracion                         { $1 }
 
-Declaracion :: { Instr }
+Declaracion :: { SecuenciaInstr }
   : Tipo Identificadores
     { % do
       let (ids, asigs) = $2
-      insertDeclarations ids $1
-      return $ SecDeclaraciones asigs
+      insertDeclarations (reverse ids) $1
+      return asigs
     }
 
 -------------------------------------------------------------------------------
@@ -209,16 +219,14 @@ Declaracion :: { Instr }
 -------------------------------------------------------------------------------
 
 Identificadores :: { ([Nombre], SecuenciaInstr) }
-  : Identificador
-    {
-      let (id, asigs) = $1
-      in ([id], asigs)
-    }
-  | Identificadores "," Identificador
-    {
-      let ((ids, asigs), (id, asig)) = ($1, $3) 
-      in (ids ++ [id], asigs ++ asig)
-    }
+  : Identificadores "," Identificador
+  { 
+    let ((ids, asigs), (id, asig)) = ($1, $3) in (id : ids, asig ++ asigs)
+  }
+  | Identificador
+  { 
+    let (id, asigs) = $1 in ([id], asigs)
+  }
 
 Identificador :: { (Nombre, SecuenciaInstr) }
   : nombre "=" Expresion  { ($1, [Asignacion (Var $1 TDummy) $3]) }
@@ -265,8 +273,8 @@ Instrucciones :: { SecuenciaInstr }
   | Instruccion                         { [$1] }
 
 Instruccion :: { Instr }
-  : Declaracion                       { $1 }
-  | Asignacion                        { $1 }
+  : Asignacion                       { $1 }
+  -- |                         { $1 }
   | PushNewScope Controller PopScope  { $2 }
   | PushNewScope Play PopScope        { $2 }
   | Button                            { $1 }
@@ -274,7 +282,7 @@ Instruccion :: { Instr }
   | EntradaSalida                     { $1 }
   | Free                              { $1 }
   | return Expresion                  { Return $2 }
-  | break PopScope                    { Break }
+  | break {-PopScope-}                    { Break }
   | continue                          { Continue }
 
 
@@ -420,17 +428,9 @@ Free :: { Instr }
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 
-DefinirSubrutina :: { Definicion }
-  : Firma ":" EndLines Instrucciones EndLines ".~" 
-    {
-      let (nombre, parametros, tipo) = $1
-      in crearSubrutina nombre (reverse parametros) tipo $4
-    }
-  | Firma ":" EndLines ".~"
-    {
-      let (nombre, parametros, tipo) = $1
-      in crearSubrutina nombre (reverse parametros) tipo []
-    } 
+DefinirSubrutina :: { SecuenciaInstr }
+  : Firma ":" EndLines Instrucciones EndLines ".~" { $4 }
+  | Firma ":" EndLines ".~"                        { [] } 
 
 -------------------------------------------------------------------------------
 -- Firma de la subrutina, se agrega antes a la symtab por la recursividad
@@ -573,17 +573,33 @@ Expresion :: { Expr }
 
 --------------------------------------------------------------------------------
 -- Registros
-DefinirRegistro :: { Definicion }
-  : registro idtipo ":" EndLines Declaraciones EndLines ".~" { % definirRegistro $2 $5 }
-  | registro idtipo ":" EndLines ".~"                        { % definirRegistro $2 [] }
+DefinirRegistro :: { SecuenciaInstr }
+  : registro idtipo ":" EndLines Declaraciones EndLines ".~"
+    { % do
+        definirRegistro $2 $5
+        return $5
+    }
+  | registro idtipo ":" EndLines ".~"                        
+    { % do
+        definirRegistro $2 []
+        return []
+    }
 --------------------------------------------------------------------------------
 
 
 --------------------------------------------------------------------------------
 -- Uniones
-DefinirUnion :: { Definicion }
-  : union idtipo ":" EndLines Declaraciones EndLines ".~" { % definirUnion $2 $5 }
-  | union idtipo ":" EndLines ".~"                        { % definirUnion $2 [] }
+DefinirUnion :: { SecuenciaInstr }
+  : union idtipo ":" EndLines Declaraciones EndLines ".~"
+    { % do
+        definirUnion $2 $5
+        return $5
+    }
+  | union idtipo ":" EndLines ".~"                        
+    { % do
+      definirUnion $2 []
+      return []
+    }
 --------------------------------------------------------------------------------
 
 

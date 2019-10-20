@@ -355,9 +355,9 @@ crearWhile e i (line,_) = While e i
 
 -------------------------------------------------------------------------------
 -- Crea el nodo para la definicion de una subrutina
-crearSubrutina :: Nombre -> Parametros -> Tipo -> SecuenciaInstr -> Definicion
-crearSubrutina name params TDummy i = Proc name params i
-crearSubrutina name params returnT i = Func name params returnT i
+-- crearSubrutina :: Nombre -> Parametros -> Tipo -> SecuenciaInstr -> Definicion
+-- crearSubrutina name params TDummy i = Proc name params i
+-- crearSubrutina name params returnT i = Func name params returnT i
 -------------------------------------------------------------------------------
 
 
@@ -381,7 +381,9 @@ crearSubrutinaCall nombre params = do
     let isNombreDef = isJust $ lookupInSymTab nombre symtab
     let params' = map getNameParam params
     let isParamsDef = all isJust $ lookupInSymTab' params' symtab
-    if isNombreDef && isParamsDef then
+    -- if isNombreDef && isParamsDef then
+    let lista = nombre : map showVar (concatMap getVar $ filter isVar params)
+    if all isJust $ lookupInSymTab' lista symtab then
         -- let isScopeOk = 
         return $ SubrutinaCall nombre params
     else
@@ -432,23 +434,23 @@ crearParam param@(Param name t ref) = do
 
 --------------------------------------------------------------------------------
 -- Crea el nodo para la instruccion que define los registros
-definirRegistro :: Nombre -> SecuenciaInstr -> MonadSymTab Definicion
+definirRegistro :: Nombre -> SecuenciaInstr -> MonadSymTab SecuenciaInstr
 definirRegistro id decls = do
     (symTab, scopes@(scope:_)) <- get
     let info = [SymbolInfo TRegistro scope ConstructoresTipos]
     addToSymTab [id] info symTab scopes
-    return $ Registro id decls TRegistro
+    return [SecDeclaraciones decls]
 -------------------------------------------------------------------------------
 
 
 --------------------------------------------------------------------------------
 -- Crea el nodo para la instruccion que define las uniones
-definirUnion :: Nombre -> SecuenciaInstr -> MonadSymTab Definicion
+definirUnion :: Nombre -> SecuenciaInstr -> MonadSymTab SecuenciaInstr
 definirUnion id decls = do
     (symTab, scopes@(scope:_)) <- get
     let info = [SymbolInfo TUnion scope ConstructoresTipos]
     addToSymTab [id] info symTab scopes
-    return $ Registro id decls TUnion
+    return [SecDeclaraciones decls]
 -------------------------------------------------------------------------------
 
 
