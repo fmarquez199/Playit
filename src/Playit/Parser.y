@@ -308,7 +308,7 @@ Asignacion :: { Instr }
 -- Instrucciones de condicionales 'Button', '|' y 'notPressed'
 Button :: { Instr }
   : switch ":" EndLines Guardias ".~"
-    { crearSwitch (reverse $4) (posicion $1 )}
+    { crearIF (reverse $4) (posicion $1 )}
 
 Guardias :: { [(Expr, SecuenciaInstr)] }
   : Guardias Guardia { $2 : $1 }

@@ -235,8 +235,8 @@ crearIfSimple con v f t (linea, col) = IfSimple con v f t
   | otherwise = error ("\n\nError semantico en el operador ternario '? :' en la linea: " ++ show linea ++ " tipo de verdad: " ++ (show $ t v) ++ " tipo de mentira: " ++ (show $ t f))
   where t = typeE-}
 
-crearSwitch :: [(Expr, SecuenciaInstr)] -> Posicion -> Instr
-crearSwitch casos (line, col) = Switch casos
+crearIF :: [(Expr, SecuenciaInstr)] -> Posicion -> Instr
+crearIF casos (line, col) = IF casos
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------

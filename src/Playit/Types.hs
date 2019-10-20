@@ -131,7 +131,7 @@ data Instr  =
     Programa Sentencias                           |
     Return Expr                                   |
     SecDeclaraciones SecuenciaInstr               |
-    Switch [(Expr, SecuenciaInstr)]               |
+    IF [(Expr, SecuenciaInstr)]                   |
     While Expr SecuenciaInstr
     deriving (Eq)
 
@@ -149,7 +149,7 @@ instance Show Instr where
     show (Programa c)            = "Programa: " ++ show c
     show (Return e)              = "Retornar " ++ show e
     show (SecDeclaraciones s)    = "Declaraciones: Esto no es una instruccion: " ++ show s
-    show (Switch ls)             = "Switch/Case: " ++ show ls
+    show (IF ls)                 = "IF: " ++ show ls
     show (While e s)             = "Ciclo While iterando mientras sea verdad: " ++ show e
 
 
