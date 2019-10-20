@@ -490,9 +490,10 @@ crearFree :: Nombre -> MonadSymTab Instr
 crearFree var = do
     (symtab, activeScope:_, scope) <- get
     let info = lookupInSymTab var symtab
-    let scopeOk = activeScope == getScope info
-    if isJust info && scopeOk then
-        return $ Free var
+    if isJust info then
+        let scopeOk = activeScope == getScope info in
+        if scopeOk then return $ Free var
+        else error "Error semantico, variable fuera de alcance."
     else
-        error "Error semantico, variable fuera de alcance."
+        error "Error semantico, variable no definida."
 -------------------------------------------------------------------------------
