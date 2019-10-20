@@ -324,7 +324,7 @@ data SymbolInfo = SymbolInfo {
 
 instance Show SymbolInfo where
     show (SymbolInfo t s c) =
-        "Tipo: " ++ show t ++ ", en el alcance: " ++ show s ++ ", de categoria: " ++ show c ++ "\n\t"
+        "Tipo: " ++ show t ++ ", en el alcance: " ++ show s ++ ", de categoria: " ++ show c ++ "\n"
 
 
 {- Nuevo tipo de dato para representar la tabla de simbolos
@@ -336,10 +336,14 @@ newtype SymTab  = SymTab { getSymTab :: M.Map Nombre [SymbolInfo] }
                 deriving (Eq)
 
 instance Show SymTab where
-    show (SymTab map) = "----------\nTabla de simbolos\n----------\n" ++ symbols
+    show (SymTab hash) = "----------\nTabla de simbolos\n----------\n" ++ info ++ symbols
         where
-            tabla = M.toList map
-            symbols = concatMap (\(k,v)-> k ++ " : " ++ concatMap show v) tabla
+            info = "Symbolo | Informacion asociada\n----------\n"
+            tabla = M.toList hash
+            symbols' = map fst $ M.toList $ M.filter (any (>0)) $ M.map (map getScope) hash
+            showInfo info = if getScope info > 0 then show info else ""
+            showTable (k,v) = if k `elem` symbols' then k ++ " -> " ++ concatMap showInfo v else ""
+            symbols = concatMap showTable tabla
 
 
 -- Transformador monadico para crear y manejar la tabla de simbolos junto con 

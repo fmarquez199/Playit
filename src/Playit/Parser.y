@@ -163,7 +163,7 @@ ProgramaWrapper :: { Instr }
   
 Programa :: { Instr }
   : PushNewScope world programa ":" EndLines Sentencias EndLines ".~"  PopScope
-    { Programa $ reverse $6 }
+    { Programa $6 }
   | PushNewScope world programa ":" EndLines ".~" PopScope
     { Programa [Nada] }
 
@@ -187,7 +187,7 @@ Definicion :: { SecuenciaInstr }
   : PushNewScope DefinirSubrutina PopScope  { $2 }
   | PushNewScope DefinirRegistro PopScope   { $2 }
   | PushNewScope DefinirUnion PopScope      { $2 }
-  | Declaraciones  %prec STMT               { $1 }
+  | Declaraciones %prec STMT                { $1 }
 
 
 EndLines :: { () }
@@ -271,6 +271,7 @@ Tipo :: { Tipo }
 Instrucciones :: { SecuenciaInstr }
   : Instrucciones EndLines Instruccion  { $3 : $1 }
   | Instruccion                         { [$1] }
+  -- | Declaraciones %prec STMT  { $1 }
 
 Instruccion :: { Instr }
   : Asignacion                       { $1 }
