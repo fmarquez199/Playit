@@ -30,7 +30,7 @@ import Playit.Types
 -- Crea el nodo para identificadores de variables y verifica que estén declarados
 crearIdvar :: Nombre -> MonadSymTab Vars
 crearIdvar name = do
-    (symTab, scopes) <- get
+    (symTab, scopes, _) <- get
     let info = lookupInSymTab name symTab
 
     if isJust info then return $ Var name (getType $ head $ fromJust info)
@@ -56,7 +56,7 @@ crearVarIndex v e =
 -- Crea el nodo para variables de acceso a registros, uniones (campos)
 crearVarCompIndex :: Vars -> Nombre -> MonadSymTab Vars
 crearVarCompIndex v campo = do
-    (symTab, scopes) <- get
+    (symTab, scopes, _) <- get
     let info = lookupInSymTab campo symTab
 
     if isJust info then return $ VarCompIndex v campo (getType $ head $ fromJust info)
@@ -365,9 +365,9 @@ crearWhile e i (line,_) = While e i
 -- Agrega el nombre de la subrutina a la tabla de símbolos.
 crearNombreSubrutina :: Nombre -> Tipo -> Categoria -> MonadSymTab ()
 crearNombreSubrutina nombre tipo categoria = do
-    (symtab, scopes@(scope:_)) <- get
-    let info = [SymbolInfo tipo scope categoria]
-    addToSymTab [nombre] info symtab scopes
+    (symtab, activeScopes@(activeScope:_), scope) <- get
+    let info = [SymbolInfo tipo activeScope categoria]
+    addToSymTab [nombre] info symtab activeScopes scope
     return ()
 -------------------------------------------------------------------------------
 
@@ -377,7 +377,7 @@ crearNombreSubrutina nombre tipo categoria = do
 crearSubrutinaCall :: Nombre -> Parametros -> MonadSymTab Subrutina
 crearSubrutinaCall nombre params = do
     -- TODO: Verificar que los parametros y la subrutina esten en la symtab y el scope concuerde con el actual
-    (symtab,scope:_) <- get
+    (symtab, scopes, activeScopes) <- get
     let isNombreDef = isJust $ lookupInSymTab nombre symtab
     let params' = map getNameParam params
     let isParamsDef = all isJust $ lookupInSymTab' params' symtab
@@ -400,7 +400,7 @@ crearSubrutinaCall nombre params = do
 crearFuncCall :: Subrutina -> MonadSymTab Expr
 crearFuncCall subrutina@(SubrutinaCall nombre _) = do
     -- TODO: Colocar el tipo de retorno de la funcion, buscarlo en la symtab
-    (symtab, scopes) <- get
+    (symtab, scopes, activeScopes) <- get
     let info = lookupInSymTab nombre symtab
     if isJust info then do
         let funs = filter (\i -> getCategory i == Funciones) $ fromJust info
@@ -418,9 +418,9 @@ crearFuncCall subrutina@(SubrutinaCall nombre _) = do
 -- Crea el nodo para la definicion de los parametros
 crearParam :: Vars -> MonadSymTab Expr
 crearParam param@(Param name t ref) = do
-    (symtab, scopes@(scope:_)) <- get
-    let info = [SymbolInfo t scope (Parametros ref)]
-    addToSymTab [name] info symtab scopes
+    (symtab, activeScopes@(activeScope:_), scope) <- get
+    let info = [SymbolInfo t activeScope (Parametros ref)]
+    addToSymTab [name] info symtab activeScopes scope
     return $ Variables param t
 -------------------------------------------------------------------------------
 
@@ -436,10 +436,10 @@ crearParam param@(Param name t ref) = do
 -- Crea el nodo para la instruccion que define los registros
 definirRegistro :: Nombre -> SecuenciaInstr -> MonadSymTab SecuenciaInstr
 definirRegistro id decls = do
-    (symTab, scopes@(scope:_)) <- get
-    let info = [SymbolInfo TRegistro scope ConstructoresTipos]
-    addToSymTab [id] info symTab scopes
-    return [SecDeclaraciones decls]
+    (symTab, activeScopes@(activeScope:_), scope) <- get
+    let info = [SymbolInfo TRegistro activeScope ConstructoresTipos]
+    addToSymTab [id] info symTab activeScopes scope
+    return [Asignaciones decls]
 -------------------------------------------------------------------------------
 
 
@@ -447,10 +447,10 @@ definirRegistro id decls = do
 -- Crea el nodo para la instruccion que define las uniones
 definirUnion :: Nombre -> SecuenciaInstr -> MonadSymTab SecuenciaInstr
 definirUnion id decls = do
-    (symTab, scopes@(scope:_)) <- get
-    let info = [SymbolInfo TUnion scope ConstructoresTipos]
-    addToSymTab [id] info symTab scopes
-    return [SecDeclaraciones decls]
+    (symTab, activeScopes@(activeScope:_), scope) <- get
+    let info = [SymbolInfo TUnion activeScope ConstructoresTipos]
+    addToSymTab [id] info symTab activeScopes scope
+    return [Asignaciones decls]
 -------------------------------------------------------------------------------
 
 
@@ -493,7 +493,7 @@ crearRead e _ = Read e
 crearFree :: Nombre -> MonadSymTab Instr
 crearFree var = do
     -- TODO: verificar que nombre este en la symtab y el scope concuerde con el actual
-    (symtab, scopes) <- get
+    (symtab, activeScopes, scope) <- get
     let datos = lookupInSymTab var symtab
     let existe = isJust datos
     if existe then

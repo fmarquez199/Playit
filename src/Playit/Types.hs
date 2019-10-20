@@ -109,7 +109,7 @@ instance Show Vars where
     show (PuffValue v t)  = "Desreferenciacion de: " ++ show v ++ " de tipo: " ++ show t
     show (Var n t)        = "Variable: " ++ n ++ " de tipo: " ++ show t
     show (VarIndex v e t) = "Indexacion de: " ++ show v ++ " en la posicion " ++ show e ++ "de tipo: " ++ show t
-    --TODO: show (VarCompIndex v n t) = ""
+    show (VarCompIndex v n t) = "Variable: " ++ show v ++ " accede a campo: " ++ n ++ " de tipo: " ++ show t
 
 -- Especifica si un parametro es pasado como valor o por referencia
 data Ref =
@@ -130,27 +130,28 @@ data Instr  =
     ProcCall Subrutina                            |
     Programa Sentencias                           |
     Return Expr                                   |
-    SecDeclaraciones SecuenciaInstr               |
+    Asignaciones SecuenciaInstr                   |
     IF [(Expr, SecuenciaInstr)]                   |
     While Expr SecuenciaInstr
     deriving (Eq)
 
 instance Show Instr where
 -- Esto imprime el tipo de instruccion pero no imprime la secuenciaInstr
-    show (Asignacion v e)        = "Asignacion de " ++ show e ++ "a " ++ show v
-    show Break                   = "Break"
-    show Continue                = "Continue"
-    show (For n e1 e2 s)         = "Ciclo For iterando sobre " ++ n ++ " desde: " ++ show e1 ++ " hasta: " ++ show e2 ++ ": " ++ show s
-    show (ForEach n e s)         = "Ciclo ForEach iterando sobre " ++ n ++ " sobre los elementos de: " ++ show e ++ ": " ++ show s
-    show (ForWhile n e1 e2 e3 s) = "Ciclo For Logico iterando sobre " ++ n ++ "desde: " ++ show e1 ++ " hasta: " ++ show e2 ++ " mientras sea verdad: " ++ show e3 ++ ": " ++ show s
-    show (Free n)                = "Liberar memoria reservada por " ++ n
-    show (Print e)               = "Imprimir a la salida estandar " ++ show e
-    show (ProcCall s)            = "Llamada de: " ++ show s
-    show (Programa c)            = "Programa: " ++ show c
-    show (Return e)              = "Retornar " ++ show e
-    show (SecDeclaraciones s)    = "Declaraciones: Esto no es una instruccion: " ++ show s
-    show (IF ls)                 = "IF: " ++ show ls
-    show (While e s)             = "Ciclo While iterando mientras sea verdad: " ++ show e
+    show (Asignacion v e)        = "Asignacion de " ++ show e ++ " a " ++ show v ++ "\n"
+    show Break                   = "Break\n"
+    show Continue                = "Continue\n"
+    show (For n e1 e2 s)         = "Ciclo For iterando sobre " ++ n ++ " desde: " ++ show e1 ++ " hasta: " ++ show e2 ++ ": " ++ show s ++ "\n"
+    show (ForEach n e s)         = "Ciclo ForEach iterando sobre " ++ n ++ " sobre los elementos de: " ++ show e ++ ": " ++ show s ++ "\n"
+    show (ForWhile n e1 e2 e3 s) = "Ciclo For Logico iterando sobre " ++ n ++ "desde: " ++ show e1 ++ " hasta: " ++ show e2 ++ " mientras sea verdad: " ++ show e3 ++ ": " ++ show s ++ "\n"
+    show (Free n)                = "Liberar memoria reservada por " ++ n ++ "\n"
+    show (Print e)               = "Imprimir a la salida estandar " ++ show e ++ "\n"
+    show (ProcCall s)            = "Llamada de: " ++ show s ++ "\n"
+    show (Programa c)            = "Programa:\n\t" ++ show c ++ "\n"
+    show (Return e)              = "Retornar " ++ show e ++ "\n"
+    show (Asignaciones [])       = ""
+    show (Asignaciones s)        = "Asignaciones en delaraciones:\n\t" ++ show s ++ "\n"
+    show (IF ls)                 = "IF:\n\t" ++ show ls ++ "\n"
+    show (While e s)             = "Ciclo While iterando mientras sea verdad:\n\t" ++ show e ++ "\n"
 
 
 
@@ -311,8 +312,8 @@ instance Show UnOp where
 -- Alcance de un identificador
 type Alcance = Integer
 
--- Pila de alcances. El ultimo alcance agregado es el primero de la lista
-type StackScopes = [Alcance]
+-- Lista con los alcances activos que pueden ser accedidos. Cadena estática
+type ActiveScopes = [Alcance]
 
 -- Informacion pertinente a la entrada de la tabla de simbolos
 data SymbolInfo = SymbolInfo {
@@ -343,12 +344,13 @@ instance Show SymTab where
             symbols' = map fst $ M.toList $ M.filter (any (>0)) $ M.map (map getScope) hash
             showInfo info = if getScope info > 0 then show info else ""
             showTable (k,v) = if k `elem` symbols' then k ++ " -> " ++ concatMap showInfo v else ""
+            -- showTable (k,v) = k ++ " -> " ++ concatMap show v
             symbols = concatMap showTable tabla
 
 
 -- Transformador monadico para crear y manejar la tabla de simbolos junto con 
--- la pila de alcances
-type MonadSymTab a = RWST () () (SymTab, StackScopes) IO a
+-- la pila de alcances y cuales estan activos
+type MonadSymTab a = RWST () () (SymTab, ActiveScopes, Alcance) IO a
 
 
 --------------------------------------------------------------------------------
