@@ -112,9 +112,10 @@ lookupInSymTab' (x:xs) symtab = lookupInSymTab x symtab:lookupInSymTab' xs symta
 
 --------------------------------------------------------------------------------
 -- Añade las variables a la tabla de simbolos
-insertDeclarations :: [Nombre] -> Tipo -> MonadSymTab ()
-insertDeclarations ids t = do
+insertDeclarations :: [Nombre] -> Tipo -> SecuenciaInstr -> MonadSymTab SecuenciaInstr
+insertDeclarations ids t asigs = do
     (actualSymTab, activeScopes@(activeScope:_), scope) <- get
     let info = replicate (length ids) (SymbolInfo t activeScope Variable)
     addToSymTab ids info actualSymTab activeScopes scope
+    return asigs
 --------------------------------------------------------------------------------

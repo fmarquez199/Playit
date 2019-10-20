@@ -14,11 +14,11 @@ import qualified Data.Map as M
 import Data.List (intercalate)
 
 
---------------------------------------------------------------------------------
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 --             Tipos de datos que representan la estructura del AST
---------------------------------------------------------------------------------
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 
 -- Identificador de variable, registros, uniones y subrutinas
@@ -140,9 +140,13 @@ instance Show Instr where
     show (Asignacion v e)        = "Asignacion de " ++ show e ++ " a " ++ show v ++ "\n"
     show Break                   = "Break\n"
     show Continue                = "Continue\n"
-    show (For n e1 e2 s)         = "Ciclo For iterando sobre " ++ n ++ " desde: " ++ show e1 ++ " hasta: " ++ show e2 ++ ": " ++ show s ++ "\n"
-    show (ForEach n e s)         = "Ciclo ForEach iterando sobre " ++ n ++ " sobre los elementos de: " ++ show e ++ ": " ++ show s ++ "\n"
-    show (ForWhile n e1 e2 e3 s) = "Ciclo For Logico iterando sobre " ++ n ++ "desde: " ++ show e1 ++ " hasta: " ++ show e2 ++ " mientras sea verdad: " ++ show e3 ++ ": " ++ show s ++ "\n"
+    show (For n e1 e2 s)         = "Ciclo For iterando sobre " ++ n ++ " desde: "
+        ++ show e1 ++ " hasta: " ++ show e2 ++ ": " ++ show s ++ "\n"
+    show (ForEach n e s)         = "Ciclo ForEach iterando sobre " ++ n ++
+        " sobre los elementos de: " ++ show e ++ ": " ++ show s ++ "\n"
+    show (ForWhile n e1 e2 e3 s) = "Ciclo For Logico iterando sobre " ++ n ++
+        "desde: " ++ show e1 ++ " hasta: " ++ show e2 ++ " mientras sea verdad: "
+        ++ show e3 ++ ": " ++ show s ++ "\n"
     show (Free n)                = "Liberar memoria reservada por " ++ n ++ "\n"
     show (Print e)               = "Imprimir a la salida estandar " ++ show e ++ "\n"
     show (ProcCall s)            = "Llamada de: " ++ show s ++ "\n"
@@ -302,11 +306,11 @@ instance Show UnOp where
     show UpperCase      = "^"
 
 
---------------------------------------------------------------------------------
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 --             Tipos de datos que representan la tabla de simbolos
---------------------------------------------------------------------------------
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 
 -- Alcance de un identificador
@@ -337,13 +341,17 @@ newtype SymTab  = SymTab { getSymTab :: M.Map Nombre [SymbolInfo] }
                 deriving (Eq)
 
 instance Show SymTab where
-    show (SymTab hash) = "----------\nTabla de simbolos\n----------\n" ++ info ++ symbols
+    show (SymTab hash) = header ++ info ++ symbols
         where
-            info = "Symbolo | Informacion asociada\n----------\n"
+            header = "\n------------\n Tabla de simbolos \n------------\n"
+            info = "- Symbolo | Informacion asociada \n------------\n"
             tabla = M.toList hash
             symbols' = map fst $ M.toList $ M.filter (any (>0)) $ M.map (map getScope) hash
             showInfo info = if getScope info > 0 then show info else ""
-            showTable (k,v) = if k `elem` symbols' then k ++ " -> " ++ concatMap showInfo v else ""
+            showTable (k,v) = 
+                if k `elem` symbols' then
+                    k ++ " -> " ++ concatMap showInfo v
+                else ""
             -- showTable (k,v) = k ++ " -> " ++ concatMap show v
             symbols = concatMap showTable tabla
 
@@ -353,11 +361,11 @@ instance Show SymTab where
 type MonadSymTab a = RWST () () (SymTab, ActiveScopes, Alcance) IO a
 
 
---------------------------------------------------------------------------------
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 --                      Para mostrar mejor los errores
---------------------------------------------------------------------------------
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 getNameParam :: Expr -> Nombre
 getNameParam (OpBinario _ e1 e2 _) =
