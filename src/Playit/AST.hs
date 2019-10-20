@@ -491,7 +491,7 @@ crearFree var = do
     (symtab, activeScope:_, scope) <- get
     let info = lookupInSymTab var symtab
     if isJust info then
-        let scopeOk = activeScope == getScope info in
+        let scopeOk = activeScope `elem` map getScope (fromJust info) in
         if scopeOk then return $ Free var
         else error "Error semantico, variable fuera de alcance."
     else
