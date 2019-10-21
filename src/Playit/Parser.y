@@ -186,8 +186,8 @@ Definiciones :: { SecuenciaInstr }
 
 
 Definicion :: { SecuenciaInstr }
-  : DefinirSubrutina PopScope  { $1 }
-  | DefinirRegistro            { $1 }
+  : PushNewScope DefinirSubrutina PopScope  { $2 }
+  | PushNewScope DefinirRegistro  PopScope  { $2 }
   | DefinirUnion               { $1 }
   -- | Declaraciones %prec STMT                { $1 }
 
@@ -422,43 +422,39 @@ Free :: { Instr }
 -------------------------------------------------------------------------------
 
 DefinirSubrutina :: { SecuenciaInstr }
-  : Firma PushNewScope ":" EndLines Instrucciones EndLines ".~"
+  : Firma ":" EndLines Instrucciones EndLines ".~"
     { %
-      let (nombre,params,_,activeScope) = $1
-      in definirSubrutina' nombre params $5 activeScope
+      let (nombre,params,_) = $1
+      in definirSubrutina' nombre params $4
     }
-  | Firma PushNewScope ":" EndLines ".~" 
+  | Firma ":" EndLines ".~" 
   { %
-    let (nombre,params,_,activeScope) = $1
-    in definirSubrutina' nombre params [] activeScope
+    let (nombre,params,_) = $1
+    in definirSubrutina' nombre params []
   }
 
 -------------------------------------------------------------------------------
 -- Firma de la subrutina, se agrega antes a la symtab por la recursividad
-Firma :: { (Nombre, [Expr], Tipo, Alcance) }
+Firma :: { (Nombre, [Expr], Tipo) }
   : proc nombre "(" Parametros ")"   --- TODO: weird Push here
     { % do
-      (_, activeScope:_, _) <- get
       definirSubrutina $2 TDummy Procedimientos
-      return ($2, $4, TDummy, activeScope)
+      return ($2, $4, TDummy)
     }
   | proc nombre "(" ")" 
     { % do
-      (_, activeScope:_, _) <- get
       definirSubrutina $2 TDummy Procedimientos
-      return ($2, [], TDummy, activeScope)
+      return ($2, [], TDummy)
     }
   | function nombre "(" Parametros ")" Tipo 
     { % do
-      (_, activeScope:_, _) <- get
       definirSubrutina $2 $6 Funciones
-      return ($2, $4, $6, activeScope)
+      return ($2, $4, $6)
     }
   | function nombre "(" ")" Tipo 
     { % do
-      (_, activeScope:_, _) <- get
       definirSubrutina $2 $5 Funciones
-      return ($2, [], $5, activeScope)
+      return ($2, [], $5)
     }
 
 -------------------------------------------------------------------------------
@@ -580,11 +576,11 @@ Expresion :: { Expr }
 -------------------------------------------------------------------------------
 -- Registros
 DefinirRegistro :: { SecuenciaInstr }
-  : registro idtipo ":" PushNewScope EndLines Declaraciones EndLines ".~"
+  : registro idtipo ":" EndLines Declaraciones EndLines ".~"
     { %
-      definirRegistro $2 $6
+      definirRegistro $2 $5
     }
-  | registro idtipo ":" PushNewScope EndLines ".~"                        
+  | registro idtipo ":" EndLines ".~"                        
     { %
       definirRegistro $2 []
     }

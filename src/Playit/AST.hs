@@ -370,19 +370,19 @@ crearWhile e i (line,_) = While e i
 
 -------------------------------------------------------------------------------
 -- Actualiza la informacion extra de la subrutina
-definirSubrutina' :: Nombre -> [Expr] -> SecuenciaInstr -> Alcance
+definirSubrutina' :: Nombre -> [Expr] -> SecuenciaInstr
                     -> MonadSymTab SecuenciaInstr
-definirSubrutina' name [] [] scope = do
-    updateExtraInfo name scope [Nada]
+definirSubrutina' name [] [] = do
+    updateExtraInfo name 1 [Nada]
     return []
-definirSubrutina' name [] i scope = do
-    updateExtraInfo name scope [AST i]
+definirSubrutina' name [] i = do
+    updateExtraInfo name 1 [AST i]
     return i
-definirSubrutina' name params [] scope = do
-    updateExtraInfo name scope [Params params]
+definirSubrutina' name params [] = do
+    updateExtraInfo name 1 [Params params]
     return []
-definirSubrutina' name params i scope = do
-    updateExtraInfo name scope [Params params, AST i]
+definirSubrutina' name params i = do
+    updateExtraInfo name 1 [Params params, AST i]
     return i
 -------------------------------------------------------------------------------
 
@@ -454,13 +454,19 @@ crearFuncCall subrutina@(SubrutinaCall nombre _) = do
 
 -------------------------------------------------------------------------------
 -- Definicion de union
+-- Registros, Funciones,Procedimientos y Uniones siempre tienen Scope 1
 definirRegistro :: Nombre -> SecuenciaInstr -> MonadSymTab SecuenciaInstr
-definirRegistro id decls = do
+definirRegistro name decls = do
     (symTab, activeScopes@(activeScope:_), scope) <- get
-    -- TODO: Si ya hay un registro con ese nombre entonces error
     -- TODO: update categoria de las declaraciones y colocar el reg al que pertenece
-    let info = [SymbolInfo TRegistro activeScope ConstructoresTipos [AST decls]]
-    addToSymTab [id] info symTab activeScopes scope
+
+    let infos = lookupScopesNameInSymTab [1] name symTab
+    if isJust infos then do
+        error $ "Error: redeclaración de '" ++ name ++ "'."
+    else return ()
+
+    let info = [SymbolInfo TRegistro 1 ConstructoresTipos [AST decls]]
+    addToSymTab [name] info symTab activeScopes scope
     return decls
 -------------------------------------------------------------------------------
 
@@ -470,8 +476,13 @@ definirRegistro id decls = do
 definirUnion :: Nombre -> SecuenciaInstr -> MonadSymTab SecuenciaInstr
 definirUnion id decls = do
     (symTab, activeScopes@(activeScope:_), scope) <- get
-    -- TODO: Si ya hay una union con ese nombre entonces error
     -- TODO: update categoria de las declaraciones y colocar la union al que pertenece
+
+    let infos = lookupScopesNameInSymTab activeScopes id symTab
+    if isJust infos then do
+        error $ "Error: redeclaración de '" ++ id ++ "'."
+    else return ()
+
     let info = [SymbolInfo TUnion activeScope ConstructoresTipos [AST decls]]
     addToSymTab [id] info symTab activeScopes scope
     return decls
