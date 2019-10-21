@@ -205,19 +205,20 @@ crearArrLstExpr e =
         mapaTipos = map typeE e
         tipoPrimero = head mapaTipos
         tipo = if all (== tipoPrimero) mapaTipos then tipoPrimero else TError
-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 
-------------------------------------------------------------------------------
-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 --              Crear Nodos de las instrucciones de condicionales
-------------------------------------------------------------------------------
-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 
+-------------------------------------------------------------------------------
 -- Crea el nodo para una instruccion If
-crearCasoSwitch :: Expr -> SecuenciaInstr -> Posicion -> (Expr, SecuenciaInstr)
-crearCasoSwitch exprCond seqInstrs (line, _) = (exprCond, seqInstrs)
+crearGuardiaIF :: Expr -> SecuenciaInstr -> Posicion -> (Expr, SecuenciaInstr)
+crearGuardiaIF exprCond seqInstrs (line, _) = (exprCond, seqInstrs)
 {-crearGuardiaIF exprCond seqInstrs (line,_)
     | tExpreCondicional == TBool = IF [(exprCond, seqInstrs)]
     | otherwise = 
@@ -227,16 +228,23 @@ crearCasoSwitch exprCond seqInstrs (line, _) = (exprCond, seqInstrs)
 
     where
         tExpreCondicional = typeE exprCond-}
+-------------------------------------------------------------------------------
 
 
+-------------------------------------------------------------------------------
 crearIfSimple :: Expr -> Expr -> Expr -> Tipo ->  Posicion -> Expr
 crearIfSimple con v f t (linea, col) = IfSimple con v f t
 {-| t con == TBool && t v == t f && t v /= TError = IfSimple con v f
   | otherwise = error ("\n\nError semantico en el operador ternario '? :' en la linea: " ++ show linea ++ " tipo de verdad: " ++ (show $ t v) ++ " tipo de mentira: " ++ (show $ t f))
   where t = typeE-}
+-------------------------------------------------------------------------------
 
+
+-------------------------------------------------------------------------------
 crearIF :: [(Expr, SecuenciaInstr)] -> Posicion -> Instr
 crearIF casos (line, col) = IF casos
+-------------------------------------------------------------------------------
+
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
@@ -280,6 +288,7 @@ crearFor var e1 e2 i st scope pos@(line,_) = return $ For var e1 e2 i
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
+-- Crea el nodo para la instruccion de for con condicion
 crearForWhile :: Nombre -> Expr -> Expr -> Expr -> SecuenciaInstr -> SymTab -> Alcance -> Posicion 
             -> MonadSymTab Instr
 crearForWhile var e1 e2 e3 i st scope pos@(line,_) = return $ ForWhile var e1 e2 e3 i
@@ -348,7 +357,7 @@ crearWhile e i (line,_) = While e i
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
---        Crear Nodos de las instrucciones de procedimientos y funciones
+--        Definiciones e instrucciones de procedimientos y funciones
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 
@@ -376,56 +385,20 @@ definirSubrutina' name params i = do
 -- Agrega el nombre de la subrutina a la tabla de símbolos.
 definirSubrutina :: Nombre -> Tipo -> Categoria -> MonadSymTab ()
 definirSubrutina nombre tipo categoria = do
-    -- Si ya hay una subrutina con ese nombre entonces error
     (symtab, activeScopes@(activeScope:_), scope) <- get
-    let info = [SymbolInfo tipo activeScope categoria [Nada]]
-    addToSymTab [nombre] info symtab activeScopes scope
+    if isNothing $ lookupInSymTab name symTab then 
+        let info = [SymbolInfo tipo activeScope categoria [Nada]]
+        in addToSymTab [nombre] info symtab activeScopes scope
+    else
+        error $ "Error: redeclaración de '" ++ nombre ++ "'."
     return ()
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
--- Crea el nodo para la instruccion que llama a la subrutina
-crearSubrutinaCall :: Nombre -> Parametros -> MonadSymTab Subrutina
-crearSubrutinaCall nombre params = do
-    -- TODO: Verificar que el scope concuerde con el activo
-    (symtab, activeScopes, scope) <- get
-    let isNombreDef = isJust $ lookupInSymTab nombre symtab
-    let firma = nombre : map showVar (concatMap getVar $ filter isVar params)
-    if all isJust $ lookupInSymTab' firma symtab then
-        -- let isScopeOk = 
-        return $ SubrutinaCall nombre params
-    else
-        if not isNombreDef then
-            error $ "Error semantico, la subrutina" ++ nombre ++ "no ha sido definida."
-        else
-            error ("Error semantico, al menos uno de los parametros no ha sido definido."
-                ++ show params)
--------------------------------------------------------------------------------
-
-
--------------------------------------------------------------------------------
--- Crea el nodo para la instruccion que llama a la funcion
-crearFuncCall :: Subrutina -> MonadSymTab Expr
-crearFuncCall subrutina@(SubrutinaCall nombre _) = do
-    (symtab, activeScope:_, scope) <- get
-    let info = lookupInSymTab nombre symtab
-    if isJust info then do
-        let funs = filter (\i -> getCategory i == Funciones) $ fromJust info
-        let found = filter (\i -> getScope i == activeScope) funs
-        if not $ null found then
-            return $ FuncCall subrutina (getType $ head found)
-        else
-            error "Error semantico, funcion no dentro del alcance activo."
-    else
-        error "Error semantico, funcion no definida."
--------------------------------------------------------------------------------
-
-
--------------------------------------------------------------------------------
--- Crea el nodo para la definicion de los parametros
-crearParam :: Vars -> MonadSymTab Expr
-crearParam param@(Param name t ref) = do
+-- Define el parametro en la tabla de simbolos
+definirParam :: Vars -> MonadSymTab Expr
+definirParam param@(Param name t ref) = do
     (symtab, activeScopes@(activeScope:_), scope) <- get
     let info = [SymbolInfo t activeScope (Parametros ref) [Nada]]
     addToSymTab [name] info symtab activeScopes scope
@@ -434,19 +407,48 @@ crearParam param@(Param name t ref) = do
 
 
 -------------------------------------------------------------------------------
+-- Crea el nodo para la instruccion que llama a la subrutina
+crearSubrutinaCall :: Nombre -> Parametros -> MonadSymTab Subrutina
+crearSubrutinaCall nombre params = do
+    (symtab, activeScopes, scope) <- get
+    let isNombreDef = isJust $ lookupInSymTab nombre symtab
+    if isNombreDef then
+        return $ SubrutinaCall nombre params
+    else
+        error $ "Error semantico, la subrutina '" ++ nombre ++ "' no ha sido definida."
 -------------------------------------------------------------------------------
---            Crear Nodos de las instrucciones de registros y uniones
+
+
+-------------------------------------------------------------------------------
+-- Crea el nodo para la instruccion que llama a la funcion
+-- NOTA: Se supone que ya se verifico que la subrutina este definida con
+--      crearSubrutinaCall, pues se ejecuta primero
+crearFuncCall :: Subrutina -> MonadSymTab Expr
+crearFuncCall subrutina@(SubrutinaCall nombre _) = do
+    (symtab, activeScope:_, scope) <- get
+    let funs = filter (\i -> getCategory i == Funciones) $ fromJust info
+    let found = filter (\i -> getScope i == activeScope) funs
+    if not $ null found then
+        return $ FuncCall subrutina (getType $ head found)
+    else
+        error "Error semantico, funcion no dentro del alcance activo."
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+--                   Definiciones de registros y uniones
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
--- Crea el nodo para la instruccion que define los registros
+-- Definicion de union
 definirRegistro :: Nombre -> SecuenciaInstr -> MonadSymTab SecuenciaInstr
 definirRegistro id decls = do
     (symTab, activeScopes@(activeScope:_), scope) <- get
-    -- Si ya hay un registro con ese nombre entonces error
-    -- update categoria de las declaraciones y colocar el reg al que pertenece
+    -- TODO: Si ya hay un registro con ese nombre entonces error
+    -- TODO: update categoria de las declaraciones y colocar el reg al que pertenece
     let info = [SymbolInfo TRegistro activeScope ConstructoresTipos [AST decls]]
     addToSymTab [id] info symTab activeScopes scope
     return decls
@@ -454,12 +456,12 @@ definirRegistro id decls = do
 
 
 -------------------------------------------------------------------------------
--- Crea el nodo para la instruccion que define las uniones
+-- Definicion de union
 definirUnion :: Nombre -> SecuenciaInstr -> MonadSymTab SecuenciaInstr
 definirUnion id decls = do
     (symTab, activeScopes@(activeScope:_), scope) <- get
-    -- Si ya hay una union con ese nombre entonces error
-    -- update categoria de las declaraciones y colocar la union al que pertenece
+    -- TODO: Si ya hay una union con ese nombre entonces error
+    -- TODO: update categoria de las declaraciones y colocar la union al que pertenece
     let info = [SymbolInfo TUnion activeScope ConstructoresTipos [AST decls]]
     addToSymTab [id] info symTab activeScopes scope
     return decls

@@ -37,7 +37,7 @@ import Playit.AST
   char              { TkRUNE _ _ }
   str               { TkRUNES _ _ }
   float             { TkSKILL _ _ }
-  switch            { TkBUTTON _ _ }
+  if                { TkBUTTON _ _ }
   proc              { TkBOSS _ _ }
   for               { TkCONTROLLER _ _ }
   print             { TkDROP _ _ }
@@ -206,6 +206,7 @@ Declaraciones :: { SecuenciaInstr }
 
 Declaracion :: { SecuenciaInstr }
   : Tipo Identificadores
+  -- TODO: verificar aqui que no hayan identificadores suplicados
     { % let (ids, asigs) = $2 in insertDeclarations (reverse ids) $1 asigs }
 
 -------------------------------------------------------------------------------
@@ -303,22 +304,21 @@ Asignacion :: { Instr }
 -------------------------------------------------------------------------------
 -- Instrucciones de condicionales 'Button', '|' y 'notPressed'
 Button :: { Instr }
-  : switch ":" EndLines Guardias ".~"
-    { crearIF (reverse $4) (posicion $1 )}
+  : if ":" EndLines Guardias ".~" { crearIF (reverse $4) (posicion $1 )}
 
 Guardias :: { [(Expr, SecuenciaInstr)] }
-  : Guardias Guardia { $2 : $1 }
-  | Guardia { [$1] }
+  : Guardias Guardia  { $2 : $1 }
+  | Guardia           { [$1] }
 
 Guardia :: { (Expr, SecuenciaInstr) }
   : "|" Expresion "}" EndLines Instrucciones EndLines
-    { crearCasoSwitch $2 $5 (posicion $1) }
+    { crearGuardiaIF $2 $5 (posicion $1) }
   | "|" Expresion "}" Instrucciones EndLines
-    { crearCasoSwitch $2 $4 (posicion $1) }
+    { crearGuardiaIF $2 $4 (posicion $1) }
   | "|" else "}" EndLines Instrucciones EndLines
-    { crearCasoSwitch (Literal (Booleano True) TBool) $5 (posicion $1) }
+    { crearGuardiaIF (Literal (Booleano True) TBool) $5 (posicion $1) }
   | "|" else "}" Instrucciones EndLines
-    { crearCasoSwitch (Literal (Booleano True) TBool) $4 (posicion $1) }
+    { crearGuardiaIF (Literal (Booleano True) TBool) $4 (posicion $1) }
 -------------------------------------------------------------------------------
 
 
@@ -358,7 +358,6 @@ InitVar1 :: { (Nombre, Expr) }
       -- TODO: Verificar que nombre este en la symtab, asignar valor y el scope concuerde con el actual
       -- Se supone que TDummy deberia cambiar por el tipo de Expresion
       let var = Var $1 TDummy
-      insertDeclarations [$1] TDummy []
       return $ crearAsignacion var $3 (posicion $2) 
       return ($1, $3)
     }
@@ -376,7 +375,6 @@ InitVar2 :: { (Nombre, Expr) }
       -- TODO: Verificar que nombre este en la symtab, asignar valor y el scope concuerde con el actual
       -- Se supone que TDummy deberia cambiar por el tipo de Expresion
       let var = Var $1 TDummy
-      insertDeclarations [$1] TDummy []
       return $ crearAsignacion var $3 (posicion $2)
       return ($1, $3)
     }
@@ -469,8 +467,8 @@ Parametros :: { [Expr] }
 
 
 Parametro :: { Expr }
-  : Tipo nombre       { % crearParam (Param $2 $1 Valor) }
-  | Tipo "?" nombre   { % crearParam (Param $3 $1 Referencia) }
+  : Tipo nombre       { % definirParam (Param $2 $1 Valor) }
+  | Tipo "?" nombre   { % definirParam (Param $3 $1 Referencia) }
 -------------------------------------------------------------------------------
 
 
@@ -495,6 +493,7 @@ PasarParametros :: { Parametros }
   | ParametroPasado                       { [$1] }
 
 ParametroPasado :: { Expr }
+-- TODO: Verificar aqui que el parametro esta definido
   : Expresion       { $1 }
   | "?" Expresion   { $2 }
 -------------------------------------------------------------------------------
