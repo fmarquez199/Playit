@@ -179,15 +179,15 @@ Sentencia :: { Sentencia }
 
 
 Definiciones :: { SecuenciaInstr }
-  : Definiciones EndLines Definicion { $3 ++ $1 }
+  : Definiciones EndLines Definicion { $1 ++ $3 }
   | Definicion                       { $1 }
 
 
 Definicion :: { SecuenciaInstr }
-  : PushNewScope DefinirSubrutina PopScope  { $2 }
-  | PushNewScope DefinirRegistro PopScope   { $2 }
-  | PushNewScope DefinirUnion PopScope      { $2 }
-  | Declaraciones  %prec STMT               { $1 }
+  : DefinirSubrutina PopScope  { $1 }
+  | DefinirRegistro            { $1 }
+  | DefinirUnion               { $1 }
+  -- | Declaraciones %prec STMT                { $1 }
 
 
 EndLines :: { () }
@@ -201,7 +201,7 @@ EndLines :: { () }
 -------------------------------------------------------------------------------
 
 Declaraciones :: { SecuenciaInstr }
-  : Declaraciones EndLines Declaracion  { $3 ++ $1 }
+  : Declaraciones EndLines Declaracion  { $1 ++ $3 }
   | Declaracion                         { $1 }
 
 Declaracion :: { SecuenciaInstr }
@@ -271,20 +271,20 @@ Tipo :: { Tipo }
 Instrucciones :: { SecuenciaInstr }
   : Instrucciones EndLines Instruccion  { $3 : $1 }
   | Instruccion                         { [$1] }
+  -- | Declaraciones %prec STMT  { $1 }
 
 Instruccion :: { Instr }
-  : Asignacion                       { $1 }
-  -- |                         { $1 }
-  | Declaracion {%return $ SecDeclaraciones $1 }
-  | PushNewScope Controller PopScope  { $2 }
-  | PushNewScope Play PopScope        { $2 }
-  | Button                            { $1 }
-  | ProcCall                          { $1 }
-  | EntradaSalida                     { $1 }
-  | Free                              { $1 }
-  | return Expresion                  { Return $2 }
-  | break {-PopScope-}                    { Break }
-  | continue                          { Continue }
+  : Asignacion            { $1 }
+  | Declaracion           { Asignaciones $1 }
+  | Controller PopScope   { $1 }
+  | Play PopScope         { $1 }
+  | Button                { $1 }
+  | ProcCall              { $1 }
+  | EntradaSalida         { $1 }
+  | Free                  { $1 }
+  | return Expresion      { Return $2 }
+  | break {-PopScope-}        { Break }
+  | continue              { Continue }
 
 
 --------------------------------------------------------------------------------
@@ -308,7 +308,7 @@ Asignacion :: { Instr }
 -- Instrucciones de condicionales 'Button', '|' y 'notPressed'
 Button :: { Instr }
   : switch ":" EndLines Guardias ".~"
-    { crearSwitch (reverse $4) (posicion $1 )}
+    { crearIF (reverse $4) (posicion $1 )}
 
 Guardias :: { [(Expr, SecuenciaInstr)] }
   : Guardias Guardia { $2 : $1 }
@@ -430,8 +430,8 @@ Free :: { Instr }
 -------------------------------------------------------------------------------
 
 DefinirSubrutina :: { SecuenciaInstr }
-  : Firma ":" EndLines Instrucciones EndLines ".~" { $4 }
-  | Firma ":" EndLines ".~"                        { [] } 
+  : Firma ":" PushNewScope EndLines Instrucciones EndLines ".~" { $5 }
+  | Firma ":" PushNewScope EndLines ".~"                        { [] } 
 
 -------------------------------------------------------------------------------
 -- Firma de la subrutina, se agrega antes a la symtab por la recursividad
@@ -575,12 +575,12 @@ Expresion :: { Expr }
 --------------------------------------------------------------------------------
 -- Registros
 DefinirRegistro :: { SecuenciaInstr }
-  : registro idtipo ":" EndLines Declaraciones EndLines ".~"
+  : registro idtipo ":" PushNewScope EndLines Declaraciones EndLines ".~"
     { % do
-        definirRegistro $2 $5
-        return $5
+        definirRegistro $2 $6
+        return $6
     }
-  | registro idtipo ":" EndLines ".~"                        
+  | registro idtipo ":" PushNewScope EndLines ".~"                        
     { % do
         definirRegistro $2 []
         return []
@@ -591,12 +591,12 @@ DefinirRegistro :: { SecuenciaInstr }
 --------------------------------------------------------------------------------
 -- Uniones
 DefinirUnion :: { SecuenciaInstr }
-  : union idtipo ":" EndLines Declaraciones EndLines ".~"
+  : union idtipo ":" PushNewScope EndLines Declaraciones EndLines ".~"
     { % do
-        definirUnion $2 $5
-        return $5
+        definirUnion $2 $6
+        return $6
     }
-  | union idtipo ":" EndLines ".~"                        
+  | union idtipo ":" PushNewScope EndLines ".~"                        
     { % do
       definirUnion $2 []
       return []

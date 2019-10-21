@@ -50,7 +50,7 @@ main = do
                     if hasError tokens then
                         putStrLn $ tkErrorToString $ filter isError tokens
                     else do
-                        (ast,(st,_), _) <- runRWST (parse tokens) () initState
+                        (ast,(st,_,_), _) <- runRWST (parse tokens) () initState
                         print ast
                         print st
 

@@ -25,12 +25,12 @@ import Playit.Types
 
 --------------------------------------------------------------------------------
 -- Estado inicial con todo lo predefinido del lenguaje
-initState :: (SymTab,StackScopes)
-initState = createInitSymTab (SymTab M.empty) [0]
+initState :: (SymTab,ActiveScopes,Alcance)
+initState = createInitSymTab (SymTab M.empty)
 
 
-createInitSymTab :: SymTab -> StackScopes -> (SymTab,StackScopes)
-createInitSymTab st scopes = (insertSymbols symbols info st,scopes)
+createInitSymTab :: SymTab -> (SymTab,ActiveScopes,Alcance)
+createInitSymTab st = (insertSymbols symbols info st,[0],0)
     where
         symbols = t ++ words
         t = ["Power", "Skill", "Rune", "Runes", "Battle", "Inventory", "Items"]
@@ -54,9 +54,9 @@ createInitSymTab st scopes = (insertSymbols symbols info st,scopes)
 -- Se empila el nuevo alcance
 pushNewScope :: MonadSymTab ()
 pushNewScope = do
-    (actualSymTab, scopes@(actualScope:_)) <- get
-    let newScope = actualScope + 1
-    put (actualSymTab, newScope:scopes)
+    (actualSymTab, activeScopes, scope) <- get
+    let newScope = scope + 1
+    put (actualSymTab, newScope:activeScopes, newScope)
 --------------------------------------------------------------------------------
 
 
@@ -64,17 +64,18 @@ pushNewScope = do
 -- Se desempila el alcance actual
 popScope :: MonadSymTab ()
 popScope = do
-    (actualSymTab, _:scopes) <- get
-    put (actualSymTab, scopes)
+    (actualSymTab, _:prevScopes, scope) <- get
+    put (actualSymTab, prevScopes, scope)
 --------------------------------------------------------------------------------
 
 
 --------------------------------------------------------------------------------
 -- Agrega a la tabla de simbolos la lista de identificadores con su informacion:
 --  Tipo, alcance, categoria
-addToSymTab :: [Nombre] -> [SymbolInfo] -> SymTab -> StackScopes -> MonadSymTab ()
-addToSymTab ids info actualSymTab scopes = 
-    put (insertSymbols ids info actualSymTab, scopes)
+addToSymTab :: [Nombre] -> [SymbolInfo] -> SymTab -> ActiveScopes -> Alcance
+            -> MonadSymTab ()
+addToSymTab ids info actualSymTab activeScopes scope = 
+    put (insertSymbols ids info actualSymTab, activeScopes, scope)
 --------------------------------------------------------------------------------
 
 
@@ -101,32 +102,31 @@ lookupInSymTab var (SymTab table) = M.lookup var table
 
 --------------------------------------------------------------------------------
 -- Busca el (identificador,scope) de una variable en la tabla de simbolos dada.
-{-lookupNameScopeInSymTab :: Nombre -> Alcance -> SymTab -> Maybe [SymbolInfo]
-lookupNameScopeInSymTab name scope (SymTab table) = fmap (elem scope) (M.lookup name table)
+--lookupNameScopeInSymTab :: Nombre -> Alcance -> SymTab -> Maybe [SymbolInfo]
+--lookupNameScopeInSymTab name scope (SymTab table) = M.lookup name table
 --------------------------------------------------------------------------------
 
 --------------------------------------------------------------------------------
 -- Busca el identificador de una variable en la tabla de simbolos dada.
-lookupNameScopeInSymTab :: [SymbolInfo] -> Alcance-> Boolean
-lookupNameScopeInSymTab (info:[]) scope = if getScope info == scope then True else False
-lookupNameScopeInSymTab (info:r) scope = if getScope info == scope then True else (lookupNameScopeInSymTab r scope)
+--lookupNamesScopeInSymTab :: [SymbolInfo] -> Alcance-> Bool
+--lookupNamesScopeInSymTab (info:[]) scope = if getScope info == scope then True else False
+--lookupNamesScopeInSymTab (info:r) scope = if getScope info == scope then True else (lookupNamesScopeInSymTab r scope)
 --------------------------------------------------------------------------------
 
 --------------------------------------------------------------------------------
 -- Busca el identificador de una variable en la tabla de simbolos dada.
-lookupNameScopesInSymTab :: [SymbolInfo] -> Alcance-> Boolean
-lookupNameScopesInSymTab (info:[]) scopes = if getScope info == scope then True else False
-lookupNameScopesInSymTab (info:r)  scopes = if getScope info == scope then True else (lookupNameScopeInSymTab r scope)
+lookupNameScopesInSymTab :: Maybe [SymbolInfo] -> [Alcance]-> Maybe SymbolInfo
+lookupNameScopesInSymTab Nothing scopes = Nothing
+lookupNameScopesInSymTab (Just r) scopes 
+    | lstAlcances == []  = Nothing
+    | otherwise = Just $ fst $ head lstAlcances
+    where 
+        lstAlcances = [(s,a) | s <- r, a <- scopes,getScope s == a]
+        
 --------------------------------------------------------------------------------
 
 --------------------------------------------------------------------------------
--- Busca el identificador de una variable en la tabla de simbolos dada.
-lookupNameScopeInSymTab :: [SymbolInfo] -> Alcance-> Boolean
-lookupNameScopeInSymTab info (sc:[])    = if getScope info == scope then True else False
-lookupNameScopeInSymTab info (sc:scs)   = if getScope info == sc then info else (lookupNameScopeInSymTab r scope)
---------------------------------------------------------------------------------
--}
---------------------------------------------------------------------------------
+
 -- Busca los identificadores de una variable en la tabla de simbolos dada.
 lookupInSymTab' :: [Nombre] -> SymTab -> [Maybe [SymbolInfo]]
 lookupInSymTab' [] _ = [Nothing]
@@ -139,7 +139,11 @@ lookupInSymTab' (x:xs) symtab = lookupInSymTab x symtab:lookupInSymTab' xs symta
 -- Añade las variables a la tabla de simbolos
 insertDeclarations :: [Nombre] -> Tipo -> MonadSymTab ()
 insertDeclarations ids t = do
-    (actualSymTab, scopes@(scope:_)) <- get
-    let info = replicate (length ids) (SymbolInfo t scope Variable)
-    addToSymTab ids info actualSymTab scopes
+
+    (actualSymTab, activeScopes@(activeScope:_), scope) <- get
+    
+    let info = replicate (length ids) (SymbolInfo t activeScope Variable)
+    addToSymTab ids info actualSymTab activeScopes scope
+
 --------------------------------------------------------------------------------
+

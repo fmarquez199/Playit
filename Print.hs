@@ -100,7 +100,7 @@ printAST n instr =
         (Print exp) -> putStrLn (t ++ "Impresion:") >> printExpr (n + 1) exp
         -----------------------------------------------------------------------
         -- Leer valor
-        (SecDeclaraciones seq symTab) ->
+        (Asignaciones seq symTab) ->
             --printSymTab symTab t >>
             if not $ isEmptySequence seq then
                 putStrLn (t ++ "  Declaraciones:") >> printSeq (n + 2) seq

@@ -1,8 +1,16 @@
 world %hola%:
 
 boss b(Skill s):
+Power c
+.~
+boss b(Skill s):
+    Rune b = c
+    Rune b = c
+    Rune b = c
+    Rune b = c
+    Rune b = c
 .~
 
-
 kill b()
+
 .~
