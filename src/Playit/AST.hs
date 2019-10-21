@@ -391,9 +391,9 @@ definirSubrutina' name params i = do
 -- Agrega el nombre de la subrutina a la tabla de símbolos.
 definirSubrutina :: Nombre -> Tipo -> Categoria -> MonadSymTab ()
 definirSubrutina nombre tipo categoria = do
-    (symtab, activeScopes@(activeScope:_), scope) <- get
+    (symtab, activeScopes, scope) <- get
     if isNothing $ lookupInSymTab nombre symtab then 
-        let info = [SymbolInfo tipo activeScope categoria [Nada]]
+        let info = [SymbolInfo tipo 1 categoria [Nada]]
         in addToSymTab [nombre] info symtab activeScopes scope
     else
         error $ "Error: redeclaración de '" ++ nombre ++ "'."
