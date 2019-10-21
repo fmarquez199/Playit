@@ -32,7 +32,7 @@ type Posicion = (Int, Int)
 
 type Parametros = [Expr]
 
-type Sentencias = [Sentencia]
+--type Sentencias = [Sentencia]
 
 type SecuenciaInstr = [Instr]
 
@@ -61,6 +61,17 @@ instance Show Categoria where
     show Tipos              = "Tipo"
     show Variable           = "Variable"
 
+
+data ExtraInfo =
+    AST SecuenciaInstr |
+    Params [Expr]        |
+    FromReg Nombre     | -- Registro o union al que pertenece el campo/variable
+    Nada
+    deriving (Eq, Ord)
+
+instance Show ExtraInfo where
+    show (AST secInstr) = "AST:\n" ++ show secInstr
+    show Nada           = "No hay informacion extra"
 
 -- Tipo de dato que pueden ser las expresiones
 data Tipo = 
@@ -128,12 +139,12 @@ data Instr  =
     Free Nombre                                   |
     Print Expr                                    |
     ProcCall Subrutina                            |
-    Programa Sentencias                           |
+    Programa SecuenciaInstr                       |
     Return Expr                                   |
     Asignaciones SecuenciaInstr                   |
     IF [(Expr, SecuenciaInstr)]                   |
     While Expr SecuenciaInstr
-    deriving (Eq)
+    deriving (Eq,Ord)
 
 instance Show Instr where
 -- Esto imprime el tipo de instruccion pero no imprime la secuenciaInstr
@@ -160,20 +171,20 @@ instance Show Instr where
 
 
 -- Lo que se puede escribir dentro de un programa
-data Sentencia = Def SecuenciaInstr
-               | Sec SecuenciaInstr
-               | Nada
-               deriving (Eq)
+-- data Sentencia = Def SecuenciaInstr
+--                | Sec SecuenciaInstr
+--                | Nada
+--                deriving (Eq)
 
-instance Show Sentencia where
-    show (Def s) = show s
-    show (Sec s) = show s 
-    show Nada    = ""
+-- instance Show Sentencia where
+--     show (Def s) = show s
+--     show (Sec s) = show s 
+--     show Nada    = ""
 
-getInstr :: Sentencia -> SecuenciaInstr
-getInstr (Def s) = s
-getInstr (Sec s) = s
-getInstr Nada    = []
+-- getInstr :: Sentencia -> SecuenciaInstr
+-- getInstr (Def s) = s
+-- getInstr (Sec s) = s
+-- getInstr Nada    = []
 
 
 -- 
@@ -323,13 +334,14 @@ type ActiveScopes = [Alcance]
 data SymbolInfo = SymbolInfo {
     getType :: Tipo,
     getScope :: Alcance,
-    getCategory :: Categoria
+    getCategory :: Categoria,
+    getExtraInfo :: [ExtraInfo]
     }
     deriving (Eq, Ord)
 
 instance Show SymbolInfo where
-    show (SymbolInfo t s c) =
-        "Tipo: " ++ show t ++ ", en el alcance: " ++ show s ++ ", de categoria: " ++ show c ++ "\n"
+    show (SymbolInfo t s c i) = "Tipo: " ++ show t ++ ", en el alcance: " ++
+        show s ++ ", de categoria: "++ show c ++ ".\nExtra: " ++ concatMap show i ++ "\n"
 
 
 {- Nuevo tipo de dato para representar la tabla de simbolos

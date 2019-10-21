@@ -1,13 +1,16 @@
-world %hola%:
+world %caso_malicia'M'%: 
+    monster f(Power f2) Power:
 
-Power a
-boss b(Skill s):
-    controller Kit of Power kpd <- dobles:
-        controller Power d <- dobles:
-          drop ~Dobles: ~, d
-        .~
     .~
+    Power f2
+     Power a = kill f()
 .~
-kill a(-a,a + 1)
 
-.~
+
+
+
+
+
+
+
+

@@ -37,7 +37,7 @@ import Playit.AST
   char              { TkRUNE _ _ }
   str               { TkRUNES _ _ }
   float             { TkSKILL _ _ }
-  switch            { TkBUTTON _ _ }
+  if                { TkBUTTON _ _ }
   proc              { TkBOSS _ _ }
   for               { TkCONTROLLER _ _ }
   print             { TkDROP _ _ }
@@ -162,20 +162,19 @@ ProgramaWrapper :: { Instr }
 
   
 Programa :: { Instr }
-  : PushNewScope world programa ":" EndLines Sentencias EndLines ".~"  PopScope
-    { Programa $ reverse $6 }
-  | PushNewScope world programa ":" EndLines ".~" PopScope
-    { Programa [Nada] }
+  : PushNewScope Definiciones world programa ":" EndLines Instrucciones EndLines ".~"  PopScope
+    { Programa $ reverse $7 }
+  | PushNewScope Definiciones world programa ":" EndLines ".~" PopScope
+    { Programa [] }
 
 
-Sentencias :: { Sentencias }
-  : Sentencias EndLines Sentencia  { $3 : $1 }
-  | Sentencia                      { [Sec $ getInstr $1] }
+-- Sentencias :: { Sentencias }
+--   : Sentencias EndLines Sentencia  { $3 : $1 }
+--   | Sentencia                      { [Sec $ getInstr $1] }
 
-
-Sentencia :: { Sentencia }
-  : Instrucciones %prec STMT { Sec $ reverse $1 }
-  | Definiciones  %prec STMT { Def $ reverse $1 }
+-- Sentencia :: { Sentencia }
+--   : Instrucciones %prec STMT { Sec $ reverse $1 }
+--   | Definiciones  %prec STMT { Def $ reverse $1 }
 
 
 Definiciones :: { SecuenciaInstr }
@@ -206,6 +205,7 @@ Declaraciones :: { SecuenciaInstr }
 
 Declaracion :: { SecuenciaInstr }
   : Tipo Identificadores
+  -- TODO: verificar aqui que no hayan identificadores suplicados
     { % let (ids, asigs) = $2 in insertDeclarations (reverse ids) $1 asigs }
 
 -------------------------------------------------------------------------------
@@ -303,22 +303,21 @@ Asignacion :: { Instr }
 -------------------------------------------------------------------------------
 -- Instrucciones de condicionales 'Button', '|' y 'notPressed'
 Button :: { Instr }
-  : switch ":" EndLines Guardias ".~"
-    { crearIF (reverse $4) (posicion $1 )}
+  : if ":" EndLines Guardias ".~" { crearIF (reverse $4) (posicion $1 )}
 
 Guardias :: { [(Expr, SecuenciaInstr)] }
-  : Guardias Guardia { $2 : $1 }
-  | Guardia { [$1] }
+  : Guardias Guardia  { $2 : $1 }
+  | Guardia           { [$1] }
 
 Guardia :: { (Expr, SecuenciaInstr) }
   : "|" Expresion "}" EndLines Instrucciones EndLines
-    { crearCasoSwitch $2 $5 (posicion $1) }
+    { crearGuardiaIF $2 $5 (posicion $1) }
   | "|" Expresion "}" Instrucciones EndLines
-    { crearCasoSwitch $2 $4 (posicion $1) }
+    { crearGuardiaIF $2 $4 (posicion $1) }
   | "|" else "}" EndLines Instrucciones EndLines
-    { crearCasoSwitch (Literal (Booleano True) TBool) $5 (posicion $1) }
+    { crearGuardiaIF (Literal (Booleano True) TBool) $5 (posicion $1) }
   | "|" else "}" Instrucciones EndLines
-    { crearCasoSwitch (Literal (Booleano True) TBool) $4 (posicion $1) }
+    { crearGuardiaIF (Literal (Booleano True) TBool) $4 (posicion $1) }
 -------------------------------------------------------------------------------
 
 
@@ -420,31 +419,39 @@ Free :: { Instr }
 -------------------------------------------------------------------------------
 
 DefinirSubrutina :: { SecuenciaInstr }
-  : Firma ":" EndLines PushNewScope Instrucciones EndLines ".~" { $5 }
-  | Firma ":" EndLines PushNewScope ".~"                        { [] } 
+  : Firma ":" EndLines Instrucciones EndLines ".~"
+    { %
+      let (nombre,params,_,cat) = $1
+      in definirSubrutina' nombre params $4 cat
+    }
+  | Firma ":" EndLines ".~" 
+  { %
+    let (nombre,params,_,cat) = $1
+    in definirSubrutina' nombre params [] cat
+  }
 
 -------------------------------------------------------------------------------
 -- Firma de la subrutina, se agrega antes a la symtab por la recursividad
-Firma :: { (Nombre, [Expr], Tipo) }
-  : proc nombre "(" Parametros ")" 
+Firma :: { (Nombre, [Expr], Tipo, Categoria) }
+  : proc nombre "(" Parametros ")"   --- TODO: weird Push here
     { % do
-      crearNombreSubrutina $2 TDummy Procedimientos
-      return ($2, $4, TDummy)
+      definirSubrutina $2 TDummy Procedimientos
+      return ($2, $4, TDummy, Procedimientos)
     }
   | proc nombre "(" ")" 
     { % do
-      crearNombreSubrutina $2 TDummy Procedimientos
-      return ($2, [], TDummy)
+      definirSubrutina $2 TDummy Procedimientos
+      return ($2, [], TDummy, Procedimientos)
     }
   | function nombre "(" Parametros ")" Tipo 
     { % do
-      crearNombreSubrutina $2 $6 Funciones
-      return ($2, $4, $6)
+      definirSubrutina $2 $6 Funciones
+      return ($2, $4, $6, Funciones)
     }
   | function nombre "(" ")" Tipo 
     { % do
-      crearNombreSubrutina $2 $5 Funciones
-      return ($2, [], $5)
+      definirSubrutina $2 $5 Funciones
+      return ($2, [], $5, Funciones)
     }
 
 -------------------------------------------------------------------------------
@@ -455,8 +462,8 @@ Parametros :: { [Expr] }
 
 
 Parametro :: { Expr }
-  : Tipo nombre       { % crearParam (Param $2 $1 Valor) }
-  | Tipo "?" nombre   { % crearParam (Param $3 $1 Referencia) }
+  : Tipo nombre       { % definirParam (Param $2 $1 Valor) }
+  | Tipo "?" nombre   { % definirParam (Param $3 $1 Referencia) }
 -------------------------------------------------------------------------------
 
 
@@ -481,6 +488,7 @@ PasarParametros :: { Parametros }
   | ParametroPasado                       { [$1] }
 
 ParametroPasado :: { Expr }
+-- TODO: Verificar aqui que el parametro esta definido
   : Expresion       { $1 }
   | "?" Expresion   { $2 }
 -------------------------------------------------------------------------------
