@@ -115,13 +115,18 @@ lookupInSymTab var (SymTab table) = M.lookup var table
 
 --------------------------------------------------------------------------------
 -- Busca el identificador de una variable en la tabla de simbolos dada.
-lookupNameScopesInSymTab :: Maybe [SymbolInfo] -> [Alcance]-> Maybe SymbolInfo
-lookupNameScopesInSymTab Nothing scopes = Nothing
-lookupNameScopesInSymTab (Just r) scopes 
+lookupScopesInSymInfos :: [Alcance]-> Maybe [SymbolInfo] ->  Maybe SymbolInfo
+lookupScopesInSymInfos scopes Nothing = Nothing
+lookupScopesInSymInfos scopes (Just r) 
     | lstAlcances == []  = Nothing
     | otherwise = Just $ fst $ head lstAlcances
     where 
         lstAlcances = [(s,a) | s <- r, a <- scopes,getScope s == a]
+        
+--------------------------------------------------------------------------------
+-- Busca el identificador de una variable en la tabla de simbolos dada.
+lookupScopesNameInSymTab :: [Alcance]-> Nombre -> symtab ->  Maybe SymbolInfo
+lookupScopesNameInSymTab scopes nombre  = lookupScopesInSymInfos scopes (lookupInSymTab nombre symtab)
         
 --------------------------------------------------------------------------------
 
@@ -137,13 +142,14 @@ lookupInSymTab' (x:xs) symtab = lookupInSymTab x symtab:lookupInSymTab' xs symta
 
 --------------------------------------------------------------------------------
 -- Añade las variables a la tabla de simbolos
-insertDeclarations :: [Nombre] -> Tipo -> MonadSymTab ()
-insertDeclarations ids t = do
-
+insertDeclarations :: [Nombre] -> Tipo -> SecuenciaInstr -> MonadSymTab SecuenciaInstr
+insertDeclarations ids t asigs = do
     (actualSymTab, activeScopes@(activeScope:_), scope) <- get
-    
+
+    lookupScopesNameInSymTab 
+
     let info = replicate (length ids) (SymbolInfo t activeScope Variable)
     addToSymTab ids info actualSymTab activeScopes scope
-
+    return asigs
 --------------------------------------------------------------------------------
 

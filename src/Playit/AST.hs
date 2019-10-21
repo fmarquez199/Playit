@@ -19,14 +19,14 @@ import Playit.CheckAST
 import Playit.Types
 
 
---------------------------------------------------------------------------------
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 --                        Crear nodos del AST
---------------------------------------------------------------------------------
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 -- Crea el nodo para identificadores de variables y verifica que estén declarados
 crearIdvar :: Nombre -> MonadSymTab Vars
 crearIdvar name = do
@@ -37,20 +37,20 @@ crearIdvar name = do
 
     if isJust infos then do
     
-        let info = lookupNamesScopesInSymTab infos scopes
+        let info = lookupScopesInSymInfos scopes infos 
         
         if isJust info then do
             return $ Var name (getType  $ fromJust info)
         else 
             error ("\n\nError semantico, la variable: '" ++ name ++ 
-                    "', no es alcanzable.\n")
+                    "', no está definida.\n")
     else 
         error ("\n\nError semantico, la variable: '" ++ name ++ 
-                "', no esta declarada.\n")
---------------------------------------------------------------------------------
+                "', no está declarada.\n")
+-------------------------------------------------------------------------------
 
 
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 -- Crea el nodo para variables de indexacion
 crearVarIndex :: Vars -> Expr -> Vars
 crearVarIndex v e = 
@@ -59,10 +59,10 @@ crearVarIndex v e =
                 tipo@(TLista _) -> typeArrLst tipo
                 _ -> TError
     in VarIndex v e t
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 -- Crea el nodo para variables de acceso a registros, uniones (campos)
 crearVarCompIndex :: Vars -> Nombre -> MonadSymTab Vars
 crearVarCompIndex v campo = do
@@ -73,10 +73,10 @@ crearVarCompIndex v campo = do
     else 
         error ("\n\nError semantico, el campo: '" ++ campo ++ 
                 "', no esta declarado.\n")
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 -- Crear el nodo para asignar a un identificador de variable una expresion
 -- TODO: Modificar para que asigne el primer elemento de un arreglo/lista a la variable
 crearAsignacion :: Vars -> Expr -> Posicion -> Instr
@@ -386,14 +386,11 @@ crearNombreSubrutina nombre tipo categoria = do
 -- Crea el nodo para la instruccion que llama a la subrutina
 crearSubrutinaCall :: Nombre -> Parametros -> MonadSymTab Subrutina
 crearSubrutinaCall nombre params = do
-    -- TODO: Verificar que los parametros y la subrutina esten en la symtab y el scope concuerde con el actual
-    (symtab, scopes, activeScopes) <- get
+    -- TODO: Verificar que el scope concuerde con el activo
+    (symtab, activeScopes, scope) <- get
     let isNombreDef = isJust $ lookupInSymTab nombre symtab
-    let params' = map getNameParam params
-    let isParamsDef = all isJust $ lookupInSymTab' params' symtab
-    -- if isNombreDef && isParamsDef then
-    let lista = nombre : map showVar (concatMap getVar $ filter isVar params)
-    if all isJust $ lookupInSymTab' lista symtab then
+    let firma = nombre : map showVar (concatMap getVar $ filter isVar params)
+    if all isJust $ lookupInSymTab' firma symtab then
         -- let isScopeOk = 
         return $ SubrutinaCall nombre params
     else
@@ -401,7 +398,7 @@ crearSubrutinaCall nombre params = do
             error $ "Error semantico, la subrutina" ++ nombre ++ "no ha sido definida."
         else
             error ("Error semantico, al menos uno de los parametros no ha sido definido."
-                ++ show params')
+                ++ show params)
 -------------------------------------------------------------------------------
 
 
@@ -409,16 +406,15 @@ crearSubrutinaCall nombre params = do
 -- Crea el nodo para la instruccion que llama a la funcion
 crearFuncCall :: Subrutina -> MonadSymTab Expr
 crearFuncCall subrutina@(SubrutinaCall nombre _) = do
-    -- TODO: Colocar el tipo de retorno de la funcion, buscarlo en la symtab
-    (symtab, scopes, activeScopes) <- get
+    (symtab, activeScope:_, scope) <- get
     let info = lookupInSymTab nombre symtab
     if isJust info then do
         let funs = filter (\i -> getCategory i == Funciones) $ fromJust info
-        let found = filter (\i -> getScope i == maximum (map getScope funs)) funs
+        let found = filter (\i -> getScope i == activeScope) funs
         if not $ null found then
             return $ FuncCall subrutina (getType $ head found)
         else
-            error "Error semantico, funcion no definida."
+            error "Error semantico, funcion no dentro del alcance activo."
     else
         error "Error semantico, funcion no definida."
 -------------------------------------------------------------------------------
@@ -442,25 +438,25 @@ crearParam param@(Param name t ref) = do
 -------------------------------------------------------------------------------
 
 
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 -- Crea el nodo para la instruccion que define los registros
 definirRegistro :: Nombre -> SecuenciaInstr -> MonadSymTab SecuenciaInstr
 definirRegistro id decls = do
     (symTab, activeScopes@(activeScope:_), scope) <- get
     let info = [SymbolInfo TRegistro activeScope ConstructoresTipos]
     addToSymTab [id] info symTab activeScopes scope
-    return [Asignaciones decls]
+    return decls
 -------------------------------------------------------------------------------
 
 
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 -- Crea el nodo para la instruccion que define las uniones
 definirUnion :: Nombre -> SecuenciaInstr -> MonadSymTab SecuenciaInstr
 definirUnion id decls = do
     (symTab, activeScopes@(activeScope:_), scope) <- get
     let info = [SymbolInfo TUnion activeScope ConstructoresTipos]
     addToSymTab [id] info symTab activeScopes scope
-    return [Asignaciones decls]
+    return decls
 -------------------------------------------------------------------------------
 
 
@@ -478,7 +474,7 @@ crearPrint e (line,_)
     | tE /= TError = Print e
     | otherwise = 
         error ("\n\nError semantico en la expresion del 'print': '" ++
-                showE e ++ "', de tipo: " ++ showType tE ++
+                show e ++ "', de tipo: " ++ showType tE ++
                 ". En la linea: " ++ show line ++ "\n")
     where
         tE = typeE e
@@ -502,13 +498,12 @@ crearRead e _ = Read e
 -- Crea el nodo para una instruccion Free
 crearFree :: Nombre -> MonadSymTab Instr
 crearFree var = do
-    -- TODO: verificar que nombre este en la symtab y el scope concuerde con el actual
-    (symtab, activeScopes, scope) <- get
-    let datos = lookupInSymTab var symtab
-    let existe = isJust datos
-    if existe then
-        -- Falta verificar el alcance
-        return $ Free var
+    (symtab, activeScope:_, scope) <- get
+    let info = lookupInSymTab var symtab
+    if isJust info then do
+        let scopeOk = True--activeScope == getScope info in
+        if scopeOk then return $ Free var
+        else error "Error semantico, variable fuera de alcance."
     else
-        error "Error semantico, variable fuera de alcance."
+        error "Error semantico, variable no definida."
 -------------------------------------------------------------------------------
