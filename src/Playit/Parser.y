@@ -162,20 +162,19 @@ ProgramaWrapper :: { Instr }
 
   
 Programa :: { Instr }
-  : PushNewScope world programa ":" EndLines Sentencias EndLines ".~"  PopScope
-    { Programa $ reverse $6 }
-  | PushNewScope world programa ":" EndLines ".~" PopScope
-    { Programa [Nada] }
+  : PushNewScope Definiciones world programa ":" EndLines Instrucciones EndLines ".~"  PopScope
+    { Programa $ reverse $7 }
+  | PushNewScope Definiciones world programa ":" EndLines ".~" PopScope
+    { Programa [] }
 
 
-Sentencias :: { Sentencias }
-  : Sentencias EndLines Sentencia  { $3 : $1 }
-  | Sentencia                      { [Sec $ getInstr $1] }
+-- Sentencias :: { Sentencias }
+--   : Sentencias EndLines Sentencia  { $3 : $1 }
+--   | Sentencia                      { [Sec $ getInstr $1] }
 
-
-Sentencia :: { Sentencia }
-  : Instrucciones %prec STMT { Sec $ reverse $1 }
-  | Definiciones  %prec STMT { Def $ reverse $1 }
+-- Sentencia :: { Sentencia }
+--   : Instrucciones %prec STMT { Sec $ reverse $1 }
+--   | Definiciones  %prec STMT { Def $ reverse $1 }
 
 
 Definiciones :: { SecuenciaInstr }

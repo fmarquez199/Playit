@@ -139,7 +139,7 @@ data Instr  =
     Free Nombre                                   |
     Print Expr                                    |
     ProcCall Subrutina                            |
-    Programa Sentencias                           |
+    Programa SecuenciaInstr                       |
     Return Expr                                   |
     Asignaciones SecuenciaInstr                   |
     IF [(Expr, SecuenciaInstr)]                   |
@@ -171,20 +171,20 @@ instance Show Instr where
 
 
 -- Lo que se puede escribir dentro de un programa
-data Sentencia = Def SecuenciaInstr
-               | Sec SecuenciaInstr
-               | Nada
-               deriving (Eq)
+-- data Sentencia = Def SecuenciaInstr
+--                | Sec SecuenciaInstr
+--                | Nada
+--                deriving (Eq)
 
-instance Show Sentencia where
-    show (Def s) = show s
-    show (Sec s) = show s 
-    show Nada    = ""
+-- instance Show Sentencia where
+--     show (Def s) = show s
+--     show (Sec s) = show s 
+--     show Nada    = ""
 
-getInstr :: Sentencia -> SecuenciaInstr
-getInstr (Def s) = s
-getInstr (Sec s) = s
-getInstr Nada    = []
+-- getInstr :: Sentencia -> SecuenciaInstr
+-- getInstr (Def s) = s
+-- getInstr (Sec s) = s
+-- getInstr Nada    = []
 
 
 -- 
