@@ -426,31 +426,39 @@ Free :: { Instr }
 -------------------------------------------------------------------------------
 
 DefinirSubrutina :: { SecuenciaInstr }
-  : Firma ":" EndLines Instrucciones EndLines ".~" { $4 }
-  | Firma ":" EndLines ".~"                        { [] } 
+  : Firma ":" EndLines Instrucciones EndLines ".~"
+    { %
+      let (nombre,params,_) = $1
+      in definirSubrutina' nombre params $4
+    }
+  | Firma ":" EndLines ".~" 
+  { %
+    let (nombre,params,_) = $1
+    in definirSubrutina' nombre params []
+  }
 
 -------------------------------------------------------------------------------
 -- Firma de la subrutina, se agrega antes a la symtab por la recursividad
-Firma :: { (Nombre, [Expr], Tipo) }
+Firma :: { (Nombre, [Expr], Tipo, Categoria) }
   : proc nombre PushNewScope "(" Parametros ")" 
     { % do
-      crearNombreSubrutina $2 TDummy Procedimientos
-      return ($2, $5, TDummy)
+      definirSubrutina $2 TDummy Procedimientos
+      return ($2, $5, TDummy, Procedimientos)
     }
   | proc nombre PushNewScope "(" ")" 
     { % do
-      crearNombreSubrutina $2 TDummy Procedimientos
-      return ($2, [], TDummy)
+      definirSubrutina $2 TDummy Procedimientos
+      return ($2, [], TDummy, Procedimientos)
     }
   | function nombre PushNewScope "(" Parametros ")" Tipo 
     { % do
-      crearNombreSubrutina $2 $7 Funciones
-      return ($2, $5, $7)
+      definirSubrutina $2 $7 Funciones
+      return ($2, $5, $7, Funciones)
     }
   | function nombre PushNewScope "(" ")" Tipo 
     { % do
-      crearNombreSubrutina $2 $6 Funciones
-      return ($2, [], $6)
+      definirSubrutina $2 $6 Funciones
+      return ($2, [], $6, Funciones)
     }
 
 -------------------------------------------------------------------------------

@@ -354,19 +354,31 @@ crearWhile e i (line,_) = While e i
 
 
 -------------------------------------------------------------------------------
--- Crea el nodo para la definicion de una subrutina
--- crearSubrutina :: Nombre -> Parametros -> Tipo -> SecuenciaInstr -> Definicion
--- crearSubrutina name params TDummy i = Proc name params i
--- crearSubrutina name params returnT i = Func name params returnT i
+-- Actualiza la informacion extra de la subrutina
+definirSubrutina' :: Nombre -> Expr -> SecuenciaInstr -> Categoria
+                    -> MonadSymTab SecuenciaInstr
+definirSubrutina' name [] [] category = do
+    updateExtraInfo name category [Nada]
+    return []
+definirSubrutina' name [] i = do
+    updateExtraInfo name category [AST i]
+    return i
+definirSubrutina' name params [] = do
+    updateExtraInfo name category [Params params]
+    return []
+definirSubrutina' name params i = do
+    updateExtraInfo name category [Params params, AST i]
+    return i
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
 -- Agrega el nombre de la subrutina a la tabla de símbolos.
-crearNombreSubrutina :: Nombre -> Tipo -> Categoria -> MonadSymTab ()
-crearNombreSubrutina nombre tipo categoria = do
+definirSubrutina :: Nombre -> Tipo -> Categoria -> MonadSymTab ()
+definirSubrutina nombre tipo categoria = do
+    -- Si ya hay una subrutina con ese nombre entonces error
     (symtab, activeScopes@(activeScope:_), scope) <- get
-    let info = [SymbolInfo tipo activeScope categoria]
+    let info = [SymbolInfo tipo activeScope categoria [Nada]]
     addToSymTab [nombre] info symtab activeScopes scope
     return ()
 -------------------------------------------------------------------------------
@@ -415,7 +427,7 @@ crearFuncCall subrutina@(SubrutinaCall nombre _) = do
 crearParam :: Vars -> MonadSymTab Expr
 crearParam param@(Param name t ref) = do
     (symtab, activeScopes@(activeScope:_), scope) <- get
-    let info = [SymbolInfo t activeScope (Parametros ref)]
+    let info = [SymbolInfo t activeScope (Parametros ref) [Nada]]
     addToSymTab [name] info symtab activeScopes scope
     return $ Variables param t
 -------------------------------------------------------------------------------
@@ -433,7 +445,9 @@ crearParam param@(Param name t ref) = do
 definirRegistro :: Nombre -> SecuenciaInstr -> MonadSymTab SecuenciaInstr
 definirRegistro id decls = do
     (symTab, activeScopes@(activeScope:_), scope) <- get
-    let info = [SymbolInfo TRegistro activeScope ConstructoresTipos]
+    -- Si ya hay un registro con ese nombre entonces error
+    -- update categoria de las declaraciones y colocar el reg al que pertenece
+    let info = [SymbolInfo TRegistro activeScope ConstructoresTipos [AST decls]]
     addToSymTab [id] info symTab activeScopes scope
     return decls
 -------------------------------------------------------------------------------
@@ -444,7 +458,9 @@ definirRegistro id decls = do
 definirUnion :: Nombre -> SecuenciaInstr -> MonadSymTab SecuenciaInstr
 definirUnion id decls = do
     (symTab, activeScopes@(activeScope:_), scope) <- get
-    let info = [SymbolInfo TUnion activeScope ConstructoresTipos]
+    -- Si ya hay una union con ese nombre entonces error
+    -- update categoria de las declaraciones y colocar la union al que pertenece
+    let info = [SymbolInfo TUnion activeScope ConstructoresTipos [AST decls]]
     addToSymTab [id] info symTab activeScopes scope
     return decls
 -------------------------------------------------------------------------------

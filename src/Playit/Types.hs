@@ -62,6 +62,17 @@ instance Show Categoria where
     show Variable           = "Variable"
 
 
+data ExtraInfo =
+    AST SecuenciaInstr |
+    Params Expr        |
+    FromReg Nombre     | -- Registro o union al que pertenece el campo/variable
+    Nada
+    deriving (Eq, Ord)
+
+instance Show ExtraInfo where
+    show (AST secInstr) = "AST:\n" ++ show secInstr
+    show Nada           = "No hay informacion extra"
+
 -- Tipo de dato que pueden ser las expresiones
 data Tipo = 
     TApuntador Tipo  |
@@ -323,13 +334,14 @@ type ActiveScopes = [Alcance]
 data SymbolInfo = SymbolInfo {
     getType :: Tipo,
     getScope :: Alcance,
-    getCategory :: Categoria
+    getCategory :: Categoria,
+    getExtraInfo :: [ExtraInfo]
     }
     deriving (Eq, Ord)
 
 instance Show SymbolInfo where
-    show (SymbolInfo t s c) =
-        "Tipo: " ++ show t ++ ", en el alcance: " ++ show s ++ ", de categoria: " ++ show c ++ "\n"
+    show (SymbolInfo t s c i) = "Tipo: " ++ show t ++ ", en el alcance: " ++
+        show s ++ ", de categoria: "++ show c ++ ".\nExtra: " ++ map show i ++ "\n"
 
 
 {- Nuevo tipo de dato para representar la tabla de simbolos

@@ -38,15 +38,15 @@ createInitSymTab st = (insertSymbols symbols info st,[0],0)
         info = ti ++ wi
         ti = [pInfo, sInfo, rInfo, rsInfo, bInfo, inventoryInfo, itemsInfo]
         wi = [boolsInfo, boolsInfo, aptInfo, aptInfo]
-        pInfo = SymbolInfo TInt 0 Tipos
-        sInfo = SymbolInfo TFloat 0 Tipos
-        rInfo = SymbolInfo TChar 0 Tipos
-        rsInfo = SymbolInfo TStr 0 Tipos
-        bInfo = SymbolInfo TBool 0 Tipos
-        inventoryInfo = SymbolInfo TRegistro 0 ConstructoresTipos
-        itemsInfo = SymbolInfo TUnion 0 ConstructoresTipos
-        boolsInfo = SymbolInfo TBool 0 Variable
-        aptInfo = SymbolInfo (TApuntador TDummy) 0 Apuntadores
+        pInfo = SymbolInfo TInt 0 Tipos [Nada]
+        sInfo = SymbolInfo TFloat 0 Tipos [Nada]
+        rInfo = SymbolInfo TChar 0 Tipos [Nada]
+        rsInfo = SymbolInfo TStr 0 Tipos [Nada]
+        bInfo = SymbolInfo TBool 0 Tipos [Nada]
+        inventoryInfo = SymbolInfo TRegistro 0 ConstructoresTipos [Nada]
+        itemsInfo = SymbolInfo TUnion 0 ConstructoresTipos [Nada]
+        boolsInfo = SymbolInfo TBool 0 Variable [Nada]
+        aptInfo = SymbolInfo (TApuntador TDummy) 0 Apuntadores [Nada]
 --------------------------------------------------------------------------------
 
 
@@ -95,6 +95,17 @@ insertSymbols (id:ids) (info:infos) (SymTab table)
 
 
 --------------------------------------------------------------------------------
+-- Añade las variables a la tabla de simbolos
+insertDeclarations :: [Nombre] -> Tipo -> SecuenciaInstr -> MonadSymTab SecuenciaInstr
+insertDeclarations ids t asigs = do
+    (actualSymTab, activeScopes@(activeScope:_), scope) <- get
+    let info = replicate (length ids) (SymbolInfo t activeScope Variable [Nada])
+    addToSymTab ids info actualSymTab activeScopes scope
+    return asigs
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
 -- Busca el identificador de una variable en la tabla de simbolos dada.
 lookupInSymTab :: Nombre -> SymTab -> Maybe [SymbolInfo]
 lookupInSymTab var (SymTab table) = M.lookup var table
@@ -109,13 +120,16 @@ lookupInSymTab' [x] symtab = [lookupInSymTab x symtab]
 lookupInSymTab' (x:xs) symtab = lookupInSymTab x symtab:lookupInSymTab' xs symtab
 --------------------------------------------------------------------------------
 
-
---------------------------------------------------------------------------------
--- Añade las variables a la tabla de simbolos
-insertDeclarations :: [Nombre] -> Tipo -> SecuenciaInstr -> MonadSymTab SecuenciaInstr
-insertDeclarations ids t asigs = do
-    (actualSymTab, activeScopes@(activeScope:_), scope) <- get
-    let info = replicate (length ids) (SymbolInfo t activeScope Variable)
-    addToSymTab ids info actualSymTab activeScopes scope
-    return asigs
---------------------------------------------------------------------------------
+updateExtraInfo :: Nombre -> Categoria -> [ExtraInfo] -> MonadSymTab ()
+updateExtraInfo name category extraInfo = do
+    (symTab@(SymTab table),scopes,scope) <- get
+    let byCategory i = getCategory i == category
+    let (SymbolInfo t s c ei) = filter byCategory $ fromJust $ lookupInSymTab name symTab
+    if ei == [Nada] then do
+        let newSymbolInfo = SymbolInfo t s c extraInfo
+        put(SymTab $ M.adjust (newSymbolInfo:) name table,scope,scope)
+        return ()
+    else do
+        let newSymbolInfo = SymbolInfo t s c extraInfo:ei
+        put(SymTab $ M.adjust (newSymbolInfo:) name table,scope,scope)
+        return ()
