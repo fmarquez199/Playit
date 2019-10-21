@@ -1,7 +1,9 @@
-1) Creo se debería quitar SecDeclaraciones. Solo agregar a la tabla de simbolos 
-y crear instrucciones de asignaciones.
-2) No estoy ententiendo el symtab en SecDeclaraciones, tal vez es algo debido a 
-cómo era el lenguaje del proyecto de traductores? no le veo que sea apropiado a 
-playit o es que simplemente no lo estoy entendiendo como es.
-
-
+* condicionales de registros,uniones, ver comentario de ricardo
+* mostrar errores linea,columna con la linea donde ocurre el error
+* palabras reservadas
+Power world;
+* No se permiten registros dentro de subrutinas, lo cual está bien?
+* No me deja declarar una variable con el mismo nombre que un parametro porque cree que hay una redeclaracion
+  Hay que hacer una sección especial para ellos
+  
+* Funciones y procedimientos están con alcance 2

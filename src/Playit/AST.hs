@@ -406,16 +406,20 @@ crearSubrutinaCall nombre params = do
 crearFuncCall :: Subrutina -> MonadSymTab Expr
 crearFuncCall subrutina@(SubrutinaCall nombre _) = do
     (symtab, activeScope:_, scope) <- get
+    
+    -- Se hace dos veces esta verificación en crearSubrutinaCall 
     let info = lookupInSymTab nombre symtab
     if isJust info then do
         let funs = filter (\i -> getCategory i == Funciones) $ fromJust info
-        let found = filter (\i -> getScope i == activeScope) funs
-        if not $ null found then
-            return $ FuncCall subrutina (getType $ head found)
+        --let found = filter (\i -> getScope i == activeScope) funs Todas las funciones son del scope 1
+        --if not $ null found then
+        if not $ null funs then do
+            --return $ FuncCall subrutina (getType $ head found)
+            return $ FuncCall subrutina (getType $ head funs)
         else
-            error "Error semantico, funcion no dentro del alcance activo."
+            error $ "Error: funcion '" ++ nombre ++ "' no definida."
     else
-        error "Error semantico, funcion no definida."
+        error $ "Error: funcion '" ++ nombre ++ "' no definida."
 -------------------------------------------------------------------------------
 
 

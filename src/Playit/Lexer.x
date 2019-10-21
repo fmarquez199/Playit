@@ -50,7 +50,7 @@ $char_id      = [$digitos $abecedario \_ \']
 @endLine      = ($white* \n)+ 
 @float        = $digitos+ \' $digitos+
 @comments     = \"\' ( . # [\'\"] | \n)* \'\"
-@comment      = \@ [. # \n]* \n 
+@comment      = \@ [. # \n]*
 @error        = .
 
 tokens :-
