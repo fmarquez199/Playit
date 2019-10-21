@@ -1,16 +1,13 @@
 world %hola%:
 
+Power a
 boss b(Skill s):
-Power c
+    controller Kit of Power kpd <- dobles:
+        controller Power d <- dobles:
+          drop ~Dobles: ~, d
+        .~
+    .~
 .~
-boss b(Skill s):
-    Rune b = c
-    Rune b = c
-    Rune b = c
-    Rune b = c
-    Rune b = c
-.~
-
-kill b()
+kill a(-a,a + 1)
 
 .~

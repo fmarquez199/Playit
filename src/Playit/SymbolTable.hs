@@ -9,7 +9,7 @@ Modulo para la creacion y manejo de la tabla de simbolos
 module Playit.SymbolTable where
 
 import Control.Monad.Trans.RWS
-import Control.Monad (void)
+import Control.Monad (void,forM)
 import qualified Data.Map as M
 -- import Data.List.Split (splitOn)
 import Data.Maybe (fromJust, isJust, isNothing)
@@ -120,13 +120,13 @@ lookupScopesInSymInfos scopes Nothing = Nothing
 lookupScopesInSymInfos scopes (Just r) 
     | lstAlcances == []  = Nothing
     | otherwise = Just $ fst $ head lstAlcances
-    where 
+    where
         lstAlcances = [(s,a) | s <- r, a <- scopes,getScope s == a]
         
 --------------------------------------------------------------------------------
 -- Busca el identificador de una variable en la tabla de simbolos dada.
-lookupScopesNameInSymTab :: [Alcance]-> Nombre -> symtab ->  Maybe SymbolInfo
-lookupScopesNameInSymTab scopes nombre  = lookupScopesInSymInfos scopes (lookupInSymTab nombre symtab)
+lookupScopesNameInSymTab :: [Alcance] -> Nombre -> SymTab-> Maybe SymbolInfo
+lookupScopesNameInSymTab scopes nombre symtab  = lookupScopesInSymInfos scopes (lookupInSymTab nombre symtab)
         
 --------------------------------------------------------------------------------
 
@@ -144,10 +144,16 @@ lookupInSymTab' (x:xs) symtab = lookupInSymTab x symtab:lookupInSymTab' xs symta
 -- Añade las variables a la tabla de simbolos
 insertDeclarations :: [Nombre] -> Tipo -> SecuenciaInstr -> MonadSymTab SecuenciaInstr
 insertDeclarations ids t asigs = do
+
     (actualSymTab, activeScopes@(activeScope:_), scope) <- get
 
-    lookupScopesNameInSymTab 
-
+    _ <- forM ids $ \id -> do
+        _ <- if isJust $ lookupScopesNameInSymTab [activeScope] id actualSymTab then do 
+                error $ "Error: redeclaración de \'" ++ id ++ "\'" 
+            else return ()
+            
+        return id
+    
     let info = replicate (length ids) (SymbolInfo t activeScope Variable)
     addToSymTab ids info actualSymTab activeScopes scope
     return asigs

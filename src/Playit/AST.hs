@@ -32,21 +32,13 @@ crearIdvar :: Nombre -> MonadSymTab Vars
 crearIdvar name = do
 
     (symTab, scopes, _) <- get
-    
-    let infos = lookupInSymTab name symTab
-
-    if isJust infos then do
-    
-        let info = lookupScopesInSymInfos scopes infos 
         
-        if isJust info then do
-            return $ Var name (getType  $ fromJust info)
-        else 
-            error ("\n\nError semantico, la variable: '" ++ name ++ 
-                    "', no está definida.\n")
+    let info = lookupScopesNameInSymTab scopes name symTab
+    
+    if isJust info then do
+        return $ Var name (getType  $ fromJust info)
     else 
-        error ("\n\nError semantico, la variable: '" ++ name ++ 
-                "', no está declarada.\n")
+        error ("\n\nError: '" ++ name ++"' no está declarado.\n")
 -------------------------------------------------------------------------------
 
 
@@ -66,7 +58,11 @@ crearVarIndex v e =
 -- Crea el nodo para variables de acceso a registros, uniones (campos)
 crearVarCompIndex :: Vars -> Nombre -> MonadSymTab Vars
 crearVarCompIndex v campo = do
+
     (symTab, scopes, _) <- get
+
+    --let info = lookupScopesNameInSymTab scopes campo symTab
+
     let info = lookupInSymTab campo symTab
 
     if isJust info then return $ VarCompIndex v campo (getType $ head $ fromJust info)
@@ -375,9 +371,15 @@ crearWhile e i (line,_) = While e i
 -- Agrega el nombre de la subrutina a la tabla de símbolos.
 crearNombreSubrutina :: Nombre -> Tipo -> Categoria -> MonadSymTab ()
 crearNombreSubrutina nombre tipo categoria = do
+
     (symtab, activeScopes@(activeScope:_), scope) <- get
-    let info = [SymbolInfo tipo activeScope categoria]
-    addToSymTab [nombre] info symtab activeScopes scope
+
+    let info = lookupInSymTab nombre symtab
+    if not $ isJust info then do
+        let infoSub = [SymbolInfo tipo activeScope categoria]
+        addToSymTab [nombre] infoSub symtab activeScopes scope
+    else
+        error $ "Error: redeclaración de '" ++ nombre ++ "'."
     return ()
 -------------------------------------------------------------------------------
 
@@ -386,19 +388,16 @@ crearNombreSubrutina nombre tipo categoria = do
 -- Crea el nodo para la instruccion que llama a la subrutina
 crearSubrutinaCall :: Nombre -> Parametros -> MonadSymTab Subrutina
 crearSubrutinaCall nombre params = do
-    -- TODO: Verificar que el scope concuerde con el activo
-    (symtab, activeScopes, scope) <- get
+    -- Solo se permiten funciones en un solo scope (el 1)
+    (symtab, activeScopes:_, scope) <- get
+
     let isNombreDef = isJust $ lookupInSymTab nombre symtab
-    let firma = nombre : map showVar (concatMap getVar $ filter isVar params)
-    if all isJust $ lookupInSymTab' firma symtab then
-        -- let isScopeOk = 
-        return $ SubrutinaCall nombre params
+    -- Solo es necesario por ahora que el nombre esté definido
+    -- los parametros se verifican en otra parte del arbol
+    if not isNombreDef then
+        error $ "Error: subrutina '" ++ nombre ++ "' no definida."
     else
-        if not isNombreDef then
-            error $ "Error semantico, la subrutina" ++ nombre ++ "no ha sido definida."
-        else
-            error ("Error semantico, al menos uno de los parametros no ha sido definido."
-                ++ show params)
+        return $ SubrutinaCall nombre params
 -------------------------------------------------------------------------------
 
 
@@ -500,8 +499,8 @@ crearFree :: Nombre -> MonadSymTab Instr
 crearFree var = do
     (symtab, activeScope:_, scope) <- get
     let info = lookupInSymTab var symtab
-    if isJust info then do
-        let scopeOk = True--activeScope == getScope info in
+    if isJust info then
+        let scopeOk = activeScope `elem` map getScope (fromJust info) in
         if scopeOk then return $ Free var
         else error "Error semantico, variable fuera de alcance."
     else

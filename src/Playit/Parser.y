@@ -272,7 +272,7 @@ Instrucciones :: { SecuenciaInstr }
 Instruccion :: { Instr }
   : Asignacion            { $1 }
   | Declaracion           { Asignaciones $1 }
-  | Controller PopScope   { $1 }
+  | PushNewScope Controller PopScope   { $2 }
   | Play PopScope         { $1 }
   | Button                { $1 }
   | ProcCall              { $1 }
@@ -355,17 +355,14 @@ Controller :: { Instr }
 InitVar1 :: { (Nombre, Expr) }
   : nombre "=" Expresion
     { % do
-      -- TODO: Verificar que nombre este en la symtab, asignar valor y el scope concuerde con el actual
-      -- Se supone que TDummy deberia cambiar por el tipo de Expresion
-      let var = Var $1 TDummy
-      insertDeclarations [$1] TDummy
+      var <- crearIdvar $1
       return $ crearAsignacion var $3 (posicion $2) 
       return ($1, $3)
     }
   | Tipo nombre "=" Expresion
     { % do
       let var = Var $2 $1
-      insertDeclarations [$2] $1
+      insertDeclarations [$2] $1 []
       return $ crearAsignacion var $4 (posicion $3)
       return ($2, $4)
     }
@@ -373,17 +370,14 @@ InitVar1 :: { (Nombre, Expr) }
 InitVar2 :: { (Nombre, Expr) }
   : nombre "<-" Expresion %prec "<-"
     { % do
-      -- TODO: Verificar que nombre este en la symtab, asignar valor y el scope concuerde con el actual
-      -- Se supone que TDummy deberia cambiar por el tipo de Expresion
-      let var = Var $1 TDummy
-      insertDeclarations [$1] TDummy
+      var <- crearIdvar $1
       return $ crearAsignacion var $3 (posicion $2)
       return ($1, $3)
     }
   | Tipo nombre "<-" Expresion %prec "<-"
     { % do
       let var = Var $2 $1
-      insertDeclarations [$2] $1
+      insertDeclarations [$2] $1 []
       return $ crearAsignacion var $4 (posicion $3)
       return ($2, $4)
     }
@@ -435,7 +429,7 @@ Firma :: { (Nombre, [Expr], Tipo) }
   : proc nombre PushNewScope "(" Parametros ")" 
     { % do
       crearNombreSubrutina $2 TDummy Procedimientos
-      return ($2, $4, TDummy)
+      return ($2, $5, TDummy)
     }
   | proc nombre PushNewScope "(" ")" 
     { % do
@@ -444,13 +438,13 @@ Firma :: { (Nombre, [Expr], Tipo) }
     }
   | function nombre PushNewScope "(" Parametros ")" Tipo 
     { % do
-      crearNombreSubrutina $2 $6 Funciones
-      return ($2, $4, $6)
+      crearNombreSubrutina $2 $7 Funciones
+      return ($2, $5, $7)
     }
   | function nombre PushNewScope "(" ")" Tipo 
     { % do
-      crearNombreSubrutina $2 $5 Funciones
-      return ($2, [], $5)
+      crearNombreSubrutina $2 $6 Funciones
+      return ($2, [], $6)
     }
 
 -------------------------------------------------------------------------------

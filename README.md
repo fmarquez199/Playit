@@ -804,14 +804,16 @@ free p
 Kit of Runes edades = <<~12~, ~23~, ~15~, ~40~, ~15~>>
 Runes|}5{| nombres = |}~Natascha~, ~Francisco~, ~Manuel~, ~Ricardo~, ~Haskell~{| 
 
-controller i = 0 -> 4:
-  drop ~Hola ~, nombres|}i{|, ~ tienes ~, edad|}i{|, ~ años!~
+controller Power i = 0 -> 4:
+  drop ~Hola ~, nombres|)i(|, ~ tienes ~, edades|)i(|, ~ anyos!~
 .~
 
 Kit of Kit of Power dobles = << <<10,5>>, <<3,6>>, <<4,2>> >>
 
-controller d <- dobles:
-  drop ~Dobles: ~, d
+controller Kit of Power kpd <- dobles:
+    controller Power d <- dobles:
+      drop ~Dobles: ~, d
+    .~
 .~
 ```
 
