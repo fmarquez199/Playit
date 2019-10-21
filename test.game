@@ -1,8 +1,7 @@
-world %caso_malicia'M'%: 
-    monster f(Power f2) Power:
+monster f(Power f2) Power:
 
-    .~
-    Power f2
+.~
+world %caso_malicia'M'%: 
      Power a = kill f()
 .~
 

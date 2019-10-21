@@ -67,12 +67,12 @@ data ExtraInfo =
     Params [Expr]        |
     FromReg Nombre     | -- Registro o union al que pertenece el campo/variable
     Nada
-    deriving (Eq, Ord)
+    deriving (Eq, Ord,Show)
 
-instance Show ExtraInfo where
+{-instance Show ExtraInfo where
     show (AST secInstr) = "AST:\n" ++ show secInstr
     show Nada           = "No hay informacion extra"
-
+-}
 -- Tipo de dato que pueden ser las expresiones
 data Tipo = 
     TApuntador Tipo  |
@@ -337,12 +337,12 @@ data SymbolInfo = SymbolInfo {
     getCategory :: Categoria,
     getExtraInfo :: [ExtraInfo]
     }
-    deriving (Eq, Ord)
+    deriving (Eq, Ord,Show)
 
-instance Show SymbolInfo where
+{-instance Show SymbolInfo where
     show (SymbolInfo t s c i) = "Tipo: " ++ show t ++ ", en el alcance: " ++
         show s ++ ", de categoria: "++ show c ++ ".\nExtra: " ++ concatMap show i ++ "\n"
-
+-}
 
 {- Nuevo tipo de dato para representar la tabla de simbolos
 * Tabla de hash:
@@ -350,9 +350,9 @@ instance Show SymbolInfo where
 *   Value: Lista de la informacion pertinente
 -}
 newtype SymTab  = SymTab { getSymTab :: M.Map Nombre [SymbolInfo] }
-                deriving (Eq)
+                deriving (Eq,Show)
 
-instance Show SymTab where
+{-instance Show SymTab where
     show (SymTab hash) = header ++ info ++ symbols
         where
             header = "\n------------\n Tabla de simbolos \n------------\n"
@@ -367,7 +367,7 @@ instance Show SymTab where
             -- showTable (k,v) = k ++ " -> " ++ concatMap show v
             symbols = concatMap showTable tabla
 
-
+-}
 -- Transformador monadico para crear y manejar la tabla de simbolos junto con 
 -- la pila de alcances y cuales estan activos
 type MonadSymTab a = RWST () () (SymTab, ActiveScopes, Alcance) IO a

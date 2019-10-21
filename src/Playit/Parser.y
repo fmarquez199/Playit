@@ -160,11 +160,14 @@ ProgramaWrapper :: { Instr }
   | Programa EndLines           { % return $1 }
   | Programa                    { % return $1 }
 
-  
 Programa :: { Instr }
-  : PushNewScope Definiciones world programa ":" EndLines Instrucciones EndLines ".~"  PopScope
-    { Programa $ reverse $7 }
-  | PushNewScope Definiciones world programa ":" EndLines ".~" PopScope
+  : PushNewScope world programa ":" EndLines Instrucciones EndLines ".~"  PopScope
+    { Programa $ reverse $6 }
+  | PushNewScope world programa ":" EndLines ".~" PopScope
+    { Programa [] }
+  | PushNewScope Definiciones EndLines world programa ":" EndLines Instrucciones EndLines ".~"  PopScope
+    { Programa $ reverse $8 }
+  | PushNewScope Definiciones EndLines world programa ":" EndLines ".~" PopScope
     { Programa [] }
 
 
@@ -419,39 +422,43 @@ Free :: { Instr }
 -------------------------------------------------------------------------------
 
 DefinirSubrutina :: { SecuenciaInstr }
-  : Firma ":" EndLines Instrucciones EndLines ".~"
+  : Firma PushNewScope ":" EndLines Instrucciones EndLines ".~"
     { %
-      let (nombre,params,_,cat) = $1
-      in definirSubrutina' nombre params $4 cat
+      let (nombre,params,_,activeScope) = $1
+      in definirSubrutina' nombre params $5 activeScope
     }
-  | Firma ":" EndLines ".~" 
+  | Firma PushNewScope ":" EndLines ".~" 
   { %
-    let (nombre,params,_,cat) = $1
-    in definirSubrutina' nombre params [] cat
+    let (nombre,params,_,activeScope) = $1
+    in definirSubrutina' nombre params [] activeScope
   }
 
 -------------------------------------------------------------------------------
 -- Firma de la subrutina, se agrega antes a la symtab por la recursividad
-Firma :: { (Nombre, [Expr], Tipo, Categoria) }
+Firma :: { (Nombre, [Expr], Tipo, Alcance) }
   : proc nombre "(" Parametros ")"   --- TODO: weird Push here
     { % do
+      (_, activeScope:_, _) <- get
       definirSubrutina $2 TDummy Procedimientos
-      return ($2, $4, TDummy, Procedimientos)
+      return ($2, $4, TDummy, activeScope)
     }
   | proc nombre "(" ")" 
     { % do
+      (_, activeScope:_, _) <- get
       definirSubrutina $2 TDummy Procedimientos
-      return ($2, [], TDummy, Procedimientos)
+      return ($2, [], TDummy, activeScope)
     }
   | function nombre "(" Parametros ")" Tipo 
     { % do
+      (_, activeScope:_, _) <- get
       definirSubrutina $2 $6 Funciones
-      return ($2, $4, $6, Funciones)
+      return ($2, $4, $6, activeScope)
     }
   | function nombre "(" ")" Tipo 
     { % do
+      (_, activeScope:_, _) <- get
       definirSubrutina $2 $5 Funciones
-      return ($2, [], $5, Funciones)
+      return ($2, [], $5, activeScope)
     }
 
 -------------------------------------------------------------------------------

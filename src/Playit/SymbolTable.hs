@@ -166,24 +166,30 @@ lookupScopesNameInSymTab scopes nombre symtab  = lookupScopesInSymInfos scopes (
 --------------------------------------------------------------------------------
 
 
-
+modifiExtraInfoSymbol (SymbolInfo t s c [Nada]) extraInfo = SymbolInfo t s c extraInfo
+modifiExtraInfoSymbol (SymbolInfo t s c ei) extraInfo = SymbolInfo t s c (extraInfo ++ ei)
 
 
 -------------------------------------------------------------------------------
 -- Actualiza la informacion extra del simbolo con la nueva
+-- Encuentra al simbolo al que se le quiere modificar la información extra dado su nombre y alcance
+-- Modifica su entrada para informacón extra
 -- NOTA: Es primeramente para agregar como informacion extra en las subrutinas
 --      su AST y parametros, puede necesitar modificarse si se quiere usar para
 --      algo diferente
-updateExtraInfo :: Nombre -> Categoria -> [ExtraInfo] -> MonadSymTab ()
-updateExtraInfo name category extraInfo = do
-    (symTab@(SymTab table), scopes, scope) <- get
-    let byCategory i = getCategory i == category
-    let (SymbolInfo t s c ei) = head $ filter byCategory $ fromJust $ lookupInSymTab name symTab
-    if ei == [Nada] then
-        let newSymbolInfo = SymbolInfo t s c extraInfo
-        in put(SymTab $ M.adjust (newSymbolInfo:) name table, scopes, scope)
-    else
-        let newSymbolInfo = SymbolInfo t s c (extraInfo ++ ei)
-        in put(SymTab $ M.adjust (newSymbolInfo:) name table, scopes, scope)
+updateExtraInfo :: Nombre -> Alcance -> [ExtraInfo] -> MonadSymTab ()
+updateExtraInfo name scope extraInfo = do
+
+    (symTab@(SymTab table), scopes, lastScope) <- get
+    
+    -- Obtenemos todos los simbolos asociados al nombre    
+    let infos = lookupInSymTab name symTab
+    
+    if isJust infos then do
+        let isTargetSymbol sym = getScope sym == scope
+            updateExtraInfo' = fmap (\sym -> if isTargetSymbol sym then modifiExtraInfoSymbol sym extraInfo else sym)
+        put(SymTab $ M.adjust updateExtraInfo' name table, scopes, lastScope)
+
+    else return ()
 -------------------------------------------------------------------------------
 

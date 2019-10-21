@@ -370,19 +370,19 @@ crearWhile e i (line,_) = While e i
 
 -------------------------------------------------------------------------------
 -- Actualiza la informacion extra de la subrutina
-definirSubrutina' :: Nombre -> [Expr] -> SecuenciaInstr -> Categoria
+definirSubrutina' :: Nombre -> [Expr] -> SecuenciaInstr -> Alcance
                     -> MonadSymTab SecuenciaInstr
-definirSubrutina' name [] [] category = do
-    updateExtraInfo name category [Nada]
+definirSubrutina' name [] [] scope = do
+    updateExtraInfo name scope [Nada]
     return []
-definirSubrutina' name [] i category = do
-    updateExtraInfo name category [AST i]
+definirSubrutina' name [] i scope = do
+    updateExtraInfo name scope [AST i]
     return i
-definirSubrutina' name params [] category = do
-    updateExtraInfo name category [Params params]
+definirSubrutina' name params [] scope = do
+    updateExtraInfo name scope [Params params]
     return []
-definirSubrutina' name params i category = do
-    updateExtraInfo name category [Params params, AST i]
+definirSubrutina' name params i scope = do
+    updateExtraInfo name scope [Params params, AST i]
     return i
 -------------------------------------------------------------------------------
 
@@ -433,12 +433,15 @@ crearFuncCall :: Subrutina -> MonadSymTab Expr
 crearFuncCall subrutina@(SubrutinaCall nombre _) = do
     (symtab, activeScope:_, scope) <- get
     let info = lookupInSymTab nombre symtab
+    
+    -- Chequeo de tipo 
     let funs = filter (\i -> getCategory i == Funciones) $ fromJust info
-    let found = filter (\i -> getScope i == activeScope) funs
-    if not $ null found then
-        return $ FuncCall subrutina (getType $ head found)
+    
+    -- No se tiene que hacer chequeo que esté en un alcance activo! porque siempre lo estará
+    if not $ null funs then
+        return $ FuncCall subrutina (getType $ head funs)
     else
-        error "Error semantico, funcion no dentro del alcance activo."
+         error "Error semantico, funcion no definida."
 -------------------------------------------------------------------------------
 
 
