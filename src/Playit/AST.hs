@@ -8,7 +8,7 @@
 *  Natascha Gamboa     12-11250
 -}
 module Playit.AST where
-
+import Control.Monad
 import Control.Monad.Trans.RWS
 import Control.Monad.IO.Class
 import Data.Maybe (fromJust, isJust, isNothing)
@@ -32,13 +32,13 @@ crearIdvar :: Nombre -> MonadSymTab Vars
 crearIdvar name = do
 
     (symTab, scopes, _) <- get
-        
+    fileName <- ask
     let info = lookupScopesNameInSymTab scopes name symTab
     
     if isJust info then do
         return $ Var name (getType  $ fromJust info)
     else 
-        error ("\n\nError: '" ++ name ++"' no está declarado.\n")
+        error (fileName ++ ": error: '" ++ name ++"' no está declarado.\n")
 -------------------------------------------------------------------------------
 
 

@@ -91,7 +91,6 @@ data Tipo =
     TUnion
     deriving(Eq, Ord)
 
-
 instance Show Tipo where
     show (TApuntador t) = "Apuntador de " ++ show t
     show (TArray e t)   = "Arreglo de tamaño " ++ show e ++ " de " ++ show t
@@ -105,7 +104,6 @@ instance Show Tipo where
     show TRegistro      = "Registro"
     show TStr           = "String"
     show TUnion         = "Union"
-
 
 data Vars =
     Param Nombre Tipo Ref         |
@@ -121,7 +119,6 @@ instance Show Vars where
     show (Var n t)        = "Variable: " ++ n ++ " de tipo: " ++ show t
     show (VarIndex v e t) = "Indexacion de: " ++ show v ++ " en la posicion " ++ show e ++ "de tipo: " ++ show t
     show (VarCompIndex v n t) = "Variable: " ++ show v ++ " accede a campo: " ++ n ++ " de tipo: " ++ show t
-
 -- Especifica si un parametro es pasado como valor o por referencia
 data Ref =
     Referencia |
@@ -256,7 +253,6 @@ instance Show Literal where
     show (Str val)                 = show val
     show ValorVacio                = "Valor vacio"
 
-
 -- Operadores binarios
 data BinOp =
     And            |
@@ -306,7 +302,7 @@ data UnOp =
     Not            |
     UpperCase
     deriving (Eq, Ord)
-
+    
 instance Show UnOp where
     show Desreferenciar = "puff "
     show Longitud       = "#"
@@ -315,7 +311,6 @@ instance Show UnOp where
     show New            = "summon "
     show Not            = "!"
     show UpperCase      = "^"
-
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
@@ -337,12 +332,11 @@ data SymbolInfo = SymbolInfo {
     getCategory :: Categoria,
     getExtraInfo :: [ExtraInfo]
     }
-    deriving (Eq, Ord,Show)
+    deriving (Eq, Ord)
 
-{-instance Show SymbolInfo where
+instance Show SymbolInfo where
     show (SymbolInfo t s c i) = "Tipo: " ++ show t ++ ", en el alcance: " ++
         show s ++ ", de categoria: "++ show c ++ ".\nExtra: " ++ concatMap show i ++ "\n"
--}
 
 {- Nuevo tipo de dato para representar la tabla de simbolos
 * Tabla de hash:
@@ -350,9 +344,9 @@ data SymbolInfo = SymbolInfo {
 *   Value: Lista de la informacion pertinente
 -}
 newtype SymTab  = SymTab { getSymTab :: M.Map Nombre [SymbolInfo] }
-                deriving (Eq,Show)
+                deriving (Eq)
 
-{-instance Show SymTab where
+instance Show SymTab where
     show (SymTab hash) = header ++ info ++ symbols
         where
             header = "\n------------\n Tabla de simbolos \n------------\n"
@@ -367,10 +361,13 @@ newtype SymTab  = SymTab { getSymTab :: M.Map Nombre [SymbolInfo] }
             -- showTable (k,v) = k ++ " -> " ++ concatMap show v
             symbols = concatMap showTable tabla
 
--}
 -- Transformador monadico para crear y manejar la tabla de simbolos junto con 
 -- la pila de alcances y cuales estan activos
-type MonadSymTab a = RWST () () (SymTab, ActiveScopes, Alcance) IO a
+-- 
+-- Poner a reader como el nombre del archivo.
+-- Writer, para generar el código I guess ?
+type MonadSymTab a = RWST String () (SymTab, ActiveScopes, Alcance) IO a
+
 
 
 -------------------------------------------------------------------------------

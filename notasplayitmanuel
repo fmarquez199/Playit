@@ -1,9 +1,0 @@
-* condicionales de registros,uniones, ver comentario de ricardo
-* mostrar errores linea,columna con la linea donde ocurre el error
-* palabras reservadas
-Power world;
-* No se permiten registros dentro de subrutinas, lo cual está bien?
-* No me deja declarar una variable con el mismo nombre que un parametro porque cree que hay una redeclaracion
-  Hay que hacer una sección especial para ellos
-  
-* Funciones y procedimientos están con alcance 2

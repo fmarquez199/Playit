@@ -623,7 +623,7 @@ PushNewScope  ::  { () }
 -------------------------------------------------------------------------------
 
 {
-parseError :: [Token] -> a
+parseError :: [Token] -> MonadSymTab a
 parseError (h:rs) = 
     error $ "\n\nError sintactico del parser antes de " ++ (show h) ++ "\n"
 }
