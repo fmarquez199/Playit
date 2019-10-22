@@ -101,12 +101,7 @@ insertSymbols (id:ids) (info:infos) (SymTab table)
 insertDeclarations :: [Nombre] -> Tipo -> SecuenciaInstr -> MonadSymTab SecuenciaInstr
 insertDeclarations ids t asigs = do
     (actualSymTab, activeScopes@(activeScope:_), scope) <- get
-    
-    
-    {-Declaracion :: { SecuenciaInstr }
-  : Tipo Identificadores
-  -- TODO: verificar aqui que no hayan identificadores suplicados
--}
+        
     _ <- forM ids $ \id -> do
         _ <- if isJust $ lookupScopesNameInSymTab [activeScope] id actualSymTab
             then error $ "Error: redeclaración de \'" ++ id ++ "\'" 
@@ -135,20 +130,6 @@ lookupInSymTab' [x] symtab = [lookupInSymTab x symtab]
 lookupInSymTab' (x:xs) symtab = lookupInSymTab x symtab:lookupInSymTab' xs symtab
 -------------------------------------------------------------------------------
 
-
-
---------------------------------------------------------------------------------
--- Busca el (identificador,scope) de una variable en la tabla de simbolos dada.
---lookupNameScopeInSymTab :: Nombre -> Alcance -> SymTab -> Maybe [SymbolInfo]
---lookupNameScopeInSymTab name scope (SymTab table) = M.lookup name table
---------------------------------------------------------------------------------
-
---------------------------------------------------------------------------------
--- Busca el identificador de una variable en la tabla de simbolos dada.
---lookupNamesScopeInSymTab :: [SymbolInfo] -> Alcance-> Bool
---lookupNamesScopeInSymTab (info:[]) scope = if getScope info == scope then True else False
---lookupNamesScopeInSymTab (info:r) scope = if getScope info == scope then True else (lookupNamesScopeInSymTab r scope)
---------------------------------------------------------------------------------
 
 --------------------------------------------------------------------------------
 -- Busca el identificador de una variable en la tabla de simbolos dada.

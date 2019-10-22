@@ -301,21 +301,21 @@ Asignacion :: { Instr }
 -------------------------------------------------------------------------------
 -- Instrucciones de condicionales 'Button', '|' y 'notPressed'
 Button :: { Instr }
-  : if ":" EndLines Guardias ".~" { crearIF (reverse $4) (posicion $1 )}
+  : if ":" EndLines Guardias PopScope ".~" { crearIF (reverse $4) (posicion $1 )}
 
 Guardias :: { [(Expr, SecuenciaInstr)] }
   : Guardias Guardia  { $2 : $1 }
   | Guardia           { [$1] }
 
 Guardia :: { (Expr, SecuenciaInstr) }
-  : "|" Expresion "}" EndLines Instrucciones EndLines
-    { crearGuardiaIF $2 $5 (posicion $1) }
-  | "|" Expresion "}" Instrucciones EndLines
-    { crearGuardiaIF $2 $4 (posicion $1) }
-  | "|" else "}" EndLines Instrucciones EndLines
+  : "|" Expresion "}" EndLines PushNewScope Instrucciones EndLines
+    { crearGuardiaIF $2 $6 (posicion $1) }
+  | "|" Expresion "}" PushNewScope Instruccion EndLines
+    { crearGuardiaIF $2 [$5] (posicion $1) }
+  | "|" else "}" EndLines PushNewScope Instrucciones EndLines
+    { crearGuardiaIF (Literal (Booleano True) TBool) $6 (posicion $1) }
+  | "|" else "}" PushNewScope Instrucciones EndLines
     { crearGuardiaIF (Literal (Booleano True) TBool) $5 (posicion $1) }
-  | "|" else "}" Instrucciones EndLines
-    { crearGuardiaIF (Literal (Booleano True) TBool) $4 (posicion $1) }
 -------------------------------------------------------------------------------
 
 
