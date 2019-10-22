@@ -32,8 +32,6 @@ type Posicion = (Int, Int)
 
 type Parametros = [Expr]
 
-type Sentencias = [Sentencia]
-
 type SecuenciaInstr = [Instr]
 
 
@@ -64,7 +62,7 @@ instance Show Categoria where
 
 data ExtraInfo =
     AST SecuenciaInstr |
-    Params Expr        |
+    Params [Expr]      |
     FromReg Nombre     | -- Registro o union al que pertenece el campo/variable
     Nada
     deriving (Eq, Ord)
@@ -144,7 +142,7 @@ data Instr  =
     Asignaciones SecuenciaInstr                   |
     IF [(Expr, SecuenciaInstr)]                   |
     While Expr SecuenciaInstr
-    deriving (Eq)
+    deriving (Eq,Ord)
 
 instance Show Instr where
 -- Esto imprime el tipo de instruccion pero no imprime la secuenciaInstr
@@ -167,24 +165,6 @@ instance Show Instr where
     show (Asignaciones s)        = "Asignaciones en delaraciones:\n\t" ++ show s ++ "\n"
     show (IF ls)                 = "IF:\n\t" ++ show ls ++ "\n"
     show (While e s)             = "Ciclo While iterando mientras sea verdad:\n\t" ++ show e ++ "\n"
-
-
-
--- Lo que se puede escribir dentro de un programa
--- data Sentencia = Def SecuenciaInstr
---                | Sec SecuenciaInstr
---                | Nada
---                deriving (Eq)
-
--- instance Show Sentencia where
---     show (Def s) = show s
---     show (Sec s) = show s 
---     show Nada    = ""
-
--- getInstr :: Sentencia -> SecuenciaInstr
--- getInstr (Def s) = s
--- getInstr (Sec s) = s
--- getInstr Nada    = []
 
 
 -- 
@@ -341,7 +321,8 @@ data SymbolInfo = SymbolInfo {
 
 instance Show SymbolInfo where
     show (SymbolInfo t s c i) = "Tipo: " ++ show t ++ ", en el alcance: " ++
-        show s ++ ", de categoria: "++ show c ++ ".\nExtra: " ++ map show i ++ "\n"
+        show s ++ ", de categoria: "++ show c ++ ".\nExtra: " ++
+        concatMap show i ++ "\n"
 
 
 {- Nuevo tipo de dato para representar la tabla de simbolos
