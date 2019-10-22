@@ -367,18 +367,19 @@ crearWhile e i (line,_) = While e i
 
 -------------------------------------------------------------------------------
 -- Actualiza la informacion extra de la subrutina
-definirSubrutina' :: Nombre -> [Expr] -> SecuenciaInstr -> MonadSymTab SecuenciaInstr
-definirSubrutina' name [] [] = do
-    updateExtraInfo name 1 [Nada]
+definirSubrutina' :: Nombre -> [Expr] -> SecuenciaInstr -> Categoria
+                    -> MonadSymTab SecuenciaInstr
+definirSubrutina' name [] [] c = do
+    updateExtraInfo name c [Nada]
     return []
-definirSubrutina' name [] i = do
-    updateExtraInfo name 1 [AST i]
+definirSubrutina' name [] i c = do
+    updateExtraInfo name c [AST i]
     return i
-definirSubrutina' name params [] = do
-    updateExtraInfo name 1 [Params params]
+definirSubrutina' name params [] c = do
+    updateExtraInfo name c [Params params]
     return []
-definirSubrutina' name params i = do
-    updateExtraInfo name 1 [Params params, AST i]
+definirSubrutina' name params i c = do
+    updateExtraInfo name c [Params params, AST i]
     return i
 -------------------------------------------------------------------------------
 
@@ -387,10 +388,10 @@ definirSubrutina' name params i = do
 -- Agrega el nombre de la subrutina a la tabla de símbolos.
 definirSubrutina :: Nombre -> Tipo -> Categoria -> MonadSymTab ()
 definirSubrutina nombre tipo categoria = do
-    (symtab, activeScopes, scope) <- get
+    (symTab, activeScopes, scope) <- get
     if isNothing $ lookupInSymTab nombre symTab then 
         let info = [SymbolInfo tipo 1 categoria [Nada]]
-        in addToSymTab [nombre] info symtab activeScopes scope
+        in addToSymTab [nombre] info symTab activeScopes scope
     else
         error $ "Error semantico, la subrutina '" ++ nombre ++ "', ya está definida."
     return ()
@@ -449,7 +450,7 @@ definirRegistro id decls = do
     -- TODO: update categoria de las declaraciones y colocar el reg al que pertenece
     let infos = lookupInScopes [1] id symTab
     if isJust infos then
-        error $ "\n\nError semantico, el Invenory '" ++ name ++ "', ya está definido."
+        error $ "\n\nError semantico, el Invenory '" ++ id ++ "', ya está definido."
     else do
         let info = [SymbolInfo TRegistro 1 ConstructoresTipos [AST decls]]
         addToSymTab [id] info symTab activeScopes scope
@@ -465,7 +466,7 @@ definirUnion id decls = do
     -- TODO: update categoria de las declaraciones y colocar la union al que pertenece
     let infos = lookupInScopes [1] id symTab
     if isJust infos then
-        error $ "\n\nError semantico, el Items '" ++ name ++ "', ya está definido."
+        error $ "\n\nError semantico, el Items '" ++ id ++ "', ya está definido."
     else do
         let info = [SymbolInfo TUnion 1 ConstructoresTipos [AST decls]]
         addToSymTab [id] info symTab activeScopes scope

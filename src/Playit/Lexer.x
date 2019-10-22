@@ -123,8 +123,8 @@ tokens :-
   "<|"                 { createTkCloseListIndex }
   "++"                 { createTkINCREMENT }
   "--"                 { createTkDECREMENT }
-  "<-"                 { createTkIN) }
-  "->"                 { createTkTO) }
+  "<-"                 { createTkIN }
+  "->"                 { createTkTO }
   "|}"                 { createTkOpenArray }
   "{|"                 { createTkCloseArray }
   "|)"                 { createTkOpenArrayIndex }
@@ -167,8 +167,8 @@ tokens :-
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 
-createTkWorld (AlexPn _ f c) tk = TkWORLD tk (f, c)
-createTkRune (AlexPn _ f c) tk = TkRUNE tk (f, c)
+createTkWORLD (AlexPn _ f c) tk = TkWORLD tk (f, c)
+createTkRUNE (AlexPn _ f c) tk = TkRUNE tk (f, c)
 createTkLOSE (AlexPn _ f c) tk = TkLOSE tk (f, c)
 createTkOF (AlexPn _ f c) tk = TkOF tk (f, c)
 createTkBUTTON (AlexPn _ f c) tk = TkBUTTON tk (f, c)
@@ -205,7 +205,7 @@ createTkCARACTER (AlexPn _ f c) char = TkCARACTER char (f, c) (read char :: Char
 createTkSTRINGS (AlexPn _ f c) str = TkSTRINGS str (f, c)
 createTkINT (AlexPn _ f c) int = TkINT int (f, c) (read int :: Int)
 createTkFLOAT (AlexPn _ f c) float =
-    TkFLOAT float (f, c) (read (map (\c -> if c == '\'' then '.' else c) float) :: Float))
+    TkFLOAT float (f, c) (read (map (\c -> if c == '\'' then '.' else c) float) :: Float)
 createTkDivEntera (AlexPn _ f c) tk = TkDivEntera tk (f, c)
 createTkOR (AlexPn _ f c) tk = TkOR tk (f, c)
 createTkAND (AlexPn _ f c) tk = TkAND tk (f, c)
@@ -417,10 +417,10 @@ instance Show Token where
     show (TkProgramName tk p) = tk ++ ", posicion " ++ show p -- Nombre programa
     show (TkID tk p) = "Identificador \"" ++ tk ++ "\", posicion " ++ show p -- Id
     show (TkIDTipo tk p) = "Identificador de tipo \"" ++ tk ++ "\", posicion " ++ show p -- Id
-    show (TkCARACTER tk p) = "Caracter '" ++ tk ++ "', posicion " ++ show p -- carActer
+    show (TkCARACTER tk p _) = "Caracter '" ++ tk ++ "', posicion " ++ show p -- carActer
     show (TkSTRINGS tk p) = "String \"" ++ tk ++ "\", posicion " ++ show p -- String
-    show (TkINT tk p) = "Entero " ++ tk ++ ", posicion " ++ show p -- Entero
-    show (TkFLOAT tk p) = "Flotante " ++ tk ++ ", posicion " ++ show p -- Flotante
+    show (TkINT tk p _) = "Entero " ++ tk ++ ", posicion " ++ show p -- Entero
+    show (TkFLOAT tk p _) = "Flotante " ++ tk ++ ", posicion " ++ show p -- Flotante
     show (TkDivEntera tk p) = tk ++ ", posicion " ++ show p -- //
     show (TkOR tk p) = tk ++ ", posicion " ++ show p -- ||
     show (TkAND tk p) = tk ++ ", posicion " ++ show p -- &&

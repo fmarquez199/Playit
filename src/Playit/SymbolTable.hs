@@ -9,7 +9,7 @@ Modulo para la creacion y manejo de la tabla de simbolos
 module Playit.SymbolTable where
 
 import Control.Monad.Trans.RWS
-import Control.Monad (void,forM)
+import Control.Monad (void,forM,when)
 import qualified Data.Map as M
 -- import Data.List.Split (splitOn)
 import Data.Maybe (fromJust, isJust, isNothing)
@@ -150,9 +150,9 @@ lookupInScopes' scopes (Just symInfo)
 --------------------------------------------------------------------------------
 
 
-
--- modifiExtraInfoSymbol (SymbolInfo t s c [Nada]) extraInfo = SymbolInfo t s c extraInfo
--- modifiExtraInfoSymbol (SymbolInfo t s c ei) extraInfo = SymbolInfo t s c (extraInfo ++ ei)
+modifyExtraInfo :: SymbolInfo -> [ExtraInfo] -> SymbolInfo
+modifyExtraInfo (SymbolInfo t s c [Nada]) extraInfo = SymbolInfo t s c extraInfo
+modifyExtraInfo (SymbolInfo t s c ei) extraInfo = SymbolInfo t s c (extraInfo ++ ei)
 
 
 -------------------------------------------------------------------------------
@@ -163,12 +163,13 @@ lookupInScopes' scopes (Just symInfo)
 updateExtraInfo :: Nombre -> Categoria -> [ExtraInfo] -> MonadSymTab ()
 updateExtraInfo name category extraInfo = do
     (symTab@(SymTab table), scopes, scope) <- get
-    let byCategory i = getCategory i == category
-    let (SymbolInfo t s c ei) = filter byCategory $ fromJust $ lookupInSymTab name symTab
-    if ei == [Nada] then
-        let newSymbolInfo = SymbolInfo t s c extraInfo
-        in put(SymTab $ M.adjust (newSymbolInfo:) name table, scopes, scope)
-    else
-        let newSymbolInfo = SymbolInfo t s c extraInfo:ei
-        in put(SymTab $ M.adjust (newSymbolInfo:) name table, scopes, scope)
+
+    let infos = lookupInSymTab name symTab
+    
+    when (isJust infos) $ do
+        let isTarget sym = getCategory sym == category
+            updateExtraInfo' = 
+                fmap (\sym -> if isTarget sym then modifyExtraInfo sym extraInfo else sym)
+        put(SymTab $ M.adjust updateExtraInfo' name table, scopes, scope)
+        -- return ()
 -------------------------------------------------------------------------------

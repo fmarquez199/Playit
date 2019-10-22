@@ -144,7 +144,6 @@ import Playit.AST
 %left "--"
 %right "#" pointer endLine
 %left "?"
-%right
 
 %%
 
@@ -199,7 +198,7 @@ Declaraciones :: { SecuenciaInstr }
 
 Declaracion :: { SecuenciaInstr }
   : Tipo Identificadores
-    { % let (ids,asigs,p) = $2 in insertDeclarations (reverse ids) $1 asigs }
+    { % let (ids,asigs) = $2 in insertDeclarations (reverse ids) $1 asigs }
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
@@ -230,7 +229,7 @@ Identificador :: { ((Nombre, Posicion), SecuenciaInstr) }
 
 -- Lvalues, contenedores que identifican a las variables
 Lvalue :: { Vars }
-  : Lvalue "." nombre           { % crearVarCompIndex (getTk $1) $3 }
+  : Lvalue "." nombre           { % crearVarCompIndex $1 (getTk $3) }
   | Lvalue "|)" Expresion "(|"  { crearVarIndex $1 $3 }   -- Indexacion arreglo
   | Lvalue "|>" Expresion "<|"  { crearVarIndex $1 $3 }   -- Indexacion lista
   | pointer Lvalue              { PuffValue $2 (typeVar $2) }
@@ -265,8 +264,8 @@ Instrucciones :: { SecuenciaInstr }
 Instruccion :: { Instr }
   : Asignacion            { $1 }
   | Declaracion           { Asignaciones $1 }
-  | PushNewScope Controller PopScope   { $1 }
-  | PushNewScope Play PopScope         { $1 }
+  | PushNewScope Controller PopScope   { $2 }
+  | PushNewScope Play PopScope         { $2 }
   | Button                { $1 }
   | ProcCall              { $1 }
   | EntradaSalida         { $1 }
@@ -350,13 +349,13 @@ InitVar1 :: { (Nombre, Expr) }
       -- TODO: Verificar que nombre este en la symtab, asignar valor y el scope concuerde con el actual
       -- Se supone que TDummy deberia cambiar por el tipo de Expresion
       let var = Var (getTk $1) TDummy
-      return $ crearAsignacion var $3 $2)
+      return $ crearAsignacion var $3 $2
       return ((getTk $1), $3)
     }
   | Tipo nombre "=" Expresion
     { % do
       let var = Var (getTk $2) $1
-      insertDeclarations [(getTk $2)] $1 []
+      insertDeclarations [(getTk $2, getPos $2)] $1 []
       return $ crearAsignacion var $4 $3
       return ((getTk $2), $4)
     }
@@ -373,7 +372,7 @@ InitVar2 :: { (Nombre, Expr) }
   | Tipo nombre "<-" Expresion %prec "<-"
     { % do
       let var = Var (getTk $2) $1
-      insertDeclarations [(getTk $2)] $1 []
+      insertDeclarations [(getTk $2, getPos $2)] $1 []
       return $ crearAsignacion var $4 $3
       return ((getTk $2), $4)
     }
@@ -418,13 +417,13 @@ Free :: { Instr }
 DefinirSubrutina :: { SecuenciaInstr }
   : Firma ":" EndLines Instrucciones EndLines ".~"
     { %
-      let (nombre,params,_) = $1
-      in definirSubrutina' nombre params $4
+      let (nombre,params,_,categoria) = $1
+      in definirSubrutina' nombre params $4 categoria
     }
   | Firma ":" EndLines ".~" 
   { %
-    let (nombre,params,_) = $1
-    in definirSubrutina' nombre params []
+    let (nombre,params,_,categoria) = $1
+    in definirSubrutina' nombre params [] categoria
   }
 
 -------------------------------------------------------------------------------
@@ -552,7 +551,7 @@ Expresion :: { Expr }
   -- Literales
   | true      { Literal (Booleano True) TBool }
   | false     { Literal (Booleano False) TBool }
-  | entero    { Literal (Entero $1 TInt }
+  | entero    { Literal (Entero $1) TInt }
   | flotante  { Literal (Flotante $1) TFloat }
   | caracter  { Literal (Caracter $1) TChar }
   | string    { Literal (Str $1) TStr }
@@ -622,6 +621,6 @@ parseError (h:t) =
   error $ "\n\nError sintactico del parser antes de: '" ++ token ++ "'. " ++
           show pos ++ "\n"
   where
-      token = getToken h
+      token = getTk h
       pos = getPos h
 }
