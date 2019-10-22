@@ -11,7 +11,7 @@ module Playit.Types where
 import Control.Monad.Trans.RWS
 import Control.Monad.IO.Class
 import qualified Data.Map as M
-import Data.List (intercalate)
+import Data.List (intercalate,elemIndex)
 
 
 -------------------------------------------------------------------------------
@@ -148,20 +148,23 @@ instance Show Instr where
     show (Asignacion v e)        = "\t" ++ show v ++ " = " ++ show e ++ "\n"
     show Break                   = "\tGameOver\n"
     show Continue                = "\tKeepPlaying\n"
-    show (For n e1 e2 s)         = "\tFor " ++ n ++ " = " ++ show e1 ++ " -> " ++
-        show e2 ++ ":\n\t" ++ concatMap show s ++ "\n"
-    show (ForEach n e s)         = "\tForEach " ++ n ++ " <- " ++ show e ++ ":\n\t"
-        ++ concatMap show s ++ "\n"
+    show (For n e1 e2 s)         = "\tFor " ++ n ++ " = " ++ show e1 ++ " -> "
+        ++ show e2 ++ ":\n\t" ++ concatMap show s ++ "\n"
+    show (ForEach n e s)         = "\tForEach " ++ n ++ " <- " ++ show e ++
+        ":\n\t" ++ concatMap show s ++ "\n"
     show (ForWhile n e1 e2 e3 s) = "\tFor " ++ n ++ " = " ++ show e1 ++ " -> " ++
         show e2 ++ " while: " ++ show e3 ++ ":\n\t" ++ concatMap show s ++ "\n"
     show (Free n)                = "\tfree " ++ n ++ "\n"
     show (Print e)               = "\tdrop " ++ show e ++ "\n"
     show (ProcCall s)            = "\tkill " ++ show s ++ "\n"
-    show (Programa c)            = "world:\n" ++ concatMap show c ++ "\n"
+    show (Programa c)            = "\nworld:\n" ++ concatMap show c ++ "\n"
     show (Return e)              = "\tunlock " ++ show e ++ "\n"
-    show (Asignaciones [])       = ""
     show (Asignaciones s)        = concatMap show s ++ "\n"
-    show (IF s)                  = "\tIF:\n\t" ++ concatMap show s ++ "\n"
+    show (IF s)                  = "\tIF:\n" ++ concat guardias
+        where
+            conds = map (show . fst) s
+            instrs =  map (concatMap show . snd) s
+            guardias = [c ++ " }\n" ++ i | c <- conds, i <- instrs, elemIndex c conds == elemIndex i instrs]
     show (While e s)             = "\tWhile " ++ show e ++ ":\n\t" ++ concatMap show s ++ "\n"
 
 

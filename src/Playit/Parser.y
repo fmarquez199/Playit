@@ -161,13 +161,13 @@ ProgramaWrapper :: { Instr }
 
   
 Programa :: { Instr }
-  : PushScope Definiciones EndLines world programa ":"  EndLines Instrucciones EndLines ".~"  PopScope
+  : PushScope Definiciones EndLines world programa ":" EndLines Instrucciones EndLines ".~"  PopScope
     { Programa $ reverse $8 }
-  | PushScope Definiciones EndLines world programa ":"  EndLines ".~" PopScope
+  | PushScope Definiciones EndLines world programa ":" EndLines ".~" PopScope
     { Programa [] }
-  | PushScope world programa ":"  EndLines Instrucciones EndLines ".~"  PopScope
+  | PushScope world programa ":" EndLines Instrucciones EndLines ".~"  PopScope
     { Programa $ reverse $6 }
-  | PushScope world programa ":"  EndLines ".~" PopScope
+  | PushScope world programa ":" EndLines ".~" PopScope
     { Programa [] }
 
 
