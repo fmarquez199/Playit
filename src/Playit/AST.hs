@@ -58,7 +58,7 @@ crearVarCompIndex :: Vars -> Nombre -> MonadSymTab Vars
 crearVarCompIndex v campo = do
     (symTab, scopes, _) <- get
 
-    --let info = lookupScopesNameInSymTab scopes campo symTab
+    --let info = lookupInScopes scopes campo symTab
 
     let info = lookupInSymTab campo symTab
 
@@ -447,9 +447,9 @@ definirRegistro :: Nombre -> SecuenciaInstr -> MonadSymTab SecuenciaInstr
 definirRegistro id decls = do
     (symTab, activeScopes, scope) <- get
     -- TODO: update categoria de las declaraciones y colocar el reg al que pertenece
-    let infos = lookupScopesNameInSymTab [1] id symTab
+    let infos = lookupInScopes [1] id symTab
     if isJust infos then
-        error $ "\n\nError: el Invenory '" ++ name ++ "', ya está definido."
+        error $ "\n\nError semantico, el Invenory '" ++ name ++ "', ya está definido."
     else do
         let info = [SymbolInfo TRegistro 1 ConstructoresTipos [AST decls]]
         addToSymTab [id] info symTab activeScopes scope
@@ -463,9 +463,9 @@ definirUnion :: Nombre -> SecuenciaInstr -> MonadSymTab SecuenciaInstr
 definirUnion id decls = do
     (symTab, activeScopes, scope) <- get
     -- TODO: update categoria de las declaraciones y colocar la union al que pertenece
-    let infos = lookupScopesNameInSymTab [1] id symTab
+    let infos = lookupInScopes [1] id symTab
     if isJust infos then
-        error $ "\n\nError: el Items '" ++ name ++ "', ya está definido."
+        error $ "\n\nError semantico, el Items '" ++ name ++ "', ya está definido."
     else do
         let info = [SymbolInfo TUnion 1 ConstructoresTipos [AST decls]]
         addToSymTab [id] info symTab activeScopes scope

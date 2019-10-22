@@ -199,8 +199,7 @@ Declaraciones :: { SecuenciaInstr }
 
 Declaracion :: { SecuenciaInstr }
   : Tipo Identificadores
-  -- TODO: verificar aqui que no hayan identificadores duplicados
-    { % let (ids, asigs) = $2 in insertDeclarations (reverse ids) $1 asigs }
+    { % let (ids,asigs,p) = $2 in insertDeclarations (reverse ids) $1 asigs }
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
@@ -208,7 +207,7 @@ Declaracion :: { SecuenciaInstr }
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 
-Identificadores :: { ([Nombre], SecuenciaInstr) }
+Identificadores :: { ([(Nombre, Posicion)], SecuenciaInstr) }
   : Identificadores "," Identificador
   { 
     let ((ids, asigs), (id, asig)) = ($1, $3) in (id : ids, asig ++ asigs)
@@ -218,9 +217,9 @@ Identificadores :: { ([Nombre], SecuenciaInstr) }
     let (id, asigs) = $1 in ([id], asigs)
   }
 
-Identificador :: { (Nombre, SecuenciaInstr) }
-  : nombre "=" Expresion  { ((getTk $1), [Asignacion (Var (getTk $1) TDummy) $3]) }
-  | nombre                { ((getTk $1), []) }
+Identificador :: { ((Nombre, Posicion), SecuenciaInstr) }
+  : nombre "=" Expresion  { ((getTk $1,getPos $1), [Asignacion (Var (getTk $1) TDummy) $3]) }
+  | nombre                { ((getTk $1,getPos $1), []) }
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------

@@ -9,7 +9,7 @@ Modulo para la creacion y manejo de la tabla de simbolos
 module Playit.SymbolTable where
 
 import Control.Monad.Trans.RWS
-import Control.Monad (void)
+import Control.Monad (void,forM)
 import qualified Data.Map as M
 -- import Data.List.Split (splitOn)
 import Data.Maybe (fromJust, isJust, isNothing)
@@ -97,18 +97,19 @@ insertSymbols (id:ids) (info:infos) (SymTab table)
 
 -------------------------------------------------------------------------------
 -- Añade las variables a la tabla de simbolos
-insertDeclarations :: [Nombre] -> Tipo -> SecuenciaInstr -> MonadSymTab SecuenciaInstr
+insertDeclarations :: [(Nombre, Posicion)] -> Tipo -> SecuenciaInstr
+                    -> MonadSymTab SecuenciaInstr
 insertDeclarations ids t asigs = do
     (actualSymTab, activeScopes@(activeScope:_), scope) <- get
 
-    -- _ <- forM ids $ \id -> do
-    --     _ <- if isJust $ lookupScopesNameInSymTab [activeScope] id actualSymTab 
-    --         then error $ "Error: redeclaración de \'" ++ id ++ "\'" 
-    --         else return ()
-    --     return id
+    checkedIds <- forM ids $ \(id,p) ->
+        if isJust $ lookupInScopes [activeScope] id actualSymTab 
+        then error $ "Error semantico, la variable '" ++ id ++
+            "', ya esta declarada. " ++ show p
+        else return id
     
     let info = replicate (length ids) (SymbolInfo t activeScope Variable [Nada])
-    addToSymTab ids info actualSymTab activeScopes scope
+    addToSymTab checkedIds info actualSymTab activeScopes scope
     return asigs
 -------------------------------------------------------------------------------
 
@@ -128,39 +129,30 @@ lookupInSymTab' [x] symtab = [lookupInSymTab x symtab]
 lookupInSymTab' (x:xs) symtab = lookupInSymTab x symtab:lookupInSymTab' xs symtab
 -------------------------------------------------------------------------------
 
-
-
---------------------------------------------------------------------------------
--- Busca el (identificador,scope) de una variable en la tabla de simbolos dada.
---lookupNameScopeInSymTab :: Nombre -> Alcance -> SymTab -> Maybe [SymbolInfo]
---lookupNameScopeInSymTab name scope (SymTab table) = M.lookup name table
---------------------------------------------------------------------------------
-
---------------------------------------------------------------------------------
--- Busca el identificador de una variable en la tabla de simbolos dada.
---lookupNamesScopeInSymTab :: [SymbolInfo] -> Alcance-> Bool
---lookupNamesScopeInSymTab (info:[]) scope = if getScope info == scope then True else False
---lookupNamesScopeInSymTab (info:r) scope = if getScope info == scope then True else (lookupNamesScopeInSymTab r scope)
---------------------------------------------------------------------------------
-
---------------------------------------------------------------------------------
--- Busca el identificador de una variable en la tabla de simbolos dada.
-lookupScopesInSymInfos :: [Alcance]-> Maybe [SymbolInfo] ->  Maybe SymbolInfo
-lookupScopesInSymInfos scopes Nothing = Nothing
-lookupScopesInSymInfos scopes (Just r) 
-    | null lstAlcances  = Nothing
-    | otherwise = Just $ fst $ head lstAlcances
-    where
-        lstAlcances = [(s,a) | s <- r, a <- scopes,getScope s == a]
         
 --------------------------------------------------------------------------------
--- Busca el identificador de una variable en la tabla de simbolos dada.
-lookupScopesNameInSymTab :: [Alcance] -> Nombre -> SymTab-> Maybe SymbolInfo
-lookupScopesNameInSymTab scopes nombre symtab  = lookupScopesInSymInfos scopes (lookupInSymTab nombre symtab)
+-- Busca el identificador dentro de su cadena estatica
+lookupInScopes :: [Alcance] -> Nombre -> SymTab -> Maybe SymbolInfo
+lookupInScopes scopes nombre symtab =
+    lookupInScopes' scopes (lookupInSymTab nombre symtab)
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+-- Busca la informacion dentro de la cadena estatica
+lookupInScopes' :: [Alcance]-> Maybe [SymbolInfo] ->  Maybe SymbolInfo
+lookupInScopes' scopes Nothing = Nothing
+lookupInScopes' scopes (Just symInfo) 
+    | null symScopes  = Nothing
+    | otherwise = Just $ fst $ head symScopes
+    where
+        symScopes = [(s,a) | s <- symInfo, a <- scopes, getScope s == a]
 --------------------------------------------------------------------------------
 
 
 
+-- modifiExtraInfoSymbol (SymbolInfo t s c [Nada]) extraInfo = SymbolInfo t s c extraInfo
+-- modifiExtraInfoSymbol (SymbolInfo t s c ei) extraInfo = SymbolInfo t s c (extraInfo ++ ei)
 
 
 -------------------------------------------------------------------------------
@@ -178,5 +170,5 @@ updateExtraInfo name category extraInfo = do
         in put(SymTab $ M.adjust (newSymbolInfo:) name table, scopes, scope)
     else
         let newSymbolInfo = SymbolInfo t s c extraInfo:ei
-        in put(SymTab $ M.adjust (newSymbolInfo:) name table, scope, scope)
+        in put(SymTab $ M.adjust (newSymbolInfo:) name table, scopes, scope)
 -------------------------------------------------------------------------------
