@@ -161,9 +161,9 @@ ProgramaWrapper :: { Instr }
 
   
 Programa :: { Instr }
-  : PushNewScope Definiciones world programa ":" EndLines Instrucciones EndLines ".~"  PopScope
-    { Programa $ reverse $7 }
-  | PushNewScope Definiciones world programa ":" EndLines ".~" PopScope
+  : PushNewScope Definiciones EndLines world programa ":" EndLines Instrucciones EndLines ".~"  PopScope
+    { Programa $ reverse $8 }
+  | PushNewScope Definiciones EndLines world programa ":" EndLines ".~" PopScope
     { Programa [] }
   | PushNewScope world programa ":" EndLines Instrucciones EndLines ".~"  PopScope
     { Programa $ reverse $6 }
@@ -178,8 +178,8 @@ Definiciones :: { SecuenciaInstr }
 
 Definicion :: { SecuenciaInstr }
   : DefinirSubrutina PopScope  { $1 }
-  | DefinirRegistro            { $1 }
-  | DefinirUnion               { $1 }
+  | DefinirRegistro PopScope   { $1 }
+  | DefinirUnion PopScope      { $1 }
 
 
 EndLines :: { () }
@@ -569,11 +569,11 @@ Expresion :: { Expr }
 -------------------------------------------------------------------------------
 -- Registros
 DefinirRegistro :: { SecuenciaInstr }
-  : registro idtipo ":" EndLines Declaraciones EndLines ".~"
+  : registro idtipo ":" PushNewScope EndLines Declaraciones EndLines ".~"
     { %
-      definirRegistro $2 $5
+      definirRegistro $2 $6
     }
-  | registro idtipo ":" EndLines ".~"                        
+  | registro idtipo ":" PushNewScope EndLines ".~"                        
     { %
       definirRegistro $2 []
     }
@@ -583,11 +583,11 @@ DefinirRegistro :: { SecuenciaInstr }
 -------------------------------------------------------------------------------
 -- Uniones
 DefinirUnion :: { SecuenciaInstr }
-  : union idtipo ":" EndLines Declaraciones EndLines ".~"
+  : union idtipo ":" PushNewScope EndLines Declaraciones EndLines ".~"
     { %
-      definirUnion $2 $5
+      definirUnion $2 $6
     }
-  | union idtipo ":" EndLines ".~"                        
+  | union idtipo ":" PushNewScope EndLines ".~"                        
     { %
       definirUnion $2 []
     }

@@ -130,15 +130,15 @@ lookupInSymTab' (x:xs) symtab = lookupInSymTab x symtab:lookupInSymTab' xs symta
 -------------------------------------------------------------------------------
 
         
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 -- Busca el identificador dentro de su cadena estatica
 lookupInScopes :: [Alcance] -> Nombre -> SymTab -> Maybe SymbolInfo
 lookupInScopes scopes nombre symtab =
     lookupInScopes' scopes (lookupInSymTab nombre symtab)
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 -- Busca la informacion dentro de la cadena estatica
 lookupInScopes' :: [Alcance]-> Maybe [SymbolInfo] ->  Maybe SymbolInfo
 lookupInScopes' scopes Nothing = Nothing
@@ -147,12 +147,15 @@ lookupInScopes' scopes (Just symInfo)
     | otherwise = Just $ fst $ head symScopes
     where
         symScopes = [(s,a) | s <- symInfo, a <- scopes, getScope s == a]
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 
+-------------------------------------------------------------------------------
+-- Actualiza la informacion extra del simbolo con la nueva
 modifyExtraInfo :: SymbolInfo -> [ExtraInfo] -> SymbolInfo
 modifyExtraInfo (SymbolInfo t s c [Nada]) extraInfo = SymbolInfo t s c extraInfo
 modifyExtraInfo (SymbolInfo t s c ei) extraInfo = SymbolInfo t s c (extraInfo ++ ei)
+-------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------

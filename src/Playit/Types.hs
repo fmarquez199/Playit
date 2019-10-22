@@ -69,6 +69,7 @@ data ExtraInfo =
 
 instance Show ExtraInfo where
     show (AST secInstr) = "AST:\n" ++ show secInstr
+    show (Params p)     = "Parametros:\n" ++ concatMap show p
     show Nada           = "No hay informacion extra"
 
 -- Tipo de dato que pueden ser las expresiones
@@ -92,7 +93,7 @@ data Tipo =
 
 instance Show Tipo where
     show (TApuntador t) = "Apuntador de " ++ show t
-    show (TArray e t)   = "Arreglo de tamaño " ++ show e ++ " de " ++ show t
+    show (TArray e t)   = "Arreglo de tamano " ++ show e ++ " de " ++ show t
     show TBool          = "Booleano"
     show TChar          = "Caracter"
     show TDummy         = "Sin tipo definido aun"
@@ -321,7 +322,7 @@ data SymbolInfo = SymbolInfo {
 
 instance Show SymbolInfo where
     show (SymbolInfo t s c i) = "Tipo: " ++ show t ++ ", en el alcance: " ++
-        show s ++ ", de categoria: "++ show c ++ ".\nExtra: " ++
+        show s ++ ", de categoria: "++ show c ++ ".\nExtra:\n" ++
         concatMap show i ++ "\n"
 
 

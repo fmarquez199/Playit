@@ -201,7 +201,8 @@ createTkBOSS (AlexPn _ f c) tk = TkBOSS tk (f, c)
 createTkProgramName (AlexPn _ f c) tk = TkProgramName tk (f, c)
 createTkID (AlexPn _ f c) id = TkID id (f, c)
 createTkIDTipo (AlexPn _ f c) idTipo = TkIDTipo idTipo (f, c)
-createTkCARACTER (AlexPn _ f c) char = TkCARACTER char (f, c) (read char :: Char)
+createTkCARACTER (AlexPn _ f c) char =
+    TkCARACTER char (f, c) (read (map (\c -> if c == '*' then '\'' else c) char) :: Char)
 createTkSTRINGS (AlexPn _ f c) str = TkSTRINGS str (f, c)
 createTkINT (AlexPn _ f c) int = TkINT int (f, c) (read int :: Int)
 createTkFLOAT (AlexPn _ f c) float =
