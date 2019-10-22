@@ -104,8 +104,9 @@ insertDeclarations ids t asigs = do
     (actualSymTab, activeScopes@(activeScope:_), scope) <- get
         
     ids' <- forM ids $ \(id,(f,c)) -> do
-        _ <- if isJust $ lookupScopesNameInSymTab [activeScope] id actualSymTab
-            then error $ "Error: redeclaración de \'" ++ id ++ "\' " ++ " en la fila: " ++ (show f) ++ ", columna: " ++ (show c)
+        _ <- if isJust $ lookupScopesNameInSymTab [activeScope] id actualSymTab then do
+                fileName <- ask
+                error $ "\n\n" ++ fileName ++ ": ("++ (show f) ++","++(show c)++"): error: redeclaración de \'" ++ id ++ "\'\n\n"
             else return ()
         return id
     

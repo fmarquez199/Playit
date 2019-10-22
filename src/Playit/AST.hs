@@ -28,8 +28,8 @@ import Playit.Types
 
 -------------------------------------------------------------------------------
 -- Crea el nodo para identificadores de variables y verifica que estén declarados
-crearIdvar :: Nombre -> MonadSymTab Vars
-crearIdvar name = do
+crearIdvar :: Nombre ->Posicion-> MonadSymTab Vars
+crearIdvar name (f,c)= do
 
     (symTab, scopes, _) <- get
     fileName <- ask
@@ -37,8 +37,9 @@ crearIdvar name = do
     
     if isJust info then do
         return $ Var name (getType  $ fromJust info)
-    else 
-        error (fileName ++ ": error: '" ++ name ++"' no está declarado.\n")
+    else do
+        fileName <- ask
+        error ("\n\n" ++ fileName ++ ": ("++ (show f) ++","++(show c)++"): error: '" ++ name ++"' no está declarado.\n")
 -------------------------------------------------------------------------------
 
 
@@ -462,7 +463,8 @@ definirRegistro name decls = do
 
     let infos = lookupScopesNameInSymTab [1] name symTab
     if isJust infos then do
-        error $ "Error: redeclaración de '" ++ name ++ "'."
+        fileName <- ask
+        error $ "\n\n" ++ fileName ++ ": error: redeclaración de '" ++ name ++ "'."
     else return ()
 
     let info = [SymbolInfo TRegistro 1 ConstructoresTipos [AST decls]]

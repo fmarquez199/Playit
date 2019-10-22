@@ -66,7 +66,7 @@ import Playit.AST
   -- Identificadores
 
   programa          { TkProgramName _ _ }
-  nombre            { TkID _ $$ }
+  nombre            { TkID _ _ }
   idtipo            { TkIDTipo _ $$ }
 
   -- Caracteres
@@ -212,8 +212,8 @@ Identificadores :: { ([(Nombre,Posicion)], SecuenciaInstr) }
   }
 
 Identificador :: { ((Nombre,Posicion), SecuenciaInstr) }
-  : nombre "=" Expresion  { (($1,getTokenPosicion $2), [Asignacion (Var $1 TDummy) $3]) }
-  | nombre                { (($1,(-1,-1)), []) }
+  : nombre "=" Expresion  { ((getTknStr $1,getTokenPosicion $1), [Asignacion (Var (getTknStr $1) TDummy) $3]) }
+  | nombre                { ((getTknStr $1,getTokenPosicion $1), []) }
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
@@ -224,11 +224,11 @@ Identificador :: { ((Nombre,Posicion), SecuenciaInstr) }
 
 -- Lvalues, contenedores que identifican a las variables
 Lvalue :: { Vars }
-  : Lvalue "." nombre           { % crearVarCompIndex $1 $3 }
+  : Lvalue "." nombre           { % crearVarCompIndex $1 (getTknStr $3) }
   | Lvalue "|)" Expresion "(|"  { crearVarIndex $1 $3 }   -- Indexacion arreglo
   | Lvalue "|>" Expresion "<|"  { crearVarIndex $1 $3 }   -- Indexacion lista
   | pointer Lvalue              { PuffValue $2 (typeVar $2) }
-  | nombre                      { % crearIdvar $1 }
+  | nombre                      { % crearIdvar (getTknStr $1) (getTokenPosicion $1 )}
 
 
 -- Tipos de datos
@@ -341,31 +341,31 @@ Controller :: { Instr }
 InitVar1 :: { (Nombre, Expr) }
   : nombre "=" Expresion
     { % do
-      var <- crearIdvar $1
-      return $ crearAsignacion var $3 (getTokenPosicion $2) 
-      return ($1, $3)
+      var <- crearIdvar (getTknStr $1) (getTokenPosicion $1) 
+      return $ crearAsignacion var $3 (getTokenPosicion $1) 
+      return ((getTknStr $1), $3)
     }
   | Tipo nombre "=" Expresion
     { % do
-      let var = Var $2 $1
-      insertDeclarations [($2,getTokenPosicion $3)] $1 []
+      let var = Var (getTknStr $2) $1
+      insertDeclarations [((getTknStr $2),getTokenPosicion $3)] $1 []
       return $ crearAsignacion var $4 (getTokenPosicion $3)
-      return ($2, $4)
+      return ((getTknStr $2), $4)
     }
 
 InitVar2 :: { (Nombre, Expr) }
   : nombre "<-" Expresion %prec "<-"
     { % do
-      var <- crearIdvar $1
+      var <- crearIdvar (getTknStr $1) (getTokenPosicion $1) 
       return $ crearAsignacion var $3 (getTokenPosicion $2)
-      return ($1, $3)
+      return ((getTknStr $1), $3)
     }
   | Tipo nombre "<-" Expresion %prec "<-"
     { % do
-      let var = Var $2 $1
-      insertDeclarations [($2,getTokenPosicion $3)] $1 [] 
-      return $ crearAsignacion var $4 (getTokenPosicion $3)
-      return ($2, $4)
+      let var = Var (getTknStr $2) $1
+      insertDeclarations [(getTknStr $2,getTokenPosicion $2)] $1 [] 
+      return $ crearAsignacion var $4 (getTokenPosicion $2)
+      return ((getTknStr $3), $4)
     }
 -------------------------------------------------------------------------------
 
@@ -393,9 +393,9 @@ EntradaSalida :: { Instr }
 -------------------------------------------------------------------------------
 -- Instrucciones para liberar la memoria de los apuntadores 'free'
 Free :: { Instr }
-  : free nombre             { % crearFree $2 }
-  | free "|}" "{|" nombre   { % crearFree $4 }
-  | free "<<" ">>" nombre   { % crearFree $4 }
+  : free nombre             { % crearFree (getTknStr $2) }
+  | free "|}" "{|" nombre   { % crearFree (getTknStr $4) }
+  | free "<<" ">>" nombre   { % crearFree (getTknStr $4) }
 -------------------------------------------------------------------------------
 
 
@@ -422,23 +422,23 @@ DefinirSubrutina :: { SecuenciaInstr }
 Firma :: { (Nombre, [Expr], Tipo) }
   : proc nombre "(" Parametros ")"   --- TODO: weird Push here
     { % do
-      definirSubrutina $2 TDummy Procedimientos
-      return ($2, $4, TDummy)
+      definirSubrutina (getTknStr $2) TDummy Procedimientos
+      return ((getTknStr $2), $4, TDummy)
     }
   | proc nombre "(" ")" 
     { % do
-      definirSubrutina $2 TDummy Procedimientos
-      return ($2, [], TDummy)
+      definirSubrutina (getTknStr $2) TDummy Procedimientos
+      return ((getTknStr $2), [], TDummy)
     }
   | function nombre "(" Parametros ")" Tipo 
     { % do
-      definirSubrutina $2 $6 Funciones
-      return ($2, $4, $6)
+      definirSubrutina (getTknStr $2) $6 Funciones
+      return ((getTknStr $2), $4, $6)
     }
   | function nombre "(" ")" Tipo 
     { % do
-      definirSubrutina $2 $5 Funciones
-      return ($2, [], $5)
+      definirSubrutina (getTknStr $2) $5 Funciones
+      return ((getTknStr $2), [], $5)
     }
 
 -------------------------------------------------------------------------------
@@ -449,8 +449,8 @@ Parametros :: { [Expr] }
 
 
 Parametro :: { Expr }
-  : Tipo nombre       { % definirParam (Param $2 $1 Valor) }
-  | Tipo "?" nombre   { % definirParam (Param $3 $1 Referencia) }
+  : Tipo nombre       { % definirParam (Param (getTknStr $2) $1 Valor) }
+  | Tipo "?" nombre   { % definirParam (Param (getTknStr $3) $1 Referencia) }
 -------------------------------------------------------------------------------
 
 
@@ -463,8 +463,8 @@ FuncCall :: { Expr }
   : SubrutinaCall     { % crearFuncCall $1 }
 
 SubrutinaCall :: { Subrutina }
-  : call nombre "(" PasarParametros ")"   { % crearSubrutinaCall $2 (reverse $4) }
-  | call nombre "(" ")"                   { % crearSubrutinaCall $2 [] }
+  : call nombre "(" PasarParametros ")"   { % crearSubrutinaCall (getTknStr $2) (reverse $4) }
+  | call nombre "(" ")"                   { % crearSubrutinaCall (getTknStr $2) [] }
 -------------------------------------------------------------------------------
 
 
