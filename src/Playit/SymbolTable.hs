@@ -100,16 +100,24 @@ insertSymbols (id:ids) (info:infos) (SymTab table)
 insertDeclarations :: [(Nombre, Posicion)] -> Tipo -> SecuenciaInstr
                     -> MonadSymTab SecuenciaInstr
 insertDeclarations ids t asigs = do
-    (actualSymTab, activeScopes@(activeScope:_), scope) <- get
+    (symTab, activeScopes@(activeScope:_), scope) <- get
 
-    checkedIds <- forM ids $ \(id,p) ->
-        if isJust $ lookupInScopes [activeScope] id actualSymTab 
-        then error $ "Error semantico, la variable '" ++ id ++
-            "', ya esta declarada. " ++ show p
-        else return id
+    checkedIds <- forM ids $ \(id,p) -> do
+        let idScopeInfo = lookupInScopes [activeScope] id symTab
+        
+        when (isJust idScopeInfo) $
+            let info = fromJust $ lookupInSymTab id symTab
+                scopeInfo = [i | i <- info, getScope i == activeScope] 
+                idCategories = map getCategory scopeInfo
+                isInAnyCategory = Variable `elem` idCategories
+            in
+            when isInAnyCategory $
+                error $ "\n\nError semantico, la variable '" ++ id ++
+                "', ya esta declarada. " ++ show p ++ "\n"
+        return id
     
     let info = replicate (length ids) (SymbolInfo t activeScope Variable [])
-    addToSymTab checkedIds info actualSymTab activeScopes scope
+    addToSymTab checkedIds info symTab activeScopes scope
     return asigs
 -------------------------------------------------------------------------------
 
@@ -151,10 +159,23 @@ lookupInScopes' scopes (Just symInfo)
 
 
 -------------------------------------------------------------------------------
--- Actualiza la informacion extra del simbolo con la nueva
-modifyExtraInfo :: SymbolInfo -> [ExtraInfo] -> SymbolInfo
-modifyExtraInfo (SymbolInfo t s c []) extraInfo = SymbolInfo t s c extraInfo
-modifyExtraInfo (SymbolInfo t s c ei) extraInfo = SymbolInfo t s c (extraInfo ++ ei)
+updateType :: Nombre -> Tipo -> MonadSymTab ()
+updateType name t = do
+    (symTab@(SymTab table), scopes, scope) <- get
+    let infos = lookupInSymTab name symTab
+    when (isJust infos) $ do
+        let isTarget sym = getType sym == t
+            updateType' = 
+                fmap (\sym -> if isTarget sym then modifyType sym t else sym)
+        put(SymTab $ M.adjust updateType' name table, scopes, scope)
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-- 
+modifyType :: SymbolInfo -> Tipo -> SymbolInfo
+modifyType (SymbolInfo _ s Funciones ei) newT = SymbolInfo newT s Funciones ei
+modifyType symbolInfo _ = symbolInfo
 -------------------------------------------------------------------------------
 
 
@@ -166,14 +187,18 @@ modifyExtraInfo (SymbolInfo t s c ei) extraInfo = SymbolInfo t s c (extraInfo ++
 updateExtraInfo :: Nombre -> Categoria -> [ExtraInfo] -> MonadSymTab ()
 updateExtraInfo name category extraInfo = do
     (symTab@(SymTab table), scopes, scope) <- get
-
     let infos = lookupInSymTab name symTab
-    
-
     when (isJust infos) $ do
         let isTarget sym = getCategory sym == category
             updateExtraInfo' = 
                 fmap (\sym -> if isTarget sym then modifyExtraInfo sym extraInfo else sym)
         put(SymTab $ M.adjust updateExtraInfo' name table, scopes, scope)
-        -- return ()
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-- Actualiza la informacion extra del simbolo con la nueva
+modifyExtraInfo :: SymbolInfo -> [ExtraInfo] -> SymbolInfo
+modifyExtraInfo (SymbolInfo t s c []) extraInfo = SymbolInfo t s c extraInfo
+modifyExtraInfo (SymbolInfo t s c ei) extraInfo = SymbolInfo t s c (extraInfo ++ ei)
 -------------------------------------------------------------------------------

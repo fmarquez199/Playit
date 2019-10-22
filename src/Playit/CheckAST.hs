@@ -55,7 +55,7 @@ checkTypesAsigs asigs t (line,_)
     | eqTypesAsigs updatedAsigs t = updatedAsigs
     | otherwise = 
         error ("\n\nError semantico en las asignaciones de las declaraciones"
-                ++ " de variables.\nTipo esperado: " ++ showType t ++
+                ++ " de variables.\nTipo esperado: " ++ show t ++
                 ".En la linea: " ++ show line ++ "\n")
 
     where
@@ -235,7 +235,7 @@ changeTDummyFor :: Tipo -> SymTab -> Alcance -> Instr -> Instr
 changeTDummyFor t symTab scope (Asignacion lval e)
     | isVarIter lval symTab scope =
         error ("\n\nError semantico, la variable de iteracion: '" ++
-               showVar lval ++ "', no se puede modificar.\n")
+               show lval ++ "', no se puede modificar.\n")
     | otherwise =
         let newLval = changeTDummyLval lval t
             newE = changeTDummyExpr t e

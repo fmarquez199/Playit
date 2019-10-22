@@ -161,13 +161,13 @@ ProgramaWrapper :: { Instr }
 
   
 Programa :: { Instr }
-  : PushNewScope Definiciones EndLines world programa ":" EndLines Instrucciones EndLines ".~"  PopScope
+  : PushScope Definiciones EndLines world programa ":"  EndLines Instrucciones EndLines ".~"  PopScope
     { Programa $ reverse $8 }
-  | PushNewScope Definiciones EndLines world programa ":" EndLines ".~" PopScope
+  | PushScope Definiciones EndLines world programa ":"  EndLines ".~" PopScope
     { Programa [] }
-  | PushNewScope world programa ":" EndLines Instrucciones EndLines ".~"  PopScope
+  | PushScope world programa ":"  EndLines Instrucciones EndLines ".~"  PopScope
     { Programa $ reverse $6 }
-  | PushNewScope world programa ":" EndLines ".~" PopScope
+  | PushScope world programa ":"  EndLines ".~" PopScope
     { Programa [] }
 
 
@@ -264,8 +264,8 @@ Instrucciones :: { SecuenciaInstr }
 Instruccion :: { Instr }
   : Asignacion            { $1 }
   | Declaracion           { Asignaciones $1 }
-  | PushNewScope Controller PopScope   { $2 }
-  | PushNewScope Play PopScope         { $2 }
+  | PushScope Controller PopScope   { $2 }
+  | PushScope Play PopScope         { $2 }
   | Button                { $1 }
   | ProcCall              { $1 }
   | EntradaSalida         { $1 }
@@ -302,13 +302,13 @@ Guardias :: { [(Expr, SecuenciaInstr)] }
   | Guardia           { [$1] }
 
 Guardia :: { (Expr, SecuenciaInstr) }
-  : "|" Expresion "}" EndLines PushNewScope Instrucciones EndLines
+  : "|" Expresion "}" EndLines PushScope Instrucciones EndLines
     { crearGuardiaIF $2 $6 $1 }
-  | "|" Expresion "}" PushNewScope Instrucciones EndLines
+  | "|" Expresion "}" PushScope Instrucciones EndLines
     { crearGuardiaIF $2 $5 $1 }
-  | "|" else "}" EndLines PushNewScope Instrucciones EndLines
+  | "|" else "}" EndLines PushScope Instrucciones EndLines
     { crearGuardiaIF (Literal (Booleano True) TBool) $6 $1 }
-  | "|" else "}" PushNewScope Instrucciones EndLines
+  | "|" else "}" PushScope Instrucciones EndLines
     { crearGuardiaIF (Literal (Booleano True) TBool) $5 $1 }
 -------------------------------------------------------------------------------
 
@@ -415,43 +415,53 @@ Free :: { Instr }
 -------------------------------------------------------------------------------
 
 DefinirSubrutina :: { SecuenciaInstr }
-  : Firma ":" EndLines Instrucciones EndLines ".~"
+  : Proc  { $1 }
+  | Func  { $1 }
+
+Proc :: { SecuenciaInstr }
+  : Nombre PushScope Params ":" EndLines Instrucciones EndLines ".~"
     { %
-      let (nombre,params,_,categoria) = $1
-      in definirSubrutina' nombre params $4 categoria
+      let ((nombre,categoria), params) = ($1, $3)
+      in definirSubrutina' nombre params $6 categoria TDummy
     }
-  | Firma ":" EndLines ".~" 
+  | Nombre PushScope Params ":" EndLines ".~" 
   { %
-    let (nombre,params,_,categoria) = $1
-    in definirSubrutina' nombre params [] categoria
+    let ((nombre,categoria), params) = ($1, $3)
+    in definirSubrutina' nombre params [] categoria TDummy
+  }
+
+Func :: { SecuenciaInstr }
+  : Nombre PushScope Params Tipo ":" EndLines Instrucciones EndLines ".~"
+    { %
+      let ((nombre,categoria), params) = ($1, $3)
+      in definirSubrutina' nombre params $7 categoria $4
+    }
+  | Nombre PushScope Params Tipo ":" EndLines ".~" 
+  { %
+    let ((nombre,categoria), params) = ($1, $3)
+    in definirSubrutina' nombre params [] categoria $4
   }
 
 -------------------------------------------------------------------------------
--- Firma de la subrutina, se agrega antes a la symtab por la recursividad
-Firma :: { (Nombre, Int, Tipo, Categoria) }
-  : proc nombre PushNewScope "(" Parametros ")" 
+-- Nombre de la subrutina, se agrega antes a la symtab por la recursividad
+Nombre :: { (Nombre, Categoria) }
+  : proc nombre
     { % do
-      definirSubrutina (getTk $2) TDummy Procedimientos
-      return ((getTk $2), length $5, TDummy, Procedimientos)
+      definirSubrutina (getTk $2) Procedimientos
+      return ((getTk $2), Procedimientos)
     }
-  | proc nombre PushNewScope "(" ")" 
+  | function nombre
     { % do
-      definirSubrutina (getTk $2) TDummy Procedimientos
-      return ((getTk $2), 0, TDummy, Procedimientos)
-    }
-  | function nombre PushNewScope "(" Parametros ")" Tipo 
-    { % do
-      definirSubrutina (getTk $2) $7 Funciones
-      return ((getTk $2), length $5, $7, Funciones)
-    }
-  | function nombre PushNewScope "(" ")" Tipo 
-    { % do
-      definirSubrutina (getTk $2) $6 Funciones
-      return ((getTk $2), 0, $6, Funciones)
+      definirSubrutina (getTk $2) Funciones
+      return ((getTk $2), Funciones)
     }
 
 -------------------------------------------------------------------------------
 -- Definicion de los parametros de las subrutinas
+Params ::{ Int }
+  : "(" Parametros ")" { length $2 }
+  | "(" ")"            { 0 }
+
 Parametros :: { [Expr] }
   : Parametros "," Parametro  { $3 : $1 }
   | Parametro                 { [$1] }
@@ -569,11 +579,11 @@ Expresion :: { Expr }
 -------------------------------------------------------------------------------
 -- Registros
 DefinirRegistro :: { SecuenciaInstr }
-  : registro idtipo ":" PushNewScope EndLines Declaraciones EndLines ".~"
+  : registro idtipo ":" PushScope EndLines Declaraciones EndLines ".~"
     { %
       definirRegistro $2 $6
     }
-  | registro idtipo ":" PushNewScope EndLines ".~"                        
+  | registro idtipo ":" PushScope EndLines ".~"                        
     { %
       definirRegistro $2 []
     }
@@ -583,11 +593,11 @@ DefinirRegistro :: { SecuenciaInstr }
 -------------------------------------------------------------------------------
 -- Uniones
 DefinirUnion :: { SecuenciaInstr }
-  : union idtipo ":" PushNewScope EndLines Declaraciones EndLines ".~"
+  : union idtipo ":" PushScope EndLines Declaraciones EndLines ".~"
     { %
       definirUnion $2 $6
     }
-  | union idtipo ":" PushNewScope EndLines ".~"                        
+  | union idtipo ":" PushScope EndLines ".~"                        
     { %
       definirUnion $2 []
     }
@@ -606,7 +616,7 @@ PopScope  ::  { () }
 
 
 -- Empila el nuevo alcance al inicio del anterior
-PushNewScope  ::  { () }
+PushScope  ::  { () }
               :   {- Lambda -}    { % pushNewScope }
 
 -------------------------------------------------------------------------------

@@ -366,19 +366,23 @@ crearWhile e i (line,_) = While e i
 
 
 -------------------------------------------------------------------------------
--- Actualiza la informacion extra de la subrutina
-definirSubrutina' :: Nombre -> Int -> SecuenciaInstr -> Categoria
+-- Actualiza el tipo y  la informacion extra de la subrutina
+definirSubrutina' :: Nombre -> Int -> SecuenciaInstr -> Categoria -> Tipo
                     -> MonadSymTab SecuenciaInstr
-definirSubrutina' name 0 [] c = do
+definirSubrutina' name 0 [] c t = do
+    updateType name t
     updateExtraInfo name c []
     return []
-definirSubrutina' name 0 i c = do
+definirSubrutina' name 0 i c t = do
+    updateType name t
     updateExtraInfo name c [AST i]
     return i
-definirSubrutina' name params [] c = do
+definirSubrutina' name params [] c t = do
+    updateType name t
     updateExtraInfo name c [Params params]
     return []
-definirSubrutina' name params i c = do
+definirSubrutina' name params i c t = do
+    updateType name t
     updateExtraInfo name c [Params params, AST i]
     return i
 -------------------------------------------------------------------------------
@@ -386,14 +390,16 @@ definirSubrutina' name params i c = do
 
 -------------------------------------------------------------------------------
 -- Agrega el nombre de la subrutina a la tabla de símbolos.
-definirSubrutina :: Nombre -> Tipo -> Categoria -> MonadSymTab ()
-definirSubrutina nombre tipo categoria = do
+definirSubrutina :: Nombre -> Categoria -> MonadSymTab ()
+definirSubrutina nombre categoria = do
     (symTab, activeScopes, scope) <- get
-    if isNothing $ lookupInSymTab nombre symTab then 
-        let info = [SymbolInfo tipo 1 categoria []]
+    let info = lookupInSymTab nombre symTab
+    if isNothing info then 
+        let info = [SymbolInfo TDummy 1 categoria []]
         in addToSymTab [nombre] info symTab activeScopes scope
     else
-        error $ "Error semantico, la subrutina '" ++ nombre ++ "', ya está definida."
+        error $ "\nError semantico, la subrutina '" ++ nombre ++ "', ya esta definida."
+            ++ "\n\t" ++ concatMap show (fromJust info) ++ "\n"
     return ()
 -------------------------------------------------------------------------------
 
@@ -488,7 +494,7 @@ crearPrint e (line,_)
     | tE /= TError = Print e
     | otherwise = 
         error ("\n\nError semantico en la expresion del 'print': '" ++
-                show e ++ "', de tipo: " ++ showType tE ++
+                show e ++ "', de tipo: " ++ show tE ++
                 ". En la linea: " ++ show line ++ "\n")
     where
         tE = typeE e

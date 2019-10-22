@@ -51,7 +51,8 @@ main = do
                     if hasError tokens then
                         putStrLn $ tkErrorToString $ filter isError tokens
                     else do
-                        (ast,(st,_,_), _) <- runRWST (parse tokens) () initState
+                        (ast@(Programa i),(st,_,_), _) <- runRWST (parse tokens) () initState
+                        -- putStrLn $ concatMap show i
                         print ast
                         print st
 
