@@ -367,12 +367,12 @@ crearWhile e i (line,_) = While e i
 
 -------------------------------------------------------------------------------
 -- Actualiza la informacion extra de la subrutina
-definirSubrutina' :: Nombre -> [Expr] -> SecuenciaInstr -> Categoria
+definirSubrutina' :: Nombre -> Int -> SecuenciaInstr -> Categoria
                     -> MonadSymTab SecuenciaInstr
-definirSubrutina' name [] [] c = do
-    updateExtraInfo name c [Nada]
+definirSubrutina' name 0 [] c = do
+    updateExtraInfo name c []
     return []
-definirSubrutina' name [] i c = do
+definirSubrutina' name 0 i c = do
     updateExtraInfo name c [AST i]
     return i
 definirSubrutina' name params [] c = do
@@ -390,7 +390,7 @@ definirSubrutina :: Nombre -> Tipo -> Categoria -> MonadSymTab ()
 definirSubrutina nombre tipo categoria = do
     (symTab, activeScopes, scope) <- get
     if isNothing $ lookupInSymTab nombre symTab then 
-        let info = [SymbolInfo tipo 1 categoria [Nada]]
+        let info = [SymbolInfo tipo 1 categoria []]
         in addToSymTab [nombre] info symTab activeScopes scope
     else
         error $ "Error semantico, la subrutina '" ++ nombre ++ "', ya está definida."
@@ -403,7 +403,7 @@ definirSubrutina nombre tipo categoria = do
 definirParam :: Vars -> MonadSymTab Expr
 definirParam param@(Param name t ref) = do
     (symtab, activeScopes@(activeScope:_), scope) <- get
-    let info = [SymbolInfo t activeScope (Parametros ref) [Nada]]
+    let info = [SymbolInfo t activeScope (Parametros ref) []]
     addToSymTab [name] info symtab activeScopes scope
     return $ Variables param t
 -------------------------------------------------------------------------------

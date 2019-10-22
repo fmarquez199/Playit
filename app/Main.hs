@@ -10,8 +10,9 @@ module Main where
 
 import Data.Strings (strEndsWith)
 import Control.Monad.Trans.RWS
-import System.Environment
+import Control.Monad (mapM_)
 import Control.Exception
+import System.Environment
 import System.IO.Error
 import System.IO
 import Playit.SymbolTable

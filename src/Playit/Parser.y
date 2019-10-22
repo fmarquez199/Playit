@@ -428,26 +428,26 @@ DefinirSubrutina :: { SecuenciaInstr }
 
 -------------------------------------------------------------------------------
 -- Firma de la subrutina, se agrega antes a la symtab por la recursividad
-Firma :: { (Nombre, [Expr], Tipo, Categoria) }
+Firma :: { (Nombre, Int, Tipo, Categoria) }
   : proc nombre PushNewScope "(" Parametros ")" 
     { % do
       definirSubrutina (getTk $2) TDummy Procedimientos
-      return ((getTk $2), $5, TDummy, Procedimientos)
+      return ((getTk $2), length $5, TDummy, Procedimientos)
     }
   | proc nombre PushNewScope "(" ")" 
     { % do
       definirSubrutina (getTk $2) TDummy Procedimientos
-      return ((getTk $2), [], TDummy, Procedimientos)
+      return ((getTk $2), 0, TDummy, Procedimientos)
     }
   | function nombre PushNewScope "(" Parametros ")" Tipo 
     { % do
       definirSubrutina (getTk $2) $7 Funciones
-      return ((getTk $2), $5, $7, Funciones)
+      return ((getTk $2), length $5, $7, Funciones)
     }
   | function nombre PushNewScope "(" ")" Tipo 
     { % do
       definirSubrutina (getTk $2) $6 Funciones
-      return ((getTk $2), [], $6, Funciones)
+      return ((getTk $2), 0, $6, Funciones)
     }
 
 -------------------------------------------------------------------------------

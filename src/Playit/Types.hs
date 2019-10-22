@@ -62,15 +62,13 @@ instance Show Categoria where
 
 data ExtraInfo =
     AST SecuenciaInstr |
-    Params [Expr]      |
-    FromReg Nombre     | -- Registro o union al que pertenece el campo/variable
-    Nada
+    Params Int         |
+    FromReg Nombre       -- Registro o union al que pertenece el campo/variable
     deriving (Eq, Ord)
 
 instance Show ExtraInfo where
-    show (AST secInstr) = "AST:\n" ++ show secInstr
-    show (Params p)     = "Parametros:\n" ++ concatMap show p
-    show Nada           = "No hay informacion extra"
+    show (AST secInstr) = "AST:\n" ++ show secInstr ++ "\n"
+    show (Params p)     = "Parametros: " ++ show p ++ "\n"
 
 -- Tipo de dato que pueden ser las expresiones
 data Tipo = 
@@ -321,8 +319,8 @@ data SymbolInfo = SymbolInfo {
     deriving (Eq, Ord)
 
 instance Show SymbolInfo where
-    show (SymbolInfo t s c i) = "Tipo: " ++ show t ++ ", en el alcance: " ++
-        show s ++ ", de categoria: "++ show c ++ ".\nExtra:\n" ++
+    show (SymbolInfo t s c i) = "Tipo: " ++ show t ++ " | Alcance: " ++
+        show s ++ " | Categoria: "++ show c ++ ".\nExtra:\n\t" ++
         concatMap show i ++ "\n"
 
 

@@ -89,7 +89,7 @@ pruebasLexer = do
         hClose fileSource
         hClose fileExpectedOut
         
-        return $ testCases
+        return testCases
     
     return $ TestList $ concat testCases
 
@@ -139,7 +139,7 @@ pruebasParser = do
         hClose fileSource
         hClose fileExpectedOut
         
-        return $ testCases
+        return testCases
     
     return $ TestList $ concat testCases
 
@@ -149,13 +149,9 @@ main :: IO ()
 main = do
     
     tlLexer <- pruebasLexer
-    runTestTT $ tlLexer
+    runTestTT tlLexer
 
     tlParser <- pruebasParser
-    runTestTT $ tlParser
-
+    runTestTT tlParser
 
     return ()
-    
-
-

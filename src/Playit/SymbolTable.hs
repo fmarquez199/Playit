@@ -39,15 +39,15 @@ createInitSymTab st = (insertSymbols symbols info st,[0],0)
         info = ti ++ wi
         ti = [pInfo, sInfo, rInfo, rsInfo, bInfo, inventoryInfo, itemsInfo]
         wi = [boolsInfo, boolsInfo, aptInfo, aptInfo]
-        pInfo = SymbolInfo TInt 0 Tipos [Nada]
-        sInfo = SymbolInfo TFloat 0 Tipos [Nada]
-        rInfo = SymbolInfo TChar 0 Tipos [Nada]
-        rsInfo = SymbolInfo TStr 0 Tipos [Nada]
-        bInfo = SymbolInfo TBool 0 Tipos [Nada]
-        inventoryInfo = SymbolInfo TRegistro 0 ConstructoresTipos [Nada]
-        itemsInfo = SymbolInfo TUnion 0 ConstructoresTipos [Nada]
-        boolsInfo = SymbolInfo TBool 0 Variable [Nada]
-        aptInfo = SymbolInfo (TApuntador TDummy) 0 Apuntadores [Nada]
+        pInfo = SymbolInfo TInt 0 Tipos []
+        sInfo = SymbolInfo TFloat 0 Tipos []
+        rInfo = SymbolInfo TChar 0 Tipos []
+        rsInfo = SymbolInfo TStr 0 Tipos []
+        bInfo = SymbolInfo TBool 0 Tipos []
+        inventoryInfo = SymbolInfo TRegistro 0 ConstructoresTipos []
+        itemsInfo = SymbolInfo TUnion 0 ConstructoresTipos []
+        boolsInfo = SymbolInfo TBool 0 Variable []
+        aptInfo = SymbolInfo (TApuntador TDummy) 0 Apuntadores []
 -------------------------------------------------------------------------------
 
 
@@ -108,7 +108,7 @@ insertDeclarations ids t asigs = do
             "', ya esta declarada. " ++ show p
         else return id
     
-    let info = replicate (length ids) (SymbolInfo t activeScope Variable [Nada])
+    let info = replicate (length ids) (SymbolInfo t activeScope Variable [])
     addToSymTab checkedIds info actualSymTab activeScopes scope
     return asigs
 -------------------------------------------------------------------------------
@@ -153,7 +153,7 @@ lookupInScopes' scopes (Just symInfo)
 -------------------------------------------------------------------------------
 -- Actualiza la informacion extra del simbolo con la nueva
 modifyExtraInfo :: SymbolInfo -> [ExtraInfo] -> SymbolInfo
-modifyExtraInfo (SymbolInfo t s c [Nada]) extraInfo = SymbolInfo t s c extraInfo
+modifyExtraInfo (SymbolInfo t s c []) extraInfo = SymbolInfo t s c extraInfo
 modifyExtraInfo (SymbolInfo t s c ei) extraInfo = SymbolInfo t s c (extraInfo ++ ei)
 -------------------------------------------------------------------------------
 
@@ -169,6 +169,7 @@ updateExtraInfo name category extraInfo = do
 
     let infos = lookupInSymTab name symTab
     
+
     when (isJust infos) $ do
         let isTarget sym = getCategory sym == category
             updateExtraInfo' = 
