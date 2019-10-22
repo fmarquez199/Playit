@@ -202,7 +202,7 @@ data Token = TkWORLD AlexPosn String
            | TkMONSTER AlexPosn String
            | TkBOSS AlexPosn String
            | TkProgramName AlexPosn String
-           | TkID AlexPosn String
+           | TkID {getTokenPos :: AlexPosn,getToken :: String}
            | TkIDTipo AlexPosn String
            | TkCARACTER AlexPosn String
            | TkSTRINGS AlexPosn String
@@ -301,85 +301,85 @@ tkErrorToString :: [Token] -> String
 tkErrorToString tk = intercalate "\n" $ map mensaje tk
 
 instance Show Token where
-    show (TkWORLD p s) = "Token " ++ s ++ (pos p) -- world
-    show (TkOF p s) = "Token " ++ s ++ (pos p) -- of
-    show (TkEndLine p s) = "Token End Instruction \\n" ++  (pos p) -- New line
-    show (TkBUTTON p s) = "Token " ++ s ++ (pos p) -- Button
-    show (TkRUNE p s) = "Token " ++ s ++ (pos p) -- rune
-    show (TkLOSE p s) = "Token " ++ s ++ (pos p) -- Lose
-    show (TkWIN p s) = "Token " ++ s ++ (pos p) -- Win
-    show (TkBATLE p s) = "Token " ++ s ++ (pos p) -- Battle
-    show (TkPOWER p s) = "Token " ++ s ++ (pos p) -- Power
-    show (TkSKILL p s) = "Token " ++ s ++ (pos p) -- Skill
-    show (TkRUNES p s) = "Token " ++ s ++ (pos p) -- Runes
-    show (TkCONCAT p s) = "Token " ++ s ++ (pos p) -- Concatenación de lista
-    show (TkKIT p s) = "Token " ++ s ++ (pos p) -- Kit
-    show (TkINVENTORY p s) = "Token " ++ s ++ (pos p) -- Inventory
-    show (TkITEMS p s) = "Token " ++ s ++ (pos p) -- Items
-    show (TkSUMMON p s) = "Token " ++ s ++ (pos p) -- summon
-    show (TkFREE p s) = "Token " ++ s ++ (pos p) -- free
-    show (TkDeathZone p s) = "Token " ++ s ++ (pos p) -- DeathZone
-    show (TkJOYSTICK p s) = "Token " ++ s ++ (pos p) -- joystick
-    show (TkDROP p s) = "Token " ++ s ++ (pos p) -- drop
-    show (TkNotPressed p s) = "Token " ++ s ++ (pos p) -- notPressed
-    show (TkCONTROLLER p s) = "Token " ++ s ++ (pos p) -- controller
-    show (TkIN p s)  = "Token " ++ s ++ (pos p) -- <-
-    show (TkTO p s)  = "Token " ++ s ++ (pos p) -- ->
-    show (TkPLAY p s) = "Token " ++ s ++ (pos p) -- play
-    show (TkLOCK p s) = "Token " ++ s ++ (pos p) -- lock
-    show (TkUNLOCK p s) = "Token " ++ s ++ (pos p) -- unlock
-    show (TkSPAWN p s) = "Token " ++ s ++ (pos p) -- spawn
-    show (TkGameOver p s) = "Token " ++ s ++ (pos p) -- gameOver
-    show (TkKeepPlaying p s) = "Token " ++ s ++ (pos p) -- keepPlaying
-    show (TkKILL p s) = "Token " ++ s ++ (pos p) -- kill
-    show (TkMONSTER p s) = "Token " ++ s ++ (pos p) -- monster
-    show (TkBOSS p s) = "Token " ++ s ++ (pos p) -- boss
-    show (TkProgramName p s) = "Token nombre programa " ++ s ++ (pos p) -- Nombre programa
-    show (TkID p s) = "Token identificador \"" ++ s ++ "\"" ++ (pos p) -- Id
-    show (TkIDTipo p s) = "Token identificador de tipo \"" ++ s ++ "\"" ++ (pos p) -- Id
-    show (TkCARACTER p s) = "Token caracter " ++ s ++ (pos p) -- carActer
-    show (TkSTRINGS p s) = "Token string " ++ s ++ (pos p) -- String
-    show (TkINT p s) = "Token entero " ++ s ++ (pos p) -- Entero
-    show (TkFLOAT p s) = "Token flotante " ++ s ++ (pos p) -- Flotante
-    show (TkDivEntera p s) = "Token " ++ s ++ (pos p) -- //
-    show (TkOR p s) = "Token " ++ s ++ (pos p) -- ||
-    show (TkAND p s) = "Token " ++ s ++ (pos p) -- &&
-    show (TkLessEqual p s) = "Token " ++ s ++ (pos p) -- <=
-    show (TkEQUAL p s) = "Token " ++ s ++ (pos p) -- ==
-    show (TkNotEqual p s) = "Token " ++ s ++ (pos p) -- !=
-    show (TkGreaterEqual p s) = "Token " ++ s ++ (pos p) -- >=
-    show (TkOpenList p s) = "Token " ++ s ++ (pos p) -- <<
-    show (TkCloseList p s) = "Token " ++ s ++ (pos p) -- >>
-    show (TkOpenListIndex p s) = "Token " ++ s ++ (pos p) -- |>
-    show (TkCloseListIndex p s) = "Token " ++ s ++ (pos p) -- <°
-    show (TkINCREMENT p s) = "Token " ++ s ++ (pos p) -- ++
-    show (TkDECREMENT p s) = "Token " ++ s ++ (pos p) -- --
-    show (TkSUM p s) = "Token " ++ s ++ (pos p) -- +
-    show (TkMIN p s) = "Token " ++ s ++ (pos p) -- -
-    show (TkMULT p s) = "Token " ++ s ++ (pos p) -- *
-    show (TkDIV p s) = "Token " ++ s ++ (pos p) -- /
-    show (TkMOD p s) = "Token " ++ s ++ (pos p) -- %
-    show (TkLEN p s) = "Token " ++ s ++ (pos p) -- #
-    show (TkREF p s) = "Token " ++ s ++ (pos p) -- ?
-    show (TkNOT p s) = "Token " ++ s ++ (pos p) -- !
-    show (TkLessThan p s) = "Token " ++ s ++ (pos p) -- <
-    show (TkGreaterThan p s) = "Token " ++ s ++ (pos p) -- >
-    show (TkPUFF p s) = "Token " ++ s ++ (pos p) -- puff
-    show (TkOpenParenthesis p s) = "Token " ++ s ++ (pos p) -- (
-    show (TkCloseParenthesis p s) = "Token " ++ s ++ (pos p) -- )
-    show (TkOpenBrackets p s) = "Token " ++ s ++ (pos p) -- {
-    show (TkCloseBrackets p s) = "Token " ++ s ++ (pos p) -- }
-    show (TkCOMA p s) = "Token " ++ s ++ (pos p) -- ,
-    show (TkANEXO p s) = "Token " ++ s ++ (pos p) -- :
-    show (TkGUARD p s) = "Token " ++ s ++ (pos p) -- |
-    show (TkASING p s) = "Token " ++ s ++ (pos p) -- =
-    show (TkUPPER p s) = "Token " ++ s ++ (pos p) -- ^
-    show (TkLOWER p s) = "Token " ++ s ++ (pos p) -- .
-    show (TkFIN p s) = "Token " ++ s ++ (pos p) -- .~
-    show (TkOpenArray p s) = "Token " ++ s ++ (pos p) -- "|}"
-    show (TkCloseArray p s) = "Token " ++ s ++ (pos p) -- "{|"
-    show (TkOpenArrayIndex p s) = "Token " ++ s ++ (pos p) -- "|)"
-    show (TkCloseArrayIndex p s) = "Token " ++ s ++ (pos p) -- "(|"
+    show (TkWORLD p s) = s ++ (pos p) -- world
+    show (TkOF p s) = s ++ (pos p) -- of
+    show (TkEndLine p s) = "End Instruction \\n" ++  (pos p) -- New line
+    show (TkBUTTON p s) = s ++ (pos p) -- Button
+    show (TkRUNE p s) = s ++ (pos p) -- rune
+    show (TkLOSE p s) = s ++ (pos p) -- Lose
+    show (TkWIN p s) = s ++ (pos p) -- Win
+    show (TkBATLE p s) = s ++ (pos p) -- Battle
+    show (TkPOWER p s) = s ++ (pos p) -- Power
+    show (TkSKILL p s) = s ++ (pos p) -- Skill
+    show (TkRUNES p s) = s ++ (pos p) -- Runes
+    show (TkCONCAT p s) = s ++ (pos p) -- Concatenación de lista
+    show (TkKIT p s) = s ++ (pos p) -- Kit
+    show (TkINVENTORY p s) = s ++ (pos p) -- Inventory
+    show (TkITEMS p s) = s ++ (pos p) -- Items
+    show (TkSUMMON p s) = s ++ (pos p) -- summon
+    show (TkFREE p s) = s ++ (pos p) -- free
+    show (TkDeathZone p s) = s ++ (pos p) -- DeathZone
+    show (TkJOYSTICK p s) = s ++ (pos p) -- joystick
+    show (TkDROP p s) = s ++ (pos p) -- drop
+    show (TkNotPressed p s) = s ++ (pos p) -- notPressed
+    show (TkCONTROLLER p s) = s ++ (pos p) -- controller
+    show (TkIN p s)  = s ++ (pos p) -- <-
+    show (TkTO p s)  = s ++ (pos p) -- ->
+    show (TkPLAY p s) = s ++ (pos p) -- play
+    show (TkLOCK p s) = s ++ (pos p) -- lock
+    show (TkUNLOCK p s) = s ++ (pos p) -- unlock
+    show (TkSPAWN p s) = s ++ (pos p) -- spawn
+    show (TkGameOver p s) = s ++ (pos p) -- gameOver
+    show (TkKeepPlaying p s) = s ++ (pos p) -- keepPlaying
+    show (TkKILL p s) = s ++ (pos p) -- kill
+    show (TkMONSTER p s) =s ++ (pos p) -- monster
+    show (TkBOSS p s) = s ++ (pos p) -- boss
+    show (TkProgramName p s) = "nombre del programa '" ++ s ++"'" ++ (pos p) -- Nombre programa
+    show (TkID p s) = "identificador '" ++ s ++ "'" ++ (pos p) -- Id
+    show (TkIDTipo p s) = "tipo '" ++ s ++ "'" ++ (pos p) -- Id
+    show (TkCARACTER p s) = "caracter '" ++ s ++ "'" ++ (pos p) -- carActer
+    show (TkSTRINGS p s) = "string '" ++ s ++"'" ++ (pos p) -- String
+    show (TkINT p s) = "entero '" ++ s ++"'" ++ (pos p) -- Entero
+    show (TkFLOAT p s) = "flotante '" ++ s ++"'" ++ (pos p) -- Flotante
+    show (TkDivEntera p s) = s ++ (pos p) -- //
+    show (TkOR p s) = s ++ (pos p) -- ||
+    show (TkAND p s) = s ++ (pos p) -- &&
+    show (TkLessEqual p s) = s ++ (pos p) -- <=
+    show (TkEQUAL p s) = s ++ (pos p) -- ==
+    show (TkNotEqual p s) = s ++ (pos p) -- !=
+    show (TkGreaterEqual p s) = s ++ (pos p) -- >=
+    show (TkOpenList p s) = s ++ (pos p) -- <<
+    show (TkCloseList p s) = s ++ (pos p) -- >>
+    show (TkOpenListIndex p s) = s ++ (pos p) -- |>
+    show (TkCloseListIndex p s) = s ++ (pos p) -- <°
+    show (TkINCREMENT p s) = s ++ (pos p) -- ++
+    show (TkDECREMENT p s) = s ++ (pos p) -- --
+    show (TkSUM p s) = s ++ (pos p) -- +
+    show (TkMIN p s) = s ++ (pos p) -- -
+    show (TkMULT p s) = s ++ (pos p) -- *
+    show (TkDIV p s) = s ++ (pos p) -- /
+    show (TkMOD p s) = s ++ (pos p) -- %
+    show (TkLEN p s) = s ++ (pos p) -- #
+    show (TkREF p s) = s ++ (pos p) -- ?
+    show (TkNOT p s) = s ++ (pos p) -- !
+    show (TkLessThan p s) = s ++ (pos p) -- <
+    show (TkGreaterThan p s) = s ++ (pos p) -- >
+    show (TkPUFF p s) = s ++ (pos p) -- puff
+    show (TkOpenParenthesis p s) = s ++ (pos p) -- (
+    show (TkCloseParenthesis p s) = s ++ (pos p) -- )
+    show (TkOpenBrackets p s) = s ++ (pos p) -- {
+    show (TkCloseBrackets p s) = s ++ (pos p) -- }
+    show (TkCOMA p s) = s ++ (pos p) -- ,
+    show (TkANEXO p s) = s ++ (pos p) -- :
+    show (TkGUARD p s) = s ++ (pos p) -- |
+    show (TkASING p s) = s ++ (pos p) -- =
+    show (TkUPPER p s) = s ++ (pos p) -- ^
+    show (TkLOWER p s) = s ++ (pos p) -- .
+    show (TkFIN p s) = s ++ (pos p) -- .~
+    show (TkOpenArray p s) = s ++ (pos p) -- "|}"
+    show (TkCloseArray p s) = s ++ (pos p) -- "{|"
+    show (TkOpenArrayIndex p s) = s ++ (pos p) -- "|)"
+    show (TkCloseArrayIndex p s) = s ++ (pos p) -- "(|"
 
 posicion :: Token -> (Int, Int)
 posicion (TkWORLD (AlexPn _ f c) _) = (f, c)

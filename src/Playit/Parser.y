@@ -163,12 +163,8 @@ ProgramaWrapper :: { Instr }
 Programa :: { Instr }
   : PushNewScope world programa ":" EndLines Instrucciones EndLines ".~"  PopScope
     { Programa $ reverse $6 }
-  | PushNewScope world programa ":" EndLines ".~" PopScope
-    { Programa [] }
   | PushNewScope Definiciones EndLines world programa ":" EndLines Instrucciones EndLines ".~"  PopScope
     { Programa $ reverse $8 }
-  | PushNewScope Definiciones EndLines world programa ":" EndLines ".~" PopScope
-    { Programa [] }
 
 
 -- Sentencias :: { Sentencias }
@@ -188,7 +184,7 @@ Definiciones :: { SecuenciaInstr }
 Definicion :: { SecuenciaInstr }
   : PushNewScope DefinirSubrutina PopScope  { $2 }
   | PushNewScope DefinirRegistro  PopScope  { $2 }
-  | DefinirUnion               { $1 }
+  | PushNewScope DefinirUnion     PopScope  { $2 }
   -- | Declaraciones %prec STMT                { $1 }
 
 
@@ -208,7 +204,6 @@ Declaraciones :: { SecuenciaInstr }
 
 Declaracion :: { SecuenciaInstr }
   : Tipo Identificadores
-  -- TODO: verificar aqui que no hayan identificadores suplicados
     { % let (ids, asigs) = $2 in insertDeclarations (reverse ids) $1 asigs }
 
 -------------------------------------------------------------------------------
@@ -276,7 +271,7 @@ Instruccion :: { Instr }
   : Asignacion            { $1 }
   | Declaracion           { Asignaciones $1 }
   | PushNewScope Controller PopScope   { $2 }
-  | Play PopScope         { $1 }
+  | PushNewScope Play PopScope         { $2 }
   | Button                { $1 }
   | ProcCall              { $1 }
   | EntradaSalida         { $1 }
@@ -590,11 +585,11 @@ DefinirRegistro :: { SecuenciaInstr }
 -------------------------------------------------------------------------------
 -- Uniones
 DefinirUnion :: { SecuenciaInstr }
-  : union idtipo ":" PushNewScope EndLines Declaraciones EndLines ".~"
+  : union idtipo ":" EndLines Declaraciones EndLines ".~"
     { %
-      definirUnion $2 $6
+      definirUnion $2 $5
     }
-  | union idtipo ":" PushNewScope EndLines ".~"                        
+  | union idtipo ":" EndLines ".~"                        
     { %
       definirUnion $2 []
     }
@@ -624,6 +619,8 @@ PushNewScope  ::  { () }
 
 {
 parseError :: [Token] -> MonadSymTab a
-parseError (h:rs) = 
-    error $ "\n\nError sintactico del parser antes de " ++ (show h) ++ "\n"
+parseError [] =  error $ "\n\nPrograma inválido "
+parseError (token:rs) = do
+    fileName <- ask
+    error $ "\n\n" ++ fileName ++ ": error antes del " ++ (show token) ++ " \n"
 }

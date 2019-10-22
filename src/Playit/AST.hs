@@ -478,12 +478,12 @@ definirUnion id decls = do
     (symTab, activeScopes@(activeScope:_), scope) <- get
     -- TODO: update categoria de las declaraciones y colocar la union al que pertenece
 
-    let infos = lookupScopesNameInSymTab activeScopes id symTab
+    let infos = lookupScopesNameInSymTab [1] id symTab
     if isJust infos then do
         error $ "Error: redeclaración de '" ++ id ++ "'."
     else return ()
 
-    let info = [SymbolInfo TUnion activeScope ConstructoresTipos [AST decls]]
+    let info = [SymbolInfo TUnion 1 ConstructoresTipos [AST decls]]
     addToSymTab [id] info symTab activeScopes scope
     return decls
 -------------------------------------------------------------------------------

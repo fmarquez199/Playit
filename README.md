@@ -30,6 +30,7 @@ Simón Bolívar** en el transcurso de la cadena de **Lenguajes de Programación
 Un programa en Playit tiene la siguiente estructura:
 
 ```
+<Declaraciones>
 world %<nombre del programa>%:
   <Lista instrucciones>
 .~
@@ -155,6 +156,8 @@ Son construcciones válidas:
 La inicialización por defecto de los arreglos en Playit se hace inicializando
 cada posición del arreglo en el valor por defecto del tipo dado.
 
+Para acceder a los elementos de un arreglo se utiliza `|) indice (|`
+
 ---
 ## **Listas.**
 
@@ -166,7 +169,7 @@ Se declaran de la siguiente manera:
 
 **`Kit of <tipo>`**, donde `<tipo>` puede ser otra lista.
 
-Para acceder a un elemento de la lista se utiliza el operador de indexación **`|}{|`** y su inicialización por defecto es la lista vacía **`<<>>`**.
+Para acceder a un elemento de la lista se utiliza el operador de indexación **`|> indice <|`** y su inicialización por defecto es la lista vacía **`<<>>`**.
 
 ---
 ## **Registros.**
@@ -175,10 +178,10 @@ La palabra reservada para definirlos es **`Inventory`** y su sintaxis es de la f
 
 ```sh
 Inventory <nombre>:
-  <tipo> <nombre>
-  <tipo> <nombre>
+  <tipo> <nombre> [= <inicialización por default>]
+  <tipo> <nombre> [= <inicialización por default>]
   ...
-  <tipo> <nombre>
+  <tipo> <nombre> [= <inicialización por default>]
 .~
 ```
 
