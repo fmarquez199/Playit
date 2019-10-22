@@ -199,12 +199,13 @@ createTkKILL (AlexPn _ f c) tk = TkKILL tk (f, c)
 createTkMONSTER (AlexPn _ f c) tk = TkMONSTER tk (f, c)
 createTkBOSS (AlexPn _ f c) tk = TkBOSS tk (f, c)
 createTkProgramName (AlexPn _ f c) tk = TkProgramName tk (f, c)
-createTkID (AlexPn _ f c) tk = TkID tk (f, c)
-createTkIDTipo (AlexPn _ f c) tk = TkIDTipo tk (f, c)
+createTkID (AlexPn _ f c) id = TkID id (f, c)
+createTkIDTipo (AlexPn _ f c) idTipo = TkIDTipo idTipo (f, c)
 createTkCARACTER (AlexPn _ f c) char = TkCARACTER char (f, c) (read char :: Char)
-createTkSTRINGS (AlexPn _ f c) str = TkSTRINGS str (f, c) (read str :: String)
+createTkSTRINGS (AlexPn _ f c) str = TkSTRINGS str (f, c)
 createTkINT (AlexPn _ f c) int = TkINT int (f, c) (read int :: Int)
-createTkFLOAT (AlexPn _ f c) float = TkFLOAT float (f, c) (read float :: Float)
+createTkFLOAT (AlexPn _ f c) float =
+    TkFLOAT float (f, c) (read (map (\c -> if c == '\'' then '.' else c) float) :: Float))
 createTkDivEntera (AlexPn _ f c) tk = TkDivEntera tk (f, c)
 createTkOR (AlexPn _ f c) tk = TkOR tk (f, c)
 createTkAND (AlexPn _ f c) tk = TkAND tk (f, c)
@@ -329,10 +330,10 @@ data Token = TkWORLD {getToken :: String, getPos :: (Int, Int)}
            | TkProgramName {getToken :: String, getPos :: (Int, Int)}
            | TkID {getToken :: String, getPos :: (Int, Int)}
            | TkIDTipo {getToken :: String, getPos :: (Int, Int)}
-           | TkCARACTER {getToken :: String, getPos :: (Int, Int)}
+           | TkCARACTER {getToken :: String, getPos :: (Int, Int), getChar :: Char}
            | TkSTRINGS {getToken :: String, getPos :: (Int, Int)}
-           | TkINT {getToken :: String, getPos :: (Int, Int)}
-           | TkFLOAT {getToken :: String, getPos :: (Int, Int)}
+           | TkINT {getToken :: String, getPos :: (Int, Int), getInt :: Int}
+           | TkFLOAT {getToken :: String, getPos :: (Int, Int), getFloat :: Float}
            | TkDivEntera {getToken :: String, getPos :: (Int, Int)}
            | TkOR {getToken :: String, getPos :: (Int, Int)}
            | TkAND {getToken :: String, getPos :: (Int, Int)}

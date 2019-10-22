@@ -37,19 +37,19 @@ import Playit.AST
   char              { TkRUNE _ _ }
   str               { TkRUNES _ _ }
   float             { TkSKILL _ _ }
-  if                { TkBUTTON _ _ }
+  if                { TkBUTTON _ $$ }
   proc              { TkBOSS _ _ }
   for               { TkCONTROLLER _ _ }
-  print             { TkDROP _ _ }
+  print             { TkDROP _ $$ }
   else              { TkNotPressed _ _ }
   free              { TkFREE _ _ }
   break             { TkGameOver _ _ }
-  input             { TkJOYSTICK _ _ }
+  input             { TkJOYSTICK _ $$ }
   continue          { TkKeepPlaying _ _ }
   call              { TkKILL _ _ }
   while             { TkLOCK _ _ }
   function          { TkMONSTER _ _ }
-  do                { TkPLAY _ _ }
+  do                { TkPLAY _ $$ }
   pointer           { TkPUFF _ _ }
   "."               { TkSPAWN _ _ }
   new               { TkSUMMON _ _ }
@@ -66,18 +66,18 @@ import Playit.AST
   -- Identificadores
 
   programa          { TkProgramName _ _ }
-  nombre            { TkID _ $$ }
-  idtipo            { TkIDTipo _ $$ }
+  nombre            { TkID $$ _ }
+  idtipo            { TkIDTipo $$ _ }
 
   -- Caracteres
 
-  caracter          { TkCARACTER _ $$ }
-  string            { TkSTRINGS _ $$ }
+  caracter          { TkCARACTER _ _ $$ }
+  string            { TkSTRINGS $$ _ }
   
   -- Literares numericos
   
-  entero            { TkINT _ $$ }
-  flotante          { TkFLOAT _ $$ }
+  entero            { TkINT _ _ $$ }
+  flotante          { TkFLOAT _ _ $$ }
 
   -- Simbolos
 
@@ -91,9 +91,9 @@ import Playit.AST
   ">="              { TkGreaterEqual _ _ }
   "<<"              { TkOpenList _ _ }
   ">>"              { TkCloseList _ _ }
-  "++"              { TkINCREMENT _ _ }
-  "--"              { TkDECREMENT _ _ }
-  "<-"              { TkIN  _ _ }
+  "++"              { TkINCREMENT _ $$ }
+  "--"              { TkDECREMENT _ $$ }
+  "<-"              { TkIN  _ $$ }
   "->"              { TkTO  _ _ }
   "|}"              { TkOpenArray _ _ }
   "{|"              { TkCloseArray _ _ }
@@ -107,7 +107,7 @@ import Playit.AST
   "/"               { TkDIV _ _ }
   "%"               { TkMOD _ _ }
   "#"               { TkLEN _ _ }
-  "?"               { TkREF _ _ }
+  "?"               { TkREF _ $$ }
   "!"               { TkNOT _ _ }
   "<"               { TkLessThan _ _ }
   ">"               { TkGreaterThan _ _ }
@@ -118,8 +118,8 @@ import Playit.AST
   ","               { TkCOMA _ _ }
   ":"               { TkANEXO _ _ }
   "::"              { TkCONCAT _ _}
-  "|"               { TkGUARD _ _ }
-  "="               { TkASING _ _ }
+  "|"               { TkGUARD _ $$ }
+  "="               { TkASING _ $$ }
   upperCase         { TkUPPER _ _ }
   lowerCase         { TkLOWER _ _ }
 
@@ -144,7 +144,7 @@ import Playit.AST
 %left "--"
 %right "#" pointer endLine
 %left "?"
-%right STMT
+%right
 
 %%
 
@@ -166,15 +166,10 @@ Programa :: { Instr }
     { Programa $ reverse $7 }
   | PushNewScope Definiciones world programa ":" EndLines ".~" PopScope
     { Programa [] }
-
-
--- Sentencias :: { Sentencias }
---   : Sentencias EndLines Sentencia  { $3 : $1 }
---   | Sentencia                      { [Sec $ getInstr $1] }
-
--- Sentencia :: { Sentencia }
---   : Instrucciones %prec STMT { Sec $ reverse $1 }
---   | Definiciones  %prec STMT { Def $ reverse $1 }
+  | PushNewScope world programa ":" EndLines Instrucciones EndLines ".~"  PopScope
+    { Programa $ reverse $6 }
+  | PushNewScope world programa ":" EndLines ".~" PopScope
+    { Programa [] }
 
 
 Definiciones :: { SecuenciaInstr }
@@ -183,10 +178,9 @@ Definiciones :: { SecuenciaInstr }
 
 
 Definicion :: { SecuenciaInstr }
-  : DefinirSubrutina PopScope  { $1 }
+  : PushNewScope DefinirSubrutina PopScope  { $1 }
   | DefinirRegistro            { $1 }
   | DefinirUnion               { $1 }
-  -- | Declaraciones %prec STMT                { $1 }
 
 
 EndLines :: { () }
@@ -205,7 +199,7 @@ Declaraciones :: { SecuenciaInstr }
 
 Declaracion :: { SecuenciaInstr }
   : Tipo Identificadores
-  -- TODO: verificar aqui que no hayan identificadores suplicados
+  -- TODO: verificar aqui que no hayan identificadores duplicados
     { % let (ids, asigs) = $2 in insertDeclarations (reverse ids) $1 asigs }
 
 -------------------------------------------------------------------------------
@@ -272,8 +266,8 @@ Instrucciones :: { SecuenciaInstr }
 Instruccion :: { Instr }
   : Asignacion            { $1 }
   | Declaracion           { Asignaciones $1 }
-  | Controller PopScope   { $1 }
-  | Play PopScope         { $1 }
+  | PushNewScope Controller PopScope   { $1 }
+  | PushNewScope Play PopScope         { $1 }
   | Button                { $1 }
   | ProcCall              { $1 }
   | EntradaSalida         { $1 }
@@ -286,16 +280,16 @@ Instruccion :: { Instr }
 -------------------------------------------------------------------------------
 -- Instruccion de asignacion '='
 Asignacion :: { Instr }
-  : Lvalue "=" Expresion  { crearAsignacion $1 $3 (posicion $2) }
+  : Lvalue "=" Expresion  { crearAsignacion $1 $3 $2 }
   | Lvalue "++"
     {
       let expr = OpBinario Suma (Variables $1 TInt) (Literal (Entero 1) TInt) TInt
-      in crearAsignacion $1 expr (posicion $2)
+      in crearAsignacion $1 expr $2
     }
   | Lvalue "--"
     {
       let expr = OpBinario Resta (Variables $1 TInt) (Literal (Entero 1) TInt) TInt
-      in crearAsignacion $1 expr (posicion $2)
+      in crearAsignacion $1 expr $2
     }
 -------------------------------------------------------------------------------
 
@@ -303,21 +297,21 @@ Asignacion :: { Instr }
 -------------------------------------------------------------------------------
 -- Instrucciones de condicionales 'Button', '|' y 'notPressed'
 Button :: { Instr }
-  : if ":" EndLines Guardias ".~" { crearIF (reverse $4) (posicion $1 )}
+  : if ":" EndLines Guardias ".~" PopScope { crearIF (reverse $4) $1 }
 
 Guardias :: { [(Expr, SecuenciaInstr)] }
-  : Guardias Guardia  { $2 : $1 }
+  : Guardias PopScope Guardia  { $3 : $1 }
   | Guardia           { [$1] }
 
 Guardia :: { (Expr, SecuenciaInstr) }
-  : "|" Expresion "}" EndLines Instrucciones EndLines
-    { crearGuardiaIF $2 $5 (posicion $1) }
-  | "|" Expresion "}" Instrucciones EndLines
-    { crearGuardiaIF $2 $4 (posicion $1) }
-  | "|" else "}" EndLines Instrucciones EndLines
-    { crearGuardiaIF (Literal (Booleano True) TBool) $5 (posicion $1) }
-  | "|" else "}" Instrucciones EndLines
-    { crearGuardiaIF (Literal (Booleano True) TBool) $4 (posicion $1) }
+  : "|" Expresion "}" EndLines PushNewScope Instrucciones EndLines
+    { crearGuardiaIF $2 $6 $1 }
+  | "|" Expresion "}" PushNewScope Instrucciones EndLines
+    { crearGuardiaIF $2 $5 $1 }
+  | "|" else "}" EndLines PushNewScope Instrucciones EndLines
+    { crearGuardiaIF (Literal (Booleano True) TBool) $6 $1 }
+  | "|" else "}" PushNewScope Instrucciones EndLines
+    { crearGuardiaIF (Literal (Booleano True) TBool) $5 $1 }
 -------------------------------------------------------------------------------
 
 
@@ -357,14 +351,14 @@ InitVar1 :: { (Nombre, Expr) }
       -- TODO: Verificar que nombre este en la symtab, asignar valor y el scope concuerde con el actual
       -- Se supone que TDummy deberia cambiar por el tipo de Expresion
       let var = Var $1 TDummy
-      return $ crearAsignacion var $3 (posicion $2) 
+      return $ crearAsignacion var $3 $2)
       return ($1, $3)
     }
   | Tipo nombre "=" Expresion
     { % do
       let var = Var $2 $1
       insertDeclarations [$2] $1 []
-      return $ crearAsignacion var $4 (posicion $3)
+      return $ crearAsignacion var $4 $3
       return ($2, $4)
     }
 
@@ -374,14 +368,14 @@ InitVar2 :: { (Nombre, Expr) }
       -- TODO: Verificar que nombre este en la symtab, asignar valor y el scope concuerde con el actual
       -- Se supone que TDummy deberia cambiar por el tipo de Expresion
       let var = Var $1 TDummy
-      return $ crearAsignacion var $3 (posicion $2)
+      return $ crearAsignacion var $3 $2
       return ($1, $3)
     }
   | Tipo nombre "<-" Expresion %prec "<-"
     { % do
       let var = Var $2 $1
       insertDeclarations [$2] $1 []
-      return $ crearAsignacion var $4 (posicion $3)
+      return $ crearAsignacion var $4 $3
       return ($2, $4)
     }
 -------------------------------------------------------------------------------
@@ -392,11 +386,11 @@ InitVar2 :: { (Nombre, Expr) }
 Play :: { Instr }
   : do ":" EndLines Instrucciones EndLines while Expresion EndLines ".~"
     {
-      crearWhile $7 $4 (posicion $1)
+      crearWhile $7 $4 $1
     }
   | do ":" EndLines while Expresion EndLines ".~"
     {
-      crearWhile $5 [] (posicion $1)
+      crearWhile $5 [] $1
     }
 -------------------------------------------------------------------------------
 
@@ -404,7 +398,7 @@ Play :: { Instr }
 -------------------------------------------------------------------------------
 -- Instrucciones de E/S 'drop' y 'joystick'
 EntradaSalida :: { Instr }
-  : print Expresiones       { crearPrint (crearArrLstExpr $2) (posicion $1) }
+  : print Expresiones       { crearPrint (crearArrLstExpr $2) $1 }
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -534,7 +528,7 @@ Expresion :: { Expr }
   --
   | Expresion "?" Expresion ":" Expresion %prec "?"
     {
-      crearIfSimple $1 $3 $5 TDummy (posicion $2)
+      crearIfSimple $1 $3 $5 TDummy $2
     }
   | FuncCall                     { $1 }
   | "(" Expresion ")"            { $2 }
@@ -543,10 +537,10 @@ Expresion :: { Expr }
   | "<<" Expresiones ">>"        { crearArrLstExpr $2 }
   | "<<"  ">>"                   { crearArrLstExpr [] }
   | new Tipo                     { OpUnario New Null $2 }
-  | input Expresion %prec input  { crearRead $2 (posicion $1) }
+  | input Expresion %prec input  { crearRead $2 $1 }
   | input
     {
-      crearRead (Literal ValorVacio TStr) (posicion $1)
+      crearRead (Literal ValorVacio TStr) $1
     }
 
   -- Operadores unarios
@@ -559,9 +553,9 @@ Expresion :: { Expr }
   -- Literales
   | true      { Literal (Booleano True) TBool }
   | false     { Literal (Booleano False) TBool }
-  | entero    { Literal (Entero (read $1 :: Int)) TInt }
-  | flotante  { Literal (Flotante (read (map (\c -> if c == '\'' then '.' else c) $1) :: Float)) TFloat }
-  | caracter  { Literal (Caracter $ $1 !! 0) TChar }
+  | entero    { Literal (Entero $1 TInt }
+  | flotante  { Literal (Flotante $1) TFloat }
+  | caracter  { Literal (Caracter $1) TChar }
   | string    { Literal (Str $1) TStr }
   | null      { Null }
   | Lvalue    { Variables $1 (typeVar $1) }
@@ -577,11 +571,11 @@ Expresion :: { Expr }
 -------------------------------------------------------------------------------
 -- Registros
 DefinirRegistro :: { SecuenciaInstr }
-  : registro idtipo ":" PushNewScope EndLines Declaraciones EndLines ".~"
+  : registro idtipo ":" EndLines Declaraciones EndLines ".~"
     { %
-      definirRegistro $2 $6
+      definirRegistro $2 $5
     }
-  | registro idtipo ":" PushNewScope EndLines ".~"                        
+  | registro idtipo ":" EndLines ".~"                        
     { %
       definirRegistro $2 []
     }
@@ -591,11 +585,11 @@ DefinirRegistro :: { SecuenciaInstr }
 -------------------------------------------------------------------------------
 -- Uniones
 DefinirUnion :: { SecuenciaInstr }
-  : union idtipo ":" PushNewScope EndLines Declaraciones EndLines ".~"
+  : union idtipo ":" EndLines Declaraciones EndLines ".~"
     { %
-      definirUnion $2 $6
+      definirUnion $2 $5
     }
-  | union idtipo ":" PushNewScope EndLines ".~"                        
+  | union idtipo ":" EndLines ".~"                        
     { %
       definirUnion $2 []
     }
@@ -625,6 +619,10 @@ PushNewScope  ::  { () }
 
 {
 parseError :: [Token] -> a
-parseError (h:rs) = 
-    error $ "\n\nError sintactico del parser antes de " ++ (show h) ++ "\n"
+parseError (h:t) = 
+  error $ "\n\nError sintactico del parser antes de: '" ++ token ++ "'. " ++
+          show pos ++ "\n"
+  where
+      token = getToken h
+      pos = getPos h
 }
