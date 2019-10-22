@@ -166,16 +166,6 @@ Programa :: { Instr }
   | PushNewScope Definiciones EndLines world programa ":" EndLines Instrucciones EndLines ".~"  PopScope
     { Programa $ reverse $8 }
 
-
--- Sentencias :: { Sentencias }
---   : Sentencias EndLines Sentencia  { $3 : $1 }
---   | Sentencia                      { [Sec $ getInstr $1] }
-
--- Sentencia :: { Sentencia }
---   : Instrucciones %prec STMT { Sec $ reverse $1 }
---   | Definiciones  %prec STMT { Def $ reverse $1 }
-
-
 Definiciones :: { SecuenciaInstr }
   : Definiciones EndLines Definicion { $1 ++ $3 }
   | Definicion                       { $1 }
@@ -185,7 +175,6 @@ Definicion :: { SecuenciaInstr }
   : PushNewScope DefinirSubrutina PopScope  { $2 }
   | PushNewScope DefinirRegistro  PopScope  { $2 }
   | PushNewScope DefinirUnion     PopScope  { $2 }
-  -- | Declaraciones %prec STMT                { $1 }
 
 
 EndLines :: { () }
@@ -204,7 +193,7 @@ Declaraciones :: { SecuenciaInstr }
 
 Declaracion :: { SecuenciaInstr }
   : Tipo Identificadores
-    { % let (ids, asigs) = $2 in insertDeclarations (reverse ids) $1 asigs }
+    { % let (ids, asigs) = $2 in insertDeclarations (reverse ids) $1 asigs}
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
@@ -212,7 +201,7 @@ Declaracion :: { SecuenciaInstr }
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 
-Identificadores :: { ([Nombre], SecuenciaInstr) }
+Identificadores :: { ([(Nombre,Posicion)], SecuenciaInstr) }
   : Identificadores "," Identificador
   { 
     let ((ids, asigs), (id, asig)) = ($1, $3) in (id : ids, asig ++ asigs)
@@ -222,9 +211,9 @@ Identificadores :: { ([Nombre], SecuenciaInstr) }
     let (id, asigs) = $1 in ([id], asigs)
   }
 
-Identificador :: { (Nombre, SecuenciaInstr) }
-  : nombre "=" Expresion  { ($1, [Asignacion (Var $1 TDummy) $3]) }
-  | nombre                { ($1, []) }
+Identificador :: { ((Nombre,Posicion), SecuenciaInstr) }
+  : nombre "=" Expresion  { (($1,getTokenPosicion $2), [Asignacion (Var $1 TDummy) $3]) }
+  | nombre                { (($1,(-1,-1)), []) }
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
@@ -284,16 +273,16 @@ Instruccion :: { Instr }
 -------------------------------------------------------------------------------
 -- Instruccion de asignacion '='
 Asignacion :: { Instr }
-  : Lvalue "=" Expresion  { crearAsignacion $1 $3 (posicion $2) }
+  : Lvalue "=" Expresion  { crearAsignacion $1 $3 (getTokenPosicion $2) }
   | Lvalue "++"
     {
       let expr = OpBinario Suma (Variables $1 TInt) (Literal (Entero 1) TInt) TInt
-      in crearAsignacion $1 expr (posicion $2)
+      in crearAsignacion $1 expr (getTokenPosicion $2)
     }
   | Lvalue "--"
     {
       let expr = OpBinario Resta (Variables $1 TInt) (Literal (Entero 1) TInt) TInt
-      in crearAsignacion $1 expr (posicion $2)
+      in crearAsignacion $1 expr (getTokenPosicion $2)
     }
 -------------------------------------------------------------------------------
 
@@ -301,21 +290,21 @@ Asignacion :: { Instr }
 -------------------------------------------------------------------------------
 -- Instrucciones de condicionales 'Button', '|' y 'notPressed'
 Button :: { Instr }
-  : if ":" EndLines Guardias PopScope ".~" { crearIF (reverse $4) (posicion $1 )}
+  : if ":" EndLines Guardias PopScope ".~" { crearIF (reverse $4) (getTokenPosicion $1 )}
 
 Guardias :: { [(Expr, SecuenciaInstr)] }
-  : Guardias Guardia  { $2 : $1 }
-  | Guardia           { [$1] }
+  : Guardias PopScope Guardia  { $3 : $1 }
+  | Guardia            { [$1] }
 
 Guardia :: { (Expr, SecuenciaInstr) }
   : "|" Expresion "}" EndLines PushNewScope Instrucciones EndLines
-    { crearGuardiaIF $2 $6 (posicion $1) }
+    { crearGuardiaIF $2 $6 (getTokenPosicion $1) }
   | "|" Expresion "}" PushNewScope Instruccion EndLines
-    { crearGuardiaIF $2 [$5] (posicion $1) }
+    { crearGuardiaIF $2 [$5] (getTokenPosicion $1) }
   | "|" else "}" EndLines PushNewScope Instrucciones EndLines
-    { crearGuardiaIF (Literal (Booleano True) TBool) $6 (posicion $1) }
+    { crearGuardiaIF (Literal (Booleano True) TBool) $6 (getTokenPosicion $1) }
   | "|" else "}" PushNewScope Instrucciones EndLines
-    { crearGuardiaIF (Literal (Booleano True) TBool) $5 (posicion $1) }
+    { crearGuardiaIF (Literal (Booleano True) TBool) $5 (getTokenPosicion $1) }
 -------------------------------------------------------------------------------
 
 
@@ -353,14 +342,14 @@ InitVar1 :: { (Nombre, Expr) }
   : nombre "=" Expresion
     { % do
       var <- crearIdvar $1
-      return $ crearAsignacion var $3 (posicion $2) 
+      return $ crearAsignacion var $3 (getTokenPosicion $2) 
       return ($1, $3)
     }
   | Tipo nombre "=" Expresion
     { % do
       let var = Var $2 $1
-      insertDeclarations [$2] $1 []
-      return $ crearAsignacion var $4 (posicion $3)
+      insertDeclarations [($2,getTokenPosicion $3)] $1 []
+      return $ crearAsignacion var $4 (getTokenPosicion $3)
       return ($2, $4)
     }
 
@@ -368,14 +357,14 @@ InitVar2 :: { (Nombre, Expr) }
   : nombre "<-" Expresion %prec "<-"
     { % do
       var <- crearIdvar $1
-      return $ crearAsignacion var $3 (posicion $2)
+      return $ crearAsignacion var $3 (getTokenPosicion $2)
       return ($1, $3)
     }
   | Tipo nombre "<-" Expresion %prec "<-"
     { % do
       let var = Var $2 $1
-      insertDeclarations [$2] $1 []
-      return $ crearAsignacion var $4 (posicion $3)
+      insertDeclarations [($2,getTokenPosicion $3)] $1 [] 
+      return $ crearAsignacion var $4 (getTokenPosicion $3)
       return ($2, $4)
     }
 -------------------------------------------------------------------------------
@@ -386,11 +375,11 @@ InitVar2 :: { (Nombre, Expr) }
 Play :: { Instr }
   : do ":" EndLines Instrucciones EndLines while Expresion EndLines ".~"
     {
-      crearWhile $7 $4 (posicion $1)
+      crearWhile $7 $4 (getTokenPosicion $1)
     }
   | do ":" EndLines while Expresion EndLines ".~"
     {
-      crearWhile $5 [] (posicion $1)
+      crearWhile $5 [] (getTokenPosicion $1)
     }
 -------------------------------------------------------------------------------
 
@@ -398,7 +387,7 @@ Play :: { Instr }
 -------------------------------------------------------------------------------
 -- Instrucciones de E/S 'drop' y 'joystick'
 EntradaSalida :: { Instr }
-  : print Expresiones       { crearPrint (crearArrLstExpr $2) (posicion $1) }
+  : print Expresiones       { crearPrint (crearArrLstExpr $2) (getTokenPosicion $1) }
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -528,7 +517,7 @@ Expresion :: { Expr }
   --
   | Expresion "?" Expresion ":" Expresion %prec "?"
     {
-      crearIfSimple $1 $3 $5 TDummy (posicion $2)
+      crearIfSimple $1 $3 $5 TDummy (getTokenPosicion $2)
     }
   | FuncCall                     { $1 }
   | "(" Expresion ")"            { $2 }
@@ -537,10 +526,10 @@ Expresion :: { Expr }
   | "<<" Expresiones ">>"        { crearArrLstExpr $2 }
   | "<<"  ">>"                   { crearArrLstExpr [] }
   | new Tipo                     { OpUnario New Null $2 }
-  | input Expresion %prec input  { crearRead $2 (posicion $1) }
+  | input Expresion %prec input  { crearRead $2 (getTokenPosicion $1) }
   | input
     {
-      crearRead (Literal ValorVacio TStr) (posicion $1)
+      crearRead (Literal ValorVacio TStr) (getTokenPosicion $1)
     }
 
   -- Operadores unarios

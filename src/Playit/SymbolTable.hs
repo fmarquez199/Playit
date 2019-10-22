@@ -11,6 +11,7 @@ module Playit.SymbolTable where
 import Control.Monad.Trans.RWS
 import Control.Monad (void,forM)
 import qualified Data.Map as M
+import Playit.Lexer
 -- import Data.List.Split (splitOn)
 import Data.Maybe (fromJust, isJust, isNothing)
 import Playit.Types
@@ -98,18 +99,18 @@ insertSymbols (id:ids) (info:infos) (SymTab table)
 
 -------------------------------------------------------------------------------
 -- Añade las variables a la tabla de simbolos
-insertDeclarations :: [Nombre] -> Tipo -> SecuenciaInstr -> MonadSymTab SecuenciaInstr
+insertDeclarations :: [(Nombre,Posicion)] -> Tipo -> SecuenciaInstr -> MonadSymTab SecuenciaInstr
 insertDeclarations ids t asigs = do
     (actualSymTab, activeScopes@(activeScope:_), scope) <- get
         
-    _ <- forM ids $ \id -> do
+    ids' <- forM ids $ \(id,(f,c)) -> do
         _ <- if isJust $ lookupScopesNameInSymTab [activeScope] id actualSymTab
-            then error $ "Error: redeclaración de \'" ++ id ++ "\'" 
+            then error $ "Error: redeclaración de \'" ++ id ++ "\' " ++ " en la fila: " ++ (show f) ++ ", columna: " ++ (show c)
             else return ()
         return id
     
     let info = replicate (length ids) (SymbolInfo t activeScope Variable [Nada])
-    addToSymTab ids info actualSymTab activeScopes scope
+    addToSymTab ids' info actualSymTab activeScopes scope
     return asigs
 -------------------------------------------------------------------------------
 

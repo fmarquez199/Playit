@@ -13,9 +13,9 @@ module Playit.Lexer (
     AlexPosn(..), 
     tkErrorToString,
     alexScanTokens,
-    posicion,
+    getTokenPosicion,
     hasError,
-    isError
+    isError,
 ) where
 
 import Data.List(intercalate)
@@ -167,91 +167,96 @@ tokens :-
 tok :: (AlexPosn -> String -> Token) -> AlexPosn -> String -> Token
 tok f p s = f p s
 
-pos :: AlexPosn -> String
-pos (AlexPn _ f c) = " en la fila: " ++ (show f) ++ ", columna: " ++ (show c)
+getPosnToStr :: AlexPosn -> String
+getPosnToStr (AlexPn _ f c) = " en la fila: " ++ (show f) ++ ", columna: " ++ (show c)
 
-data Token = TkWORLD AlexPosn String
-           | TkRUNE AlexPosn String
-           | TkLOSE AlexPosn String
-           | TkOF AlexPosn String
-           | TkBUTTON AlexPosn String
-           | TkWIN AlexPosn String
-           | TkBATLE AlexPosn String
-           | TkPOWER AlexPosn String
-           | TkSKILL AlexPosn String
-           | TkRUNES AlexPosn String
-           | TkKIT AlexPosn String
-           | TkINVENTORY AlexPosn String
-           | TkITEMS AlexPosn String
-           | TkSUMMON AlexPosn String
-           | TkFREE AlexPosn String
-           | TkDeathZone AlexPosn String
-           | TkJOYSTICK AlexPosn String
-           | TkDROP AlexPosn String
-           | TkNotPressed AlexPosn String
-           | TkCONTROLLER AlexPosn String
-           | TkIN  AlexPosn String
-           | TkTO  AlexPosn String
-           | TkPLAY AlexPosn String
-           | TkLOCK AlexPosn String
-           | TkUNLOCK AlexPosn String
-           | TkSPAWN AlexPosn String
-           | TkGameOver AlexPosn String
-           | TkKeepPlaying AlexPosn String
-           | TkKILL AlexPosn String
-           | TkMONSTER AlexPosn String
-           | TkBOSS AlexPosn String
-           | TkProgramName AlexPosn String
-           | TkID {getTokenPos :: AlexPosn,getToken :: String}
-           | TkIDTipo AlexPosn String
-           | TkCARACTER AlexPosn String
-           | TkSTRINGS AlexPosn String
-           | TkINT AlexPosn String
-           | TkFLOAT AlexPosn String
-           | TkDivEntera AlexPosn String
-           | TkOR AlexPosn String
-           | TkAND AlexPosn String
-           | TkLessEqual AlexPosn String
-           | TkEQUAL AlexPosn String
-           | TkNotEqual AlexPosn String
-           | TkGreaterEqual AlexPosn String
-           | TkOpenList AlexPosn String
-           | TkCloseList AlexPosn String
-           | TkOpenListIndex AlexPosn String
-           | TkCloseListIndex AlexPosn String
-           | TkINCREMENT AlexPosn String
-           | TkDECREMENT AlexPosn String
-           | TkSUM AlexPosn String
-           | TkMIN AlexPosn String
-           | TkMULT AlexPosn String
-           | TkDIV AlexPosn String
-           | TkMOD AlexPosn String
-           | TkLEN AlexPosn String
-           | TkREF AlexPosn String
-           | TkNOT AlexPosn String
-           | TkLessThan AlexPosn String
-           | TkGreaterThan AlexPosn String
-           | TkPUFF AlexPosn String
-           | TkOpenParenthesis AlexPosn String
-           | TkCloseParenthesis AlexPosn String
-           | TkOpenBrackets AlexPosn String
-           | TkCloseBrackets AlexPosn String
-           | TkCOMA AlexPosn String
-           | TkANEXO AlexPosn String
-           | TkGUARD AlexPosn String
-           | TkASING AlexPosn String
-           | TkUPPER AlexPosn String
-           | TkLOWER AlexPosn String
-           | TkCMV AlexPosn String
-           | TkCM1 AlexPosn String
-           | TkFIN AlexPosn String
-           | TkOpenArray AlexPosn String
-           | TkCloseArray AlexPosn String
-           | TkOpenArrayIndex AlexPosn String
-           | TkCloseArrayIndex AlexPosn String
+getTokenPosicion :: Token -> (Int,Int)
+getTokenPosicion token = (f,c)
+    where (AlexPn _ f c) = getAlexPosn token
+
+
+data Token = TkWORLD {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkRUNE {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkLOSE {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkOF {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkBUTTON {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkWIN {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkBATLE {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkPOWER {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkSKILL {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkRUNES {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkKIT {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkINVENTORY {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkITEMS {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkSUMMON {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkFREE {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkDeathZone {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkJOYSTICK {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkDROP {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkNotPressed {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkCONTROLLER {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkIN  {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkTO  {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkPLAY {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkLOCK {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkUNLOCK {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkSPAWN {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkGameOver {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkKeepPlaying {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkKILL {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkMONSTER {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkBOSS {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkProgramName {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkID {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkIDTipo {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkCARACTER {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkSTRINGS {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkINT {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkFLOAT {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkDivEntera {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkOR {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkAND {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkLessEqual {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkEQUAL {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkNotEqual {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkGreaterEqual {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkOpenList {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkCloseList {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkOpenListIndex {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkCloseListIndex {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkINCREMENT {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkDECREMENT {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkSUM {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkMIN {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkMULT {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkDIV {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkMOD {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkLEN {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkREF {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkNOT {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkLessThan {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkGreaterThan {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkPUFF {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkOpenParenthesis {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkCloseParenthesis {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkOpenBrackets {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkCloseBrackets {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkCOMA {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkANEXO {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkGUARD {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkASING {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkUPPER {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkLOWER {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkCMV {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkCM1 {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkFIN {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkOpenArray {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkCloseArray {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkOpenArrayIndex {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkCloseArrayIndex {getAlexPosn :: AlexPosn,getToken :: String}
            | TkError {mensaje :: String}
-           | TkCONCAT AlexPosn String
-           | TkEndLine AlexPosn String
+           | TkCONCAT {getAlexPosn :: AlexPosn,getToken :: String}
+           | TkEndLine {getAlexPosn :: AlexPosn,getToken :: String}
            deriving (Eq)
 
 
@@ -301,167 +306,84 @@ tkErrorToString :: [Token] -> String
 tkErrorToString tk = intercalate "\n" $ map mensaje tk
 
 instance Show Token where
-    show (TkWORLD p s) = s ++ (pos p) -- world
-    show (TkOF p s) = s ++ (pos p) -- of
-    show (TkEndLine p s) = "End Instruction \\n" ++  (pos p) -- New line
-    show (TkBUTTON p s) = s ++ (pos p) -- Button
-    show (TkRUNE p s) = s ++ (pos p) -- rune
-    show (TkLOSE p s) = s ++ (pos p) -- Lose
-    show (TkWIN p s) = s ++ (pos p) -- Win
-    show (TkBATLE p s) = s ++ (pos p) -- Battle
-    show (TkPOWER p s) = s ++ (pos p) -- Power
-    show (TkSKILL p s) = s ++ (pos p) -- Skill
-    show (TkRUNES p s) = s ++ (pos p) -- Runes
-    show (TkCONCAT p s) = s ++ (pos p) -- Concatenación de lista
-    show (TkKIT p s) = s ++ (pos p) -- Kit
-    show (TkINVENTORY p s) = s ++ (pos p) -- Inventory
-    show (TkITEMS p s) = s ++ (pos p) -- Items
-    show (TkSUMMON p s) = s ++ (pos p) -- summon
-    show (TkFREE p s) = s ++ (pos p) -- free
-    show (TkDeathZone p s) = s ++ (pos p) -- DeathZone
-    show (TkJOYSTICK p s) = s ++ (pos p) -- joystick
-    show (TkDROP p s) = s ++ (pos p) -- drop
-    show (TkNotPressed p s) = s ++ (pos p) -- notPressed
-    show (TkCONTROLLER p s) = s ++ (pos p) -- controller
-    show (TkIN p s)  = s ++ (pos p) -- <-
-    show (TkTO p s)  = s ++ (pos p) -- ->
-    show (TkPLAY p s) = s ++ (pos p) -- play
-    show (TkLOCK p s) = s ++ (pos p) -- lock
-    show (TkUNLOCK p s) = s ++ (pos p) -- unlock
-    show (TkSPAWN p s) = s ++ (pos p) -- spawn
-    show (TkGameOver p s) = s ++ (pos p) -- gameOver
-    show (TkKeepPlaying p s) = s ++ (pos p) -- keepPlaying
-    show (TkKILL p s) = s ++ (pos p) -- kill
-    show (TkMONSTER p s) =s ++ (pos p) -- monster
-    show (TkBOSS p s) = s ++ (pos p) -- boss
-    show (TkProgramName p s) = "nombre del programa '" ++ s ++"'" ++ (pos p) -- Nombre programa
-    show (TkID p s) = "identificador '" ++ s ++ "'" ++ (pos p) -- Id
-    show (TkIDTipo p s) = "tipo '" ++ s ++ "'" ++ (pos p) -- Id
-    show (TkCARACTER p s) = "caracter '" ++ s ++ "'" ++ (pos p) -- carActer
-    show (TkSTRINGS p s) = "string '" ++ s ++"'" ++ (pos p) -- String
-    show (TkINT p s) = "entero '" ++ s ++"'" ++ (pos p) -- Entero
-    show (TkFLOAT p s) = "flotante '" ++ s ++"'" ++ (pos p) -- Flotante
-    show (TkDivEntera p s) = s ++ (pos p) -- //
-    show (TkOR p s) = s ++ (pos p) -- ||
-    show (TkAND p s) = s ++ (pos p) -- &&
-    show (TkLessEqual p s) = s ++ (pos p) -- <=
-    show (TkEQUAL p s) = s ++ (pos p) -- ==
-    show (TkNotEqual p s) = s ++ (pos p) -- !=
-    show (TkGreaterEqual p s) = s ++ (pos p) -- >=
-    show (TkOpenList p s) = s ++ (pos p) -- <<
-    show (TkCloseList p s) = s ++ (pos p) -- >>
-    show (TkOpenListIndex p s) = s ++ (pos p) -- |>
-    show (TkCloseListIndex p s) = s ++ (pos p) -- <°
-    show (TkINCREMENT p s) = s ++ (pos p) -- ++
-    show (TkDECREMENT p s) = s ++ (pos p) -- --
-    show (TkSUM p s) = s ++ (pos p) -- +
-    show (TkMIN p s) = s ++ (pos p) -- -
-    show (TkMULT p s) = s ++ (pos p) -- *
-    show (TkDIV p s) = s ++ (pos p) -- /
-    show (TkMOD p s) = s ++ (pos p) -- %
-    show (TkLEN p s) = s ++ (pos p) -- #
-    show (TkREF p s) = s ++ (pos p) -- ?
-    show (TkNOT p s) = s ++ (pos p) -- !
-    show (TkLessThan p s) = s ++ (pos p) -- <
-    show (TkGreaterThan p s) = s ++ (pos p) -- >
-    show (TkPUFF p s) = s ++ (pos p) -- puff
-    show (TkOpenParenthesis p s) = s ++ (pos p) -- (
-    show (TkCloseParenthesis p s) = s ++ (pos p) -- )
-    show (TkOpenBrackets p s) = s ++ (pos p) -- {
-    show (TkCloseBrackets p s) = s ++ (pos p) -- }
-    show (TkCOMA p s) = s ++ (pos p) -- ,
-    show (TkANEXO p s) = s ++ (pos p) -- :
-    show (TkGUARD p s) = s ++ (pos p) -- |
-    show (TkASING p s) = s ++ (pos p) -- =
-    show (TkUPPER p s) = s ++ (pos p) -- ^
-    show (TkLOWER p s) = s ++ (pos p) -- .
-    show (TkFIN p s) = s ++ (pos p) -- .~
-    show (TkOpenArray p s) = s ++ (pos p) -- "|}"
-    show (TkCloseArray p s) = s ++ (pos p) -- "{|"
-    show (TkOpenArrayIndex p s) = s ++ (pos p) -- "|)"
-    show (TkCloseArrayIndex p s) = s ++ (pos p) -- "(|"
-
-posicion :: Token -> (Int, Int)
-posicion (TkWORLD (AlexPn _ f c) _) = (f, c)
-posicion (TkRUNE (AlexPn _ f c) _) = (f, c)
-posicion (TkLOSE (AlexPn _ f c) _) = (f, c)
-posicion (TkOF (AlexPn _ f c) _) = (f, c)
-posicion (TkBUTTON (AlexPn _ f c) _) = (f, c)
-posicion (TkWIN (AlexPn _ f c) _) = (f, c)
-posicion (TkBATLE (AlexPn _ f c) _) = (f, c)
-posicion (TkPOWER (AlexPn _ f c) _) = (f, c)
-posicion (TkSKILL (AlexPn _ f c) _) = (f, c)
-posicion (TkRUNES (AlexPn _ f c) _) = (f, c)
-posicion (TkKIT (AlexPn _ f c) _) = (f, c)
-posicion (TkINVENTORY (AlexPn _ f c) _) = (f, c)
-posicion (TkITEMS (AlexPn _ f c) _) = (f, c)
-posicion (TkSUMMON (AlexPn _ f c) _) = (f, c)
-posicion (TkFREE (AlexPn _ f c) _) = (f, c)
-posicion (TkDeathZone (AlexPn _ f c) _) = (f, c)
-posicion (TkJOYSTICK (AlexPn _ f c) _) = (f, c)
-posicion (TkDROP (AlexPn _ f c) _) = (f, c)
-posicion (TkNotPressed (AlexPn _ f c) _) = (f, c)
-posicion (TkCONTROLLER (AlexPn _ f c) _) = (f, c)
-posicion (TkIN (AlexPn _ f c) _) = (f, c)
-posicion (TkTO (AlexPn _ f c) _) = (f, c)
-posicion (TkPLAY (AlexPn _ f c) _) = (f, c)
-posicion (TkLOCK (AlexPn _ f c) _) = (f, c)
-posicion (TkUNLOCK (AlexPn _ f c) _) = (f, c)
-posicion (TkSPAWN (AlexPn _ f c) _) = (f, c)
-posicion (TkGameOver (AlexPn _ f c) _) = (f, c)
-posicion (TkKeepPlaying (AlexPn _ f c) _) = (f, c)
-posicion (TkKILL (AlexPn _ f c) _) = (f, c)
-posicion (TkMONSTER (AlexPn _ f c) _) = (f, c)
-posicion (TkBOSS (AlexPn _ f c) _) = (f, c)
-posicion (TkProgramName (AlexPn _ f c) _) = (f, c)
-posicion (TkID (AlexPn _ f c) _) = (f, c)
-posicion (TkIDTipo (AlexPn _ f c) _) = (f, c)
-posicion (TkCARACTER (AlexPn _ f c) _) = (f, c)
-posicion (TkSTRINGS (AlexPn _ f c) _) = (f, c)
-posicion (TkINT (AlexPn _ f c) _) = (f, c)
-posicion (TkFLOAT (AlexPn _ f c) _) = (f, c)
-posicion (TkDivEntera (AlexPn _ f c) _) = (f, c)
-posicion (TkOR (AlexPn _ f c) _) = (f, c)
-posicion (TkAND (AlexPn _ f c) _) = (f, c)
-posicion (TkLessEqual (AlexPn _ f c) _) = (f, c)
-posicion (TkEQUAL (AlexPn _ f c) _) = (f, c)
-posicion (TkNotEqual (AlexPn _ f c) _) = (f, c)
-posicion (TkGreaterEqual (AlexPn _ f c) _) = (f, c)
-posicion (TkOpenList (AlexPn _ f c) _) = (f, c)
-posicion (TkCloseList (AlexPn _ f c) _) = (f, c)
-posicion (TkOpenListIndex (AlexPn _ f c) _) = (f, c)
-posicion (TkCloseListIndex (AlexPn _ f c) _) = (f, c)
-posicion (TkINCREMENT (AlexPn _ f c) _) = (f, c)
-posicion (TkDECREMENT (AlexPn _ f c) _) = (f, c)
-posicion (TkSUM (AlexPn _ f c) _) = (f, c)
-posicion (TkMIN (AlexPn _ f c) _) = (f, c)
-posicion (TkMULT (AlexPn _ f c) _) = (f, c)
-posicion (TkDIV (AlexPn _ f c) _) = (f, c)
-posicion (TkMOD (AlexPn _ f c) _) = (f, c)
-posicion (TkLEN (AlexPn _ f c) _) = (f, c)
-posicion (TkREF (AlexPn _ f c) _) = (f, c)
-posicion (TkNOT (AlexPn _ f c) _) = (f, c)
-posicion (TkLessThan (AlexPn _ f c) _) = (f, c)
-posicion (TkGreaterThan (AlexPn _ f c) _) = (f, c)
-posicion (TkPUFF (AlexPn _ f c) _) = (f, c)
-posicion (TkOpenParenthesis (AlexPn _ f c) _) = (f, c)
-posicion (TkCloseParenthesis (AlexPn _ f c) _) = (f, c)
-posicion (TkOpenBrackets (AlexPn _ f c) _) = (f, c)
-posicion (TkCloseBrackets (AlexPn _ f c) _) = (f, c)
-posicion (TkCOMA (AlexPn _ f c) _) = (f, c)
-posicion (TkANEXO (AlexPn _ f c) _) = (f, c)
-posicion (TkGUARD (AlexPn _ f c) _) = (f, c)
-posicion (TkASING (AlexPn _ f c) _) = (f, c)
-posicion (TkUPPER (AlexPn _ f c) _) = (f, c)
-posicion (TkLOWER (AlexPn _ f c) _) = (f, c)
-posicion (TkCMV (AlexPn _ f c) _) = (f, c)
-posicion (TkCM1 (AlexPn _ f c) _) = (f, c)
-posicion (TkFIN (AlexPn _ f c) _) = (f, c)
-posicion (TkOpenArray (AlexPn _ f c) _) = (f, c)
-posicion (TkCloseArray (AlexPn _ f c) _) = (f, c)
-posicion (TkOpenArrayIndex (AlexPn _ f c) _) = (f, c)
-posicion (TkCloseArrayIndex (AlexPn _ f c) _) = (f, c)
-posicion (TkCONCAT (AlexPn _ f c) _) = (f, c)
-posicion (TkEndLine (AlexPn _ f c) _) = (f, c)
+    show (TkWORLD p s) = s ++ (getPosnToStr p) -- world
+    show (TkOF p s) = s ++ (getPosnToStr p) -- of
+    show (TkEndLine p s) = "End Instruction \\n" ++  (getPosnToStr p) -- New line
+    show (TkBUTTON p s) = s ++ (getPosnToStr p) -- Button
+    show (TkRUNE p s) = s ++ (getPosnToStr p) -- rune
+    show (TkLOSE p s) = s ++ (getPosnToStr p) -- Lose
+    show (TkWIN p s) = s ++ (getPosnToStr p) -- Win
+    show (TkBATLE p s) = s ++ (getPosnToStr p) -- Battle
+    show (TkPOWER p s) = s ++ (getPosnToStr p) -- Power
+    show (TkSKILL p s) = s ++ (getPosnToStr p) -- Skill
+    show (TkRUNES p s) = s ++ (getPosnToStr p) -- Runes
+    show (TkCONCAT p s) = s ++ (getPosnToStr p) -- Concatenación de lista
+    show (TkKIT p s) = s ++ (getPosnToStr p) -- Kit
+    show (TkINVENTORY p s) = s ++ (getPosnToStr p) -- Inventory
+    show (TkITEMS p s) = s ++ (getPosnToStr p) -- Items
+    show (TkSUMMON p s) = s ++ (getPosnToStr p) -- summon
+    show (TkFREE p s) = s ++ (getPosnToStr p) -- free
+    show (TkDeathZone p s) = s ++ (getPosnToStr p) -- DeathZone
+    show (TkJOYSTICK p s) = s ++ (getPosnToStr p) -- joystick
+    show (TkDROP p s) = s ++ (getPosnToStr p) -- drop
+    show (TkNotPressed p s) = s ++ (getPosnToStr p) -- notPressed
+    show (TkCONTROLLER p s) = s ++ (getPosnToStr p) -- controller
+    show (TkIN p s)  = s ++ (getPosnToStr p) -- <-
+    show (TkTO p s)  = s ++ (getPosnToStr p) -- ->
+    show (TkPLAY p s) = s ++ (getPosnToStr p) -- play
+    show (TkLOCK p s) = s ++ (getPosnToStr p) -- lock
+    show (TkUNLOCK p s) = s ++ (getPosnToStr p) -- unlock
+    show (TkSPAWN p s) = s ++ (getPosnToStr p) -- spawn
+    show (TkGameOver p s) = s ++ (getPosnToStr p) -- gameOver
+    show (TkKeepPlaying p s) = s ++ (getPosnToStr p) -- keepPlaying
+    show (TkKILL p s) = s ++ (getPosnToStr p) -- kill
+    show (TkMONSTER p s) =s ++ (getPosnToStr p) -- monster
+    show (TkBOSS p s) = s ++ (getPosnToStr p) -- boss
+    show (TkProgramName p s) = "nombre del programa '" ++ s ++"'" ++ (getPosnToStr p) -- Nombre programa
+    show (TkID p s) = "identificador '" ++ s ++ "'" ++ (getPosnToStr p) -- Id
+    show (TkIDTipo p s) = "tipo '" ++ s ++ "'" ++ (getPosnToStr p) -- Id
+    show (TkCARACTER p s) = "caracter '" ++ s ++ "'" ++ (getPosnToStr p) -- carActer
+    show (TkSTRINGS p s) = "string '" ++ s ++"'" ++ (getPosnToStr p) -- String
+    show (TkINT p s) = "entero '" ++ s ++"'" ++ (getPosnToStr p) -- Entero
+    show (TkFLOAT p s) = "flotante '" ++ s ++"'" ++ (getPosnToStr p) -- Flotante
+    show (TkDivEntera p s) = s ++ (getPosnToStr p) -- //
+    show (TkOR p s) = s ++ (getPosnToStr p) -- ||
+    show (TkAND p s) = s ++ (getPosnToStr p) -- &&
+    show (TkLessEqual p s) = s ++ (getPosnToStr p) -- <=
+    show (TkEQUAL p s) = s ++ (getPosnToStr p) -- ==
+    show (TkNotEqual p s) = s ++ (getPosnToStr p) -- !=
+    show (TkGreaterEqual p s) = s ++ (getPosnToStr p) -- >=
+    show (TkOpenList p s) = s ++ (getPosnToStr p) -- <<
+    show (TkCloseList p s) = s ++ (getPosnToStr p) -- >>
+    show (TkOpenListIndex p s) = s ++ (getPosnToStr p) -- |>
+    show (TkCloseListIndex p s) = s ++ (getPosnToStr p) -- <°
+    show (TkINCREMENT p s) = s ++ (getPosnToStr p) -- ++
+    show (TkDECREMENT p s) = s ++ (getPosnToStr p) -- --
+    show (TkSUM p s) = s ++ (getPosnToStr p) -- +
+    show (TkMIN p s) = s ++ (getPosnToStr p) -- -
+    show (TkMULT p s) = s ++ (getPosnToStr p) -- *
+    show (TkDIV p s) = s ++ (getPosnToStr p) -- /
+    show (TkMOD p s) = s ++ (getPosnToStr p) -- %
+    show (TkLEN p s) = s ++ (getPosnToStr p) -- #
+    show (TkREF p s) = s ++ (getPosnToStr p) -- ?
+    show (TkNOT p s) = s ++ (getPosnToStr p) -- !
+    show (TkLessThan p s) = s ++ (getPosnToStr p) -- <
+    show (TkGreaterThan p s) = s ++ (getPosnToStr p) -- >
+    show (TkPUFF p s) = s ++ (getPosnToStr p) -- puff
+    show (TkOpenParenthesis p s) = s ++ (getPosnToStr p) -- (
+    show (TkCloseParenthesis p s) = s ++ (getPosnToStr p) -- )
+    show (TkOpenBrackets p s) = s ++ (getPosnToStr p) -- {
+    show (TkCloseBrackets p s) = s ++ (getPosnToStr p) -- }
+    show (TkCOMA p s) = s ++ (getPosnToStr p) -- ,
+    show (TkANEXO p s) = s ++ (getPosnToStr p) -- :
+    show (TkGUARD p s) = s ++ (getPosnToStr p) -- |
+    show (TkASING p s) = s ++ (getPosnToStr p) -- =
+    show (TkUPPER p s) = s ++ (getPosnToStr p) -- ^
+    show (TkLOWER p s) = s ++ (getPosnToStr p) -- .
+    show (TkFIN p s) = s ++ (getPosnToStr p) -- .~
+    show (TkOpenArray p s) = s ++ (getPosnToStr p) -- "|}"
+    show (TkCloseArray p s) = s ++ (getPosnToStr p) -- "{|"
+    show (TkOpenArrayIndex p s) = s ++ (getPosnToStr p) -- "|)"
+    show (TkCloseArrayIndex p s) = s ++ (getPosnToStr p) -- "(|"
 
 }

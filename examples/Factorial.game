@@ -1,5 +1,4 @@
 monster factorial(Power n) Power:
-    
     Button:
       | n < 0 } unlock 0
       | n == 0 } unlock 1
