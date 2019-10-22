@@ -28,15 +28,15 @@ import Playit.Types
 
 -------------------------------------------------------------------------------
 -- Crea el nodo para identificadores de variables y verifica que estén declarados
-crearIdvar :: Nombre -> MonadSymTab Vars
-crearIdvar name = do
+crearIdvar :: Nombre -> Posicion -> MonadSymTab Vars
+crearIdvar name p = do
     (symTab, scopes, _) <- get
     let info = lookupInSymTab name symTab
 
     if isJust info then return $ Var name (getType $ head $ fromJust info)
     else 
         error ("\n\nError semantico, la variable: '" ++ name ++ 
-                "', no esta declarada.\n")
+                "', no esta declarada. " ++ show p ++ "\n")
 -------------------------------------------------------------------------------
 
 
@@ -57,6 +57,9 @@ crearVarIndex v e =
 crearVarCompIndex :: Vars -> Nombre -> MonadSymTab Vars
 crearVarCompIndex v campo = do
     (symTab, scopes, _) <- get
+
+    --let info = lookupScopesNameInSymTab scopes campo symTab
+
     let info = lookupInSymTab campo symTab
 
     if isJust info then return $ VarCompIndex v campo (getType $ head $ fromJust info)
@@ -364,19 +367,18 @@ crearWhile e i (line,_) = While e i
 
 -------------------------------------------------------------------------------
 -- Actualiza la informacion extra de la subrutina
-definirSubrutina' :: Nombre -> Expr -> SecuenciaInstr -> Categoria
-                    -> MonadSymTab SecuenciaInstr
-definirSubrutina' name [] [] category = do
-    updateExtraInfo name category [Nada]
+definirSubrutina' :: Nombre -> [Expr] -> SecuenciaInstr -> MonadSymTab SecuenciaInstr
+definirSubrutina' name [] [] = do
+    updateExtraInfo name 1 [Nada]
     return []
 definirSubrutina' name [] i = do
-    updateExtraInfo name category [AST i]
+    updateExtraInfo name 1 [AST i]
     return i
 definirSubrutina' name params [] = do
-    updateExtraInfo name category [Params params]
+    updateExtraInfo name 1 [Params params]
     return []
 definirSubrutina' name params i = do
-    updateExtraInfo name category [Params params, AST i]
+    updateExtraInfo name 1 [Params params, AST i]
     return i
 -------------------------------------------------------------------------------
 
@@ -385,12 +387,12 @@ definirSubrutina' name params i = do
 -- Agrega el nombre de la subrutina a la tabla de símbolos.
 definirSubrutina :: Nombre -> Tipo -> Categoria -> MonadSymTab ()
 definirSubrutina nombre tipo categoria = do
-    (symtab, activeScopes@(activeScope:_), scope) <- get
-    if isNothing $ lookupInSymTab name symTab then 
-        let info = [SymbolInfo tipo activeScope categoria [Nada]]
+    (symtab, activeScopes, scope) <- get
+    if isNothing $ lookupInSymTab nombre symTab then 
+        let info = [SymbolInfo tipo 1 categoria [Nada]]
         in addToSymTab [nombre] info symtab activeScopes scope
     else
-        error $ "Error: redeclaración de '" ++ nombre ++ "'."
+        error $ "Error semantico, la subrutina '" ++ nombre ++ "', ya está definida."
     return ()
 -------------------------------------------------------------------------------
 
@@ -426,12 +428,9 @@ crearSubrutinaCall nombre params = do
 crearFuncCall :: Subrutina -> MonadSymTab Expr
 crearFuncCall subrutina@(SubrutinaCall nombre _) = do
     (symtab, activeScope:_, scope) <- get
-    let funs = filter (\i -> getCategory i == Funciones) $ fromJust info
-    let found = filter (\i -> getScope i == activeScope) funs
-    if not $ null found then
-        return $ FuncCall subrutina (getType $ head found)
-    else
-        error "Error semantico, funcion no dentro del alcance activo."
+    let info = fromJust $ lookupInSymTab nombre symtab
+    let func = head $ filter (\i -> getCategory i == Funciones) info
+    return $ FuncCall subrutina (getType func)
 -------------------------------------------------------------------------------
 
 
@@ -446,12 +445,15 @@ crearFuncCall subrutina@(SubrutinaCall nombre _) = do
 -- Definicion de union
 definirRegistro :: Nombre -> SecuenciaInstr -> MonadSymTab SecuenciaInstr
 definirRegistro id decls = do
-    (symTab, activeScopes@(activeScope:_), scope) <- get
-    -- TODO: Si ya hay un registro con ese nombre entonces error
+    (symTab, activeScopes, scope) <- get
     -- TODO: update categoria de las declaraciones y colocar el reg al que pertenece
-    let info = [SymbolInfo TRegistro activeScope ConstructoresTipos [AST decls]]
-    addToSymTab [id] info symTab activeScopes scope
-    return decls
+    let infos = lookupScopesNameInSymTab [1] id symTab
+    if isJust infos then
+        error $ "\n\nError: el Invenory '" ++ name ++ "', ya está definido."
+    else do
+        let info = [SymbolInfo TRegistro 1 ConstructoresTipos [AST decls]]
+        addToSymTab [id] info symTab activeScopes scope
+        return decls
 -------------------------------------------------------------------------------
 
 
@@ -459,12 +461,15 @@ definirRegistro id decls = do
 -- Definicion de union
 definirUnion :: Nombre -> SecuenciaInstr -> MonadSymTab SecuenciaInstr
 definirUnion id decls = do
-    (symTab, activeScopes@(activeScope:_), scope) <- get
-    -- TODO: Si ya hay una union con ese nombre entonces error
+    (symTab, activeScopes, scope) <- get
     -- TODO: update categoria de las declaraciones y colocar la union al que pertenece
-    let info = [SymbolInfo TUnion activeScope ConstructoresTipos [AST decls]]
-    addToSymTab [id] info symTab activeScopes scope
-    return decls
+    let infos = lookupScopesNameInSymTab [1] id symTab
+    if isJust infos then
+        error $ "\n\nError: el Items '" ++ name ++ "', ya está definido."
+    else do
+        let info = [SymbolInfo TUnion 1 ConstructoresTipos [AST decls]]
+        addToSymTab [id] info symTab activeScopes scope
+        return decls
 -------------------------------------------------------------------------------
 
 

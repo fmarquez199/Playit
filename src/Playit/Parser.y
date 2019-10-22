@@ -66,7 +66,7 @@ import Playit.AST
   -- Identificadores
 
   programa          { TkProgramName _ _ }
-  nombre            { TkID $$ _ }
+  nombre            { TkID _ _ }
   idtipo            { TkIDTipo $$ _ }
 
   -- Caracteres
@@ -178,7 +178,7 @@ Definiciones :: { SecuenciaInstr }
 
 
 Definicion :: { SecuenciaInstr }
-  : PushNewScope DefinirSubrutina PopScope  { $1 }
+  : DefinirSubrutina PopScope  { $1 }
   | DefinirRegistro            { $1 }
   | DefinirUnion               { $1 }
 
@@ -219,8 +219,8 @@ Identificadores :: { ([Nombre], SecuenciaInstr) }
   }
 
 Identificador :: { (Nombre, SecuenciaInstr) }
-  : nombre "=" Expresion  { ($1, [Asignacion (Var $1 TDummy) $3]) }
-  | nombre                { ($1, []) }
+  : nombre "=" Expresion  { ((getTk $1), [Asignacion (Var (getTk $1) TDummy) $3]) }
+  | nombre                { ((getTk $1), []) }
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
@@ -231,11 +231,11 @@ Identificador :: { (Nombre, SecuenciaInstr) }
 
 -- Lvalues, contenedores que identifican a las variables
 Lvalue :: { Vars }
-  : Lvalue "." nombre           { % crearVarCompIndex $1 $3 }
+  : Lvalue "." nombre           { % crearVarCompIndex (getTk $1) $3 }
   | Lvalue "|)" Expresion "(|"  { crearVarIndex $1 $3 }   -- Indexacion arreglo
   | Lvalue "|>" Expresion "<|"  { crearVarIndex $1 $3 }   -- Indexacion lista
   | pointer Lvalue              { PuffValue $2 (typeVar $2) }
-  | nombre                      { % crearIdvar $1 }
+  | nombre                      { % crearIdvar (getTk $1) (getPos $1) }
 
 
 -- Tipos de datos
@@ -350,16 +350,16 @@ InitVar1 :: { (Nombre, Expr) }
     { % do
       -- TODO: Verificar que nombre este en la symtab, asignar valor y el scope concuerde con el actual
       -- Se supone que TDummy deberia cambiar por el tipo de Expresion
-      let var = Var $1 TDummy
+      let var = Var (getTk $1) TDummy
       return $ crearAsignacion var $3 $2)
-      return ($1, $3)
+      return ((getTk $1), $3)
     }
   | Tipo nombre "=" Expresion
     { % do
-      let var = Var $2 $1
-      insertDeclarations [$2] $1 []
+      let var = Var (getTk $2) $1
+      insertDeclarations [(getTk $2)] $1 []
       return $ crearAsignacion var $4 $3
-      return ($2, $4)
+      return ((getTk $2), $4)
     }
 
 InitVar2 :: { (Nombre, Expr) }
@@ -367,16 +367,16 @@ InitVar2 :: { (Nombre, Expr) }
     { % do
       -- TODO: Verificar que nombre este en la symtab, asignar valor y el scope concuerde con el actual
       -- Se supone que TDummy deberia cambiar por el tipo de Expresion
-      let var = Var $1 TDummy
+      let var = Var (getTk $1) TDummy
       return $ crearAsignacion var $3 $2
-      return ($1, $3)
+      return ((getTk $1), $3)
     }
   | Tipo nombre "<-" Expresion %prec "<-"
     { % do
-      let var = Var $2 $1
-      insertDeclarations [$2] $1 []
+      let var = Var (getTk $2) $1
+      insertDeclarations [(getTk $2)] $1 []
       return $ crearAsignacion var $4 $3
-      return ($2, $4)
+      return ((getTk $2), $4)
     }
 -------------------------------------------------------------------------------
 
@@ -404,9 +404,9 @@ EntradaSalida :: { Instr }
 -------------------------------------------------------------------------------
 -- Instrucciones para liberar la memoria de los apuntadores 'free'
 Free :: { Instr }
-  : free nombre             { % crearFree $2 }
-  | free "|}" "{|" nombre   { % crearFree $4 }
-  | free "<<" ">>" nombre   { % crearFree $4 }
+  : free nombre             { % crearFree (getTk $2) }
+  | free "|}" "{|" nombre   { % crearFree (getTk $4) }
+  | free "<<" ">>" nombre   { % crearFree (getTk $4) }
 -------------------------------------------------------------------------------
 
 
@@ -433,23 +433,23 @@ DefinirSubrutina :: { SecuenciaInstr }
 Firma :: { (Nombre, [Expr], Tipo, Categoria) }
   : proc nombre PushNewScope "(" Parametros ")" 
     { % do
-      definirSubrutina $2 TDummy Procedimientos
-      return ($2, $5, TDummy, Procedimientos)
+      definirSubrutina (getTk $2) TDummy Procedimientos
+      return ((getTk $2), $5, TDummy, Procedimientos)
     }
   | proc nombre PushNewScope "(" ")" 
     { % do
-      definirSubrutina $2 TDummy Procedimientos
-      return ($2, [], TDummy, Procedimientos)
+      definirSubrutina (getTk $2) TDummy Procedimientos
+      return ((getTk $2), [], TDummy, Procedimientos)
     }
   | function nombre PushNewScope "(" Parametros ")" Tipo 
     { % do
-      definirSubrutina $2 $7 Funciones
-      return ($2, $5, $7, Funciones)
+      definirSubrutina (getTk $2) $7 Funciones
+      return ((getTk $2), $5, $7, Funciones)
     }
   | function nombre PushNewScope "(" ")" Tipo 
     { % do
-      definirSubrutina $2 $6 Funciones
-      return ($2, [], $6, Funciones)
+      definirSubrutina (getTk $2) $6 Funciones
+      return ((getTk $2), [], $6, Funciones)
     }
 
 -------------------------------------------------------------------------------
@@ -460,8 +460,8 @@ Parametros :: { [Expr] }
 
 
 Parametro :: { Expr }
-  : Tipo nombre       { % definirParam (Param $2 $1 Valor) }
-  | Tipo "?" nombre   { % definirParam (Param $3 $1 Referencia) }
+  : Tipo nombre       { % definirParam (Param (getTk $2) $1 Valor) }
+  | Tipo "?" nombre   { % definirParam (Param (getTk $3) $1 Referencia) }
 -------------------------------------------------------------------------------
 
 
@@ -474,8 +474,8 @@ FuncCall :: { Expr }
   : SubrutinaCall     { % crearFuncCall $1 }
 
 SubrutinaCall :: { Subrutina }
-  : call nombre "(" PasarParametros ")"   { % crearSubrutinaCall $2 (reverse $4) }
-  | call nombre "(" ")"                   { % crearSubrutinaCall $2 [] }
+  : call nombre "(" PasarParametros ")" { % crearSubrutinaCall (getTk $2) (reverse $4) }
+  | call nombre "(" ")"                 { % crearSubrutinaCall (getTk $2) [] }
 -------------------------------------------------------------------------------
 
 
