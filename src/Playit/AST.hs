@@ -9,6 +9,7 @@
 -}
 module Playit.AST where
 
+import Control.Monad
 import Control.Monad.Trans.RWS
 import Control.Monad.IO.Class
 import Data.Maybe (fromJust, isJust, isNothing)
@@ -31,12 +32,13 @@ import Playit.Types
 crearIdvar :: Nombre -> Posicion -> MonadSymTab Vars
 crearIdvar name p = do
     (symTab, scopes, _) <- get
+    file <- ask
     let info = lookupInSymTab name symTab
 
     if isJust info then return $ Var name (getType $ head $ fromJust info)
     else 
-        error ("\n\nError semantico, la variable: '" ++ name ++ 
-                "', no esta declarada. " ++ show p ++ "\n")
+        error ("\n\nError: " ++ file ++ ": " ++ show p ++ "\n\tVariable '"
+                ++ name ++ "' no declarada.\n")
 -------------------------------------------------------------------------------
 
 
@@ -54,9 +56,10 @@ crearVarIndex v e =
 
 -------------------------------------------------------------------------------
 -- Crea el nodo para variables de acceso a registros, uniones (campos)
-crearVarCompIndex :: Vars -> Nombre -> MonadSymTab Vars
-crearVarCompIndex v campo = do
+crearVarCompIndex :: Vars -> Nombre -> Posicion -> MonadSymTab Vars
+crearVarCompIndex v campo p = do
     (symTab, scopes, _) <- get
+    file <- ask
 
     --let info = lookupInScopes scopes campo symTab
 
@@ -64,8 +67,8 @@ crearVarCompIndex v campo = do
 
     if isJust info then return $ VarCompIndex v campo (getType $ head $ fromJust info)
     else 
-        error ("\n\nError semantico, el campo: '" ++ campo ++ 
-                "', no esta declarado.\n")
+        error ("\n\nError: " ++ file ++ ": " ++ show p ++ "\n\tCampo '"
+                ++ campo ++ "' no declarado.\n")
 -------------------------------------------------------------------------------
 
 
@@ -390,16 +393,18 @@ definirSubrutina' name params i c t = do
 
 -------------------------------------------------------------------------------
 -- Agrega el nombre de la subrutina a la tabla de símbolos.
-definirSubrutina :: Nombre -> Categoria -> MonadSymTab ()
-definirSubrutina nombre categoria = do
+definirSubrutina :: Nombre -> Categoria -> Posicion -> MonadSymTab ()
+definirSubrutina nombre categoria p = do
     (symTab, activeScopes, scope) <- get
+    file <- ask
     let info = lookupInSymTab nombre symTab
     if isNothing info then 
         let info = [SymbolInfo TDummy 1 categoria []]
         in addToSymTab [nombre] info symTab activeScopes scope
     else
-        error $ "\nError semantico, la subrutina '" ++ nombre ++ "', ya esta definida."
-            ++ "\n\t" ++ concatMap show (fromJust info) ++ "\n"
+        error $ "\nError: " ++ file ++ ": " ++ show p ++ "\n\tSubrutina '" ++
+            nombre ++ "' ya esta definida.\n\t"
+            ++ concatMap show (fromJust info) ++ "\n"
     return ()
 -------------------------------------------------------------------------------
 
@@ -417,14 +422,16 @@ definirParam param@(Param name t ref) = do
 
 -------------------------------------------------------------------------------
 -- Crea el nodo para la instruccion que llama a la subrutina
-crearSubrutinaCall :: Nombre -> Parametros -> MonadSymTab Subrutina
-crearSubrutinaCall nombre params = do
+crearSubrutinaCall :: Nombre -> Parametros -> Posicion -> MonadSymTab Subrutina
+crearSubrutinaCall nombre params p = do
     (symtab, activeScopes, scope) <- get
+    file <- ask
     let isNombreDef = isJust $ lookupInSymTab nombre symtab
     if isNombreDef then
         return $ SubrutinaCall nombre params
     else
-        error $ "Error semantico, la subrutina '" ++ nombre ++ "' no ha sido definida."
+        error $ "\n\nError: " ++ file ++ ": " ++ show p ++ "\n\tSubrutina '" ++
+                nombre ++ "' no definida.\n"
 -------------------------------------------------------------------------------
 
 
@@ -450,14 +457,16 @@ crearFuncCall subrutina@(SubrutinaCall nombre _) = do
 
 -------------------------------------------------------------------------------
 -- Definicion de union
-definirRegistro :: Nombre -> SecuenciaInstr -> MonadSymTab SecuenciaInstr
-definirRegistro id decls = do
+definirRegistro :: Nombre -> SecuenciaInstr -> Posicion -> MonadSymTab SecuenciaInstr
+definirRegistro id decls  p = do
     (symTab, activeScopes, scope) <- get
+    file <- ask
     -- TODO: cambiar categoria de las declaraciones a Campo y colocar el reg
     -- al que pertenecen
     let infos = lookupInScopes [1] id symTab
     if isJust infos then
-        error $ "\n\nError semantico, el Invenory '" ++ id ++ "', ya está definido."
+        error $ "\n\nError: " ++ file ++ ": " ++ show p ++ "\n\tInventory '" ++
+                id ++ "' ya esta definido.\n"
     else do
         let info = [SymbolInfo TRegistro 1 ConstructoresTipos [AST decls]]
         addToSymTab [id] info symTab activeScopes scope
@@ -467,14 +476,16 @@ definirRegistro id decls = do
 
 -------------------------------------------------------------------------------
 -- Definicion de union
-definirUnion :: Nombre -> SecuenciaInstr -> MonadSymTab SecuenciaInstr
-definirUnion id decls = do
+definirUnion :: Nombre -> SecuenciaInstr -> Posicion -> MonadSymTab SecuenciaInstr
+definirUnion id decls p = do
     (symTab, activeScopes, scope) <- get
+    file <- ask
     -- TODO: cambiar categoria de las declaraciones a Campo y colocar el reg
     -- al que pertenecen
     let infos = lookupInScopes [1] id symTab
     if isJust infos then
-        error $ "\n\nError semantico, el Items '" ++ id ++ "', ya está definido."
+        error $ "\n\nError: " ++ file ++ ": " ++ show p ++ "\n\tItems '" ++
+                id ++ "' ya esta definido.\n"
     else do
         let info = [SymbolInfo TUnion 1 ConstructoresTipos [AST decls]]
         addToSymTab [id] info symTab activeScopes scope
@@ -491,13 +502,14 @@ definirUnion id decls = do
 
 -------------------------------------------------------------------------------
 -- Crea el nodo para una instruccion Print
-crearPrint :: Expr -> Posicion -> Instr
-crearPrint e (line,_)
-    | tE /= TError = Print e
-    | otherwise = 
-        error ("\n\nError semantico en la expresion del 'print': '" ++
-                show e ++ "', de tipo: " ++ show tE ++
-                ". En la linea: " ++ show line ++ "\n")
+crearPrint :: Expr -> Posicion -> MonadSymTab Instr
+crearPrint e p
+    | tE /= TError = return $ Print e
+    | otherwise = do
+        file <- ask
+        error ("\n\nError: " ++ file ++ ": " ++ show p ++
+                "\nExpresion del 'print': '" ++
+                show e ++ "', de tipo: " ++ show tE ++ "\n")
     where
         tE = typeE e
 -------------------------------------------------------------------------------
@@ -518,14 +530,17 @@ crearRead e _ = Read e
 
 -------------------------------------------------------------------------------
 -- Crea el nodo para una instruccion Free
-crearFree :: Nombre -> MonadSymTab Instr
-crearFree var = do
+crearFree :: Nombre -> Posicion -> MonadSymTab Instr
+crearFree var p = do
     (symtab, activeScope:_, scope) <- get
+    file <- ask
     let info = lookupInSymTab var symtab
     if isJust info then
         let scopeOk = activeScope `elem` map getScope (fromJust info) in
         if scopeOk then return $ Free var
-        else error "Error semantico, variable fuera de alcance."
+        else error $ "Error: " ++ file ++ ": " ++ show p ++ "\n\tVariable '" ++
+                    var ++ "' fuera de alcance.\n"
     else
-        error "Error semantico, variable no definida."
+        error $ "Error: " ++ file ++ ": " ++ show p ++ "\n\tVariable '" ++
+                var ++ "' no definida.\n"
 -------------------------------------------------------------------------------

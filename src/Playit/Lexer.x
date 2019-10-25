@@ -384,7 +384,7 @@ data Token = TkWORLD {getTk :: String, getPos :: (Int, Int)}
 instance Show Token where
     show (TkWORLD tk p) = "(" ++ tk ++ "), posicion " ++ show p -- world
     show (TkOF tk p) = "(" ++ tk ++ "), posicion " ++ show p -- of
-    show (TkEndLine tk p) = "(" ++ tk ++  )", posicion " ++ show p -- New line
+    show (TkEndLine tk p) = "(" ++ tk ++  "), posicion " ++ show p -- New line
     show (TkBUTTON tk p) = "(" ++ tk ++ "), posicion " ++ show p -- Button
     show (TkRUNE tk p) = "(" ++ tk ++ "), posicion " ++ show p -- rune
     show (TkLOSE tk p) = "(" ++ tk ++ "), posicion " ++ show p -- Lose

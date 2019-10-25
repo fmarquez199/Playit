@@ -352,4 +352,4 @@ instance Show SymTab where
 
 -- Transformador monadico para crear y manejar la tabla de simbolos junto con 
 -- la pila de alcances y cuales estan activos
-type MonadSymTab a = RWST () () (SymTab, ActiveScopes, Alcance) IO a
+type MonadSymTab a = RWST String () (SymTab, ActiveScopes, Alcance) IO a

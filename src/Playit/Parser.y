@@ -67,7 +67,7 @@ import Playit.AST
 
   programa          { TkProgramName _ _ }
   nombre            { TkID _ _ }
-  idtipo            { TkIDTipo $$ _ }
+  idtipo            { TkIDTipo _ _ }
 
   -- Caracteres
 
@@ -234,7 +234,7 @@ Identificador :: { ((Nombre, Posicion), SecuenciaInstr) }
 
 -- Lvalues, contenedores que identifican a las variables
 Lvalue :: { Vars }
-  : Lvalue "." nombre           { % crearVarCompIndex $1 (getTk $3) }
+  : Lvalue "." nombre           { % crearVarCompIndex $1 (getTk $3) (getPos $3) }
   | Lvalue "|)" Expresion "(|"  { crearVarIndex $1 $3 }   -- Indexacion arreglo
   | Lvalue "|>" Expresion "<|"  { crearVarIndex $1 $3 }   -- Indexacion lista
   | pointer Lvalue              { PuffValue $2 (typeVar $2) }
@@ -401,15 +401,15 @@ Play :: { Instr }
 -------------------------------------------------------------------------------
 -- Instrucciones de E/S 'drop' y 'joystick'
 EntradaSalida :: { Instr }
-  : print Expresiones       { crearPrint (crearArrLstExpr $2) $1 }
+  : print Expresiones       { % crearPrint (crearArrLstExpr $2) $1 }
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
 -- Instrucciones para liberar la memoria de los apuntadores 'free'
 Free :: { Instr }
-  : free nombre             { % crearFree (getTk $2) }
-  | free "|}" "{|" nombre   { % crearFree (getTk $4) }
-  | free "<<" ">>" nombre   { % crearFree (getTk $4) }
+  : free nombre             { % crearFree (getTk $2) (getPos $2) }
+  | free "|}" "{|" nombre   { % crearFree (getTk $4) (getPos $4) }
+  | free "<<" ">>" nombre   { % crearFree (getTk $4) (getPos $4) }
 -------------------------------------------------------------------------------
 
 
@@ -452,12 +452,12 @@ Func :: { SecuenciaInstr }
 Nombre :: { (Nombre, Categoria) }
   : proc nombre
     { % do
-      definirSubrutina (getTk $2) Procedimientos
+      definirSubrutina (getTk $2) Procedimientos (getPos $2)
       return ((getTk $2), Procedimientos)
     }
   | function nombre
     { % do
-      definirSubrutina (getTk $2) Funciones
+      definirSubrutina (getTk $2) Funciones (getPos $2)
       return ((getTk $2), Funciones)
     }
 
@@ -487,8 +487,10 @@ FuncCall :: { Expr }
   : SubrutinaCall     { % crearFuncCall $1 }
 
 SubrutinaCall :: { Subrutina }
-  : call nombre "(" PasarParametros ")" { % crearSubrutinaCall (getTk $2) (reverse $4) }
-  | call nombre "(" ")"                 { % crearSubrutinaCall (getTk $2) [] }
+  : call nombre "(" PasarParametros ")"
+    { % crearSubrutinaCall (getTk $2) (reverse $4) (getPos $2) }
+  | call nombre "(" ")"
+    { % crearSubrutinaCall (getTk $2) [] (getPos $2) }
 -------------------------------------------------------------------------------
 
 
@@ -586,11 +588,11 @@ Expresion :: { Expr }
 DefinirRegistro :: { SecuenciaInstr }
   : registro idtipo ":" PushScope EndLines Declaraciones EndLines ".~"
     { %
-      definirRegistro $2 $6
+      definirRegistro (getTk $2) $6 (getPos $2)
     }
   | registro idtipo ":" PushScope EndLines ".~"                        
     { %
-      definirRegistro $2 []
+      definirRegistro (getTk $2) [] (getPos $2)
     }
 -------------------------------------------------------------------------------
 
@@ -600,11 +602,11 @@ DefinirRegistro :: { SecuenciaInstr }
 DefinirUnion :: { SecuenciaInstr }
   : union idtipo ":" PushScope EndLines Declaraciones EndLines ".~"
     { %
-      definirUnion $2 $6
+      definirUnion (getTk $2) $6 (getPos $2)
     }
   | union idtipo ":" PushScope EndLines ".~"                        
     { %
-      definirUnion $2 []
+      definirUnion (getTk $2) [] (getPos $2)
     }
 -------------------------------------------------------------------------------
 

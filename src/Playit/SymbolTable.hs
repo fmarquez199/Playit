@@ -101,6 +101,7 @@ insertDeclarations :: [(Nombre, Posicion)] -> Tipo -> SecuenciaInstr
                     -> MonadSymTab SecuenciaInstr
 insertDeclarations ids t asigs = do
     (symTab, activeScopes@(activeScope:_), scope) <- get
+    file <- ask
 
     checkedIds <- forM ids $ \(id,p) -> do
         let idScopeInfo = lookupInScopes [activeScope] id symTab
@@ -112,8 +113,8 @@ insertDeclarations ids t asigs = do
                 isInAnyCategory = Variable `elem` idCategories
             in
             when isInAnyCategory $
-                error $ "\n\nError semantico, la variable '" ++ id ++
-                "', ya esta declarada. " ++ show p ++ "\n"
+                error $ "\n\nError: " ++ file ++ ": " ++ show p ++
+                    "\n\tVariable '" ++ id ++ "' ya esta declarada.\n"
         return id
     
     let info = replicate (length ids) (SymbolInfo t activeScope Variable [])
