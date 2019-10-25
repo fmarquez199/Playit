@@ -30,6 +30,7 @@ Simón Bolívar** en el transcurso de la cadena de **Lenguajes de Programación
 Un programa en Playit tiene la siguiente estructura:
 
 ```
+<Declaraciones>
 world %<nombre del programa>%:
   <Lista instrucciones>
 .~
@@ -166,7 +167,8 @@ Se declaran de la siguiente manera:
 
 **`Kit of <tipo>`**, donde `<tipo>` puede ser otra lista.
 
-Para acceder a un elemento de la lista se utiliza el operador de indexación **`|}{|`** y su inicialización por defecto es la lista vacía **`<<>>`**.
+Para acceder a un elemento de la lista se utiliza el operador de indexación
+**`|> índice <|`** y su inicialización por defecto es la lista vacía **`<<>>`**.
 
 ---
 ## **Registros.**
@@ -175,10 +177,10 @@ La palabra reservada para definirlos es **`Inventory`** y su sintaxis es de la f
 
 ```sh
 Inventory <nombre>:
-  <tipo> <nombre>
-  <tipo> <nombre>
+  <tipo> <nombre> [= <inicialización por default>]
+  <tipo> <nombre> [= <inicialización por default>]
   ...
-  <tipo> <nombre>
+  <tipo> <nombre> [= <inicialización por default>]
 .~
 ```
 
@@ -804,14 +806,16 @@ free p
 Kit of Runes edades = <<~12~, ~23~, ~15~, ~40~, ~15~>>
 Runes|}5{| nombres = |}~Natascha~, ~Francisco~, ~Manuel~, ~Ricardo~, ~Haskell~{| 
 
-controller i = 0 -> 4:
-  drop ~Hola ~, nombres|}i{|, ~ tienes ~, edad|}i{|, ~ años!~
+controller Power i = 0 -> 4:
+  drop ~Hola ~, nombres|)i(|, ~ tienes ~, edad|>i<|, ~ años!~
 .~
 
 Kit of Kit of Power dobles = << <<10,5>>, <<3,6>>, <<4,2>> >>
 
-controller d <- dobles:
-  drop ~Dobles: ~, d
+controller Kit of Power kpd <- dobles:
+  controller Power d <- kpd:
+    drop ~Dobles: ~, d
+  .~
 .~
 ```
 

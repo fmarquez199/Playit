@@ -1,10 +1,10 @@
-world %Factorial%:
-  monster factorial(Power n) Power:
+monster factorial(Power n) Power:
     Button:
       | n < 0 } unlock 0
       | n == 0 } unlock 1
       | n > 0 } unlock n * kill factorial(n-1)
-    .~
-
-  .~
+    .~    
+.~
+world %Factorial%:
+    Power f = kill factorial(10)
 .~

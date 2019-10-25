@@ -10,8 +10,9 @@ module Main where
 
 import Data.Strings (strEndsWith)
 import Control.Monad.Trans.RWS
-import System.Environment
+import Control.Monad (mapM_)
 import Control.Exception
+import System.Environment
 import System.IO.Error
 import System.IO
 import Playit.SymbolTable
@@ -50,7 +51,8 @@ main = do
                     if hasError tokens then
                         putStrLn $ tkErrorToString $ filter isError tokens
                     else do
-                        (ast,(st,_), _) <- runRWST (parse tokens) () initState
+                        (ast@(Programa i),(st,_,_), _) <- runRWST (parse tokens) () initState
+                        -- putStrLn $ concatMap show i
                         print ast
                         putStrLn $ replicate 7 '\n'
                         print st

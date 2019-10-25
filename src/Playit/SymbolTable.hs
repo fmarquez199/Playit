@@ -9,7 +9,7 @@ Modulo para la creacion y manejo de la tabla de simbolos
 module Playit.SymbolTable where
 
 import Control.Monad.Trans.RWS
-import Control.Monad (void)
+import Control.Monad (void,forM,when)
 import qualified Data.Map as M
 -- import Data.List.Split (splitOn)
 import Data.Maybe (fromJust, isJust, isNothing)
@@ -25,28 +25,14 @@ import Playit.Types
 
 -------------------------------------------------------------------------------
 -- Estado inicial con todo lo predefinido del lenguaje
-initState :: (SymTab,StackScopes)
-initState = createInitSymTab (SymTab M.empty) [0]
+initState :: (SymTab,ActiveScopes,Alcance)
+initState = createInitSymTab (SymTab M.empty)
 
 
-createInitSymTab :: SymTab -> StackScopes -> (SymTab,StackScopes)
-createInitSymTab st scopes = (insertSymbols symbols info st,scopes)
+createInitSymTab :: SymTab -> (SymTab,ActiveScopes,Alcance)
+createInitSymTab st = (insertSymbols symbols info st,[0],0)
     where
-        symbols = t ++ words
-        t = ["Power", "Skill", "Rune", "Runes", "Battle", "Inventory", "Items"]
-        words = ["Win", "Lose", "free", "puff"]
-        info = ti ++ wi
-        ti = [pInfo, sInfo, rInfo, rsInfo, bInfo, inventoryInfo, itemsInfo]
-        wi = [boolsInfo, boolsInfo, aptInfo, aptInfo]
-        pInfo = SymbolInfo TInt 0 Tipos
-        sInfo = SymbolInfo TFloat 0 Tipos
-        rInfo = SymbolInfo TChar 0 Tipos
-        rsInfo = SymbolInfo TStr 0 Tipos
-        bInfo = SymbolInfo TBool 0 Tipos
-        inventoryInfo = SymbolInfo TRegistro 0 ConstructoresTipos
-        itemsInfo = SymbolInfo TUnion 0 ConstructoresTipos
-        boolsInfo = SymbolInfo TBool 0 Variable
-        aptInfo = SymbolInfo (TApuntador TDummy) 0 Apuntadores
+
 -------------------------------------------------------------------------------
 
 
@@ -54,10 +40,7 @@ createInitSymTab st scopes = (insertSymbols symbols info st,scopes)
 -- Se apila el nuevo alcance
 pushNewScope :: MonadSymTab ()
 pushNewScope = do
-    -- (actualSymTab, scopes@(actualScope:_)) <- get
-    (actualSymTab, scopes) <- get
-    let newScope = (head scopes) + 1
-    put (actualSymTab, newScope:scopes)
+
 -------------------------------------------------------------------------------
 
 
@@ -65,18 +48,17 @@ pushNewScope = do
 -- Se desapila el alcance actual
 popScope :: MonadSymTab ()
 popScope = do
-    -- (actualSymTab, _:scopes) <- get
-    (actualSymTab, scopes) <- get
-    put (actualSymTab, tail scopes)
+
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
 -- Agrega a la tabla de simbolos la lista de identificadores con su informacion:
---  Tipo, alcance
-addToSymTab :: [Nombre] -> [SymbolInfo] -> SymTab -> StackScopes -> MonadSymTab ()
-addToSymTab ids info actualSymTab scopes = 
-    put (insertSymbols ids info actualSymTab, scopes)
+--  Tipo, alcance, categoria
+addToSymTab :: [Nombre] -> [SymbolInfo] -> SymTab -> ActiveScopes -> Alcance
+            -> MonadSymTab ()
+addToSymTab ids info actualSymTab activeScopes scope = 
+    put (insertSymbols ids info actualSymTab, activeScopes, scope)
 -------------------------------------------------------------------------------
 
 
@@ -85,14 +67,10 @@ addToSymTab ids info actualSymTab scopes =
 insertSymbols :: [Nombre] -> [SymbolInfo] -> SymTab -> SymTab
 insertSymbols [] _ symTab = symTab
 insertSymbols (id:ids) (info:infos) (SymTab table)
-    -- | isNothing (M.lookup id table) = insertSymbols ids infos newSymTab
-    -- | otherwise = SymTab $ M.insert id (info : (fromJust (M.lookup id table))) table
-    | M.member id table = insertSymbols ids infos updSymTab
-    | otherwise = insertSymbols ids infos newSymTab 
+
     where
         -- Tabla de simbolos con el identificador insertado
-        newSymTab = SymTab $ M.insert id [info] table
-        updSymTab = SymTab $ M.adjust (info:) id table
+
 -------------------------------------------------------------------------------
 
 
@@ -104,10 +82,5 @@ lookupInSymTab var (SymTab table) = M.lookup var table
 
 
 -------------------------------------------------------------------------------
--- Añade las variables a la tabla de simbolos
-insertDeclarations :: [Nombre] -> Tipo -> MonadSymTab ()
-insertDeclarations ids t = do
-    (actualSymTab, scopes@(scope:_)) <- get
-    let info = replicate (length ids) (SymbolInfo t scope Variable)
-    addToSymTab ids info actualSymTab scopes
+
 -------------------------------------------------------------------------------
