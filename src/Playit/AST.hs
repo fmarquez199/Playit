@@ -9,6 +9,7 @@
 -}
 module Playit.AST where
 
+import Control.Monad
 import Control.Monad.Trans.RWS
 import Control.Monad.IO.Class
 import Data.Maybe (fromJust, isJust, isNothing)
@@ -31,12 +32,13 @@ import Playit.Types
 crearIdvar :: Nombre -> Posicion -> MonadSymTab Vars
 crearIdvar name p = do
     (symTab, scopes, _) <- get
+    file <- ask
     let info = lookupInSymTab name symTab
 
     if isJust info then return $ Var name (getType $ head $ fromJust info)
     else 
-        error ("\n\nError semantico, la variable: '" ++ name ++ 
-                "', no esta declarada. " ++ show p ++ "\n")
+        error ("\n\nError: " ++ file ++ ": " ++ show p ++ "\n\tVariable '"
+                ++ name ++ "' no declarada.\n")
 -------------------------------------------------------------------------------
 
 
@@ -54,9 +56,10 @@ crearVarIndex v e =
 
 -------------------------------------------------------------------------------
 -- Crea el nodo para variables de acceso a registros, uniones (campos)
-crearVarCompIndex :: Vars -> Nombre -> MonadSymTab Vars
-crearVarCompIndex v campo = do
+crearVarCompIndex :: Vars -> Nombre -> Posicion -> MonadSymTab Vars
+crearVarCompIndex v campo p = do
     (symTab, scopes, _) <- get
+    file <- ask
 
     --let info = lookupInScopes scopes campo symTab
 
@@ -64,8 +67,8 @@ crearVarCompIndex v campo = do
 
     if isJust info then return $ VarCompIndex v campo (getType $ head $ fromJust info)
     else 
-        error ("\n\nError semantico, el campo: '" ++ campo ++ 
-                "', no esta declarado.\n")
+        error ("\n\nError: " ++ file ++ ": " ++ show p ++ "\n\tCampo '"
+                ++ campo ++ "' no declarado.\n")
 -------------------------------------------------------------------------------
 
 
@@ -236,7 +239,7 @@ crearGuardiaIF exprCond seqInstrs (line, _) = (exprCond, seqInstrs)
 
 -------------------------------------------------------------------------------
 crearIfSimple :: Expr -> Expr -> Expr -> Tipo ->  Posicion -> Expr
-crearIfSimple con v f t (linea, col) = IfSimple con v f t
+crearIfSimple cond v f t (linea, col) = IfSimple cond v f t
 {-| t con == TBool && t v == t f && t v /= TError = IfSimple con v f
   | otherwise = error ("\n\nError semantico en el operador ternario '? :' en la linea: " ++ show linea ++ " tipo de verdad: " ++ (show $ t v) ++ " tipo de mentira: " ++ (show $ t f))
   where t = typeE-}
@@ -384,12 +387,11 @@ definirParam param@(Param name t ref) = do
 
 -------------------------------------------------------------------------------
 -- Crea el nodo para la instruccion que llama a la subrutina
-crearSubrutinaCall :: Nombre -> Parametros -> MonadSymTab Subrutina
-crearSubrutinaCall nombre params = do
 
         return $ SubrutinaCall nombre params
     else
-        error $ "Error semantico, la subrutina '" ++ nombre ++ "' no ha sido definida."
+        error $ "\n\nError: " ++ file ++ ": " ++ show p ++ "\n\tSubrutina '" ++
+                nombre ++ "' no definida.\n"
 -------------------------------------------------------------------------------
 
 
@@ -416,14 +418,10 @@ crearFuncCall subrutina@(SubrutinaCall nombre _) = do
 
 -------------------------------------------------------------------------------
 
-definirRegistro id decls = do
-
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
-
-definirUnion id decls = do
 
 -------------------------------------------------------------------------------
 
@@ -437,13 +435,14 @@ definirUnion id decls = do
 
 -------------------------------------------------------------------------------
 -- Crea el nodo para una instruccion Print
-crearPrint :: Expr -> Posicion -> Instr
-crearPrint e (line,_)
-    | tE /= TError = Print e
-    | otherwise = 
-        error ("\n\nError semantico en la expresion del 'print': '" ++
-                show e ++ "', de tipo: " ++ show tE ++
-                ". En la linea: " ++ show line ++ "\n")
+crearPrint :: Expr -> Posicion -> MonadSymTab Instr
+crearPrint e p
+    | tE /= TError = return $ Print e
+    | otherwise = do
+        file <- ask
+        error ("\n\nError: " ++ file ++ ": " ++ show p ++
+                "\nExpresion del 'print': '" ++
+                show e ++ "', de tipo: " ++ show tE ++ "\n")
     where
         tE = typeE e
 -------------------------------------------------------------------------------
@@ -464,14 +463,15 @@ crearRead e _ = Read e
 
 -------------------------------------------------------------------------------
 -- Crea el nodo para una instruccion Free
-crearFree :: Nombre -> MonadSymTab Instr
-crearFree var = do
+crearFree :: Nombre -> Posicion -> MonadSymTab Instr
+crearFree var p = do
     (symtab, activeScope:_, scope) <- get
+    file <- ask
     let info = lookupInSymTab var symtab
     if isJust info then
         let scopeOk = activeScope `elem` map getScope (fromJust info) in
         if scopeOk then return $ Free var
-        else error "Error semantico, variable fuera de alcance."
+        else error $ "Error: " ++ file ++ ": " ++ show p ++ "\n\tVariable '" ++
+                    var ++ "' fuera de alcance.\n"
     else
-        error "Error semantico, variable no definida."
--------------------------------------------------------------------------------
+

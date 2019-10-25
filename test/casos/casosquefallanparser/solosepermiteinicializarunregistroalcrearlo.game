@@ -1,7 +1,0 @@
-world %test%:
-    Inventory Contacto:
-        Power a,b
-    .~
-    Contacto c
-    c = {1,2}
-.~

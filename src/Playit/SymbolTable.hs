@@ -71,6 +71,7 @@ insertSymbols (id:ids) (info:infos) (SymTab table)
     where
         -- Tabla de simbolos con el identificador insertado
 
+
 -------------------------------------------------------------------------------
 
 
