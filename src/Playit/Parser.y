@@ -219,6 +219,11 @@ Identificadores :: { ([(Nombre, Posicion)], SecuenciaInstr) }
 Identificador :: { ((Nombre, Posicion), SecuenciaInstr) }
   : nombre "=" Expresion  { ((getTk $1,getPos $1), [Asignacion (Var (getTk $1) TDummy) $3]) }
   | nombre                { ((getTk $1,getPos $1), []) }
+  -- Para puff (puff ...) var(si es que se permite apuntador de varios apuntadores),
+  -- podemos colocar aqui Tipo nombre [= Expr], pero habria que verificar luego 
+  -- en la regla Declaracion que todos los tipos sean coherentes?
+  | pointer nombre "=" Expresion  { ((getTk $2,getPos $2), [Asignacion (Var (getTk $2) TDummy) $4]) }
+  | pointer nombre                { ((getTk $2,getPos $2), []) }
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
@@ -240,15 +245,15 @@ Lvalue :: { Vars }
 Tipo :: { Tipo }
   : Tipo "|}" Expresion "{|" %prec "|}"   { TArray $3 $1 }
   | list of Tipo                          { TLista $3 }
+  | Tipo pointer                          { TApuntador $1 }
+  | "(" Tipo ")"                          { $2 }
   | int                                   { TInt }
   | float                                 { TFloat }
   | bool                                  { TBool }
   | char                                  { TChar }
   | str                                   { TStr }
-  | idtipo                                { TDummy } -- No se sabe si es un Registro o Union
-  | Tipo pointer                          { TApuntador $1 }
-  | "(" Tipo ")"                          { $2 }
-
+  | idtipo                                { TDummy } -- No se sabe si es Reg o Union
+  -- | pointer                               { TApuntador TDummy } 
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
@@ -346,8 +351,8 @@ Controller :: { Instr }
 InitVar1 :: { (Nombre, Expr) }
   : nombre "=" Expresion
     { % do
-      -- TODO: Verificar que nombre este en la symtab, asignar valor y el scope concuerde con el actual
-      -- Se supone que TDummy deberia cambiar por el tipo de Expresion
+      -- TODO: Verificar que nombre este en la symtab, el scope concuerde con el actual
+      -- y cambiar TDummy por el tipo de Expresion
       let var = Var (getTk $1) TDummy
       return $ crearAsignacion var $3 $2
       return ((getTk $1), $3)
@@ -363,8 +368,8 @@ InitVar1 :: { (Nombre, Expr) }
 InitVar2 :: { (Nombre, Expr) }
   : nombre "<-" Expresion %prec "<-"
     { % do
-      -- TODO: Verificar que nombre este en la symtab, asignar valor y el scope concuerde con el actual
-      -- Se supone que TDummy deberia cambiar por el tipo de Expresion
+      -- TODO: Verificar que nombre este en la symtab, el scope concuerde con el actual
+      -- y cambiar TDummy por el tipo de Expresion
       let var = Var (getTk $1) TDummy
       return $ crearAsignacion var $3 $2
       return ((getTk $1), $3)
@@ -541,7 +546,7 @@ Expresion :: { Expr }
   | FuncCall                     { $1 }
   | "(" Expresion ")"            { $2 }
   | "{" Expresiones "}"          { crearArrLstExpr $2 }
-  | "|}" Expresiones "{|"        { crearArrLstExpr $2 }
+  | "|)" Expresiones "(|"        { crearArrLstExpr $2 }
   | "<<" Expresiones ">>"        { crearArrLstExpr $2 }
   | "<<"  ">>"                   { crearArrLstExpr [] }
   | new Tipo                     { OpUnario New Null $2 }

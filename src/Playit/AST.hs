@@ -236,7 +236,7 @@ crearGuardiaIF exprCond seqInstrs (line, _) = (exprCond, seqInstrs)
 
 -------------------------------------------------------------------------------
 crearIfSimple :: Expr -> Expr -> Expr -> Tipo ->  Posicion -> Expr
-crearIfSimple con v f t (linea, col) = IfSimple con v f t
+crearIfSimple cond v f t (linea, col) = IfSimple cond v f t
 {-| t con == TBool && t v == t f && t v /= TError = IfSimple con v f
   | otherwise = error ("\n\nError semantico en el operador ternario '? :' en la linea: " ++ show linea ++ " tipo de verdad: " ++ (show $ t v) ++ " tipo de mentira: " ++ (show $ t f))
   where t = typeE-}
@@ -453,7 +453,8 @@ crearFuncCall subrutina@(SubrutinaCall nombre _) = do
 definirRegistro :: Nombre -> SecuenciaInstr -> MonadSymTab SecuenciaInstr
 definirRegistro id decls = do
     (symTab, activeScopes, scope) <- get
-    -- TODO: update categoria de las declaraciones y colocar el reg al que pertenece
+    -- TODO: cambiar categoria de las declaraciones a Campo y colocar el reg
+    -- al que pertenecen
     let infos = lookupInScopes [1] id symTab
     if isJust infos then
         error $ "\n\nError semantico, el Invenory '" ++ id ++ "', ya está definido."
@@ -469,7 +470,8 @@ definirRegistro id decls = do
 definirUnion :: Nombre -> SecuenciaInstr -> MonadSymTab SecuenciaInstr
 definirUnion id decls = do
     (symTab, activeScopes, scope) <- get
-    -- TODO: update categoria de las declaraciones y colocar la union al que pertenece
+    -- TODO: cambiar categoria de las declaraciones a Campo y colocar el reg
+    -- al que pertenecen
     let infos = lookupInScopes [1] id symTab
     if isJust infos then
         error $ "\n\nError semantico, el Items '" ++ id ++ "', ya está definido."

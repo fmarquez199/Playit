@@ -45,9 +45,10 @@ main = do
             if null code || isEmptyFile code then
                 putStrLn "\nArchivo vacio. Nada que hacer\n"
             else
-                let tokens = alexScanTokens code in
+                let tokens = alexScanTokens code in do
                 
-                    -- mapM_ (putStrLn . show) tokens
+                    mapM_ print tokens
+
                     if hasError tokens then
                         putStrLn $ tkErrorToString $ filter isError tokens
                     else do

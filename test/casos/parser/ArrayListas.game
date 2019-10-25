@@ -1,0 +1,14 @@
+Inventory Contacto:
+    Runes id
+.~
+world %test%:
+    Kit of Contacto lista
+    Contacto c1, c2, c3    
+    Contacto|}10{| array = |)c1,c2,c3(|
+
+    Power|}5{| puff a0, puff a1
+
+    Power a2, puff a3
+
+    Kit of Kit of Kit of Power  asd
+.~
