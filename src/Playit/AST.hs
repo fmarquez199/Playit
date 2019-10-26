@@ -174,7 +174,7 @@ crearOpBinComparable :: BinOp -> Expr -> Expr -> [Tipo] -> Tipo -> Posicion -> M
 crearOpBinComparable op e1 e2 tcomp tOp p
     -- | tE1 == TDummy || tE2 == TDummy = TDummy
     | tE1 `elem` all_comps && tE2 == tE1  = return $ OpBinario op e1 e2 tOp
-    | ((tE1 == TFloat) || (tE1 == TInt)) && ((tE2 == TFloat) && (tE2 == TInt))  = return $ OpBinario op e1 e2 tOp
+    | ((tE1 == TFloat) || (tE1 == TInt)) && ((tE2 == TFloat) || (tE2 == TInt))  = return $ OpBinario op e1 e2 tOp
     | (op == Igual || op == Desigual) && isArray tE1 && isArray tE2 && tE1 == tE2 = return $ OpBinario op e1 e2 tOp
     | (op == Igual || op == Desigual) && isList tE1 && isList tE2 && tE1 == tE2 = return $ OpBinario op e1 e2 tOp
     | (op == Igual || op == Desigual) && isPointer tE1 && isPointer tE2 && tE1 == tE2 = return $ OpBinario op e1 e2 tOp

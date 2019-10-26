@@ -118,17 +118,20 @@ world %caso_malicia'M'%:
     c = manukitpower1 == manukitpower2
 
     Power puff manukitpower3
-    Power puff puff manukitpower4
+    Kit of Kit of Power puff puff puff manukitpower4
     
-    c = manukitpower3 == puff manukitpower4
+    c = puff manukitpower3 == puff puff puff manukitpower4|>12<||>3<|
          
     Rune c1 = ^*c*
     Rune c22 = .*c*
-    Rune c3 = ^.c
-    Rune c4 = .^c
-    Rune c5 = .(^c)
-    Rune c6 = (.(^c))
-    Rune c7 = ^(.(c))
+
+    Rune c2222
+    Rune c3 = ^.c2222
+    
+    Rune c4 = .^c2222
+    Rune c5 = .(^c2222)
+    Rune c6 = (.(^c2222))
+    Rune c7 = ^(.(c2222))
     
     
     "' Hola '"
@@ -139,24 +142,24 @@ world %caso_malicia'M'%:
             keepPlaying
        
         @ Notar que la condicion de lock debe ser booleana
-        controller Power i = (2 - 2) -> 10 - 1 lock (abc|>0<| + b2 ) * (b2? a2 + 1 : abc|>b1 - 1<|):
+        controller Power i = (2 - 2) -> 10 - 1 lock (abc2|>0<| + 2 ) * (b2? a2 + 1 : abc2|>5 - 1<|):
 
             Button:
-                | n1 > 2 }
+                | 1'2 > 2 }
             gameOver
             keepPlaying
                     Power a
             .~    
             Button:
-                | n1 > 2 }
-                    unlock n1 + 2
+                | 1 > 2'2 }
+                    unlock i + 2
                 | notPressed }
-                    unlock n1 + 2
+                    unlock i + 2
             .~    
         .~ 
              
     @  asd
-    lock (abc|>0<| + b2 ) * (b2? a2 + 1 : abc|>b1 - 1<|)
+    lock (abc2|>0<| + 1 ) * (b2? a2 + 1 : abc2|>2 - 1<|)
     .~
 
     controller Power i <- abc:

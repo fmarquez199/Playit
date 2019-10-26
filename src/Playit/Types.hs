@@ -87,8 +87,8 @@ data Tipo =
     TRegistro        |
     TStr             |
     TUnion
-    deriving(Eq, Ord,Show)
-{-
+    deriving(Eq, Ord)
+
 instance Show Tipo where
     show (TApuntador t) = "Apuntador de " ++ show t
     show (TArray e t)   = "Arreglo de tamano " ++ show e ++ " de " ++ show t
@@ -103,22 +103,22 @@ instance Show Tipo where
     show TRegistro      = "Registro"
     show TStr           = "String"
     show TUnion         = "Union"
--}
+
 data Vars =
     Param Nombre Tipo Ref         |
     PuffValue Vars Tipo           | -- Variable deferenciada con puff
     Var Nombre Tipo               |
     VarIndex Vars Expr Tipo       | -- Indice para array, listas
     VarCompIndex Vars Nombre Tipo   -- Campos de los registros y uniones
-    deriving (Eq, Ord,Show)
-{-
+    deriving (Eq, Ord)
+
 instance Show Vars where
     show (Param n t r)    = "Parametro: " ++ n ++ " de tipo: " ++ show t ++ " pasado por: " ++ show r
     show (PuffValue v t)  = show t ++ " puff " ++ show v
     show (Var n t)        = show t ++ " " ++ n
     show (VarIndex v e t) = show t ++ " " ++ show v ++ " index: " ++ show e
     show (VarCompIndex v n t) = show t ++ " " ++ show v ++ " spawn " ++ n
--}
+
 -- Especifica si un parametro es pasado como valor o por referencia
 data Ref =
     Referencia |
