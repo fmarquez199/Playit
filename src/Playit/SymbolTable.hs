@@ -108,11 +108,13 @@ insertDeclarations ids t asigs = do
         
         when (isJust idScopeInfo) $
             let info = fromJust $ lookupInSymTab id symTab
-                scopeInfo = [i | i <- info, getScope i == activeScope] 
+                scopeInfo = [i | i <- info, getScope i == activeScope]
                 idCategories = map getCategory scopeInfo
                 isInAnyCategory = Variable `elem` idCategories
+                idScopes = map getScope scopeInfo
+                isInActualScope = getScope (fromJust idScopeInfo) `elem` idScopes
             in
-            when isInAnyCategory $
+            when (isInAnyCategory || isInActualScope) $
                 error $ "\n\nError: " ++ file ++ ": " ++ show p ++
                     "\n\tVariable '" ++ id ++ "' ya esta declarada.\n"
         return id
