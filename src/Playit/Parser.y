@@ -234,8 +234,8 @@ Identificador :: { ((Nombre, Posicion), SecuenciaInstr) }
 -- Lvalues, contenedores que identifican a las variables
 Lvalue :: { Vars }
   : Lvalue "." nombre           { % crearVarCompIndex $1 (getTk $3) (getPos $3) }
-  | Lvalue "|)" Expresion "(|"  { crearVarIndex $1 $3 }   -- Indexacion arreglo
-  | Lvalue "|>" Expresion "<|"  { crearVarIndex $1 $3 }   -- Indexacion lista
+  | Lvalue "|)" Expresion "(|"  {% crearVarIndex $1 $3 (getPos $2)}   -- Indexacion arreglo
+  | Lvalue "|>" Expresion "<|"  {% crearVarIndex $1 $3 (getPos $2)}   -- Indexacion lista
   | pointer Lvalue              { PuffValue $2 (typeVar $2) }
   | nombre                      { % crearIdvar (getTk $1) (getPos $1) }
 

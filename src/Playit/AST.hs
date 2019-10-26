@@ -33,9 +33,10 @@ crearIdvar :: Nombre -> Posicion -> MonadSymTab Vars
 crearIdvar name p = do
     (symTab, scopes, _) <- get
     file <- ask
-    let info = lookupInSymTab name symTab
-
-    if isJust info then return $ Var name (getType $ head $ fromJust info)
+    let info = lookupInScopes scopes name symTab
+    
+    if isJust info then do
+        return $ Var name (getType $ fromJust info)
     else 
         error ("\n\nError: " ++ file ++ ": " ++ show p ++ "\n\tVariable '"
                 ++ name ++ "' no declarada.\n")
@@ -44,13 +45,21 @@ crearIdvar name p = do
 
 -------------------------------------------------------------------------------
 -- Crea el nodo para variables de indexacion
-crearVarIndex :: Vars -> Expr -> Vars
-crearVarIndex v e = 
-    let t = case typeVar v of 
+crearVarIndex :: Vars -> Expr -> Posicion -> MonadSymTab Vars
+crearVarIndex v e p 
+    | tVar == TError = do
+        fileName <- ask
+        error $ "\n\nError: " ++ fileName ++ ": " ++ show p ++ "\n\t" ++"La variable : '" ++ (show v) ++ "' no es indexable, tiene que ser un array o una lista."
+    | tExpre /= TInt = do
+        fileName <- ask
+        error $ "\n\nError: " ++ fileName ++ ": " ++ show p ++ "\n\t" ++"Expresion de indexación '" ++ (show e) ++ "' no es de tipo entero."
+    | otherwise = return $ VarIndex v e tVar
+    where
+        tVar = case typeVar v of 
                 tipo@(TArray _ _) -> typeArrLst tipo
                 tipo@(TLista _) -> typeArrLst tipo
                 _ -> TError
-    in VarIndex v e t
+        tExpre = typeE e
 -------------------------------------------------------------------------------
 
 
@@ -149,7 +158,7 @@ crearOpBin op e1 e2 t1 t2 tOp p
             return $ OpBinario op e1 e2 TFloat 
         else do
             fileName <- ask
-            error $ "\n\nError: " ++ fileName ++ ": " ++ show p ++ "\n\t" ++"La operacion: '" ++ (show op) ++ "'," ++ " requiere que el tipo de " ++ (show e1) ++ " sea '" ++ (show t1) ++ "' y de " ++  (show e2) ++ " sea '" ++ (show t2) ++ "'"
+            error $ "\n\nError: " ++ fileName ++ ": " ++ show p ++ "\n\t" ++"La operacion: '" ++ (show op) ++ "'," ++ " requiere que el tipo de '" ++ (show e1) ++ "' sea '" ++ (show t1) ++ "' y de '" ++  (show e2) ++ "' sea '" ++ (show t2) ++ "'"
     where
         tE1 = typeE e1
         tE2 = typeE e2
@@ -167,7 +176,7 @@ crearOpUn op e t tOp p
             return $ OpUnario op e TFloat
         else do
             fileName <- ask
-            error $ "\n\nError: " ++ fileName ++ ": " ++ show p ++ "\n\t" ++"La operacion: '" ++ (show op) ++ "'," ++ " requiere que el tipo de " ++ (show e) ++ " sea de tipo '" ++ (show tOp) ++ "'"
+            error $ "\n\nError: " ++ fileName ++ ": " ++ show p ++ "\n\t" ++"La operacion: '" ++ (show op) ++ "'," ++ " requiere que el tipo de '" ++ (show e) ++ "' sea '" ++ (show tOp) ++ "'"
     where
         tE = typeE e
 -------------------------------------------------------------------------------
