@@ -26,6 +26,20 @@ import Playit.Types
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 
+obtenerTipo :: Nombre -> Posicion-> MonadSymTab Tipo
+obtenerTipo name p = do
+    (symTab, scopes, _) <- get
+    file <- ask
+    let info = lookupInScopes [1] name symTab
+    if isJust info then do
+        let sym = fromJust info
+        if getCategory sym == ConstructoresTipos then do
+            return $ getType sym
+        else do 
+            error $ "\n\nError: " ++ file ++ ": " ++ show p ++ "\n\t" ++"Identificador : '" ++ (show name) ++ "' no es un tipo."
+    else
+        error $ "\n\nError: " ++ file ++ ": " ++ show p ++ "\n\t" ++"El Tipo : '" ++ (show name) ++ "' no ha sido creado."
+
 
 -------------------------------------------------------------------------------
 -- Crea el nodo para identificadores de variables y verifica que estén declarados
@@ -77,15 +91,30 @@ crearVarCompIndex :: Vars -> Nombre -> Posicion -> MonadSymTab Vars
 crearVarCompIndex v campo p = do
     (symTab, scopes, _) <- get
     file <- ask
+    let tname = case typeVar v of 
+            (TRegistro tname) -> tname
+            (TUnion tname) -> tname
+            _ -> ""
+    
+    if (tname == "") then do
+        error ("\n\nError: " ++ file ++ ": " ++ show p ++ "\n\t'" ++ show v ++ " no es un registro o una union.\n")
+    else do
 
-    --let info = lookupInScopes scopes campo symTab
+        let info = lookupInSymTab campo symTab
+        if isJust info then do
+        
+            let isInRegUnion (SymbolInfo typ scope cat ext) =  cat == Campos && (fromJust $ getRegName ext) == tname
 
-    let info = lookupInSymTab campo symTab
-
-    if isJust info then return $ VarCompIndex v campo (getType $ head $ fromJust info)
-    else 
-        error ("\n\nError: " ++ file ++ ": " ++ show p ++ "\n\tCampo '"
-                ++ campo ++ "' no declarado.\n")
+            let symbols = filter isInRegUnion (fromJust info ) -- Debería tener un elemento o ninguno
+                        
+            if null symbols then
+                error ("\n\nError: " ++ file ++ ": " ++ show p ++ "\n\t'" ++ tname ++ "' no tiene el campo " ++ campo ++ ".\n")
+            else 
+                return $ VarCompIndex v campo (getType $ head $ symbols) 
+        else do
+            error ("\n\nError: " ++ file ++ ": " ++ show p ++ "\n\tCampo '"
+                    ++ campo ++ "' no declarado.\n")
+        
 -------------------------------------------------------------------------------
 
 
@@ -160,7 +189,7 @@ crearOpBin :: BinOp -> Expr -> Expr -> Tipo -> Tipo -> Tipo -> Posicion -> Monad
 crearOpBin op e1 e2 t1 t2 tOp p
     -- | tE1 == TDummy || tE2 == TDummy = TDummy
     | tE1 == t1 && tE2 == t2  = return $ OpBinario op e1 e2 tOp
-    | ((tE1 == TFloat) || (tE2 == TFloat) ) && (tOp == TInt)  = return $ OpBinario op e1 e2 TFloat
+    | tE1 == TFloat && tE2 == TFloat && tOp == TInt  = return $ OpBinario op e1 e2 TFloat
     | otherwise = do
         fileName <- ask
         error $ "\n\nError: " ++ fileName ++ ": " ++ show p ++ "\n\t" ++"La operacion: '" ++ (show op) ++ "'," ++ " requiere que el tipo de '" ++ (show e1) ++ "' sea '" ++ (show t1) ++ "' y de '" ++  (show e2) ++ "' sea '" ++ (show t2) ++ "'"
@@ -174,7 +203,6 @@ crearOpBinComparable :: BinOp -> Expr -> Expr -> [Tipo] -> Tipo -> Posicion -> M
 crearOpBinComparable op e1 e2 tcomp tOp p
     -- | tE1 == TDummy || tE2 == TDummy = TDummy
     | tE1 `elem` all_comps && tE2 == tE1  = return $ OpBinario op e1 e2 tOp
-    | ((tE1 == TFloat) || (tE1 == TInt)) && ((tE2 == TFloat) || (tE2 == TInt))  = return $ OpBinario op e1 e2 tOp
     | (op == Igual || op == Desigual) && isArray tE1 && isArray tE2 && tE1 == tE2 = return $ OpBinario op e1 e2 tOp
     | (op == Igual || op == Desigual) && isList tE1 && isList tE2 && tE1 == tE2 = return $ OpBinario op e1 e2 tOp
     | (op == Igual || op == Desigual) && isPointer tE1 && isPointer tE2 && tE1 == tE2 = return $ OpBinario op e1 e2 tOp
@@ -539,7 +567,7 @@ definirRegistro id decls  p = do
 
         let newSymTab = SymTab $ M.map updateSymbol' table
         
-        let info = [SymbolInfo TRegistro 1 ConstructoresTipos [AST decls]]
+        let info = [SymbolInfo (TRegistro id) 1 ConstructoresTipos [AST decls]]
 
         addToSymTab [id] info newSymTab activeScopes scope
         return decls
@@ -564,7 +592,7 @@ definirUnion id decls p = do
 
         let newSymTab = SymTab $ M.map updateSymbol' table
         
-        let info = [SymbolInfo TUnion 1 ConstructoresTipos [AST decls]]
+        let info = [SymbolInfo (TUnion id) 1 ConstructoresTipos [AST decls]]
         addToSymTab [id] info symTab activeScopes scope
         return decls
 -------------------------------------------------------------------------------

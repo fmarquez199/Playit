@@ -233,11 +233,11 @@ Identificador :: { ((Nombre, Posicion), SecuenciaInstr) }
 
 -- Lvalues, contenedores que identifican a las variables
 Lvalue :: { Vars }
-  : Lvalue "." nombre           { % crearVarCompIndex $1 (getTk $3) (getPos $3) }
+  : Lvalue "." nombre           {% crearVarCompIndex $1 (getTk $3) (getPos $3) }
   | Lvalue "|)" Expresion "(|"  {% crearVarIndex $1 $3 (getPos $2)}   -- Indexacion arreglo
   | Lvalue "|>" Expresion "<|"  {% crearVarIndex $1 $3 (getPos $2)}   -- Indexacion lista
   | pointer Lvalue              {% crearDeferenciacion $2 (getPos $1)}
-  | nombre                      { % crearIdvar (getTk $1) (getPos $1) }
+  | nombre                      {% crearIdvar (getTk $1) (getPos $1) }
 
 
 -- Tipos de datos
@@ -251,7 +251,7 @@ Tipo :: { Tipo }
   | bool                                  { TBool }
   | char                                  { TChar }
   | str                                   { TStr }
-  | idtipo                                { TDummy } -- No se sabe si es Reg o Union
+  | idtipo                                {% obtenerTipo (getTk $1) (getPos $1)} 
   -- | pointer                               { TApuntador TDummy } 
 
 -------------------------------------------------------------------------------

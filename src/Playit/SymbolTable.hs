@@ -35,18 +35,18 @@ createInitSymTab st = (insertSymbols symbols info st,[0],0)
     where
         -- TODO: terminar de agregar todos los simbolos del lenguaje
         symbols = t ++ words
-        t = ["Power", "Skill", "Rune", "Runes", "Battle", "Inventory", "Items"]
+        t = ["Power", "Skill", "Rune", "Runes", "Battle"]--, "Inventory", "Items"]
         words = ["Win", "Lose", "free", "puff"]
         info = ti ++ wi
-        ti = [pInfo, sInfo, rInfo, rsInfo, bInfo, inventoryInfo, itemsInfo]
+        ti = [pInfo, sInfo, rInfo, rsInfo, bInfo]--, inventoryInfo, itemsInfo]
         wi = [boolsInfo, boolsInfo, aptInfo, aptInfo]
         pInfo = SymbolInfo TInt 0 Tipos []
         sInfo = SymbolInfo TFloat 0 Tipos []
         rInfo = SymbolInfo TChar 0 Tipos []
         rsInfo = SymbolInfo TStr 0 Tipos []
         bInfo = SymbolInfo TBool 0 Tipos []
-        inventoryInfo = SymbolInfo TRegistro 0 ConstructoresTipos []
-        itemsInfo = SymbolInfo TUnion 0 ConstructoresTipos []
+        --inventoryInfo = SymbolInfo TRegistro 0 ConstructoresTipos []
+        -- itemsInfo = SymbolInfo TUnion 0 ConstructoresTipos []
         boolsInfo = SymbolInfo TBool 0 Variable []
         aptInfo = SymbolInfo (TApuntador TDummy) 0 Apuntadores []
 -------------------------------------------------------------------------------
@@ -162,6 +162,10 @@ lookupInScopes' scopes (Just symInfo)
     where
         symScopes = [(s,a) | s <- symInfo, a <- scopes, getScope s == a]
 -------------------------------------------------------------------------------
+getRegName :: [ExtraInfo] -> Maybe String
+getRegName [] = Nothing
+getRegName ((FromReg rname):rs) = Just rname
+getRegName (_:rs) = getRegName rs
 
 -------------------------------------------------------------------------------
 updateType :: Nombre -> Alcance -> Tipo-> MonadSymTab ()
