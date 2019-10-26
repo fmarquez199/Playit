@@ -8,11 +8,13 @@ Modulo para la creacion y manejo de la tabla de simbolos
 module Playit.SymbolTable where
 
 import Control.Monad.Trans.RWS
-import Control.Monad (void,forM,when)
+import Control.Monad (void,forM)
 import qualified Data.Map as M
+import Playit.Lexer
 -- import Data.List.Split (splitOn)
 import Data.Maybe (fromJust, isJust, isNothing)
 import Playit.Types
+--import Playit.ErrorM
 
 
 -------------------------------------------------------------------------------
@@ -96,28 +98,19 @@ insertSymbols (id:ids) (info:infos) (SymTab table)
 
 -------------------------------------------------------------------------------
 -- Añade las variables a la tabla de simbolos
-insertDeclarations :: [(Nombre, Posicion)] -> Tipo -> SecuenciaInstr
-                    -> MonadSymTab SecuenciaInstr
+insertDeclarations :: [(Nombre,Posicion)] -> Tipo -> SecuenciaInstr -> MonadSymTab SecuenciaInstr
 insertDeclarations ids t asigs = do
-    (symTab, activeScopes@(activeScope:_), scope) <- get
-    file <- ask
-
-    checkedIds <- forM ids $ \(id,p) -> do
-        let idScopeInfo = lookupInScopes [activeScope] id symTab
+    (actualSymTab, activeScopes@(activeScope:_), scope) <- get
         
-        when (isJust idScopeInfo) $
-            let info = fromJust $ lookupInSymTab id symTab
-                scopeInfo = [i | i <- info, getScope i == activeScope] 
-                idCategories = map getCategory scopeInfo
-                isInAnyCategory = Variable `elem` idCategories
-            in
-            when isInAnyCategory $
-                error $ "\n\nError: " ++ file ++ ": " ++ show p ++
-                    "\n\tVariable '" ++ id ++ "' ya esta declarada.\n"
+    ids' <- forM ids $ \(id,(f,c)) -> do
+        _ <- if isJust $ lookupScopesNameInSymTab [activeScope] id actualSymTab then do
+                fileName <- ask
+                error $ "\n\n" ++ fileName ++ ": ("++ (show f) ++","++(show c)++"): error: redeclaración de \'" ++ id ++ "\'\n\n"
+            else return ()
         return id
     
-    let info = replicate (length ids) (SymbolInfo t activeScope Variable [])
-    addToSymTab checkedIds info symTab activeScopes scope
+    let info = replicate (length ids) (SymbolInfo t activeScope Variable [Nada])
+    addToSymTab ids' info actualSymTab activeScopes scope
     return asigs
 -------------------------------------------------------------------------------
 
@@ -128,6 +121,7 @@ lookupInSymTab :: Nombre -> SymTab -> Maybe [SymbolInfo]
 lookupInSymTab var (SymTab table) = M.lookup var table
 -------------------------------------------------------------------------------
 
+--------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
 -- Busca los identificadores de una variable en la tabla de simbolos dada.
@@ -145,31 +139,20 @@ lookupInScopes scopes nombre symtab =
     lookupInScopes' scopes (lookupInSymTab nombre symtab)
 -------------------------------------------------------------------------------
 
-
--------------------------------------------------------------------------------
--- Busca la informacion dentro de la cadena estatica
-lookupInScopes' :: [Alcance]-> Maybe [SymbolInfo] ->  Maybe SymbolInfo
-lookupInScopes' scopes Nothing = Nothing
-lookupInScopes' scopes (Just symInfo) 
-    | null symScopes  = Nothing
-    | otherwise = Just $ fst $ head symScopes
+--------------------------------------------------------------------------------
+-- Busca el identificador de una variable en la tabla de simbolos dada.
+lookupScopesInSymInfos :: [Alcance]-> Maybe [SymbolInfo] ->  Maybe SymbolInfo
+lookupScopesInSymInfos scopes Nothing = Nothing
+lookupScopesInSymInfos scopes (Just r) 
+    | null lstAlcances  = Nothing
+    | otherwise = Just $ fst $ head lstAlcances
     where
         symScopes = [(s,a) | s <- symInfo, a <- scopes, getScope s == a]
 -------------------------------------------------------------------------------
 
 
--------------------------------------------------------------------------------
-updateType :: Nombre -> Tipo -> MonadSymTab ()
-updateType name t = do
-    (symTab@(SymTab table), scopes, scope) <- get
-    let infos = lookupInSymTab name symTab
-    when (isJust infos) $ do
-        let isTarget sym = getType sym == t
-            updateType' = 
-                fmap (\sym -> if isTarget sym then modifyType sym t else sym)
-        put(SymTab $ M.adjust updateType' name table, scopes, scope)
--------------------------------------------------------------------------------
-
+modifiExtraInfoSymbol (SymbolInfo t s c [Nada]) extraInfo = SymbolInfo t s c extraInfo
+modifiExtraInfoSymbol (SymbolInfo t s c ei) extraInfo = SymbolInfo t s c (extraInfo ++ ei)
 
 -------------------------------------------------------------------------------
 -- 
@@ -181,24 +164,23 @@ modifyType symbolInfo _ = symbolInfo
 
 -------------------------------------------------------------------------------
 -- Actualiza la informacion extra del simbolo con la nueva
+-- Encuentra al simbolo al que se le quiere modificar la información extra dado su nombre y alcance
+-- Modifica su entrada para informacón extra
 -- NOTA: Es primeramente para agregar como informacion extra en las subrutinas
 --      su AST y parametros, puede necesitar modificarse si se quiere usar para
 --      algo diferente
-updateExtraInfo :: Nombre -> Categoria -> [ExtraInfo] -> MonadSymTab ()
-updateExtraInfo name category extraInfo = do
-    (symTab@(SymTab table), scopes, scope) <- get
+updateExtraInfo :: Nombre -> Alcance -> [ExtraInfo] -> MonadSymTab ()
+updateExtraInfo name scope extraInfo = do
+
+    (symTab@(SymTab table), scopes, lastScope) <- get
+    
+    -- Obtenemos todos los simbolos asociados al nombre    
     let infos = lookupInSymTab name symTab
-    when (isJust infos) $ do
-        let isTarget sym = getCategory sym == category
-            updateExtraInfo' = 
-                fmap (\sym -> if isTarget sym then modifyExtraInfo sym extraInfo else sym)
-        put(SymTab $ M.adjust updateExtraInfo' name table, scopes, scope)
--------------------------------------------------------------------------------
+    
+    if isJust infos then do
+        let isTargetSymbol sym = getScope sym == scope
+            updateExtraInfo' = fmap (\sym -> if isTargetSymbol sym then modifiExtraInfoSymbol sym extraInfo else sym)
+        put(SymTab $ M.adjust updateExtraInfo' name table, scopes, lastScope)
 
-
--------------------------------------------------------------------------------
--- Actualiza la informacion extra del simbolo con la nueva
-modifyExtraInfo :: SymbolInfo -> [ExtraInfo] -> SymbolInfo
-modifyExtraInfo (SymbolInfo t s c []) extraInfo = SymbolInfo t s c extraInfo
-modifyExtraInfo (SymbolInfo t s c ei) extraInfo = SymbolInfo t s c (extraInfo ++ ei)
+    else return ()
 -------------------------------------------------------------------------------

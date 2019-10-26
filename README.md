@@ -156,6 +156,8 @@ Son construcciones válidas:
 La inicialización por defecto de los arreglos en Playit se hace inicializando
 cada posición del arreglo en el valor por defecto del tipo dado.
 
+Para acceder a los elementos de un arreglo se utiliza `|) indice (|`
+
 ---
 ## **Listas.**
 
@@ -786,7 +788,7 @@ free p
 **Ejemplo puntero a array de enteros**
 ```sh
 Power puff p = summon Power|}20{|
-puff p|}1{| = 15
+puff p|)1(| = 15
 free|}{| p
 ```
 
@@ -807,15 +809,15 @@ Kit of Runes edades = <<~12~, ~23~, ~15~, ~40~, ~15~>>
 Runes|}5{| nombres = |}~Natascha~, ~Francisco~, ~Manuel~, ~Ricardo~, ~Haskell~{| 
 
 controller Power i = 0 -> 4:
-  drop ~Hola ~, nombres|)i(|, ~ tienes ~, edad|>i<|, ~ años!~
+  drop ~Hola ~, nombres|)i(|, ~ tienes ~, edades|)i(|, ~ anyos!~
 .~
 
 Kit of Kit of Power dobles = << <<10,5>>, <<3,6>>, <<4,2>> >>
 
 controller Kit of Power kpd <- dobles:
-  controller Power d <- kpd:
-    drop ~Dobles: ~, d
-  .~
+    controller Power d <- dobles:
+      drop ~Dobles: ~, d
+    .~
 .~
 ```
 

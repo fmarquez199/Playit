@@ -4,3 +4,4 @@ Playit.cabal
 *.yaml.lock
 .idea
 *.info
+testignorame/

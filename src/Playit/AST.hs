@@ -8,7 +8,6 @@
 *  Natascha Gamboa     12-11250
 -}
 module Playit.AST where
-
 import Control.Monad
 import Control.Monad.Trans.RWS
 import Control.Monad.IO.Class
@@ -29,16 +28,18 @@ import Playit.Types
 
 -------------------------------------------------------------------------------
 -- Crea el nodo para identificadores de variables y verifica que estén declarados
-crearIdvar :: Nombre -> Posicion -> MonadSymTab Vars
-crearIdvar name p = do
-    (symTab, scopes, _) <- get
-    file <- ask
-    let info = lookupInSymTab name symTab
+crearIdvar :: Nombre ->Posicion-> MonadSymTab Vars
+crearIdvar name (f,c)= do
 
-    if isJust info then return $ Var name (getType $ head $ fromJust info)
-    else 
-        error ("\n\nError: " ++ file ++ ": " ++ show p ++ "\n\tVariable '"
-                ++ name ++ "' no declarada.\n")
+    (symTab, scopes, _) <- get
+    fileName <- ask
+    let info = lookupScopesNameInSymTab scopes name symTab
+    
+    if isJust info then do
+        return $ Var name (getType  $ fromJust info)
+    else do
+        fileName <- ask
+        error ("\n\n" ++ fileName ++ ": ("++ (show f) ++","++(show c)++"): error: '" ++ name ++"' no está declarado.\n")
 -------------------------------------------------------------------------------
 
 
@@ -56,12 +57,12 @@ crearVarIndex v e =
 
 -------------------------------------------------------------------------------
 -- Crea el nodo para variables de acceso a registros, uniones (campos)
-crearVarCompIndex :: Vars -> Nombre -> Posicion -> MonadSymTab Vars
-crearVarCompIndex v campo p = do
-    (symTab, scopes, _) <- get
-    file <- ask
+crearVarCompIndex :: Vars -> Nombre -> MonadSymTab Vars
+crearVarCompIndex v campo = do
 
-    --let info = lookupInScopes scopes campo symTab
+    (symTab, scopes, _) <- get
+
+    --let info = lookupScopesNameInSymTab scopes campo symTab
 
     let info = lookupInSymTab campo symTab
 
@@ -367,42 +368,37 @@ crearWhile e i (line,_) = While e i
 
 
 -------------------------------------------------------------------------------
--- Actualiza el tipo y  la informacion extra de la subrutina
-definirSubrutina' :: Nombre -> Int -> SecuenciaInstr -> Categoria -> Tipo
+-- Actualiza la informacion extra de la subrutina
+definirSubrutina' :: Nombre -> [Expr] -> SecuenciaInstr
                     -> MonadSymTab SecuenciaInstr
-definirSubrutina' name 0 [] c t = do
-    updateType name t
-    updateExtraInfo name c []
+definirSubrutina' name [] [] = do
+    updateExtraInfo name 1 [Nada]
     return []
-definirSubrutina' name 0 i c t = do
-    updateType name t
-    updateExtraInfo name c [AST i]
+definirSubrutina' name [] i = do
+    updateExtraInfo name 1 [AST i]
     return i
-definirSubrutina' name params [] c t = do
-    updateType name t
-    updateExtraInfo name c [Params params]
+definirSubrutina' name params [] = do
+    updateExtraInfo name 1 [Params params]
     return []
-definirSubrutina' name params i c t = do
-    updateType name t
-    updateExtraInfo name c [Params params, AST i]
+definirSubrutina' name params i = do
+    updateExtraInfo name 1 [Params params, AST i]
     return i
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
 -- Agrega el nombre de la subrutina a la tabla de símbolos.
-definirSubrutina :: Nombre -> Categoria -> Posicion -> MonadSymTab ()
-definirSubrutina nombre categoria p = do
-    (symTab, activeScopes, scope) <- get
-    file <- ask
-    let info = lookupInSymTab nombre symTab
-    if isNothing info then 
-        let info = [SymbolInfo TDummy 1 categoria []]
-        in addToSymTab [nombre] info symTab activeScopes scope
+definirSubrutina :: Nombre -> Tipo -> Categoria -> MonadSymTab ()
+definirSubrutina nombre tipo categoria = do
+    (symtab, activeScopes, scope) <- get
+    if isNothing $ lookupInSymTab nombre symtab then 
+        let info = [SymbolInfo tipo 1 categoria [Nada]]
+        in addToSymTab [nombre] info symtab activeScopes scope
     else
         error $ "\nError: " ++ file ++ ": " ++ show p ++ "\n\tSubrutina '" ++
             nombre ++ "' ya esta definida.\n\t"
             ++ concatMap show (fromJust info) ++ "\n"
+        error $ "Error: redeclaración de '" ++ nombre ++ "'."
     return ()
 -------------------------------------------------------------------------------
 
@@ -440,9 +436,16 @@ crearSubrutinaCall nombre params p = do
 crearFuncCall :: Subrutina -> MonadSymTab Expr
 crearFuncCall subrutina@(SubrutinaCall nombre _) = do
     (symtab, activeScope:_, scope) <- get
-    let info = fromJust $ lookupInSymTab nombre symtab
-    let func = head $ filter (\i -> getCategory i == Funciones) info
-    return $ FuncCall subrutina (getType func)
+    let info = lookupInSymTab nombre symtab
+    
+    -- Chequeo de tipo 
+    let funs = filter (\i -> getCategory i == Funciones) $ fromJust info
+    
+    -- No se tiene que hacer chequeo que esté en un alcance activo! porque siempre lo estará
+    if not $ null funs then
+        return $ FuncCall subrutina (getType $ head funs)
+    else
+         error "Error semantico, funcion no definida."
 -------------------------------------------------------------------------------
 
 
@@ -455,39 +458,39 @@ crearFuncCall subrutina@(SubrutinaCall nombre _) = do
 
 -------------------------------------------------------------------------------
 -- Definicion de union
-definirRegistro :: Nombre -> SecuenciaInstr -> Posicion -> MonadSymTab SecuenciaInstr
-definirRegistro id decls  p = do
-    (symTab, activeScopes, scope) <- get
-    file <- ask
-    -- TODO: cambiar categoria de las declaraciones a Campo y colocar el reg
-    -- al que pertenecen
-    let infos = lookupInScopes [1] id symTab
-    if isJust infos then
-        error $ "\n\nError: " ++ file ++ ": " ++ show p ++ "\n\tInventory '" ++
-                id ++ "' ya esta definido.\n"
-    else do
-        let info = [SymbolInfo TRegistro 1 ConstructoresTipos [AST decls]]
-        addToSymTab [id] info symTab activeScopes scope
-        return decls
+-- Registros, Funciones,Procedimientos y Uniones siempre tienen Scope 1
+definirRegistro :: Nombre -> SecuenciaInstr -> MonadSymTab SecuenciaInstr
+definirRegistro name decls = do
+    (symTab, activeScopes@(activeScope:_), scope) <- get
+    -- TODO: update categoria de las declaraciones y colocar el reg al que pertenece
+
+    let infos = lookupScopesNameInSymTab [1] name symTab
+    if isJust infos then do
+        fileName <- ask
+        error $ "\n\n" ++ fileName ++ ": error: redeclaración de '" ++ name ++ "'."
+    else return ()
+
+    let info = [SymbolInfo TRegistro 1 ConstructoresTipos [AST decls]]
+    addToSymTab [name] info symTab activeScopes scope
+    return decls
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
 -- Definicion de union
-definirUnion :: Nombre -> SecuenciaInstr -> Posicion -> MonadSymTab SecuenciaInstr
-definirUnion id decls p = do
-    (symTab, activeScopes, scope) <- get
-    file <- ask
-    -- TODO: cambiar categoria de las declaraciones a Campo y colocar el reg
-    -- al que pertenecen
-    let infos = lookupInScopes [1] id symTab
-    if isJust infos then
-        error $ "\n\nError: " ++ file ++ ": " ++ show p ++ "\n\tItems '" ++
-                id ++ "' ya esta definido.\n"
-    else do
-        let info = [SymbolInfo TUnion 1 ConstructoresTipos [AST decls]]
-        addToSymTab [id] info symTab activeScopes scope
-        return decls
+definirUnion :: Nombre -> SecuenciaInstr -> MonadSymTab SecuenciaInstr
+definirUnion id decls = do
+    (symTab, activeScopes@(activeScope:_), scope) <- get
+    -- TODO: update categoria de las declaraciones y colocar la union al que pertenece
+
+    let infos = lookupScopesNameInSymTab [1] id symTab
+    if isJust infos then do
+        error $ "Error: redeclaración de '" ++ id ++ "'."
+    else return ()
+
+    let info = [SymbolInfo TUnion 1 ConstructoresTipos [AST decls]]
+    addToSymTab [id] info symTab activeScopes scope
+    return decls
 -------------------------------------------------------------------------------
 
 
@@ -539,6 +542,5 @@ crearFree var p = do
         else error $ "Error: " ++ file ++ ": " ++ show p ++ "\n\tVariable '" ++
                     var ++ "' fuera de alcance.\n"
     else
-        error $ "Error: " ++ file ++ ": " ++ show p ++ "\n\tVariable '" ++
-                var ++ "' no definida.\n"
+        error "Error semantico, variable no definida."
 -------------------------------------------------------------------------------
