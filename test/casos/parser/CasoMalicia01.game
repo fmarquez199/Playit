@@ -87,7 +87,7 @@ world %caso_malicia'M'%:
     Kit of Power puff plista4 = summon Kit of Power @jejelol
     
     puff plista3 = <<<<2>>>>::<<>>
-    puff plista3 = (b2? a2 + 1 : abc|>b1 - 1<|):<<1,2>>
+    puff plista3 = (b2? a2 + 1 : abc2|>l2|>0<| - lista1|>2<||>2<|<|):<<1,2>>
     puff plista3 = <<1,2>>
     
     puff plista4 = puff plista3
@@ -98,15 +98,30 @@ world %caso_malicia'M'%:
     
     Power p1,p4 = 0
     puff p2|>-(((p1)))<| = joystick ~HEY LOL~
-    p4|>p1<| = joystick
+
     
     
-    Power a = l2 + 2 + 2 * 3 // 3 / 4  % 4 - 5 - -1 + #l2
+    Power a = l2|>2<| + 2 + 2 * 3 // 3 / 4  % 4 - 5 - -1 + #l2
      
     Power b = ((a + (2)) + 2) * ((3 // 3) / (4  % 4) - 5) - ((-1) + #l2)
     
     c = ((b1 || Win && Lose || !b2 ) == Win && b4 != (b2? Win:Lose))
-     
+    
+    Power|}2{| manu1
+    Power|}30{| manu2
+    
+    c = manu1 == manu1
+
+    Kit of Power manukitpower1
+    Kit of Power manukitpower2
+    
+    c = manukitpower1 == manukitpower2
+
+    Power puff manukitpower3
+    Power puff puff manukitpower4
+    
+    c = manukitpower3 == puff manukitpower4
+         
     Rune c1 = ^*c*
     Rune c22 = .*c*
     Rune c3 = ^.c

@@ -85,11 +85,18 @@ typeE (FuncCall _  t)    = t
 
 --------------------------------------------------------------------------------
 
+isArray :: Tipo -> Bool
 isArray (TArray _ _) = True
 isArray _ = False
 
+isList :: Tipo -> Bool
 isList (TLista _) = True
 isList _ = False
+
+isPointer :: Tipo -> Bool
+isPointer (TApuntador _) = True
+isPointer _ = False
+
 
 
 -------------------------------------------------------------------------------

@@ -42,6 +42,14 @@ crearIdvar name p = do
                 ++ name ++ "' no declarada.\n")
 -------------------------------------------------------------------------------
 
+crearDeferenciacion :: Vars -> Posicion -> MonadSymTab Vars
+crearDeferenciacion v p
+    | isPointer tVar = let (TApuntador t) = tVar in return $ PuffValue v t
+    | otherwise = do
+        fileName <- ask
+        error $ "\n\nError: " ++ fileName ++ ": " ++ show p ++ "\n\t" ++"La variable : '" ++ (show v) ++ "' no es un apuntador."
+    where
+        tVar = typeVar v
 
 -------------------------------------------------------------------------------
 -- Crea el nodo para variables de indexacion
@@ -152,16 +160,33 @@ crearOpBin :: BinOp -> Expr -> Expr -> Tipo -> Tipo -> Tipo -> Posicion -> Monad
 crearOpBin op e1 e2 t1 t2 tOp p
     -- | tE1 == TDummy || tE2 == TDummy = TDummy
     | tE1 == t1 && tE2 == t2  = return $ OpBinario op e1 e2 tOp
+    | ((tE1 == TFloat) || (tE2 == TFloat) ) && (tOp == TInt)  = return $ OpBinario op e1 e2 TFloat
     | otherwise = do
-        if (((tE1 == TFloat) || (tE2 == TFloat) ) && (tOp == TInt)) then do
-          {- Conversión automática que se encarga el compilador, ejemplo: 2.0 // 1 = 0.0 -}
-            return $ OpBinario op e1 e2 TFloat 
-        else do
-            fileName <- ask
-            error $ "\n\nError: " ++ fileName ++ ": " ++ show p ++ "\n\t" ++"La operacion: '" ++ (show op) ++ "'," ++ " requiere que el tipo de '" ++ (show e1) ++ "' sea '" ++ (show t1) ++ "' y de '" ++  (show e2) ++ "' sea '" ++ (show t2) ++ "'"
+        fileName <- ask
+        error $ "\n\nError: " ++ fileName ++ ": " ++ show p ++ "\n\t" ++"La operacion: '" ++ (show op) ++ "'," ++ " requiere que el tipo de '" ++ (show e1) ++ "' sea '" ++ (show t1) ++ "' y de '" ++  (show e2) ++ "' sea '" ++ (show t2) ++ "'"
     where
         tE1 = typeE e1
         tE2 = typeE e2
+
+-------------------------------------------------------------------------------
+-- Crea el nodo para un operador binario
+crearOpBinComparable :: BinOp -> Expr -> Expr -> [Tipo] -> Tipo -> Posicion -> MonadSymTab Expr
+crearOpBinComparable op e1 e2 tcomp tOp p
+    -- | tE1 == TDummy || tE2 == TDummy = TDummy
+    | tE1 `elem` all_comps && tE2 == tE1  = return $ OpBinario op e1 e2 tOp
+    | ((tE1 == TFloat) || (tE1 == TInt)) && ((tE2 == TFloat) && (tE2 == TInt))  = return $ OpBinario op e1 e2 tOp
+    | (op == Igual || op == Desigual) && isArray tE1 && isArray tE2 && tE1 == tE2 = return $ OpBinario op e1 e2 tOp
+    | (op == Igual || op == Desigual) && isList tE1 && isList tE2 && tE1 == tE2 = return $ OpBinario op e1 e2 tOp
+    | (op == Igual || op == Desigual) && isPointer tE1 && isPointer tE2 && tE1 == tE2 = return $ OpBinario op e1 e2 tOp
+    --  | TApuntador , TRegistro,TUnion
+    | otherwise = do
+        fileName <- ask
+        error $ "\n\nError: " ++ fileName ++ ": " ++ show p ++ "\n\t" ++"La operacion: '" ++ (show op) ++ "'," ++ " requiere que el tipo de '" ++ (show e1) ++ "' y de '" ++  (show e2) ++ "' sean de tipos comparables entre ellos."
+    where
+        tE1 = typeE e1
+        tE2 = typeE e2
+        all_comps = [TChar,TFloat,TInt,TStr] ++ tcomp
+
 -------------------------------------------------------------------------------
 
 
@@ -219,13 +244,14 @@ crearOpAnexo op e1 e2 =
 
 -------------------------------------------------------------------------------
 -- Crea el nodo para el operador tamaño de array o lista
-crearOpLen :: UnOp -> Expr -> Expr
-crearOpLen op e =
-    OpUnario op e tr
-    
+crearOpLen :: Expr -> Posicion -> MonadSymTab Expr
+crearOpLen e p
+    | isArray t || isList t = return $ OpUnario Longitud e TInt
+    | otherwise = do     
+        fileName <- ask
+        error $ "\n\nError: " ++ fileName ++ ": " ++ show p ++ "\n\t" ++"La operacion de longitud: '" ++ (show Longitud) ++ "'," ++ " requiere que el tipo de '" ++ (show e) ++ "' sea un arreglo o lista."
     where
         t = typeE e
-        tr = if isArray t || isList t then t else TError
 -------------------------------------------------------------------------------
 
 
