@@ -10,8 +10,9 @@ module Main where
 
 import Data.Strings (strEndsWith)
 import Control.Monad.Trans.RWS
-import System.Environment
+import Control.Monad (mapM_)
 import Control.Exception
+import System.Environment
 import System.IO.Error
 import System.IO
 import Playit.SymbolTable
@@ -44,13 +45,15 @@ main = do
             if null code || isEmptyFile code then
                 putStrLn "\nArchivo vacio. Nada que hacer\n"
             else
-                let tokens = alexScanTokens code in
+                let tokens = alexScanTokens code in do
                 
-                    -- mapM_ (putStrLn . show) tokens
+                    mapM_ print tokens
+
                     if hasError tokens then
                         putStrLn $ tkErrorToString $ filter isError tokens
                     else do
-                        (ast,(st,_,_), _) <- runRWST (parse tokens) checkedFile  initState
-                        --print ast
+                        (ast@(Programa i),(st,_,_), _) <- runRWST (parse tokens) checkedFile initState
+                        -- putStrLn $ concatMap show i
+                        print ast
                         print st
-                        return ()
+

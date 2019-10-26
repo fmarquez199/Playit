@@ -51,13 +51,13 @@ pruebasLexer = do
     -- Obtiene todos los archivos en test/casos
     files <- getRecursiveContents "test/casos/lexer"
     -- Filtra los archivos a aquellos que terminen en .game
-    filesToTest <- forM files $ \filen -> do
-        fname <- if strEndsWith filen ".game" then do
+    filesToTest <- forM files $ \filen -> 
+        if strEndsWith filen ".game" then do
             let (fname,ext) = strBreak ".game" filen
             return [fname]
         else return []
         
-        return fname
+        -- return fname
     
     -- Aplana la lista filtrada (filesToTest era una lista de lista)
     let filesToTestDotGame = concat filesToTest
@@ -89,7 +89,7 @@ pruebasLexer = do
         hClose fileSource
         hClose fileExpectedOut
         
-        return $ testCases
+        return testCases
     
     return $ TestList $ concat testCases
 
@@ -100,13 +100,13 @@ pruebasParser = do
     -- Obtiene todos los archivos en test/casos
     files <- getRecursiveContents "test/casos/parser"
     -- Filtra los archivos a aquellos que terminen en .game
-    filesToTest <- forM files $ \filen -> do
-        fname <- if strEndsWith filen ".game" then do
+    filesToTest <- forM files $ \filen -> 
+        if strEndsWith filen ".game" then do
             let (fname,ext) = strBreak ".game" filen
             return [fname]
         else return []
         
-        return fname
+        -- return fname
     
     -- Aplana la lista filtrada (filesToTest era una lista de lista)
     let filesToTestDotGame = concat filesToTest
@@ -115,8 +115,8 @@ pruebasParser = do
     testCases <- forM filesToTestDotGame $ \filen -> do
         -- Lee el codigo 
         fileSource        <- openFile (filen ++ ".game")    ReadMode  
-        -- Lee la salida esperada del Lexer
-        fileExpectedOut   <- openFile (filen ++ ".outparser")     ReadMode
+        -- Lee la salida esperada del Parser
+        fileExpectedOut   <- openFile "TestPassed.outparser" ReadMode
 
         -- Extrae el codigo del archivo
         strSourceCode     <- S.hGetContents fileSource
@@ -128,9 +128,10 @@ pruebasParser = do
         
         -- Obtiene la lista de Tokens reconocidos en el codigo
         let lstRecognizedTkns         = alexScanTokens $ BS.unpack strSourceCode 
+        -- TODO: Verificar esto
         let tokensParser              = parse lstRecognizedTkns
         -- Crea una lista de strings con los Tokens 
-        let lstStrRecognizedTokens    = map show tokensParser     
+        let lstStrRecognizedTokens    = show tokensParser     
             
         
         let testCases = [TestCase $ assertEqual ("\n***Error en  parser:" ++ filen ++ ".game ***") lstStrExpectedOut lstStrRecognizedTokens ]
@@ -139,7 +140,7 @@ pruebasParser = do
         hClose fileSource
         hClose fileExpectedOut
         
-        return $ testCases
+        return testCases
     
     return $ TestList $ concat testCases
 
@@ -149,13 +150,9 @@ main :: IO ()
 main = do
     
     tlLexer <- pruebasLexer
-    runTestTT $ tlLexer
+    runTestTT tlLexer
 
     tlParser <- pruebasParser
-    runTestTT $ tlParser
-
+    runTestTT tlParser
 
     return ()
-    
-
-

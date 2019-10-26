@@ -1,0 +1,154 @@
+"'******************************************************************************
+*
+*                           Este caso de prueba deberia compilar!
+*
+*                           Tester: Manuel Gonzalez
+*                           Lenguaje: Playit
+* 
+* 
+******************************************************************************'"
+
+Inventory PrimerNombre:
+    Runes nombre
+.~
+Inventory Nombre:
+    PrimerNombre n
+.~
+Inventory Contacto:
+    Nombre n
+    Kit of Kit of Power lista1 = << <<2,3>> , <<1,2>>  >>
+    Power|}2{| enteros1,enteros2 = |)2,3(|
+    Rune ast1 = *\** , m1 , a1=*a*,n1=*n*,u1=*u*,ast2 = *\**, tip
+.~
+boss f2():
+.~
+monster f3() Contacto:
+.~
+monster f(Power p11,Contacto? c11,Contacto2 c221,Runes c3) Contacto:
+.~
+
+world %caso_malicia'M'%: 
+
+    Rune ast1 = *\** , m1 , a1=*a*,n1=*n*,u1=*u*,ast2 = *\** 
+
+    m1 = *M*     @ Asignacion niangara yo no me imprimo L$OL
+
+    Battle b1 = Win , b2=Lose 
+    Battle b3 
+    Battle b4 = (b1 && b2) || b3,b5 = b1 > 3? Win:Lose
+
+    Power a2 = 0,b20 = 1
+    Power c2 = a2 + 1,d2 = a2*b2
+
+    Skill a3 = 1,b31 = 1'0,abc = c2 + 1,d3 = c2*b3
+    
+    a3 = a2 
+    
+    Power|}2{| enteros1,enteros2 = |)a2,c2 + a3,(abc|)0(| + b2 ) * (b2? a2 + 1 : abc|)b1 - 1(|) (|
+    
+    Power |}2{| abc2
+
+    abc|)0(| = 0
+
+    abc|)1(| = 1
+
+    abc|)(abc|)0(| + b2 ) * ( b2? a2 + 1 : abc|)b1 - 1(| )(| = (abc|>0<| + b2 ) * (b2? a2 + 1 : abc|>b1 - 1<|)
+    
+    Kit of Kit of Power lista1 = << <<a2,a3>> , <<a2,a3>>  >>
+    
+    lista1|>0<| = 240
+
+    
+    Kit of Power l1 = <<1,2,3,4,4>>
+    Contacto c = {<<l1,l1>>, a2}
+    c spawn n spawn n spawn nombre = joystick ~Dame un nombre YEH NOW BB~
+    c spawn lista1|>2<||>1<| = joystick ~HEY LOL~
+    c spawn tip = *c*    
+        
+    Power puff p = summon Power
+    
+    puff p = (b2? a2 + 1 : abc|>b1 - 1<|)
+    
+    puff p = 15
+    
+    free p
+    
+    Power|}2{| puff p2 = summon Power
+    
+    puff p2|>0<| = 21
+    
+    free|}{| p2
+    
+    Kit of Power l2 "'= <<1,2,3,4,4>>'" = <<>>
+    
+        
+    Kit of Power puff plista3 = summon Kit of Power @jejelol
+    Kit of Power puff plista4 = summon Kit of Power @jejelol
+    
+    puff plista3 = <<<<2>>>>::<<>>
+    puff plista3 = (b2? a2 + 1 : abc|>b1 - 1<|):<<1,2>>
+    puff plista3 = <<1,2>>
+    
+    puff plista4 = puff plista3
+
+    @ Esto deberia dar error p2|}10{| = 12
+    @ Esto deberia dar error p1 = p2|}10{|
+    @ Esto deberia dar error p1 = p2
+    
+    Power p1,p4 = 0
+    puff p2|>-(((p1)))<| = joystick ~HEY LOL~
+    p4|>p1<| = joystick
+    
+    
+    Power a = l2 + 2 + 2 * 3 // 3 / 4  % 4 - 5 - -1 + #l2
+     
+    Power b = ((a + (2)) + 2) * ((3 // 3) / (4  % 4) - 5) - ((-1) + #l2)
+    
+    c = ((b1 || Win && Lose || !b2 ) == Win && b4 != (b2? Win:Lose))
+     
+    Rune c1 = ^*c*
+    Rune c22 = .*c*
+    Rune c3 = ^.c
+    Rune c4 = .^c
+    Rune c5 = .(^c)
+    Rune c6 = (.(^c))
+    Rune c7 = ^(.(c))
+    
+    
+    "' Hola '"
+    play:
+      @<Lista de Instrucciones>
+      @test = 1
+            gameOver
+            keepPlaying
+       
+        @ Notar que la condicion de lock debe ser booleana
+        controller Power i = (2 - 2) -> 10 - 1 lock (abc|>0<| + b2 ) * (b2? a2 + 1 : abc|>b1 - 1<|):
+
+            Button:
+                | n1 > 2 }
+            gameOver
+            keepPlaying
+                    Power a
+            .~    
+            Button:
+                | n1 > 2 }
+                    unlock n1 + 2
+                | notPressed }
+                    unlock n1 + 2
+            .~    
+        .~ 
+             
+    @  asd
+    lock (abc|>0<| + b2 ) * (b2? a2 + 1 : abc|>b1 - 1<|)
+    .~
+
+    controller Power i <- abc:
+    .~ 
+    controller Skill i <- abc:
+    .~ 
+    controller Contacto i <- abc:
+    .~ 
+    
+    Power a222 = kill f()
+.~

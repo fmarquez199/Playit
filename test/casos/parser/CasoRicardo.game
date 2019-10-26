@@ -1,0 +1,13 @@
+monster n(Power n) Power:
+    @Skill n @Comentando esto deberia compilar
+    play:
+        Battle n
+    lock Win
+    .~
+    unlock n
+.~
+
+world %n%:
+    Power n
+    n = kill n(n) @Falla con verificacion de tipos
+.~

@@ -168,8 +168,8 @@ admiten listas multidimensionales.
 Se declaran de la siguiente manera:
 
 **`Kit of <tipo>`**, donde `<tipo>` puede ser otra lista.
-
-Para acceder a un elemento de la lista se utiliza el operador de indexación **`|> indice <|`** y su inicialización por defecto es la lista vacía **`<<>>`**.
+Para acceder a un elemento de la lista se utiliza el operador de indexación
+**`|> índice <|`** y su inicialización por defecto es la lista vacía **`<<>>`**.
 
 ---
 ## **Registros.**
