@@ -24,7 +24,7 @@ boss f2():
 .~
 monster f3() Contacto:
 .~
-monster f(Power p11,Contacto? c11,Contacto2 c221,Runes c3) Contacto:
+monster f(Power p11,Contacto? c11,Contacto c221,Runes c3) Contacto:
 .~
 
 world %caso_malicia'M'%: 
@@ -46,7 +46,7 @@ world %caso_malicia'M'%:
     
     Power |}2{| abc2
 
-    Power|}2{| enteros1,enteros2 = |)a2,c2 + a3,(abc2|)0(| + 2 ) * (b2? a2 + 1 : abc2|)abc2|)2(| - 1(|) (|
+    Power|}2{| enteros1,enteros2 = |)a2,c2 + 2,(abc2|)0(| + 2 ) * (b2? a2 + 1 : abc2|)abc2|)2(| - 1(|) (|
     
 
     abc2|)0(| = 0
@@ -145,13 +145,13 @@ world %caso_malicia'M'%:
         controller Power i = (2 - 2) -> 10 - 1 lock (abc2|>0<| + 2 ) * (b2? a2 + 1 : abc2|>5 - 1<|):
 
             Button:
-                | 1'2 > 2 }
+                | 12 > 2 }
             gameOver
             keepPlaying
                     Power a
             .~    
             Button:
-                | 1 > 2'2 }
+                | 1'0 > 2'2 }
                     unlock i + 2
                 | notPressed }
                     unlock i + 2

@@ -26,15 +26,16 @@ import Playit.Types
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 
-obtenerTipo :: Nombre -> Posicion-> MonadSymTab Tipo
-obtenerTipo name p = do
+
+chequearTipo :: Nombre -> Posicion-> MonadSymTab ()
+chequearTipo name p = do
     (symTab, scopes, _) <- get
     file <- ask
     let info = lookupInScopes [1] name symTab
     if isJust info then do
         let sym = fromJust info
-        if getCategory sym == ConstructoresTipos then do
-            return $ getType sym
+        if getCategory sym == Tipos then do
+            return ()
         else do 
             error $ "\n\nError: " ++ file ++ ": " ++ show p ++ "\n\t" ++"Identificador : '" ++ (show name) ++ "' no es un tipo."
     else
@@ -61,7 +62,8 @@ crearDeferenciacion v p
     | isPointer tVar = let (TApuntador t) = tVar in return $ PuffValue v t
     | otherwise = do
         fileName <- ask
-        error $ "\n\nError: " ++ fileName ++ ": " ++ show p ++ "\n\t" ++"La variable : '" ++ (show v) ++ "' no es un apuntador."
+        error $ "\n\nError: " ++ fileName ++ ": " ++ show p ++ "\n\t" ++
+            "La variable : '" ++ (show v) ++ "' no es un apuntador."
     where
         tVar = typeVar v
 
@@ -71,10 +73,13 @@ crearVarIndex :: Vars -> Expr -> Posicion -> MonadSymTab Vars
 crearVarIndex v e p 
     | tVar == TError = do
         fileName <- ask
-        error $ "\n\nError: " ++ fileName ++ ": " ++ show p ++ "\n\t" ++"La variable : '" ++ (show v) ++ "' no es indexable, tiene que ser un array o una lista."
+        error $ "\n\nError: " ++ fileName ++ ": " ++ show p ++ "\n\t" ++
+            "La variable : '" ++ (show v) ++ 
+            "' no es indexable, tiene que ser un array o una lista."
     | tExpre /= TInt = do
         fileName <- ask
-        error $ "\n\nError: " ++ fileName ++ ": " ++ show p ++ "\n\t" ++"Expresion de indexación '" ++ (show e) ++ "' no es de tipo entero."
+        error $ "\n\nError: " ++ fileName ++ ": " ++ show p ++ "\n\t" ++
+            "Expresion de indexación '" ++ (show e) ++ "' no es de tipo entero."
     | otherwise = return $ VarIndex v e tVar
     where
         tVar = case typeVar v of 
@@ -92,14 +97,16 @@ crearVarCompIndex v campo p = do
     (symTab, scopes, _) <- get
     file <- ask
     let tname = case typeVar v of 
-            (TRegistro tname) -> tname
-            (TUnion tname) -> tname
+            (NuevoTipo tname) -> tname
             _ -> ""
     
     if (tname == "") then do
-        error ("\n\nError: " ++ file ++ ": " ++ show p ++ "\n\t'" ++ show v ++ " no es un registro o una union.\n")
+        error ("\n\nError: " ++ file ++ ": " ++ show p ++ "\n\t'" ++ show v ++ 
+            " no es un registro o una union.\n")
     else do
-
+        
+        chequearTipo tname p
+        
         let info = lookupInSymTab campo symTab
         if isJust info then do
         
@@ -108,7 +115,8 @@ crearVarCompIndex v campo p = do
             let symbols = filter isInRegUnion (fromJust info ) -- Debería tener un elemento o ninguno
                         
             if null symbols then
-                error ("\n\nError: " ++ file ++ ": " ++ show p ++ "\n\t'" ++ tname ++ "' no tiene el campo " ++ campo ++ ".\n")
+                error ("\n\nError: " ++ file ++ ": " ++ show p ++ "\n\t'" ++ 
+                    tname ++ "' no tiene  campo '" ++ campo ++ "' .\n")
             else 
                 return $ VarCompIndex v campo (getType $ head $ symbols) 
         else do
@@ -192,7 +200,10 @@ crearOpBin op e1 e2 t1 t2 tOp p
     | tE1 == TFloat && tE2 == TFloat && tOp == TInt  = return $ OpBinario op e1 e2 TFloat
     | otherwise = do
         fileName <- ask
-        error $ "\n\nError: " ++ fileName ++ ": " ++ show p ++ "\n\t" ++"La operacion: '" ++ (show op) ++ "'," ++ " requiere que el tipo de '" ++ (show e1) ++ "' sea '" ++ (show t1) ++ "' y de '" ++  (show e2) ++ "' sea '" ++ (show t2) ++ "'"
+        error $ "\n\nError: " ++ fileName ++ ": " ++ show p ++ "\n\t" ++
+            "La operacion: '" ++ (show op) ++ "'," ++ " requiere que el tipo de '" 
+            ++ (show e1) ++ "' sea '" ++ (show t1) ++ "' y de '" ++  
+            (show e2) ++ "' sea '" ++ (show t2) ++ "'"
     where
         tE1 = typeE e1
         tE2 = typeE e2
@@ -203,13 +214,19 @@ crearOpBinComparable :: BinOp -> Expr -> Expr -> [Tipo] -> Tipo -> Posicion -> M
 crearOpBinComparable op e1 e2 tcomp tOp p
     -- | tE1 == TDummy || tE2 == TDummy = TDummy
     | tE1 `elem` all_comps && tE2 == tE1  = return $ OpBinario op e1 e2 tOp
-    | (op == Igual || op == Desigual) && isArray tE1 && isArray tE2 && tE1 == tE2 = return $ OpBinario op e1 e2 tOp
-    | (op == Igual || op == Desigual) && isList tE1 && isList tE2 && tE1 == tE2 = return $ OpBinario op e1 e2 tOp
-    | (op == Igual || op == Desigual) && isPointer tE1 && isPointer tE2 && tE1 == tE2 = return $ OpBinario op e1 e2 tOp
+    | (op == Igual || op == Desigual) && isArray tE1 && isArray tE2 && tE1 == tE2 = 
+        return $ OpBinario op e1 e2 tOp
+    | (op == Igual || op == Desigual) && isList tE1 && isList tE2 && tE1 == tE2 = 
+        return $ OpBinario op e1 e2 tOp
+    | (op == Igual || op == Desigual) && isPointer tE1 && isPointer tE2 && tE1 == tE2 = 
+        return $ OpBinario op e1 e2 tOp
     --  TODO: | TRegistro,TUnion
     | otherwise = do
         fileName <- ask
-        error $ "\n\nError: " ++ fileName ++ ": " ++ show p ++ "\n\t" ++"La operacion: '" ++ (show op) ++ "'," ++ " requiere que el tipo de '" ++ (show e1) ++ "' y de '" ++  (show e2) ++ "' sean de tipos comparables entre ellos."
+        error $ "\n\nError: " ++ fileName ++ ": " ++ show p ++ 
+            "\n\t" ++"La operacion: '" ++ (show op) ++ "'," ++ 
+            " requiere que el tipo de '" ++ (show e1) ++ "' y de '" ++  
+            (show e2) ++ "' sean de tipos comparables entre ellos."
     where
         tE1 = typeE e1
         tE2 = typeE e2
@@ -229,7 +246,9 @@ crearOpUn op e t tOp p
             return $ OpUnario op e TFloat
         else do
             fileName <- ask
-            error $ "\n\nError: " ++ fileName ++ ": " ++ show p ++ "\n\t" ++"La operacion: '" ++ (show op) ++ "'," ++ " requiere que el tipo de '" ++ (show e) ++ "' sea '" ++ (show tOp) ++ "'"
+            error $ "\n\nError: " ++ fileName ++ ": " ++ show p ++ "\n\t" ++
+                "La operacion: '" ++ (show op) ++ "'," ++ 
+                " requiere que el tipo de '" ++ (show e) ++ "' sea '" ++ (show tOp) ++ "'"
     where
         tE = typeE e
 -------------------------------------------------------------------------------
@@ -277,7 +296,9 @@ crearOpLen e p
     | isArray t || isList t = return $ OpUnario Longitud e TInt
     | otherwise = do     
         fileName <- ask
-        error $ "\n\nError: " ++ fileName ++ ": " ++ show p ++ "\n\t" ++"La operacion de longitud: '" ++ (show Longitud) ++ "'," ++ " requiere que el tipo de '" ++ (show e) ++ "' sea un arreglo o lista."
+        error $ "\n\nError: " ++ fileName ++ ": " ++ show p ++ "\n\t" ++
+            "La operacion de longitud: '" ++ (show Longitud) ++ "'," ++ 
+            " requiere que el tipo de '" ++ (show e) ++ "' sea un arreglo o lista."
     where
         t = typeE e
 -------------------------------------------------------------------------------
@@ -332,9 +353,13 @@ crearIfSimple cond v f t p
         else do        
             fileName <- ask
             if tCond /= TBool then do 
-                error $ "\n\nError: " ++ fileName ++ ": " ++ show p ++ "\n\t" ++"Condicion '" ++ (show tCond) ++ "' del operador ternario '? :'" ++ " no es booleana."
+                error $ "\n\nError: " ++ fileName ++ ": " ++ show p ++ "\n\t" ++
+                    "Condicion '" ++ (show tCond) ++ "' del operador ternario '? :'" ++ 
+                    " no es booleana."
             else do
-                error $ "\n\nError: " ++ fileName ++ ": " ++ show p ++ "\n\t" ++"El operador ternario '? :'" ++ " requiere que el tipo de '" ++ (show v) ++ "' y de '" ++  (show f) ++ "' sean iguales."
+                error $ "\n\nError: " ++ fileName ++ ": " ++ show p ++ "\n\t" ++
+                    "El operador ternario '? :'" ++ " requiere que el tipo de '" ++ 
+                    (show v) ++ "' y de '" ++  (show f) ++ "' sean iguales."
   where 
     tCond = typeE cond
     tFalse = typeE f
@@ -567,7 +592,7 @@ definirRegistro id decls  p = do
 
         let newSymTab = SymTab $ M.map updateSymbol' table
         
-        let info = [SymbolInfo (TRegistro id) 1 ConstructoresTipos [AST decls]]
+        let info = [SymbolInfo TRegistro 1 Tipos [AST decls]]
 
         addToSymTab [id] info newSymTab activeScopes scope
         return decls
@@ -592,7 +617,7 @@ definirUnion id decls p = do
 
         let newSymTab = SymTab $ M.map updateSymbol' table
         
-        let info = [SymbolInfo (TUnion id) 1 ConstructoresTipos [AST decls]]
+        let info = [SymbolInfo TUnion 1 Tipos [AST decls]]
         addToSymTab [id] info symTab activeScopes scope
         return decls
 -------------------------------------------------------------------------------

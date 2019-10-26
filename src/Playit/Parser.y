@@ -251,7 +251,12 @@ Tipo :: { Tipo }
   | bool                                  { TBool }
   | char                                  { TChar }
   | str                                   { TStr }
-  | idtipo                                {% obtenerTipo (getTk $1) (getPos $1)} 
+  | idtipo                                
+  {% do
+  
+    chequearTipo (getTk $1) (getPos $1)
+    return $ NuevoTipo (getTk $1)
+  } 
   -- | pointer                               { TApuntador TDummy } 
 
 -------------------------------------------------------------------------------
@@ -274,7 +279,7 @@ Instruccion :: { Instr }
   | EntradaSalida         { $1 }
   | Free                  { $1 }
   | return Expresion      { Return $2 }
-  | break {-PopScope-}        { Break }
+  | break {-PopScope-}    { Break    }
   | continue              { Continue }
 
 

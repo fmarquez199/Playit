@@ -86,9 +86,9 @@ data Tipo =
     --TReal            |
     TLista Tipo      |
     TStr             |
-
-    TRegistro Nombre |
-    TUnion    Nombre 
+    NuevoTipo String |
+    TRegistro        |
+    TUnion     
     deriving(Eq, Ord)
 
 instance Show Tipo where
@@ -101,10 +101,11 @@ instance Show Tipo where
     show TFloat         = "Flotante"
     --show TReal          = "Real"
     show TInt           = "Entero"
+    show (NuevoTipo str)            = str
     show (TLista t)     = "Lista de " ++ show t
-    show (TRegistro tn) = "Registro " ++ show tn
+    show TRegistro      = "Registro "
     show TStr           = "String"
-    show (TUnion    tn) = "Union " ++ show tn
+    show TUnion         = "Union "
 
 data Vars =
     Param Nombre Tipo Ref         |
