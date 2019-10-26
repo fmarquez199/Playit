@@ -73,31 +73,38 @@ eqTypesAsigs asigs t = all (\(Asignacion _ expr) -> typeE expr == t) asigs
 --------------------------------------------------------------------------------
 -- Obtiene el tipo asociado a la expresion 
 typeE :: Expr -> Tipo
-typeE (Variables _ t)           = t
-typeE (Literal _ t)             = t
-typeE (OpBinario _ _ _ t)       = t
-typeE (OpUnario _ _ t)          = t
-typeE (ArrLstExpr _ t)           = t
-typeE (Read _)                  = TStr
-typeE (IfSimple _ _ _ t)        = t
--- typeE (SubrutinaCall _  _ t)    = t
+typeE (Variables _ t)     = t
+typeE (Literal _ t)       = t
+typeE (OpBinario _ _ _ t) = t
+typeE (OpUnario _ _ t)    = t
+typeE (ArrLstExpr _ t)    = t
+typeE (Read _)            = TStr
+typeE (IfSimple _ _ _ t)  = t
+typeE (FuncCall _  t)     = t
 
 
 --------------------------------------------------------------------------------
 
+
+isArray :: Tipo -> Bool
 isArray (TArray _ _) = True
 isArray _ = False
 
+isList :: Tipo -> Bool
 isList (TLista _) = True
 isList _ = False
+
+isPointer :: Tipo -> Bool
+isPointer (TApuntador _) = True
+isPointer _ = False
 
 
 -------------------------------------------------------------------------------
 -- Determina el tipo base de los elementos del arreglo
-typeArrLst (TArray _ t@(TArray _ _))    = typeArrLst t
-typeArrLst (TArray _ t)                 = t
-typeArrLst (TLista t@(TLista _))        = typeArrLst t
-typeArrLst (TLista t)                   = t
+-- typeArrLst (TArray _ t@(TArray _ _))    = typeArrLst t
+-- typeArrLst (TArray _ t)                 = t
+-- typeArrLst (TLista t@(TLista _))        = typeArrLst t
+-- typeArrLst (TLista t)                   = t
 -------------------------------------------------------------------------------
 
 --------------------------------------------------------------------------------
