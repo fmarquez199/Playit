@@ -522,18 +522,28 @@ crearFuncCall subrutina@(SubrutinaCall nombre _) = do
 -- Definicion de union
 definirRegistro :: Nombre -> SecuenciaInstr -> Posicion -> MonadSymTab SecuenciaInstr
 definirRegistro id decls  p = do
-    (symTab, activeScopes, scope) <- get
+    (symTab@(SymTab table), activeScopes@(activeScope:_), scope) <- get
     file <- ask
-    -- TODO: cambiar categoria de las declaraciones a Campo y colocar el reg
-    -- al que pertenecen
     let infos = lookupInScopes [1] id symTab
     if isJust infos then
         error $ "\n\nError: " ++ file ++ ": " ++ show p ++ "\n\tInventory '" ++
                 id ++ "' ya esta definido.\n"
     else do
+        
+        {- TODO: No se puede guardar en el estado el TIPO del scope en el que estoy?
+         Lo que haría que cuando las inserto en la tabla de simbolos, ya sea con 
+         su categoria y el campo extra adecuado -}
+        let modifySymbol (SymbolInfo typ scope cat ex) = SymbolInfo typ scope Campos [FromReg id]
+        let updateSymbol' = 
+                map (\sym -> if getScope sym == activeScope then modifySymbol sym else sym)
+
+        let newSymTab = SymTab $ M.map updateSymbol' table
+        
         let info = [SymbolInfo TRegistro 1 ConstructoresTipos [AST decls]]
-        addToSymTab [id] info symTab activeScopes scope
+
+        addToSymTab [id] info newSymTab activeScopes scope
         return decls
+
 -------------------------------------------------------------------------------
 
 
@@ -541,15 +551,19 @@ definirRegistro id decls  p = do
 -- Definicion de union
 definirUnion :: Nombre -> SecuenciaInstr -> Posicion -> MonadSymTab SecuenciaInstr
 definirUnion id decls p = do
-    (symTab, activeScopes, scope) <- get
+    (symTab@(SymTab table), activeScopes@(activeScope:_), scope) <- get
     file <- ask
-    -- TODO: cambiar categoria de las declaraciones a Campo y colocar el reg
-    -- al que pertenecen
     let infos = lookupInScopes [1] id symTab
     if isJust infos then
         error $ "\n\nError: " ++ file ++ ": " ++ show p ++ "\n\tItems '" ++
                 id ++ "' ya esta definido.\n"
     else do
+        let modifySymbol (SymbolInfo typ scope cat ex) = SymbolInfo typ scope Campos [FromReg id]
+        let updateSymbol' = 
+                map (\sym -> if getScope sym == activeScope then modifySymbol sym else sym)
+
+        let newSymTab = SymTab $ M.map updateSymbol' table
+        
         let info = [SymbolInfo TUnion 1 ConstructoresTipos [AST decls]]
         addToSymTab [id] info symTab activeScopes scope
         return decls

@@ -69,6 +69,7 @@ data ExtraInfo =
 instance Show ExtraInfo where
     show (AST secInstr) = "\t\tAST:\n" ++ concatMap show secInstr ++ "\n"
     show (Params p)     = "\t\tParametros: " ++ show p ++ "\n"
+    show (FromReg n)     = "\t\tFrom reg: " ++ show n ++ "\n"
 
 -- Tipo de dato que pueden ser las expresiones
 data Tipo = 

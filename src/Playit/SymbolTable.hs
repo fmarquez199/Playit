@@ -152,7 +152,6 @@ lookupInScopes :: [Alcance] -> Nombre -> SymTab -> Maybe SymbolInfo
 lookupInScopes scopes nombre symtab =
     lookupInScopes' scopes (lookupInSymTab nombre symtab)
 -------------------------------------------------------------------------------
-
 -------------------------------------------------------------------------------
 -- Busca la informacion dentro de la cadena estatica
 lookupInScopes' :: [Alcance]-> Maybe [SymbolInfo] ->  Maybe SymbolInfo
