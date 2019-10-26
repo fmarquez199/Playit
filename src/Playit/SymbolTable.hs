@@ -109,12 +109,15 @@ insertDeclarations ids t asigs = do
         when (isJust idScopeInfo) $
             let info = fromJust $ lookupInSymTab id symTab
                 scopeInfo = [i | i <- info, getScope i == activeScope]
+                
                 idCategories = map getCategory scopeInfo
-                isInAnyCategory = Variable `elem` idCategories
+                categorias = [Variable, Parametros Valor, Parametros Referencia]
+                isInAnyCategory = any (`elem` idCategories) categorias
+                
                 idScopes = map getScope scopeInfo
                 isInActualScope = getScope (fromJust idScopeInfo) `elem` idScopes
             in
-            when (isInAnyCategory || isInActualScope) $
+            when (isInAnyCategory && isInActualScope) $
                 error $ "\n\nError: " ++ file ++ ": " ++ show p ++
                     "\n\tVariable '" ++ id ++ "' ya esta declarada.\n"
         return id
@@ -162,12 +165,12 @@ lookupInScopes' scopes (Just symInfo)
 
 
 -------------------------------------------------------------------------------
-updateType :: Nombre -> Tipo -> MonadSymTab ()
-updateType name t = do
+updateType :: Nombre -> Alcance -> Tipo -> MonadSymTab ()
+updateType name scope t = do
     (symTab@(SymTab table), scopes, scope) <- get
     let infos = lookupInSymTab name symTab
     when (isJust infos) $ do
-        let isTarget sym = getType sym == t
+        let isTarget sym = getScope sym == scope
             updateType' = 
                 fmap (\sym -> if isTarget sym then modifyType sym t else sym)
         put(SymTab $ M.adjust updateType' name table, scopes, scope)
@@ -177,8 +180,8 @@ updateType name t = do
 -------------------------------------------------------------------------------
 -- 
 modifyType :: SymbolInfo -> Tipo -> SymbolInfo
-modifyType (SymbolInfo _ s Funciones ei) newT = SymbolInfo newT s Funciones ei
-modifyType symbolInfo _ = symbolInfo
+modifyType (SymbolInfo _ s c ei) newT = SymbolInfo newT s c ei
+-- modifyType symbolInfo _ = symbolInfo
 -------------------------------------------------------------------------------
 
 

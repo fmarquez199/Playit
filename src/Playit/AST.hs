@@ -33,9 +33,9 @@ crearIdvar :: Nombre -> Posicion -> MonadSymTab Vars
 crearIdvar name p = do
     (symTab, scopes, _) <- get
     file <- ask
-    let info = lookupInSymTab name symTab
+    let info = lookupInScopes scopes name symTab
 
-    if isJust info then return $ Var name (getType $ head $ fromJust info)
+    if isJust info then return $ Var name (getType $ fromJust info)
     else 
         error ("\n\nError: " ++ file ++ ": " ++ show p ++ "\n\tVariable '"
                 ++ name ++ "' no declarada.\n")
@@ -370,22 +370,18 @@ crearWhile e i (line,_) = While e i
 
 -------------------------------------------------------------------------------
 -- Actualiza el tipo y  la informacion extra de la subrutina
-definirSubrutina' :: Nombre -> Int -> SecuenciaInstr -> Categoria -> Tipo
+definirSubrutina' :: Nombre -> Int -> SecuenciaInstr -> Categoria
                     -> MonadSymTab SecuenciaInstr
-definirSubrutina' name 0 [] c t = do
-    updateType name t
+definirSubrutina' name 0 [] c = do
     updateExtraInfo name c []
     return []
-definirSubrutina' name 0 i c t = do
-    updateType name t
+definirSubrutina' name 0 i c = do
     updateExtraInfo name c [AST i]
     return i
-definirSubrutina' name params [] c t = do
-    updateType name t
+definirSubrutina' name params [] c = do
     updateExtraInfo name c [Params params]
     return []
-definirSubrutina' name params i c t = do
-    updateType name t
+definirSubrutina' name params i c = do
     updateExtraInfo name c [Params params, AST i]
     return i
 -------------------------------------------------------------------------------

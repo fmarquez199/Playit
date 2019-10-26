@@ -243,8 +243,8 @@ Lvalue :: { Vars }
 
 -- Tipos de datos
 Tipo :: { Tipo }
-  : Tipo "|}" Expresion "{|" %prec "|}"   { TArray $3 $1 }
-  | list of Tipo                          { TLista $3 }
+  : Tipo "|}" Expresion "{|"  %prec "|}"   { TArray $3 $1 }
+  | list of Tipo  %prec "?"               { TLista $3 }
   | Tipo pointer                          { TApuntador $1 }
   | "(" Tipo ")"                          { $2 }
   | int                                   { TInt }
@@ -264,7 +264,6 @@ Tipo :: { Tipo }
 Instrucciones :: { SecuenciaInstr }
   : Instrucciones EndLines Instruccion  { $3 : $1 }
   | Instruccion                         { [$1] }
-  -- | Declaraciones %prec STMT  { $1 }
 
 Instruccion :: { Instr }
   : Asignacion            { $1 }
@@ -351,9 +350,7 @@ Controller :: { Instr }
 InitVar1 :: { (Nombre, Expr) }
   : nombre "=" Expresion
     { % do
-      -- TODO: Verificar que nombre este en la symtab, el scope concuerde con el actual
-      -- y cambiar TDummy por el tipo de Expresion
-      let var = Var (getTk $1) TDummy
+      var <- crearIdvar (getTk $1) (getPos $1)
       return $ crearAsignacion var $3 $2
       return ((getTk $1), $3)
     }
@@ -368,9 +365,7 @@ InitVar1 :: { (Nombre, Expr) }
 InitVar2 :: { (Nombre, Expr) }
   : nombre "<-" Expresion %prec "<-"
     { % do
-      -- TODO: Verificar que nombre este en la symtab, el scope concuerde con el actual
-      -- y cambiar TDummy por el tipo de Expresion
-      let var = Var (getTk $1) TDummy
+      var <- crearIdvar (getTk $1) (getPos $1)
       return $ crearAsignacion var $3 $2
       return ((getTk $1), $3)
     }
@@ -420,32 +415,28 @@ Free :: { Instr }
 -------------------------------------------------------------------------------
 
 DefinirSubrutina :: { SecuenciaInstr }
-  : Proc  { $1 }
-  | Func  { $1 }
-
-Proc :: { SecuenciaInstr }
-  : Nombre PushScope Params ":" EndLines Instrucciones EndLines ".~"
+  : Firma ":" EndLines Instrucciones EndLines ".~"
     { %
-      let ((nombre,categoria), params) = ($1, $3)
-      in definirSubrutina' nombre params $6 categoria TDummy
+      let ((nombre,categoria), params) = $1
+      in definirSubrutina' nombre params (reverse $4) categoria
     }
-  | Nombre PushScope Params ":" EndLines ".~" 
+  | Firma ":" EndLines ".~" 
   { %
-    let ((nombre,categoria), params) = ($1, $3)
-    in definirSubrutina' nombre params [] categoria TDummy
+    let ((nombre,categoria), params) = $1
+    in definirSubrutina' nombre params [] categoria
   }
 
-Func :: { SecuenciaInstr }
-  : Nombre PushScope Params Tipo ":" EndLines Instrucciones EndLines ".~"
-    { %
-      let ((nombre,categoria), params) = ($1, $3)
-      in definirSubrutina' nombre params $7 categoria $4
+
+-------------------------------------------------------------------------------
+-- Firma de la subrutina, se agrega antes a la symtab por la recursividad
+Firma :: { ((Nombre, Categoria),Int) }
+  : Nombre PushScope Params       { ($1, $3) }
+  | Nombre PushScope Params Tipo 
+    {% do
+        let (nombre,_) = $1
+        updateType nombre 1 $4
+        return ($1, $3)
     }
-  | Nombre PushScope Params Tipo ":" EndLines ".~" 
-  { %
-    let ((nombre,categoria), params) = ($1, $3)
-    in definirSubrutina' nombre params [] categoria $4
-  }
 
 -------------------------------------------------------------------------------
 -- Nombre de la subrutina, se agrega antes a la symtab por la recursividad
@@ -516,11 +507,6 @@ ParametroPasado :: { Expr }
 Expresiones::{ [Expr] }
   : Expresiones "," Expresion   { $3 : $1 }
   | Expresion                   { [$1] }
-
--- crearOpBin : 
---      TipoExpresion1 x TipoExpresion2 x TipoRetorno x Operacion x Expresion1 x Expresion2 =>
---      Chequea tipos
---      Crea la estructura de la operacion
 
 Expresion :: { Expr }
   : Expresion "+" Expresion            { crearOpBin Suma $1 $3 TInt TInt TInt }
@@ -633,10 +619,12 @@ PushScope  ::  { () }
 -------------------------------------------------------------------------------
 
 {
-parseError :: [Token] -> a
-parseError (h:t) = 
-  error $ "\n\nError sintactico del parser antes de: '" ++ token ++ "'. " ++
-          show pos ++ "\n"
+parseError :: [Token] -> MonadSymTab a
+parseError [] =  error $ "\n\nPrograma invalido "
+parseError (h:t) =  do
+    file <- ask
+    error $ "\n\nParse error:" ++ file ++ ": " ++ show pos ++ ":\n\tToken '" ++
+            token ++ "'.\n"
   where
       token = getTk h
       pos = getPos h
