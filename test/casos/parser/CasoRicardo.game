@@ -1,5 +1,5 @@
 monster n(Power n) Power:
-    Skill n @Comentando esto deberia compilar
+    @Skill n @Comentando esto deberia compilar
     play:
         Battle n
     lock Win
