@@ -263,7 +263,6 @@ Tipo :: { Tipo }
 Instrucciones :: { SecuenciaInstr }
   : Instrucciones EndLines Instruccion  { $3 : $1 }
   | Instruccion                         { [$1] }
-  -- | Declaraciones %prec STMT  { $1 }
 
 Instruccion :: { Instr }
   : Asignacion            { $1 }
@@ -351,8 +350,6 @@ Controller :: { Instr }
 InitVar1 :: { (Nombre, Expr) }
   : nombre "=" Expresion
     { % do
-      -- TODO: Verificar que nombre este en la symtab, el scope concuerde con el actual
-      -- y cambiar TDummy por el tipo de Expresion
       var <- crearIdvar (getTk $1) (getPos $1) 
       return $ crearAsignacion var $3 $2
       return ((getTk $1), $3)
@@ -368,8 +365,6 @@ InitVar1 :: { (Nombre, Expr) }
 InitVar2 :: { (Nombre, Expr) }
   : nombre "<-" Expresion %prec "<-"
     { % do
-      -- TODO: Verificar que nombre este en la symtab, el scope concuerde con el actual
-      -- y cambiar TDummy por el tipo de Expresion
       var <- crearIdvar (getTk $1) (getPos $1) 
       return $ crearAsignacion var $3 $2
       return ((getTk $1), $3)
@@ -420,32 +415,29 @@ Free :: { Instr }
 -------------------------------------------------------------------------------
 
 DefinirSubrutina :: { SecuenciaInstr }
-  : Proc  { $1 }
-  | Func  { $1 }
-
-Proc :: { SecuenciaInstr }
-  : Nombre PushScope Params ":" EndLines Instrucciones EndLines ".~"
+  : Firma ":" EndLines Instrucciones EndLines ".~"
     { %
-      let ((nombre,categoria), params) = ($1, $3)
-      in definirSubrutina' nombre params $6 categoria TDummy
+      let ((nombre,categoria), params,tipo) = $1
+      in definirSubrutina' nombre params $4 categoria
     }
-  | Nombre PushScope Params ":" EndLines ".~" 
+  | Firma ":" EndLines ".~" 
   { %
-    let ((nombre,categoria), params) = ($1, $3)
-    in definirSubrutina' nombre params [] categoria TDummy
+    let ((nombre,categoria), params, tipo) = $1
+    in definirSubrutina' nombre params [] categoria
   }
 
-Func :: { SecuenciaInstr }
-  : Nombre PushScope Params Tipo ":" EndLines Instrucciones EndLines ".~"
-    { %
-      let ((nombre,categoria), params) = ($1, $3)
-      in definirSubrutina' nombre params $7 categoria $4
+
+-------------------------------------------------------------------------------
+-- Firma de la subrutina, se agrega antes a la symtab por la recursividad
+Firma :: { ((Nombre, Categoria),Int, Tipo) }
+  : Nombre PushScope Params
+    {($1, $3,TDummy)}
+  | Nombre PushScope Params Tipo 
+    {% do
+        let (nombre,_) = $1
+        updateType nombre 1 $4
+        return ($1, $3,$4)
     }
-  | Nombre PushScope Params Tipo ":" EndLines ".~" 
-  { %
-    let ((nombre,categoria), params) = ($1, $3)
-    in definirSubrutina' nombre params [] categoria $4
-  }
 
 -------------------------------------------------------------------------------
 -- Nombre de la subrutina, se agrega antes a la symtab por la recursividad
@@ -460,7 +452,6 @@ Nombre :: { (Nombre, Categoria) }
       definirSubrutina (getTk $2) Funciones (getPos $2)
       return ((getTk $2), Funciones)
     }
-
 -------------------------------------------------------------------------------
 -- Definicion de los parametros de las subrutinas
 Params ::{ Int }
@@ -523,28 +514,26 @@ Expresiones::{ [Expr] }
 --      Crea la estructura de la operacion
 
 Expresion :: { Expr }
-  : Expresion "+" Expresion            { crearOpBin Suma $1 $3 TInt TInt TInt }
-  | Expresion "-" Expresion            { crearOpBin Resta $1 $3 TInt TInt TInt }
-  | Expresion "*" Expresion            { crearOpBin Multiplicacion $1 $3  TInt TInt TInt }
-  | Expresion "%" Expresion            { crearOpBin Modulo $1 $3 TInt TInt TInt }
-  | Expresion "/" Expresion            { crearOpBin Division $1 $3 TInt TInt TInt }
-  | Expresion "//" Expresion           { crearOpBin DivEntera $1 $3 TInt TInt TInt }
-  | Expresion "&&" Expresion           { crearOpBin And $1 $3 TBool TBool TBool }
-  | Expresion "||" Expresion           { crearOpBin Or $1 $3 TBool TBool TBool }
-  | Expresion "==" Expresion           { crearOpBin Igual $1 $3 TInt TInt TBool }
-  | Expresion "!=" Expresion           { crearOpBin Desigual $1 $3 TInt TInt TBool }
-  | Expresion ">=" Expresion           { crearOpBin MayorIgual $1 $3 TInt TInt TBool }
-  | Expresion "<=" Expresion           { crearOpBin MenorIgual $1 $3 TInt TInt TBool }
-  | Expresion ">" Expresion            { crearOpBin Mayor $1 $3 TInt TInt TBool }
-  | Expresion "<" Expresion            { crearOpBin Menor $1 $3 TInt TInt TBool }
+  : Expresion "+" Expresion            {% crearOpBin Suma $1 $3 TInt TInt TInt (getPos $2)}
+  | Expresion "-" Expresion            {% crearOpBin Resta $1 $3 TInt TInt TInt (getPos $2)}
+  | Expresion "*" Expresion            {% crearOpBin Multiplicacion $1 $3  TInt TInt TInt (getPos $2)}
+  | Expresion "%" Expresion            {% crearOpBin Modulo $1 $3 TInt TInt TInt (getPos $2)}
+  | Expresion "/" Expresion            {% crearOpBin Division $1 $3 TInt TInt TInt (getPos $2)}
+  | Expresion "//" Expresion           {% crearOpBin DivEntera $1 $3 TInt TInt TInt (getPos $2)}
+  | Expresion "&&" Expresion           {% crearOpBin And $1 $3 TBool TBool TBool (getPos $2)}
+  | Expresion "||" Expresion           {% crearOpBin Or $1 $3 TBool TBool TBool (getPos $2)}
+  | Expresion "==" Expresion           {% crearOpBin Igual $1 $3 TInt TInt TBool (getPos $2)}
+  | Expresion "!=" Expresion           {% crearOpBin Desigual $1 $3 TInt TInt TBool (getPos $2)}
+  | Expresion ">=" Expresion           {% crearOpBin MayorIgual $1 $3 TInt TInt TBool (getPos $2)}
+  | Expresion "<=" Expresion           {% crearOpBin MenorIgual $1 $3 TInt TInt TBool (getPos $2)}
+  | Expresion ">" Expresion            {% crearOpBin Mayor $1 $3 TInt TInt TBool (getPos $2)}
+  | Expresion "<" Expresion            {% crearOpBin Menor $1 $3 TInt TInt TBool (getPos $2)}
   | Expresion ":" Expresion %prec ":"  { crearOpAnexo Anexo $1 $3 }
   | Expresion "::" Expresion           { crearOpConcat Concatenacion $1 $3 }
   
   --
   | Expresion "?" Expresion ":" Expresion %prec "?"
-    {
-      crearIfSimple $1 $3 $5 TDummy $2
-    }
+    {% crearIfSimple $1 $3 $5 TDummy $2 }
   | FuncCall                     { $1 }
   | "(" Expresion ")"            { $2 }
   | "{" Expresiones "}"          { crearArrLstExpr $2 }
@@ -560,10 +549,10 @@ Expresion :: { Expr }
 
   -- Operadores unarios
   | "#" Expresion                        { crearOpLen Longitud $2 }
-  | "-" Expresion %prec negativo         { crearOpUn Negativo $2 TInt TInt }
-  | "!" Expresion                        { crearOpUn Not $2 TBool TBool }
-  | upperCase Expresion %prec upperCase  { crearOpUn UpperCase $2 TChar TChar }
-  | lowerCase Expresion %prec lowerCase  { crearOpUn LowerCase $2 TChar TChar }
+  | "-" Expresion %prec negativo         {% crearOpUn Negativo $2 TInt TInt (getPos $1)}
+  | "!" Expresion                        {% crearOpUn Not $2 TBool TBool (getPos $1)}
+  | upperCase Expresion %prec upperCase  {% crearOpUn UpperCase $2 TChar TChar (getPos $1)}
+  | lowerCase Expresion %prec lowerCase  {% crearOpUn LowerCase $2 TChar TChar (getPos $1)}
   
   -- Literales
   | true      { Literal (Booleano True) TBool }

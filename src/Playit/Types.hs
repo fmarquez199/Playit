@@ -82,6 +82,7 @@ data Tipo =
     TError           | -- Tipo error, no machean los tipos como deben
     TFloat           |
     TInt             |
+    --TReal            |
     TLista Tipo      |
     TRegistro        |
     TStr             |
@@ -96,6 +97,7 @@ instance Show Tipo where
     show TDummy         = "Sin tipo definido aun"
     show TError         = "Mal tipado"   
     show TFloat         = "Flotante"
+    --show TReal          = "Real"
     show TInt           = "Entero"
     show (TLista t)     = "Lista de " ++ show t
     show TRegistro      = "Registro"
@@ -255,22 +257,22 @@ data BinOp =
     deriving (Eq, Ord)
 
 instance Show BinOp where
-    show And            = " && "
-    show Anexo          = " : "
-    show Concatenacion  = " :: "
-    show Desigual       = " != "
-    show DivEntera      = " // "
-    show Division       = " / "
-    show Igual          = " == "
-    show Mayor          = " > "
-    show MayorIgual     = " >= "
-    show Menor          = " < "
-    show MenorIgual     = " <= "
-    show Modulo         = " % "
-    show Multiplicacion = " * "
-    show Or             = " || "
-    show Resta          = " - "
-    show Suma           = " + "
+    show And            = "&&"
+    show Anexo          = ":"
+    show Concatenacion  = "::"
+    show Desigual       = "!="
+    show DivEntera      = "//"
+    show Division       = "/"
+    show Igual          = "=="
+    show Mayor          = ">"
+    show MayorIgual     = ">="
+    show Menor          = "<"
+    show MenorIgual     = "<="
+    show Modulo         = "%"
+    show Multiplicacion = "*"
+    show Or             = "||"
+    show Resta          = "-"
+    show Suma           = "+"
 
 
 -- Operadores unarios

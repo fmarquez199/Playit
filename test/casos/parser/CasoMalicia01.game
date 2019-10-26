@@ -35,10 +35,10 @@ world %caso_malicia'M'%:
 
     Battle b1 = Win , b2=Lose 
     Battle b3 
-    Battle b4 = (b1 && b2) || b3,b5 = b1 > 3? Win:Lose
+    Battle b4 = (b1 && b2) || b3,b5 = (2 > 3)? Win:Lose
 
     Power a2 = 0,b20 = 1
-    Power c2 = a2 + 1,d2 = a2*b2
+    Power c2 = a2 + 1,d2 = a2*2
 
     Skill a3 = 1,b31 = 1'0,abc = c2 + 1,d3 = c2*b3
     

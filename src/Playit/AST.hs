@@ -135,21 +135,41 @@ crearAsignacion lval e (line, _) = Asignacion lval e
 --         t2 = typeE e2
 --         t = if t1 == t2 && t1 == TInt then t1 else TError
 -------------------------------------------------------------------------------
-
+    
 
 -------------------------------------------------------------------------------
 -- Crea el nodo para un operador binario
-crearOpBin :: BinOp -> Expr -> Expr -> Tipo -> Tipo -> Tipo -> Expr
-crearOpBin op e1 e2 t1 t2 tOp = OpBinario op e1 e2 tOp
-    -- OpBinario op e1 e2 (checkBin e1 e2 t1 t2 tOp)
+crearOpBin :: BinOp -> Expr -> Expr -> Tipo -> Tipo -> Tipo -> Posicion -> MonadSymTab Expr
+crearOpBin op e1 e2 t1 t2 tOp p
+    -- | tE1 == TDummy || tE2 == TDummy = TDummy
+    | tE1 == t1 && tE2 == t2  = return $ OpBinario op e1 e2 tOp
+    | otherwise = do
+        if (((tE1 == TFloat) || (tE2 == TFloat) ) && (tOp == TInt)) then do
+          {- Conversión automática que se encarga el compilador, ejemplo: 2.0 // 1 = 0.0 -}
+            return $ OpBinario op e1 e2 TFloat 
+        else do
+            fileName <- ask
+            error $ "\n\nError: " ++ fileName ++ ": " ++ show p ++ "\n\t" ++"La operacion: '" ++ (show op) ++ "'," ++ " requiere que el tipo de " ++ (show e1) ++ " sea '" ++ (show t1) ++ "' y de " ++  (show e2) ++ " sea '" ++ (show t2) ++ "'"
+    where
+        tE1 = typeE e1
+        tE2 = typeE e2
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
 -- Crea el nodo para un operador unario
-crearOpUn :: UnOp -> Expr -> Tipo -> Tipo -> Expr
-crearOpUn op e t tOp = OpUnario op e tOp
-    -- OpUnario op e (checkUn e t tOp)
+crearOpUn :: UnOp -> Expr -> Tipo -> Tipo -> Posicion -> MonadSymTab Expr
+crearOpUn op e t tOp p
+    | tE == t = return $ OpUnario op e tOp
+    | otherwise = do     
+        if (tE == TFloat && tOp == TInt) then do
+          {- Conversión automática que se encarga el compilador, ejemplo: -2.0 = -2.0 -}
+            return $ OpUnario op e TFloat
+        else do
+            fileName <- ask
+            error $ "\n\nError: " ++ fileName ++ ": " ++ show p ++ "\n\t" ++"La operacion: '" ++ (show op) ++ "'," ++ " requiere que el tipo de " ++ (show e) ++ " sea de tipo '" ++ (show tOp) ++ "'"
+    where
+        tE = typeE e
 -------------------------------------------------------------------------------
 
 
@@ -237,11 +257,26 @@ crearGuardiaIF exprCond seqInstrs (line, _) = (exprCond, seqInstrs)
 
 
 -------------------------------------------------------------------------------
-crearIfSimple :: Expr -> Expr -> Expr -> Tipo ->  Posicion -> Expr
-crearIfSimple cond v f t (linea, col) = IfSimple cond v f t
-{-| t con == TBool && t v == t f && t v /= TError = IfSimple con v f
-  | otherwise = error ("\n\nError semantico en el operador ternario '? :' en la linea: " ++ show linea ++ " tipo de verdad: " ++ (show $ t v) ++ " tipo de mentira: " ++ (show $ t f))
-  where t = typeE-}
+crearIfSimple :: Expr -> Expr -> Expr -> Tipo ->  Posicion -> MonadSymTab Expr
+crearIfSimple cond v f t p
+    | tCond == TBool &&  tFalse== tTrue = return $ IfSimple cond v f tTrue
+    | otherwise = do
+        
+        if (((tFalse == TFloat) && (tTrue == TInt)) || 
+            ((tTrue == TFloat) && (tFalse == TInt))) then do
+          {- Conversión automática que se encarga el compilador, (1 > 0) ? 1.3 : 5 -}
+            return $ IfSimple cond v f TFloat
+        else do        
+            fileName <- ask
+            if tCond /= TBool then do 
+                error $ "\n\nError: " ++ fileName ++ ": " ++ show p ++ "\n\t" ++"Condicion '" ++ (show tCond) ++ "' del operador ternario '? :'" ++ " no es booleana."
+            else do
+                error $ "\n\nError: " ++ fileName ++ ": " ++ show p ++ "\n\t" ++"El operador ternario '? :'" ++ " requiere que el tipo de '" ++ (show v) ++ "' y de '" ++  (show f) ++ "' sean iguales."
+  where 
+    tCond = typeE cond
+    tFalse = typeE f
+    tTrue = typeE v
+
 -------------------------------------------------------------------------------
 
 
@@ -368,22 +403,17 @@ crearWhile e i (line,_) = While e i
 
 -------------------------------------------------------------------------------
 -- Actualiza el tipo y  la informacion extra de la subrutina
-definirSubrutina' :: Nombre -> Int -> SecuenciaInstr -> Categoria -> Tipo
-                    -> MonadSymTab SecuenciaInstr
-definirSubrutina' name 0 [] c t = do
-    updateType name t
+definirSubrutina' :: Nombre -> Int -> SecuenciaInstr -> Categoria -> MonadSymTab SecuenciaInstr
+definirSubrutina' name 0 [] c = do
     updateExtraInfo name c []
     return []
-definirSubrutina' name 0 i c t = do
-    updateType name t
+definirSubrutina' name 0 i c = do
     updateExtraInfo name c [AST i]
     return i
-definirSubrutina' name params [] c t = do
-    updateType name t
+definirSubrutina' name params [] c = do
     updateExtraInfo name c [Params params]
     return []
-definirSubrutina' name params i c t = do
-    updateType name t
+definirSubrutina' name params i c = do
     updateExtraInfo name c [Params params, AST i]
     return i
 -------------------------------------------------------------------------------

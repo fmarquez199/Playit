@@ -109,11 +109,16 @@ insertDeclarations ids t asigs = do
         
         when (isJust idScopeInfo) $
             let info = fromJust $ lookupInSymTab id symTab
+
                 scopeInfo = [i | i <- info, getScope i == activeScope] 
+
+                idScopes = map getScope scopeInfo
+                isInActualScope = getScope (fromJust idScopeInfo) `elem` idScopes
+
                 idCategories = map getCategory scopeInfo
                 isInAnyCategory = Variable `elem` idCategories
             in
-            when isInAnyCategory $
+            when (isInAnyCategory || isInActualScope) $
                 error $ "\n\nError: " ++ file ++ ": " ++ show p ++
                     "\n\tVariable '" ++ id ++ "' ya esta declarada.\n"
         return id
@@ -160,23 +165,22 @@ lookupInScopes' scopes (Just symInfo)
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
-updateType :: Nombre -> Tipo -> MonadSymTab ()
-updateType name t = do
-    (symTab@(SymTab table), scopes, scope) <- get
+updateType :: Nombre -> Alcance -> Tipo-> MonadSymTab ()
+updateType name scope newType = do
+    (symTab@(SymTab table), scopes, nscopes) <- get
     let infos = lookupInSymTab name symTab
     when (isJust infos) $ do
-        let isTarget sym = getType sym == t
+        let isTarget sym = getScope sym == scope
             updateType' = 
-                fmap (\sym -> if isTarget sym then modifyType sym t else sym)
-        put(SymTab $ M.adjust updateType' name table, scopes, scope)
+                fmap (\sym -> if isTarget sym then modifyType sym newType else sym)
+        put(SymTab $ M.adjust updateType' name table, scopes, nscopes)
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
 -- 
 modifyType :: SymbolInfo -> Tipo -> SymbolInfo
-modifyType (SymbolInfo _ s Funciones ei) newT = SymbolInfo newT s Funciones ei
-modifyType symbolInfo _ = symbolInfo
+modifyType (SymbolInfo _ s cat ei) newT = SymbolInfo newT s cat ei
 -------------------------------------------------------------------------------
 
 
