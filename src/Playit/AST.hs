@@ -178,7 +178,7 @@ crearOpBinComparable op e1 e2 tcomp tOp p
     | (op == Igual || op == Desigual) && isArray tE1 && isArray tE2 && tE1 == tE2 = return $ OpBinario op e1 e2 tOp
     | (op == Igual || op == Desigual) && isList tE1 && isList tE2 && tE1 == tE2 = return $ OpBinario op e1 e2 tOp
     | (op == Igual || op == Desigual) && isPointer tE1 && isPointer tE2 && tE1 == tE2 = return $ OpBinario op e1 e2 tOp
-    --  | TApuntador , TRegistro,TUnion
+    --  TODO: | TRegistro,TUnion
     | otherwise = do
         fileName <- ask
         error $ "\n\nError: " ++ fileName ++ ": " ++ show p ++ "\n\t" ++"La operacion: '" ++ (show op) ++ "'," ++ " requiere que el tipo de '" ++ (show e1) ++ "' y de '" ++  (show e2) ++ "' sean de tipos comparables entre ellos."
