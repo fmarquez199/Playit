@@ -142,7 +142,8 @@ import Playit.AST
 %right negativo "!" upperCase lowerCase input
 %left "++" "|}" "{|" "<<" ">>" "::" "|)" "(|" "|>" "<|"
 %left "--"
-
+%right "#" pointer endLine
+%left "?"
 
 %%
 
@@ -160,18 +161,30 @@ ProgramaWrapper :: { Instr }
 
   
 Programa :: { Instr }
+  : PushScope Definiciones EndLines world programa ":" EndLines Instrucciones EndLines ".~"  PopScope
+    { Programa $ reverse $8 }
+  | PushScope Definiciones EndLines world programa ":" EndLines ".~" PopScope
+    { Programa [] }
+  | PushScope world programa ":" EndLines Instrucciones EndLines ".~"  PopScope
+    { Programa $ reverse $6 }
+  | PushScope world programa ":" EndLines ".~" PopScope
+    { Programa [] }
 
 
+Definiciones :: { SecuenciaInstr }
+  : Definiciones EndLines Definicion { $1 ++ $3 }
+  | Definicion                       { $1 }
 
 
-
-
-
+Definicion :: { SecuenciaInstr }
+  : DefinirSubrutina PopScope  { $1 }
+  | DefinirRegistro PopScope   { $1 }
+  | DefinirUnion PopScope      { $1 }
 
 
 EndLines :: { () }
-  : EndLines endLine {}
-  | endLine          {}
+  : EndLines endLine  {}
+  | endLine           {}
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
@@ -180,11 +193,12 @@ EndLines :: { () }
 -------------------------------------------------------------------------------
 
 Declaraciones :: { SecuenciaInstr }
-
+  : Declaraciones EndLines Declaracion  { $1 ++ $3 }
+  | Declaracion                         { $1 }
 
 Declaracion :: { SecuenciaInstr }
   : Tipo Identificadores
-
+    { % let (ids,asigs) = $2 in insertDeclarations (reverse ids) $1 asigs }
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
@@ -192,7 +206,15 @@ Declaracion :: { SecuenciaInstr }
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 
-
+Identificadores :: { ([(Nombre, Posicion)], SecuenciaInstr) }
+  : Identificadores "," Identificador
+  { 
+    let ((ids, asigs), (id, asig)) = ($1, $3) in (id : ids, asig ++ asigs)
+  }
+  | Identificador
+  { 
+    let (id, asigs) = $1 in ([id], asigs)
+  }
 
 Identificador :: { ((Nombre, Posicion), SecuenciaInstr) }
   : nombre "=" Expresion  { ((getTk $1,getPos $1), [Asignacion (Var (getTk $1) TDummy) $3]) }
@@ -245,7 +267,20 @@ Instrucciones :: { SecuenciaInstr }
   -- | Declaraciones %prec STMT  { $1 }
 
 Instruccion :: { Instr }
+  : Asignacion            { $1 }
+  | Declaracion           { Asignaciones $1 }
+  | PushScope Controller PopScope   { $2 }
+  | PushScope Play PopScope         { $2 }
+  | Button                { $1 }
+  | ProcCall              { $1 }
+  | EntradaSalida         { $1 }
+  | Free                  { $1 }
+  | return Expresion      { Return $2 }
+  | break {-PopScope-}        { Break }
+  | continue              { Continue }
 
+
+-------------------------------------------------------------------------------
 -- Instruccion de asignacion '='
 Asignacion :: { Instr }
   : Lvalue "=" Expresion  { crearAsignacion $1 $3 $2 }
@@ -384,7 +419,9 @@ Free :: { Instr }
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 
-
+DefinirSubrutina :: { SecuenciaInstr }
+  : Proc  { $1 }
+  | Func  { $1 }
 
 Proc :: { SecuenciaInstr }
   : Nombre PushScope Params ":" EndLines Instrucciones EndLines ".~"
@@ -515,7 +552,11 @@ Expresion :: { Expr }
   | "<<" Expresiones ">>"        { crearArrLstExpr $2 }
   | "<<"  ">>"                   { crearArrLstExpr [] }
   | new Tipo                     { OpUnario New Null $2 }
-
+  | input Expresion %prec input  { crearRead $2 $1 }
+  | input
+    {
+      crearRead (Literal ValorVacio TStr) $1
+    }
 
   -- Operadores unarios
   | "#" Expresion                        { crearOpLen Longitud $2 }
@@ -544,12 +585,30 @@ Expresion :: { Expr }
 
 -------------------------------------------------------------------------------
 -- Registros
-
+DefinirRegistro :: { SecuenciaInstr }
+  : registro idtipo ":" PushScope EndLines Declaraciones EndLines ".~"
+    { %
+      definirRegistro (getTk $2) $6 (getPos $2)
+    }
+  | registro idtipo ":" PushScope EndLines ".~"                        
+    { %
+      definirRegistro (getTk $2) [] (getPos $2)
+    }
+-------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
 -- Uniones
-
+DefinirUnion :: { SecuenciaInstr }
+  : union idtipo ":" PushScope EndLines Declaraciones EndLines ".~"
+    { %
+      definirUnion (getTk $2) $6 (getPos $2)
+    }
+  | union idtipo ":" PushScope EndLines ".~"                        
+    { %
+      definirUnion (getTk $2) [] (getPos $2)
+    }
+-------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
