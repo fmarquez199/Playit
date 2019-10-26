@@ -176,21 +176,6 @@ instance Show Subrutina where
     show (SubrutinaCall n p) = n ++ "(" ++ concatMap show p ++ ")"
 
 
--- Definiciones de las subrutinas, registros y uniones
-{-data Definicion = Defs
-                | Func Nombre Parametros Tipo SecuenciaInstr
-                | Proc Nombre Parametros SecuenciaInstr
-                | Registro Nombre SecuenciaInstr Tipo
-                | Union Nombre SecuenciaInstr Tipo
-                deriving (Eq)
-instance Show Definicion where
-    show Defs             = "Definiciones"
-    show (Func n p t s)   = "Funcion: " ++ n ++ " que recibe: " ++ show p ++ " y retorna un: " ++ show t ++ ": " ++ show s
-    show (Proc n p s)     = "Procedimiento: " ++ n ++ " que recibe: " ++ show p ++ ": " ++ show s
-    show (Registro n s t) = "Registro: " ++ n
-    show (Union n s t)    = "Union: " ++ n-}
-
-
 data Expr   = 
     ArrLstExpr [Expr] Tipo         |
     FuncCall Subrutina Tipo        |

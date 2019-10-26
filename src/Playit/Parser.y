@@ -243,7 +243,7 @@ Lvalue :: { Vars }
 -- Tipos de datos
 Tipo :: { Tipo }
   : Tipo "|}" Expresion "{|" %prec "|}"   { TArray $3 $1 }
-  | list of Tipo                          { TLista $3 }
+  | list of Tipo     %prec "?"                     { TLista $3 }
   | Tipo pointer                          { TApuntador $1 }
   | "(" Tipo ")"                          { $2 }
   | int                                   { TInt }
