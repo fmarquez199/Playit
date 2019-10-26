@@ -56,8 +56,8 @@ crearVarIndex v e p
     | otherwise = return $ VarIndex v e tVar
     where
         tVar = case typeVar v of 
-                tipo@(TArray _ _) -> typeArrLst tipo
-                tipo@(TLista _) -> typeArrLst tipo
+                tipo@(TArray _ t) -> t
+                tipo@(TLista t) -> t
                 _ -> TError
         tExpre = typeE e
 -------------------------------------------------------------------------------

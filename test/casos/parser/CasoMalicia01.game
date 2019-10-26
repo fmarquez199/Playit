@@ -53,7 +53,6 @@ world %caso_malicia'M'%:
 
     abc2|)1(| = 1
 
-    abc2|)(abc2|)0(| + b2 ) * ( b2? a2 + 1 : abc2|)b1 - 1(| )(| = (abc2|>0<| + b2 ) * (b2? a2 + 1 : abc2|>b1 - 1<|)
     
     Kit of Kit of Power lista1 = << <<a2,a3>> , <<a2,a3>>  >>
     
@@ -64,11 +63,12 @@ world %caso_malicia'M'%:
     Contacto c = {<<l1,l1>>, a2}
     c spawn n spawn n spawn nombre = joystick ~Dame un nombre YEH NOW BB~
     c spawn lista1|>2<||>1<| = joystick ~HEY LOL~
+    c spawn lista1|>2<||>1<| = joystick ~HEY LOL~
     c spawn tip = *c*    
         
     Power puff p = summon Power
     
-    puff p = (b2? a2 + 1 : abc|>b1 - 1<|)
+    puff p = (b2? a2 + 1 : abc2|>3 - 1<|)
     
     puff p = 15
     
