@@ -125,11 +125,6 @@ crearVarCompIndex v campo p = do
         
 -------------------------------------------------------------------------------
 
-{-TODO : Hay new Tipo incorrectos? -}
---crearSummonOp:: Tipo -> Posicion -> MonadSymTab Expr
---crearSummonOp typ p = do
---    return $ OpUnario New Null (TApuntador typ)
-
 -------------------------------------------------------------------------------
 -- Crear el nodo para asignar a un identificador de variable una expresion
 -- TODO: Modificar para que asigne el primer elemento de un arreglo/lista a la variable
@@ -185,17 +180,19 @@ crearOpBin op e1 e2 t1 t2 tOp p
         tE1 = typeE e1
         tE2 = typeE e2
 
+
+
 -------------------------------------------------------------------------------
 -- Crea el nodo para un operador binario
 crearOpBinComparable :: BinOp -> Expr -> Expr -> [Tipo] -> Tipo -> Posicion -> MonadSymTab Expr
 crearOpBinComparable op e1 e2 tcomp tOp p
     -- | tE1 == TDummy || tE2 == TDummy = TDummy
-    | tE1 `elem` all_comps && tE2 == tE1  = return $ OpBinario op e1 e2 tOp
-    | (op == Igual || op == Desigual) && isArray tE1 && isArray tE2 && tE1 == tE2 = 
+    | tE1 `elem` allcomps && tE2 == tE1  = return $ OpBinario op e1 e2 tOp
+    | esopigualdad && isArray tE1 && isArray tE2 && tE1 == tE2 = 
         return $ OpBinario op e1 e2 tOp
-    | (op == Igual || op == Desigual) && isList tE1 && isList tE2 && tE1 == tE2 = 
+    | esopigualdad && sonlistas && isJust (obtTipoListas [tE1,tE2])  =  -- <<>> == <<2>>
         return $ OpBinario op e1 e2 tOp
-    | (op == Igual || op == Desigual) && isPointer tE1 && isPointer tE2 && tE1 == tE2 = 
+    | esopigualdad && isPointer tE1 && isPointer tE2 && tE1 == tE2 = 
         return $ OpBinario op e1 e2 tOp
     --  TODO: | TRegistro,TUnion
     | otherwise = do
@@ -207,7 +204,9 @@ crearOpBinComparable op e1 e2 tcomp tOp p
     where
         tE1 = typeE e1
         tE2 = typeE e2
-        all_comps = [TChar,TFloat,TInt,TStr] ++ tcomp
+        sonlistas = isList tE1 && isList tE2
+        esopigualdad = (op == Igual || op == Desigual)
+        allcomps = [TChar,TFloat,TInt,TStr] ++ tcomp
 
 -------------------------------------------------------------------------------
 
@@ -242,14 +241,8 @@ crearOpUn op e t tOp p
 -- Crea el nodo para el operador concatenar 2 listas
 crearOpConcat ::Expr -> Expr -> Posicion -> MonadSymTab Expr
 crearOpConcat e1 e2 p  
-    |  sonListas && typeAE1 == typeAE2   = do
-        return $ OpBinario Concatenacion e1 e2 te1
-    | sonListas && (esTipoEscalar $ typeAE1) && typeAE2 == TDummy  = do -- <<2>>:: <<>>
-        return $ OpBinario Concatenacion e1 e2 te1
-    | sonListas && typeAE1 == TDummy && (esTipoEscalar $ typeAE2)   = do -- <<>>:: <<2>>
-        return $ OpBinario Concatenacion e1 e2 te2
-    | sonListas && typeAE1 == TDummy && typeAE2 == TDummy   = do -- <<>>:: <<>>
-        return $ OpBinario Concatenacion e1 e2 TDummy
+    | isList te1 && isList te2 && isJust mbtypeList  = do -- <<2>>:: <<>>
+        return $ OpBinario Concatenacion e1 e2 (fromJust mbtypeList)
     | otherwise = do
         fileName <- ask
         error $ "\n\nError: " ++ fileName ++ ": " ++ show p ++ "\n\t" ++
@@ -258,9 +251,7 @@ crearOpConcat e1 e2 p
     where
         te1 = typeE e1
         te2 = typeE e2
-        sonListas = isList te1 && isList te2
-        typeAE1 = typeArrLst te1
-        typeAE2 = typeArrLst te2
+        mbtypeList = obtTipoListas [te1,te2]
         
 -------------------------------------------------------------------------------
 
@@ -269,14 +260,8 @@ crearOpConcat e1 e2 p
 -- Crea el nodo para el operador agregar un elemento al inicio de la lista
 crearOpAnexo ::  Expr -> Expr -> Posicion-> MonadSymTab Expr
 crearOpAnexo e1 e2 p
-    | esTipoEscalar typee1 && isList typee2  &&  typee1 == typeArrLst typee2 = do
-        return $ OpBinario Anexo e1 e2 typee2
-    | esTipoEscalar typee1 && isList typee2  &&  TDummy == typeArrLst typee2 = do -- 2:<<>>
-        return $ OpBinario Anexo e1 e2 (TLista typee1)
-    | not $ esTipoEscalar typee1 && isList typee2  &&  TDummy == typeArrLst typee2 = do -- <<2>>:<<>>
-        fileName <- ask
-        error $ "\n\nError: " ++ fileName ++ ": " ++ show p ++ "\n\t" ++
-            "El emento a anexar '" ++ (show e1) ++ "'," ++ "' debe ser un tipo escalar."
+    | isJust typeLR = do
+        return $ OpBinario Anexo e1 e2 (fromJust typeLR)
     | not $ isList typee2  = do
         fileName <- ask
         error $ "\n\nError: " ++ fileName ++ ": " ++ show p ++ "\n\t" ++
@@ -291,6 +276,7 @@ crearOpAnexo e1 e2 p
     where
         typee1 = typeE e1
         typee2 = typeE e2
+        typeLR = obtTipoListaAnexo typee1 typee2
 -------------------------------------------------------------------------------
 
 
@@ -313,16 +299,15 @@ crearOpLen e p
 crearLista :: [Expr] -> Posicion -> MonadSymTab Expr
 crearLista [] p = return $ ArrLstExpr [] (TLista TDummy) -- TODO : Recordar quitar el TDummy
 crearLista e  p
-    | tipo /= TError = do
-        return $ ArrLstExpr e (TLista tipo)
+    | isJust tipo  = do
+        return $ ArrLstExpr e (TLista (fromJust tipo))
     | otherwise = do
         fileName <- ask
         error $ "\n\nError: " ++ fileName ++ ": " ++ show p ++ "\n\t" ++
             "Las expresiones de la lista deben ser del mismo tipo."
     where
-        mapaTipos = map typeE e
-        tipoPrimero = head $ filter (/=TDummy) mapaTipos
-        tipo = if all (== tipoPrimero) mapaTipos then tipoPrimero else TError
+        mapaTipos   = map typeE e
+        tipo = obtTipoListas mapaTipos
 
 -------------------------------------------------------------------------------
 -- TODO

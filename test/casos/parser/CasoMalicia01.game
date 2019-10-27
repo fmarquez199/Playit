@@ -57,6 +57,20 @@ world %caso_malicia'M'%:
     Power c2 = a2 + 1,d2 = a2*2
 
     Skill a3 = 1,b31 = 1'0,abc = c2 + 1,d3 = c2*2
+  Battle listab1 = <<2>> == <<>>
+  Battle listab2 = <<>> == <<>>
+  Battle listab3 = <<>> == <<2>>
+  Battle listab3'1 = <<<<>>>> == <<<<2>>>>
+
+  Battle listab4 = <<2>> == <<>>
+  Battle listab5 = (2:<<>>) == <<>>
+  Battle listab6 = <<>>::<<>> == <<>>
+  Battle listab7 = <<2>>::<<>> == <<2>>
+  Battle listab8 = <<>>::<<3>> == <<3>>
+  Battle listab8'1 = (<<2>>:<<<<3>>>>) == <<<<2>>,<<3>>>>
+  Battle listab9 = <<<<>>>> == <<<<2>>>>
+  Battle listab10 = (<<>>:<<<<2>>>>) == <<<<>>,<<2>>>>
+  Battle listab11 = <<<<>>>> == <<<<>>>>
 
     Contacto3 nombre
     

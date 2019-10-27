@@ -309,9 +309,9 @@ data SymbolInfo = SymbolInfo {
 
 instance Show SymbolInfo where
     show (SymbolInfo t s c i) = "Tipo: " ++ show t ++ " | Alcance: " ++
-        show s ++ " | Categoria: "++ show c ++ ".\n\tExtra:\n" ++
-        concatMap show i ++ "\n"
-
+        show s ++ " | Categoria: "++ show c ++ ".\n" ++ 
+        if length i > 0 then "\tExtra:\n" ++ concatMap show i ++ "\n" else ""
+    
 
 {- Nuevo tipo de dato para representar la tabla de simbolos
 * Tabla de hash:

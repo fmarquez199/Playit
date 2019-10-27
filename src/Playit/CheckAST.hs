@@ -97,6 +97,10 @@ isPointer :: Tipo -> Bool
 isPointer (TApuntador _) = True
 isPointer _ = False
 
+isRegUnionType :: Tipo -> Bool
+isRegUnionType (NuevoTipo _) = True
+isRegUnionType _ = False
+
 
 esTipoEscalar:: Tipo -> Bool
 esTipoEscalar TBool = True
@@ -112,6 +116,7 @@ esTipoEscalar _ = False
 typeArrLst (TArray _ t)                 = t
 --typeArrLst (TLista t@(TLista _))        = typeArrLst t
 typeArrLst (TLista t)                   = t
+
 -------------------------------------------------------------------------------
 
 --------------------------------------------------------------------------------
@@ -123,6 +128,32 @@ typeVar (Param _ t _)           = t
 typeVar (VarCompIndex _ _ t)    = t
 typeVar (PuffValue _ t)         = t
 --------------------------------------------------------------------------------
+
+-- Dada una lista [(List t)] regresa el t(si t es una lista recursiona) , si no es de esa forma regresa Nothing
+-- Util para <<>> == <<>> y <<>>::<<>> y derivados
+obtTipoListas:: [Tipo]-> Maybe Tipo
+obtTipoListas ts 
+    | all isList ts = Just (\l -> TLista l) <*> obtTipoListas (map (\(TLista t) -> t) ts) -- [[[int]]] = recursivo [[int]]
+    | all ((\t -> esTipoEscalar t || t ==TDummy)) ts =  -- [[int]] = Just [int]
+        if any esTipoEscalar ts then  
+            Just (head (filter (/=TDummy) ts))
+        else 
+            Just TDummy
+    | otherwise = Nothing
+
+
+-- Dado un tipo y una lista (List t) regresa el t(si t es una lista recursiona) , si no es de esa forma regresa Nothing
+-- Util Para el problema de <<2>>:<< <<>> >> 
+obtTipoListaAnexo:: Tipo -> Tipo -> Maybe Tipo
+obtTipoListaAnexo t1 (TLista t2) 
+    | esTipoEscalar t1 && esTipoEscalar t2 && t1 == t2 = Just (TLista t1)-- int : [int] = Just int
+    | esTipoEscalar t1 && t2 == TDummy  = Just (TLista t1)-- int : [TDummy] = Just int
+    | t1 == TDummy && esTipoEscalar t2  = Just (TLista t2)-- TDummy : [int] = Just int
+    | t1 == TDummy && t2 == TDummy  = Just (TLista TDummy)-- TDummy : [TDummy] = Just int
+    | isList t1 && isList t2 = Just (\l -> TLista l) <*> (obtTipoListaAnexo (typeArrLst t1) t2) -- [t] :[[t]] = recursivo t [t]
+    | otherwise = Nothing
+obtTipoListaAnexo _ _ = Nothing
+
 
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
@@ -169,6 +200,10 @@ checkStep e (line,_) symTab = return True
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 
+changeTDummyForTipoList :: Tipo -> Tipo-> Tipo
+changeTDummyForTipoList (TLista TDummy) newT = TLista newT
+changeTDummyForTipoList (TLista t) newT      = TLista (changeTDummyForTipoList t newT)
+changeTDummyForTipoList t newT               = t
 
 --------------------------------------------------------------------------------
 -- Cambia el TDummy de una variable en las declaraciones
