@@ -32,22 +32,42 @@ initState = createInitSymTab (SymTab M.empty)
 createInitSymTab :: SymTab -> (SymTab,ActiveScopes,Alcance)
 createInitSymTab st = (insertSymbols symbols info st,[0],0)
     where
-        -- TODO: terminar de agregar todos los simbolos del lenguaje
         symbols = t ++ words
-        t = ["Power", "Skill", "Rune", "Runes", "Battle", "Inventory", "Items"]
-        words = ["Win", "Lose", "free", "puff"]
-        info = ti ++ wi
-        ti = [pInfo, sInfo, rInfo, rsInfo, bInfo, inventoryInfo, itemsInfo]
-        wi = [boolsInfo, boolsInfo, aptInfo, aptInfo]
-        pInfo = SymbolInfo TInt 0 Tipos []
-        sInfo = SymbolInfo TFloat 0 Tipos []
-        rInfo = SymbolInfo TChar 0 Tipos []
-        rsInfo = SymbolInfo TStr 0 Tipos []
-        bInfo = SymbolInfo TBool 0 Tipos []
-        inventoryInfo = SymbolInfo TRegistro 0 ConstructoresTipos []
-        itemsInfo = SymbolInfo TUnion 0 ConstructoresTipos []
-        boolsInfo = SymbolInfo TBool 0 Variable []
-        aptInfo = SymbolInfo (TApuntador TDummy) 0 Apuntadores []
+        t = ["Power", "Skill", "Rune", "Runes", "Battle", "Inventory", "Items",
+            "Kit of"]
+        words = ["Win", "Lose", "free", "puff", "DeathZone", "boss", "monster",
+            "controller", "drop", "joystick", "Button", "notPressed", "kill",
+            "lock", "play", "gameOver", "keepPlaying", "spawn", "summon",
+            "unlock", "world"]
+        info = tI ++ wI
+        tI = [power, skill, rune, runes, battle, inventory, items, listOf
+            ]
+        wI = [bools, bools, apt, apt, apt, proc, func, for, out, input, ifElse,
+            ifElse, kill, lock, play, break, continue, spawn, apt, unlock, world]
+        power = SymbolInfo TInt 0 Tipos []
+        skill = SymbolInfo TFloat 0 Tipos []
+        rune = SymbolInfo TChar 0 Tipos []
+        runes = SymbolInfo TStr 0 Tipos []
+        battle = SymbolInfo TBool 0 Tipos []
+        listOf = SymbolInfo (TLista TDummy) 0 Tipos [] -- Tipo?
+        inventory = SymbolInfo TRegistro 0 ConstructoresTipos []
+        items = SymbolInfo TUnion 0 ConstructoresTipos []
+        bools = SymbolInfo TBool 0 Constantes []
+        apt = SymbolInfo (TApuntador TDummy) 0 Apuntadores [] -- Tipo?
+        proc = SymbolInfo TDummy 0 Procedimientos [] -- Tipo?
+        func = SymbolInfo TDummy 0 Funciones [] -- Tipo?
+        for = SymbolInfo TDummy 0 Constantes [] -- Categoria y tipo?
+        out = SymbolInfo TStr 0 Constantes [] -- Categoria?
+        input = SymbolInfo TDummy 0 Constantes [] -- Categoria y tipo?
+        ifElse = SymbolInfo TBool 0 Constantes [] -- Categoria?
+        kill = SymbolInfo TDummy 0 Constantes [] -- Categoria y tipo?
+        lock = SymbolInfo TDummy 0 Constantes [] -- Categoria y tipo?
+        play = SymbolInfo TDummy 0 Constantes [] -- Categoria y tipo?
+        break = SymbolInfo TDummy 0 Constantes [] -- Categoria y tipo?
+        continue = SymbolInfo TDummy 0 Constantes [] -- Categoria y tipo?
+        spawn = SymbolInfo TDummy 0 Constantes [] -- Categoria y tipo?
+        unlock = SymbolInfo TDummy 0 Constantes [] -- Categoria y tipo?
+        world = SymbolInfo TDummy 0 Constantes [] -- Categoria y tipo?
 -------------------------------------------------------------------------------
 
 
@@ -186,7 +206,8 @@ modifyType (SymbolInfo _ s c ei) newT = SymbolInfo newT s c ei
 
 
 -------------------------------------------------------------------------------
--- Actualiza la informacion extra del simbolo con la nueva
+-- Actualiza la informacion extra del simbolo con la nueva dependiendo de la
+-- categoria a la que pertenece
 -- NOTA: Es primeramente para agregar como informacion extra en las subrutinas
 --      su AST y parametros, puede necesitar modificarse si se quiere usar para
 --      algo diferente

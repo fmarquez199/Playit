@@ -49,15 +49,15 @@ data Categoria  =
     deriving (Eq, Ord)
 
 instance Show Categoria where
-    show Apuntadores        = "Apuntador"
+    show Apuntadores        = "Apuntadores"
     show Campos             = "Campos"
-    show Constantes         = "Constante"
-    show ConstructoresTipos = "Constructor de Tipos"
+    show Constantes         = "Constantes"
+    show ConstructoresTipos = "Constructores de Tipos"
     show Funciones          = "Funciones"
-    show (Parametros r)     = "Parametro por " ++ show r
-    show Procedimientos     = "Procedimiento"
-    show Tipos              = "Tipo"
-    show Variable           = "Variable"
+    show (Parametros r)     = "Parametros por " ++ show r
+    show Procedimientos     = "Procedimientos"
+    show Tipos              = "Tipos"
+    show Variable           = "Variables"
 
 
 data ExtraInfo =
@@ -67,8 +67,9 @@ data ExtraInfo =
     deriving (Eq, Ord)
 
 instance Show ExtraInfo where
-    show (AST secInstr) = "\t\tAST:\n" ++ concatMap show secInstr ++ "\n"
-    show (Params p)     = "\t\tParametros: " ++ show p ++ "\n"
+    show (AST secInstr) = "      AST:\n    " ++ concatMap show secInstr ++ "\n"
+    show (Params p)     = "    Parametros: " ++ show p ++ "\n"
+    show (FromReg n)     = "    Campo del registro: " ++ show n ++ "\n"
 
 -- Tipo de dato que pueden ser las expresiones
 data Tipo = 
@@ -83,6 +84,7 @@ data Tipo =
     TFloat           |
     TInt             |
     TLista Tipo      |
+    TNuevo String    |
     TRegistro        |
     TStr             |
     TUnion
@@ -94,11 +96,12 @@ instance Show Tipo where
     show (TArray e t)   = "Arreglo de tamano " ++ show e ++ " de " ++ show t
     show TBool          = "Booleano"
     show TChar          = "Caracter"
-    show TDummy         = "Sin tipo definido aun"
+    show TDummy         = "Sin tipo aun"
     show TError         = "Mal tipado"   
     show TFloat         = "Flotante"
     show TInt           = "Entero"
     show (TLista t)     = "Lista de " ++ show t
+    show (TNuevo str)   = str
     show TRegistro      = "Registro"
     show TStr           = "String"
     show TUnion         = "Union"
@@ -305,9 +308,9 @@ data SymbolInfo = SymbolInfo {
     deriving (Eq, Ord)
 
 instance Show SymbolInfo where
-    show (SymbolInfo t s c i) = "Tipo: " ++ show t ++ " | Alcance: " ++
-        show s ++ " | Categoria: "++ show c ++ ".\n\tExtra:\n" ++
-        concatMap show i ++ "\n"
+    show (SymbolInfo t s c i) = "\n  Tipo: " ++ show t ++ " | Alcance: " ++
+        show s ++ " | Categoria: "++ show c ++
+        if not (null i) then "\n    Extra:\n  " ++ concatMap show i ++ "\n" else ""
 
 
 {- Nuevo tipo de dato para representar la tabla de simbolos
@@ -328,7 +331,7 @@ instance Show SymTab where
             showInfo info = if getScope info > 0 then show info else ""
             showTable (k,v) = 
                 if k `elem` symbols' then
-                    k ++ " -> " ++ concatMap showInfo v
+                    k ++ " -> " ++ concatMap showInfo v ++ "\n"
                 else ""
             -- showTable (k,v) = k ++ " -> " ++ concatMap show v
             symbols = concatMap showTable tabla
@@ -337,3 +340,28 @@ instance Show SymTab where
 -- Transformador monadico para crear y manejar la tabla de simbolos junto con 
 -- la pila de alcances y cuales estan activos
 type MonadSymTab a = RWST String () (SymTab, ActiveScopes, Alcance) IO a
+
+
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+--                           Funciones auxiliares
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-- Determina si el simbolo es de un registro o union
+getRegName :: [ExtraInfo] -> Maybe String
+getRegName [] = Nothing
+getRegName (FromReg rname:rs) = Just rname
+getRegName (_:rs) = getRegName rs
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-- Obtiene la cantidad de parametros
+getNParams :: [ExtraInfo] -> Maybe Int
+getNParams [] = Nothing
+getNParams (Params n:rs) = Just n
+getNParams (_:rs) = getNParams rs
+-------------------------------------------------------------------------------

@@ -252,7 +252,10 @@ Tipo :: { Tipo }
   | bool                                  { TBool }
   | char                                  { TChar }
   | str                                   { TStr }
-  | idtipo                                { TDummy } -- No se sabe si es Reg o Union
+  | idtipo
+    { % do
+      return $ TNuevo (getTk $1) 
+    }
   -- | pointer                               { TApuntador TDummy } 
 
 -------------------------------------------------------------------------------
@@ -492,7 +495,6 @@ PasarParametros :: { Parametros }
   | ParametroPasado                       { [$1] }
 
 ParametroPasado :: { Expr }
--- TODO: Verificar aqui que el parametro esta definido
   : Expresion       { $1 }
   | "?" Expresion   { $2 }
 -------------------------------------------------------------------------------
@@ -537,7 +539,9 @@ Expresion :: { Expr }
   | "|)" Expresiones "(|"        { crearArrLstExpr $2 }
   | "<<" Expresiones ">>"        { crearArrLstExpr $2 }
   | "<<"  ">>"                   { crearArrLstExpr [] }
-  | new Tipo                     { OpUnario New Null $2 }
+  | new Tipo                     { OpUnario New Null (TApuntador $2) }
+
+  -- Falta la conversion automatica de string a tipo de regreso segun el rdm
   | input Expresion %prec input  { crearRead $2 $1 }
   | input
     {
