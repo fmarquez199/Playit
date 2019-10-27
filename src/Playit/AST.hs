@@ -39,7 +39,7 @@ chequearTipo name p = do
         else do 
             error $ "\n\nError: " ++ file ++ ": " ++ show p ++ "\n\t" ++"Identificador : '" ++ (show name) ++ "' no es un tipo."
     else
-        error $ "\n\nError: " ++ file ++ ": " ++ show p ++ "\n\t" ++"El Tipo : '" ++ (show name) ++ "' no ha sido creado."
+        error $ "\n\nError: " ++ file ++ ": " ++ show p ++ "\n\t" ++"El Tipo " ++ (show name) ++ " no ha sido creado."
 
 
 -------------------------------------------------------------------------------
@@ -105,7 +105,7 @@ crearVarCompIndex v campo p = do
             " no es un registro o una union.\n")
     else do
         
-        chequearTipo tname p
+        --chequearTipo tname p
         
         let info = lookupInSymTab campo symTab
         if isJust info then do
@@ -125,33 +125,27 @@ crearVarCompIndex v campo p = do
         
 -------------------------------------------------------------------------------
 
+{-TODO : Hay new Tipo incorrectos? -}
+--crearSummonOp:: Tipo -> Posicion -> MonadSymTab Expr
+--crearSummonOp typ p = do
+--    return $ OpUnario New Null (TApuntador typ)
 
 -------------------------------------------------------------------------------
 -- Crear el nodo para asignar a un identificador de variable una expresion
 -- TODO: Modificar para que asigne el primer elemento de un arreglo/lista a la variable
-crearAsignacion :: Vars -> Expr -> Posicion -> Instr
--- crearAsignacion lval (ArrLstExpr [] _)
-crearAsignacion lval e (line, _) = Asignacion lval e
--- | True = Asignacion lval e
-    -- | otherwise =
-    --     error ("\n\nError semantico en la asignacion: '" ++ var ++
-    --             " <- " ++ expr ++ "'.\nEl tipo de la variable: " ++
-    --             showType tV' ++ ",\n\tno es igual al de la expresion: " ++
-    --             showType tE' ++ ".\nEn la linea: " ++ show line ++ "\n")
+crearAsignacion :: Vars -> Expr -> Posicion -> MonadSymTab Instr
+crearAsignacion lval e p
+    | isList(tE) && (typeArrLst tE) == TDummy && isList tV && (esTipoEscalar $ typeArrLst tV) = do -- List Tipo = <<<>>
+        return $ Asignacion lval e  
+    | tE == tV = return $ Asignacion lval e
+    | otherwise = do
+        file <- ask
+        error ("\n\nError: " ++ file ++ ": " ++ show p ++ "\n\tNo se puede asignar '"++
+            show e ++ "' a la variable '" ++ show lval ++ "' , los tipos no concuerdan.")
 
-    -- where
-    --     expr   = showE e
-    --     var    = showVar lval
-    --     tE'    = typeE e
-    --     tE     =
-    --         case tE' of
-    --             t@(TArray _ _) -> typeArray t
-    --             _ -> tE'
-    --     tV'    = typeVar lval
-    --     tV     = 
-    --         case tV' of
-    --             t@(TArray _ _) -> typeArray t
-    --             _ -> tV'
+    where
+        tE    = typeE e
+        tV    = typeVar lval
 -------------------------------------------------------------------------------
 
 
@@ -172,23 +166,6 @@ crearAsignacion lval e (line, _) = Asignacion lval e
 -- -}
 -------------------------------------------------------------------------------
 
-
--------------------------------------------------------------------------------
--- TODO: Para verificacion de los tipos, int + int, int+float, float+int, float+float
--- crearSuma :: Expr -> Expr -> Expr
--- crearSuma e1 e2 = OpBinario Suma e1 e2 t
---     where
---         t1 = typeE e1
---         t2 = typeE e2
---         t = if t1 == t2 && t1 == TInt then t1 else TError
-
--- crearResta :: Expr -> Expr -> Expr
--- crearResta e1 e2 = OpBinario Resta e1 e2 t
---     where
---         t1 = typeE e1
---         t2 = typeE e2
---         t = if t1 == t2 && t1 == TInt then t1 else TError
--------------------------------------------------------------------------------
     
 
 -------------------------------------------------------------------------------
@@ -263,29 +240,57 @@ crearOpUn op e t tOp p
 
 -------------------------------------------------------------------------------
 -- Crea el nodo para el operador concatenar 2 listas
-crearOpConcat :: BinOp -> Expr -> Expr -> Expr
-crearOpConcat op e1 e2 = 
-    OpBinario op e1 e2 tr
-
+crearOpConcat ::Expr -> Expr -> Posicion -> MonadSymTab Expr
+crearOpConcat e1 e2 p  
+    |  sonListas && typeAE1 == typeAE2   = do
+        return $ OpBinario Concatenacion e1 e2 te1
+    | sonListas && (esTipoEscalar $ typeAE1) && typeAE2 == TDummy  = do -- <<2>>:: <<>>
+        return $ OpBinario Concatenacion e1 e2 te1
+    | sonListas && typeAE1 == TDummy && (esTipoEscalar $ typeAE2)   = do -- <<>>:: <<2>>
+        return $ OpBinario Concatenacion e1 e2 te2
+    | sonListas && typeAE1 == TDummy && typeAE2 == TDummy   = do -- <<>>:: <<>>
+        return $ OpBinario Concatenacion e1 e2 TDummy
+    | otherwise = do
+        fileName <- ask
+        error $ "\n\nError: " ++ fileName ++ ": " ++ show p ++ "\n\t" ++
+            "La operación " ++ (show Concatenacion)  ++ " requiere que expresion '" 
+            ++ (show e1) ++ "' y expresion '" ++ show e2 ++ "' sean listas del mismo tipo."
     where
-        t1 = typeE e1
-        t2 = typeE e2
-        tr = if t1 == t2 then case t1 of
-                                (TLista _) -> t1
-                                _ -> TError
-             else TError
+        te1 = typeE e1
+        te2 = typeE e2
+        sonListas = isList te1 && isList te2
+        typeAE1 = typeArrLst te1
+        typeAE2 = typeArrLst te2
+        
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
 -- Crea el nodo para el operador agregar un elemento al inicio de la lista
-crearOpAnexo :: BinOp -> Expr -> Expr -> Expr
-crearOpAnexo op e1 e2 =
-    OpBinario op e1 e2 t
+crearOpAnexo ::  Expr -> Expr -> Posicion-> MonadSymTab Expr
+crearOpAnexo e1 e2 p
+    | esTipoEscalar typee1 && isList typee2  &&  typee1 == typeArrLst typee2 = do
+        return $ OpBinario Anexo e1 e2 typee2
+    | esTipoEscalar typee1 && isList typee2  &&  TDummy == typeArrLst typee2 = do -- 2:<<>>
+        return $ OpBinario Anexo e1 e2 (TLista typee1)
+    | not $ esTipoEscalar typee1 && isList typee2  &&  TDummy == typeArrLst typee2 = do -- <<2>>:<<>>
+        fileName <- ask
+        error $ "\n\nError: " ++ fileName ++ ": " ++ show p ++ "\n\t" ++
+            "El emento a anexar '" ++ (show e1) ++ "'," ++ "' debe ser un tipo escalar."
+    | not $ isList typee2  = do
+        fileName <- ask
+        error $ "\n\nError: " ++ fileName ++ ": " ++ show p ++ "\n\t" ++
+            "El segundo operando de : '" ++ (show Anexo) ++ "'," ++ 
+            "'" ++ (show e2) ++ "' debe ser una lista."
+    | typee1 /= typeArrLst typee2  = do
+        fileName <- ask
+        error $ "\n\nError: " ++ fileName ++ ": " ++ show p ++ "\n\t" ++
+            "El emento a anexar '" ++ (show e1) ++ "'," ++ "' debe ser de tipo '" 
+            ++ show (typeArrLst typee2) ++ "'."
 
     where
-        t2 = typeE e2
-        t = if isList t2 then t2 else TError 
+        typee1 = typeE e1
+        typee2 = typeE e2
 -------------------------------------------------------------------------------
 
 
@@ -303,6 +308,21 @@ crearOpLen e p
         t = typeE e
 -------------------------------------------------------------------------------
 
+
+
+crearLista :: [Expr] -> Posicion -> MonadSymTab Expr
+crearLista [] p = return $ ArrLstExpr [] (TLista TDummy) -- TODO : Recordar quitar el TDummy
+crearLista e  p
+    | tipo /= TError = do
+        return $ ArrLstExpr e (TLista tipo)
+    | otherwise = do
+        fileName <- ask
+        error $ "\n\nError: " ++ fileName ++ ": " ++ show p ++ "\n\t" ++
+            "Las expresiones de la lista deben ser del mismo tipo."
+    where
+        mapaTipos = map typeE e
+        tipoPrimero = head $ filter (/=TDummy) mapaTipos
+        tipo = if all (== tipoPrimero) mapaTipos then tipoPrimero else TError
 
 -------------------------------------------------------------------------------
 -- TODO
@@ -618,7 +638,7 @@ definirUnion id decls p = do
         let newSymTab = SymTab $ M.map updateSymbol' table
         
         let info = [SymbolInfo TUnion 1 Tipos [AST decls]]
-        addToSymTab [id] info symTab activeScopes scope
+        addToSymTab [id] info newSymTab activeScopes scope
         return decls
 -------------------------------------------------------------------------------
 

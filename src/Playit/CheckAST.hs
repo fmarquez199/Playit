@@ -98,13 +98,20 @@ isPointer (TApuntador _) = True
 isPointer _ = False
 
 
+esTipoEscalar:: Tipo -> Bool
+esTipoEscalar TBool = True
+esTipoEscalar TChar = True
+esTipoEscalar TInt = True
+esTipoEscalar TFloat = True
+esTipoEscalar TStr = True
+esTipoEscalar _ = False
 
 -------------------------------------------------------------------------------
 -- Determina el tipo base de los elementos del arreglo
 --typeArrLst (TArray _ t@(TArray _ _))    = typeArrLst t
---typeArrLst (TArray _ t)                 = t
+typeArrLst (TArray _ t)                 = t
 --typeArrLst (TLista t@(TLista _))        = typeArrLst t
---typeArrLst (TLista t)                   = t
+typeArrLst (TLista t)                   = t
 -------------------------------------------------------------------------------
 
 --------------------------------------------------------------------------------

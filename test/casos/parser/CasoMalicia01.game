@@ -7,6 +7,22 @@
 * 
 * 
 ******************************************************************************'"
+Inventory PrimerNombre2:
+    Skill flotante
+    Power entero
+.~
+Inventory Nombre2:
+    PrimerNombre2 puff regpn
+.~
+Inventory Contacto2:
+    Nombre2 regnombre
+    Skill flotante
+.~
+Inventory Contacto3:
+    Nombre2 puff pointernombre
+    Power|}3{| arraypower
+.~
+
 
 Inventory PrimerNombre:
     Runes nombre
@@ -41,8 +57,35 @@ world %caso_malicia'M'%:
     Power c2 = a2 + 1,d2 = a2*2
 
     Skill a3 = 1,b31 = 1'0,abc = c2 + 1,d3 = c2*2
+
+    Contacto3 nombre
     
-    a3 = a2 
+    Contacto3 puff test = summon Contacto3
+    PrimerNombre2 puff test2 = summon PrimerNombre2
+    
+    puff(puff(puff test spawn pointernombre) spawn regpn) spawn entero = puff(puff(puff test spawn pointernombre) spawn regpn) spawn entero + nombre spawn arraypower|)0(|
+
+    
+    Power|}3{| hola1
+    Power|}3{| hola2
+    
+    hola1 = hola2
+    
+    test = summon Contacto3
+    
+    puff test = nombre
+    
+    nombre = nombre
+    
+    Kit of Power hola3
+    
+    hola3 = (2 + 1):hola3
+    hola3 = (hola1|)0(| + puff(puff(puff test spawn pointernombre) spawn regpn) spawn entero):hola3
+    hola3 = puff(puff(puff test spawn pointernombre) spawn regpn) spawn entero:hola3
+
+
+    
+    a3 = a3
     
     Power |}2{| abc2
 
@@ -54,16 +97,16 @@ world %caso_malicia'M'%:
     abc2|)1(| = 1
 
     
-    Kit of Kit of Power lista1 = << <<a2,a3>> , <<a2,a3>>  >>
+    Kit of Kit of Power lista1 = << <<a2,a2>> , <<a2,a2>>  >>
     
-    lista1|>0<| = 240
+    lista1|>0<||>0<| = 240
 
     
     Kit of Power l1 = <<1,2,3,4,4>>
     Contacto c = {<<l1,l1>>, a2}
     c spawn n spawn n spawn nombre = joystick ~Dame un nombre YEH NOW BB~
-    c spawn lista1|>2<||>1<| = joystick ~HEY LOL~
-    c spawn lista1|>2<||>1<| = joystick ~HEY LOL~
+    @c spawn lista1|>2<||>1<| = joystick ~HEY LOL~
+    @c spawn lista1|>2<||>1<| = joystick ~HEY LOL~
     c spawn tip = *c*    
         
     Power puff p = summon Power
@@ -86,7 +129,7 @@ world %caso_malicia'M'%:
     Kit of Power puff plista3 = summon Kit of Power @jejelol
     Kit of Power puff plista4 = summon Kit of Power @jejelol
     
-    puff plista3 = <<<<2>>>>::<<>>
+    puff plista3 = 2:<<>>::<<>>::<<>>::<<22>>
     puff plista3 = (b2? a2 + 1 : abc2|>l2|>0<| - lista1|>2<||>2<|<|):<<1,2>>
     puff plista3 = <<1,2>>
     
@@ -97,7 +140,7 @@ world %caso_malicia'M'%:
     @ Esto deberia dar error p1 = p2
     
     Power p1,p4 = 0
-    puff p2|>-(((p1)))<| = joystick ~HEY LOL~
+    @puff p2|>-(((p1)))<| = joystick ~HEY LOL~
 
     
     
@@ -105,25 +148,26 @@ world %caso_malicia'M'%:
      
     Power b = ((a + (2)) + 2) * ((3 // 3) / (4  % 4) - 5) - ((-1) + #l2)
     
-    c = ((b1 || Win && Lose || !b2 ) == Win && b4 != (b2? Win:Lose))
+    Battle c22
+    c22 = ((b1 || Win && Lose || !b2 ) == Win && b4 != (b2? Win:Lose))
     
     Power|}2{| manu1
     Power|}30{| manu2
     
-    c = manu1 == manu1
+    c22 = manu1 == manu1
 
     Kit of Power manukitpower1
     Kit of Power manukitpower2
     
-    c = manukitpower1 == manukitpower2
+    c22 = manukitpower1 == manukitpower2
 
     Power puff manukitpower3
     Kit of Kit of Power puff puff puff manukitpower4
     
-    c = puff manukitpower3 == puff puff puff manukitpower4|>12<||>3<|
+    c22 = puff manukitpower3 == puff puff puff manukitpower4|>12<||>3<|
          
     Rune c1 = ^*c*
-    Rune c22 = .*c*
+    Rune c223 = .*c*
 
     Rune c2222
     Rune c3 = ^.c2222

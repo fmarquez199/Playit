@@ -251,7 +251,7 @@ Shape sh
 sh spawn c spawn centerX = 2'1
 sh spawn c spawn centerY = 5'0
 sh spawn c spawn centerY = 5'0
-sh spawn c spawn radius = 15
+sh spawn c spawn radius = 15'0
 ```
 
 ---

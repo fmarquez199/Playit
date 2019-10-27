@@ -237,6 +237,7 @@ Lvalue :: { Vars }
   | Lvalue "|)" Expresion "(|"  {% crearVarIndex $1 $3 (getPos $2)}   -- Indexacion arreglo
   | Lvalue "|>" Expresion "<|"  {% crearVarIndex $1 $3 (getPos $2)}   -- Indexacion lista
   | pointer Lvalue              {% crearDeferenciacion $2 (getPos $1)}
+  | pointer "(" Lvalue ")"      {% crearDeferenciacion $3 (getPos $1)}
   | nombre                      {% crearIdvar (getTk $1) (getPos $1) }
 
 
@@ -286,14 +287,14 @@ Instruccion :: { Instr }
 -------------------------------------------------------------------------------
 -- Instruccion de asignacion '='
 Asignacion :: { Instr }
-  : Lvalue "=" Expresion  { crearAsignacion $1 $3 $2 }
+  : Lvalue "=" Expresion  {% crearAsignacion $1 $3 $2 }
   | Lvalue "++"
-    {
+    {%
       let expr = OpBinario Suma (Variables $1 TInt) (Literal (Entero 1) TInt) TInt
       in crearAsignacion $1 expr $2
     }
   | Lvalue "--"
-    {
+    {%
       let expr = OpBinario Resta (Variables $1 TInt) (Literal (Entero 1) TInt) TInt
       in crearAsignacion $1 expr $2
     }
@@ -555,20 +556,22 @@ Expresion :: { Expr }
     crearOpBinComparable Menor $1 $3 [] TBool (getPos $2)
   }
 
-  | Expresion ":" Expresion %prec ":"  { crearOpAnexo Anexo $1 $3 }
-  | Expresion "::" Expresion           { crearOpConcat Concatenacion $1 $3 }
+  | Expresion ":" Expresion %prec ":"  {% crearOpAnexo $1 $3 (getPos $2)}
+  | Expresion "::" Expresion           {% crearOpConcat $1 $3 (getPos $2) }
   
   --
   | Expresion "?" Expresion ":" Expresion %prec "?"
     {% crearIfSimple $1 $3 $5 TDummy $2 }
   | FuncCall                     { $1 }
   | "(" Expresion ")"            { $2 }
-  | "{" Expresiones "}"          { crearArrLstExpr $2 }
+  | "{" Expresiones "}"          { crearArrLstExpr $2}
   | "|)" Expresiones "(|"        { crearArrLstExpr $2 }
-  | "<<" Expresiones ">>"        { crearArrLstExpr $2 }
-  | "<<"  ">>"                   { crearArrLstExpr [] }
-  | new Tipo                     { OpUnario New Null $2 }
-  | input Expresion %prec input  { crearRead $2 $1 }
+  | "<<" Expresiones ">>"        {% crearLista $2 (getPos $1)}
+  | "<<"  ">>"                   {% crearLista [] (getPos $1)}
+  | new Tipo                     { OpUnario New Null (TApuntador $2) }
+
+  -- Falta la conversión automática de string a tipo de regreso según el rdm
+  | input Expresion %prec input  { crearRead $2 $1 } 
   | input
     {
       crearRead (Literal ValorVacio TStr) $1
