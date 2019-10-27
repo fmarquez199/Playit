@@ -562,9 +562,26 @@ crearSubrutinaCall :: Nombre -> Parametros -> Posicion -> MonadSymTab Subrutina
 crearSubrutinaCall nombre params p = do
     (symtab, activeScopes, scope) <- get
     file <- ask
-    let isNombreDef = isJust $ lookupInSymTab nombre symtab
-    if isNombreDef then
-        return $ SubrutinaCall nombre params
+
+    let symbols = lookupInScopes [1] nombre  symtab
+    
+    if isJust symbols then do
+        let sym =  fromJust symbols
+        if (getCategory sym == Procedimientos || getCategory sym == Funciones) then do
+            
+            
+            let nparamsesperados = fromJust $ getNParams (getExtraInfo sym )
+            
+            let nparamspasados = length params
+            if nparamspasados == nparamsesperados then do
+                return $ SubrutinaCall nombre params
+            else do
+                error $ "\n\nError: " ++ file ++ ": " ++ show p ++ "\n\tLa subrutina '" ++
+                        nombre ++ "' espera '" ++ show nparamsesperados ++ 
+                        "' argumentos pero se le pasaron '" ++ show nparamspasados ++ "'.\n"
+        else do
+            error $ "\n\nError: " ++ file ++ ": " ++ show p ++ "\n\t'" ++
+                    nombre ++ "' no es una subrutina.\n"
     else
         error $ "\n\nError: " ++ file ++ ": " ++ show p ++ "\n\tSubrutina '" ++
                 nombre ++ "' no definida.\n"
@@ -578,9 +595,8 @@ crearSubrutinaCall nombre params p = do
 crearFuncCall :: Subrutina -> MonadSymTab Expr
 crearFuncCall subrutina@(SubrutinaCall nombre _) = do
     (symtab, activeScope:_, scope) <- get
-    let info = fromJust $ lookupInSymTab nombre symtab
-    let func = head $ filter (\i -> getCategory i == Funciones) info
-    return $ FuncCall subrutina (getType func)
+    let sym = fromJust $ (lookupInScopes [1] nombre symtab)
+    return $ FuncCall subrutina (getType sym)
 -------------------------------------------------------------------------------
 
 

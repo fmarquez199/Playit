@@ -167,6 +167,11 @@ getRegName [] = Nothing
 getRegName ((FromReg rname):rs) = Just rname
 getRegName (_:rs) = getRegName rs
 
+getNParams :: [ExtraInfo] -> Maybe Int
+getNParams [] = Nothing
+getNParams ((Params n):rs) = Just n
+getNParams (_:rs) = getNParams rs
+
 -------------------------------------------------------------------------------
 updateType :: Nombre -> Alcance -> Tipo-> MonadSymTab ()
 updateType name scope newType = do

@@ -564,8 +564,8 @@ Expresion :: { Expr }
     {% crearIfSimple $1 $3 $5 TDummy $2 }
   | FuncCall                     { $1 }
   | "(" Expresion ")"            { $2 }
-  | "{" Expresiones "}"          { crearArrLstExpr $2}
-  | "|)" Expresiones "(|"        { crearArrLstExpr $2 }
+  | "{" Expresiones "}"          { crearArrLstExpr $2}-- TODO : 
+  | "|)" Expresiones "(|"        { crearArrLstExpr $2 } -- TODO : 
   | "<<" Expresiones ">>"        {% crearLista $2 (getPos $1)}
   | "<<"  ">>"                   {% crearLista [] (getPos $1)}
   | new Tipo                     { OpUnario New Null (TApuntador $2) }
