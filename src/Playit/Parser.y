@@ -235,9 +235,9 @@ Identificador :: { ((Nombre, Posicion), SecuenciaInstr) }
 -- Lvalues, contenedores que identifican a las variables
 Lvalue :: { Vars }
   : Lvalue "." nombre           { % crearVarCompIndex $1 (getTk $3) (getPos $3) }
-  | Lvalue "|)" Expresion "(|"  { % crearVarIndex $1 $3 (getPos $2) }   -- Indexacion arreglo
-  | Lvalue "|>" Expresion "<|"  { % crearVarIndex $1 $3 (getPos $2) }   -- Indexacion lista
-  | pointer Lvalue              { % crearDeferenciacion $2 (getPos $1) }
+  | Lvalue "|)" Expresion "(|"  { crearVarIndex $1 $3 }   -- Indexacion arreglo
+  | Lvalue "|>" Expresion "<|"  { crearVarIndex $1 $3 }   -- Indexacion lista
+  | pointer Lvalue              { PuffValue $2 (typeVar $2) }
   | nombre                      { % crearIdvar (getTk $1) (getPos $1) }
 
 
@@ -509,45 +509,26 @@ Expresiones::{ [Expr] }
   | Expresion                   { [$1] }
 
 Expresion :: { Expr }
-  : Expresion "+" Expresion            { % crearOpBin Suma $1 $3 TInt TInt TInt (getPos $2) }
-  | Expresion "-" Expresion            { % crearOpBin Resta $1 $3 TInt TInt TInt (getPos $2) }
-  | Expresion "*" Expresion            { % crearOpBin Multiplicacion $1 $3  TInt TInt TInt (getPos $2) }
-  | Expresion "%" Expresion            { % crearOpBin Modulo $1 $3 TInt TInt TInt (getPos $2) }
-  | Expresion "/" Expresion            { % crearOpBin Division $1 $3 TInt TInt TInt (getPos $2) }
-  | Expresion "//" Expresion           { % crearOpBin DivEntera $1 $3 TInt TInt TInt (getPos $2) }
-  | Expresion "&&" Expresion           { % crearOpBin And $1 $3 TBool TBool TBool (getPos $2) }
-  | Expresion "||" Expresion           { % crearOpBin Or $1 $3 TBool TBool TBool (getPos $2) }
-  | Expresion "==" Expresion           
-    { % 
-      crearOpBinComparable Igual $1 $3 [TBool] TBool (getPos $2)
-    }
-  | Expresion "!=" Expresion
-    { % 
-      crearOpBinComparable Desigual $1 $3 [TBool] TBool (getPos $2)
-    }
-
-  | Expresion ">=" Expresion 
-    { % 
-      crearOpBinComparable MayorIgual $1 $3 [] TBool (getPos $2)
-    }
-  | Expresion "<=" Expresion    
-    { % 
-      crearOpBinComparable MenorIgual $1 $3 [] TBool (getPos $2)
-    }
-  | Expresion ">" Expresion
-    { % 
-      crearOpBinComparable Mayor $1 $3 [] TBool (getPos $2)
-    }
-  | Expresion "<" Expresion 
-    { % 
-      crearOpBinComparable Menor $1 $3 [] TBool (getPos $2)
-    }
+  : Expresion "+" Expresion            { crearOpBin Suma $1 $3 TInt TInt TInt }
+  | Expresion "-" Expresion            { crearOpBin Resta $1 $3 TInt TInt TInt }
+  | Expresion "*" Expresion            { crearOpBin Multiplicacion $1 $3  TInt TInt TInt }
+  | Expresion "%" Expresion            { crearOpBin Modulo $1 $3 TInt TInt TInt }
+  | Expresion "/" Expresion            { crearOpBin Division $1 $3 TInt TInt TInt }
+  | Expresion "//" Expresion           { crearOpBin DivEntera $1 $3 TInt TInt TInt }
+  | Expresion "&&" Expresion           { crearOpBin And $1 $3 TBool TBool TBool }
+  | Expresion "||" Expresion           { crearOpBin Or $1 $3 TBool TBool TBool }
+  | Expresion "==" Expresion           { crearOpBin Igual $1 $3 TInt TInt TBool }
+  | Expresion "!=" Expresion           { crearOpBin Desigual $1 $3 TInt TInt TBool }
+  | Expresion ">=" Expresion           { crearOpBin MayorIgual $1 $3 TInt TInt TBool }
+  | Expresion "<=" Expresion           { crearOpBin MenorIgual $1 $3 TInt TInt TBool }
+  | Expresion ">" Expresion            { crearOpBin Mayor $1 $3 TInt TInt TBool }
+  | Expresion "<" Expresion            { crearOpBin Menor $1 $3 TInt TInt TBool }
   | Expresion ":" Expresion %prec ":"  { crearOpAnexo Anexo $1 $3 }
   | Expresion "::" Expresion           { crearOpConcat Concatenacion $1 $3 }
-
+  
   --
   | Expresion "?" Expresion ":" Expresion %prec "?"
-    { %
+    {
       crearIfSimple $1 $3 $5 TDummy $2
     }
   | FuncCall                     { $1 }
@@ -564,11 +545,11 @@ Expresion :: { Expr }
     }
 
   -- Operadores unarios
-  | "#" Expresion                        { % crearOpLen $2 (getPos $1) }
-  | "-" Expresion %prec negativo         { % crearOpUn Negativo $2 TInt TInt (getPos $1) }
-  | "!" Expresion                        { % crearOpUn Not $2 TBool TBool (getPos $1) }
-  | upperCase Expresion %prec upperCase  { % crearOpUn UpperCase $2 TChar TChar (getPos $1) }
-  | lowerCase Expresion %prec lowerCase  { % crearOpUn LowerCase $2 TChar TChar (getPos $1) }
+  | "#" Expresion                        { crearOpLen Longitud $2 }
+  | "-" Expresion %prec negativo         { crearOpUn Negativo $2 TInt TInt }
+  | "!" Expresion                        { crearOpUn Not $2 TBool TBool }
+  | upperCase Expresion %prec upperCase  { crearOpUn UpperCase $2 TChar TChar }
+  | lowerCase Expresion %prec lowerCase  { crearOpUn LowerCase $2 TChar TChar }
   
   -- Literales
   | true      { Literal (Booleano True) TBool }

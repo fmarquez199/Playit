@@ -43,37 +43,14 @@ crearIdvar name p = do
 
 
 -------------------------------------------------------------------------------
-crearDeferenciacion :: Vars -> Posicion -> MonadSymTab Vars
-crearDeferenciacion v p
-    | isPointer tVar = let (TApuntador t) = tVar in return $ PuffValue v t
-    | otherwise = do
-        file <- ask
-        error $ "\n\nError: " ++ file ++ ": " ++ show p ++ "\n\tVariable : '" 
-                ++ show v ++ "' no es un apuntador.\n"
-    where
-        tVar = typeVar v
--------------------------------------------------------------------------------
-
-
--------------------------------------------------------------------------------
 -- Crea el nodo para variables de indexacion
-crearVarIndex :: Vars -> Expr -> Posicion -> MonadSymTab Vars
-crearVarIndex v e p 
-    | tVar == TError = do
-        file <- ask
-        error $ "\n\nError: " ++ file ++ ": " ++ show p ++ "\n\tVariable : '"
-            ++ show v ++ "' no es indexable, tiene que ser array o lista.\n"
-    | tExpre /= TInt = do
-        file <- ask
-        error $ "\n\nError: " ++ file ++ ": " ++ show p ++ "\n\tIndexacion '"
-                ++ show e ++ "' no es de tipo entero.\n"
-    | otherwise = return $ VarIndex v e tVar
-    where
-        tVar = case typeVar v of 
-                tipo@(TArray _ t) -> t
-                tipo@(TLista t) -> t
+crearVarIndex :: Vars -> Expr -> Vars
+crearVarIndex v e = 
+    let t = case typeVar v of 
+                tipo@(TArray _ _) -> typeArrLst tipo
+                tipo@(TLista _) -> typeArrLst tipo
                 _ -> TError
-        tExpre = typeE e
+    in VarIndex v e t
 -------------------------------------------------------------------------------
 
 
@@ -162,60 +139,17 @@ crearAsignacion lval e (line, _) = Asignacion lval e
 
 -------------------------------------------------------------------------------
 -- Crea el nodo para un operador binario
-crearOpBin :: BinOp -> Expr -> Expr -> Tipo -> Tipo -> Tipo -> Posicion 
-                        -> MonadSymTab Expr
-crearOpBin op e1 e2 t1 t2 tOp p
-    -- | tE1 == TDummy || tE2 == TDummy = TDummy
-    | tE1 == t1 && tE2 == t2  = return $ OpBinario op e1 e2 tOp
-    | ((tE1 == TFloat) || (tE2 == TFloat) ) && (tOp == TInt)  = return $ OpBinario op e1 e2 TFloat
-    | otherwise = do
-        file <- ask
-        error $ "\n\nError: " ++ file ++ ": " ++ show p ++ "\n\tOperacion: '" ++
-                show op ++ "', tipo de '" ++ show e1 ++ "': '" ++ show t1 ++ 
-                "' y de '" ++  show e2 ++ "': '" ++ show t2 ++ "' no concuerdan.\n"
-    where
-        tE1 = typeE e1
-        tE2 = typeE e2
+crearOpBin :: BinOp -> Expr -> Expr -> Tipo -> Tipo -> Tipo -> Expr
+crearOpBin op e1 e2 t1 t2 tOp = OpBinario op e1 e2 tOp
+    -- OpBinario op e1 e2 (checkBin e1 e2 t1 t2 tOp)
+-------------------------------------------------------------------------------
 
--------------------------------------------------------------------------------
--- Crea el nodo para un operador binario
-crearOpBinComparable :: BinOp -> Expr -> Expr -> [Tipo] -> Tipo -> Posicion 
-                        -> MonadSymTab Expr
-crearOpBinComparable op e1 e2 tcomp tOp p
-    -- | tE1 == TDummy || tE2 == TDummy = TDummy
-    | tE1 `elem` all_comps && tE2 == tE1  = return $ OpBinario op e1 e2 tOp
-    | ((tE1 == TFloat) || (tE1 == TInt)) && ((tE2 == TFloat) || (tE2 == TInt))  = return $ OpBinario op e1 e2 tOp
-    | (op == Igual || op == Desigual) && isArray tE1 && isArray tE2 && tE1 == tE2 = return $ OpBinario op e1 e2 tOp
-    | (op == Igual || op == Desigual) && isList tE1 && isList tE2 && tE1 == tE2 = return $ OpBinario op e1 e2 tOp
-    | (op == Igual || op == Desigual) && isPointer tE1 && isPointer tE2 && tE1 == tE2 = return $ OpBinario op e1 e2 tOp
-    --  | TApuntador , TRegistro,TUnion
-    | otherwise = do
-        file <- ask
-        error $ "\n\nError: " ++ file ++ ": " ++ show p ++ "\n\tOperacion: '" ++
-                show op ++ "', tipo de '" ++ show e1 ++ "' y de '" ++  show e2
-                ++ "' no son comparables.\n"
-    where
-        tE1 = typeE e1
-        tE2 = typeE e2
-        all_comps = [TChar,TFloat,TInt,TStr] ++ tcomp
--------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
 -- Crea el nodo para un operador unario
-crearOpUn :: UnOp -> Expr -> Tipo -> Tipo -> Posicion -> MonadSymTab Expr
-crearOpUn op e t tOp p
-    | tE == t = return $ OpUnario op e tOp
-    | otherwise =     
-        if tE == TFloat && tOp == TInt then
-          {- Conversión automática que se encarga el compilador, ejemplo: -2.0 = -2.0 -}
-            return $ OpUnario op e TFloat
-        else do
-            file <- ask
-            error $ "\n\nError: " ++ file ++ ": " ++ show p ++
-                "\n\tOperacion: '" ++ show op ++ "', tipo de '" ++ show e ++
-                "' no es el esperado: '" ++ show tOp ++ "'.\n"
-    where
-        tE = typeE e
+crearOpUn :: UnOp -> Expr -> Tipo -> Tipo -> Expr
+crearOpUn op e t tOp = OpUnario op e tOp
+    -- OpUnario op e (checkUn e t tOp)
 -------------------------------------------------------------------------------
 
 
@@ -256,16 +190,13 @@ crearOpAnexo op e1 e2 =
 
 -------------------------------------------------------------------------------
 -- Crea el nodo para el operador tamaño de array o lista
-crearOpLen :: Expr -> Posicion -> MonadSymTab Expr
-crearOpLen e p
-    | isArray t || isList t = return $ OpUnario Longitud e TInt
-    | otherwise = do     
-        file <- ask
-        error $ "\n\nError: " ++ file ++ ": " ++ show p ++ "\n\tOperacion: '"
-            ++ show Longitud ++ "', espera que tipo de '" ++ show e ++ 
-            "' sea arreglo o lista.\n"
+crearOpLen :: UnOp -> Expr -> Expr
+crearOpLen op e =
+    OpUnario op e tr
+    
     where
         t = typeE e
+        tr = if isArray t || isList t then t else TError
 -------------------------------------------------------------------------------
 
 
@@ -307,28 +238,11 @@ crearGuardiaIF exprCond seqInstrs (line, _) = (exprCond, seqInstrs)
 
 
 -------------------------------------------------------------------------------
-crearIfSimple :: Expr -> Expr -> Expr -> Tipo ->  Posicion -> MonadSymTab Expr
-crearIfSimple cond v f t p
-    | tCond == TBool &&  tFalse== tTrue = return $ IfSimple cond v f tTrue
-    | otherwise =
-        if (tFalse == TFloat && tTrue == TInt) || 
-            (tTrue == TFloat && tFalse == TInt) then
-          {- Conversión automática que se encarga el compilador, (1 > 0) ? 1.3 : 5 -}
-            return $ IfSimple cond v f TFloat
-        else do        
-            file <- ask
-            if tCond /= TBool then
-                error $ "\n\nError: " ++ file ++ ": " ++ show p ++ 
-                    "\n\tCondicion '" ++ show tCond ++ 
-                    "' del operador ternario '? :' no es booleana.\n"
-            else
-                error $ "\n\nError: " ++ file ++ ": " ++ show p ++ 
-                    "\n\tEl operador ternario '? :' espera que tipo de '" ++ 
-                    show v ++ "' y de '" ++  show f ++ "' sean iguales.\n"
-  where 
-    tCond = typeE cond
-    tFalse = typeE f
-    tTrue = typeE v
+crearIfSimple :: Expr -> Expr -> Expr -> Tipo ->  Posicion -> Expr
+crearIfSimple cond v f t (linea, col) = IfSimple cond v f t
+{-| t con == TBool && t v == t f && t v /= TError = IfSimple con v f
+  | otherwise = error ("\n\nError semantico en el operador ternario '? :' en la linea: " ++ show linea ++ " tipo de verdad: " ++ (show $ t v) ++ " tipo de mentira: " ++ (show $ t f))
+  where t = typeE-}
 -------------------------------------------------------------------------------
 
 
