@@ -496,18 +496,12 @@ crearWhile e i (line,_) = While e i
 
 -------------------------------------------------------------------------------
 -- Actualiza el tipo y  la informacion extra de la subrutina
-definirSubrutina' :: Nombre -> Int -> SecuenciaInstr -> Categoria -> MonadSymTab SecuenciaInstr
-definirSubrutina' name 0 [] c = do
+definirSubrutina' :: Nombre  -> SecuenciaInstr -> Categoria -> MonadSymTab SecuenciaInstr
+definirSubrutina' name [] c = do
     updateExtraInfo name c []
     return []
-definirSubrutina' name 0 i c = do
+definirSubrutina' name i c = do
     updateExtraInfo name c [AST i]
-    return i
-definirSubrutina' name params [] c = do
-    updateExtraInfo name c [Params params]
-    return []
-definirSubrutina' name params i c = do
-    updateExtraInfo name c [Params params, AST i]
     return i
 -------------------------------------------------------------------------------
 

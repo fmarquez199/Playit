@@ -423,13 +423,13 @@ Free :: { Instr }
 DefinirSubrutina :: { SecuenciaInstr }
   : Firma ":" EndLines Instrucciones EndLines ".~"
     { %
-      let ((nombre,categoria), params,tipo) = $1
-      in definirSubrutina' nombre params $4 categoria
+       let ((nombre,categoria), params,tipo) = $1
+       in definirSubrutina' nombre $4 categoria
     }
   | Firma ":" EndLines ".~" 
   { %
     let ((nombre,categoria), params, tipo) = $1
-    in definirSubrutina' nombre params [] categoria
+    in  definirSubrutina' nombre [] categoria
   }
 
 
@@ -437,10 +437,16 @@ DefinirSubrutina :: { SecuenciaInstr }
 -- Firma de la subrutina, se agrega antes a la symtab por la recursividad
 Firma :: { ((Nombre, Categoria),Int, Tipo) }
   : Nombre PushScope Params
-    {($1, $3,TDummy)}
+    {% do
+     
+      let (nombre,cat) = $1
+      updateExtraInfo nombre cat [Params $3]
+      return ($1, $3,TDummy)
+    }
   | Nombre PushScope Params Tipo 
     {% do
-        let (nombre,_) = $1
+        let (nombre,cat) = $1
+        updateExtraInfo nombre cat [Params $3]
         updateType nombre 1 $4
         return ($1, $3,$4)
     }
