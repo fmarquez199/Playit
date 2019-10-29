@@ -10,8 +10,8 @@ Luego lo imprime en forma in-order : el nodo izquierdo | nodo central |  nodo de
 
 Inventory Nodo:
     "'Representa un nodo del arbol'"
-    Node puff izqui  @ Puntero al nodo izquierdo
-    Node puff dere   @ Puntero al nodo derecho
+    Nodo puff izqui  @ Puntero al nodo izquierdo
+    Nodo puff dere   @ Puntero al nodo derecho
     Power puff dato  @ Puntero al dato de este nodo
 .~
 
@@ -53,7 +53,7 @@ bodd insert(Nodo? nodo, Power dato):
         | dato < dato_n }  @ Si el valor a insertar es MENOR al valor de este nodo
             Button:
             | nodo spawn izqui == DeathZone } 
-                nodo spawn izqui = summon Node
+                nodo spawn izqui = summon Nodo
                 iniciar(puff nodo spawn izqui,dato)
             | notPressed }
                 insert(puff nodo spawn izqui,dato)
@@ -61,7 +61,7 @@ bodd insert(Nodo? nodo, Power dato):
         | dato > dato_n }  @ Si el valor a insertar es MAYOR al valor de este nodo
             Button:
             | nodo spawn dere == DeathZone } 
-                nodo spawn dere = summon Node
+                nodo spawn dere = summon Nodo
                 iniciar(puff nodo spawn dere,dato)
             | notPressed }
                 insert(puff nodo spawn dere,dato)

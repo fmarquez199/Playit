@@ -227,5 +227,5 @@ world %caso_malicia'M'%:
     controller Contacto i <- abc:
     .~ 
     
-    Power a222 = kill f()
+    Power a222 = kill f(1,2,3,4)
 .~
