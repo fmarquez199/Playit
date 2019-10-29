@@ -1,0 +1,30 @@
+Inventory Nombre:
+    Skill flotante
+.~
+
+Inventory Contacto:
+    Nombre puff pointernombre
+.~
+"'Inventory Contacto2:
+    Nombre pointernombre2
+.~'"
+
+world %apts%:
+    Contacto puff puff c = summon Contacto @, c2, c3
+    
+    @ ( *( (**c).pointernombre)).flotante
+    puff (puff (puff c) spawn pointernombre) spawn flotante = 2'2
+    
+    @ puff c spawn pointernombre2 spawn flotante = 2'2 @ reg no tiene campo
+    @ puff c spawn p spawn flotante = 2'2 @ campo no declarado
+
+    @puff(puff(puff test spawn pointernombre) spawn regpn) spawn entero = puff(puff(puff test spawn pointernombre) spawn regpn) spawn entero + nombre spawn arraypower|)0(|
+    
+    
+    Power puff apt
+    Kit of Power puff apt2
+    
+    c = puff apt == puff apt2|>12<|
+    @c = puff apt == puff puff puff apt2|>12<||>3<|
+    
+.~

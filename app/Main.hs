@@ -47,7 +47,7 @@ main = do
             else
                 let tokens = alexScanTokens code in do
                 
-                    mapM_ print tokens
+                    -- mapM_ print tokens
 
                     if hasError tokens then
                         putStrLn $ tkErrorToString $ filter isError tokens

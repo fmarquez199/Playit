@@ -131,7 +131,7 @@ import Playit.AST
 
 
 %nonassoc nombre of
-%left "=" ":" "<-"
+%left "=" ":" "<-" ")"
 %right "."
 %left "||"
 %left "&&"
@@ -143,7 +143,7 @@ import Playit.AST
 %left "++" "|}" "{|" "<<" ">>" "::" "|)" "(|" "|>" "<|"
 %left "--"
 %right "#" pointer endLine
-%left "?"
+%left "?" 
 
 %%
 
@@ -209,7 +209,7 @@ Declaracion :: { SecuenciaInstr }
 Identificadores :: { ([(Nombre, Posicion)], SecuenciaInstr) }
   : Identificadores "," Identificador
   { 
-    let ((ids, asigs), (id, asig)) = ($1, $3) in (id : ids, asig ++ asigs)
+    let ((ids,asigs), (id,asig)) = ($1,$3) in (id:ids, asig ++ asigs)
   }
   | Identificador
   { 
@@ -217,13 +217,14 @@ Identificadores :: { ([(Nombre, Posicion)], SecuenciaInstr) }
   }
 
 Identificador :: { ((Nombre, Posicion), SecuenciaInstr) }
-  : nombre "=" Expresion  { ((getTk $1,getPos $1), [Asignacion (Var (getTk $1) TDummy) $3]) }
-  | nombre                { ((getTk $1,getPos $1), []) }
-  -- Para puff (puff ...) var(si es que se permite apuntador de varios apuntadores),
-  -- podemos colocar aqui Tipo nombre [= Expr], pero habria que verificar luego 
-  -- en la regla Declaracion que todos los tipos sean coherentes?
-  | pointer nombre "=" Expresion  { ((getTk $2,getPos $2), [Asignacion (Var (getTk $2) TDummy) $4]) }
-  | pointer nombre                { ((getTk $2,getPos $2), []) }
+  : nombre "=" Expresion
+    {
+      ( (getTk $1,getPos $1), [Asignacion (Var (getTk $1) TDummy) $3] )
+    }
+  | nombre
+    {
+      ( (getTk $1,getPos $1), [] )
+    }
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
@@ -237,13 +238,15 @@ Lvalue :: { Vars }
   : Lvalue "." nombre           { % crearVarCompIndex $1 (getTk $3) (getPos $3) }
   | Lvalue "|)" Expresion "(|"  { crearVarIndex $1 $3 }   -- Indexacion arreglo
   | Lvalue "|>" Expresion "<|"  { crearVarIndex $1 $3 }   -- Indexacion lista
-  | pointer Lvalue              { PuffValue $2 (typeVar $2) }
+  -- | "(" Lvalue ")"  %prec ")"   { $2 } -- da s/r
+  | pointer Lvalue              { PuffValue $2 }
+  | pointer "(" Lvalue ")"      { PuffValue $3 }
   | nombre                      { % crearIdvar (getTk $1) (getPos $1) }
 
 
 -- Tipos de datos
 Tipo :: { Tipo }
-  : Tipo "|}" Expresion "{|"  %prec "|}"   { TArray $3 $1 }
+  : Tipo "|}" Expresion "{|"  %prec "|}"  { TArray $3 $1 }
   | list of Tipo  %prec "?"               { TLista $3 }
   | Tipo pointer                          { TApuntador $1 }
   | "(" Tipo ")"                          { $2 }
@@ -256,7 +259,6 @@ Tipo :: { Tipo }
     { % do
       return $ TNuevo (getTk $1) 
     }
-  -- | pointer                               { TApuntador TDummy } 
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
@@ -269,17 +271,17 @@ Instrucciones :: { SecuenciaInstr }
   | Instruccion                         { [$1] }
 
 Instruccion :: { Instr }
-  : Asignacion            { $1 }
-  | Declaracion           { Asignaciones $1 }
+  : Asignacion                      { $1 }
+  | Declaracion                     { Asignaciones $1 }
   | PushScope Controller PopScope   { $2 }
   | PushScope Play PopScope         { $2 }
-  | Button                { $1 }
-  | ProcCall              { $1 }
-  | EntradaSalida         { $1 }
-  | Free                  { $1 }
-  | return Expresion      { Return $2 }
-  | break {-PopScope-}        { Break }
-  | continue              { Continue }
+  | Button                          { $1 }
+  | ProcCall                        { $1 }
+  | EntradaSalida                   { $1 }
+  | Free                            { $1 }
+  | return Expresion                { Return $2 }
+  | break                           { Break }
+  | continue                        { Continue }
 
 
 -------------------------------------------------------------------------------
@@ -325,11 +327,11 @@ Guardia :: { (Expr, SecuenciaInstr) }
 Controller :: { Instr }
  : for InitVar1 "->" Expresion ":" EndLines Instrucciones EndLines ".~"
     {
-      let (varIter, e1) = $2 in For varIter e1 $4 $7
+      let (varIter, e1) = $2 in For varIter e1 $4 (reverse $7)
     }
  | for InitVar1 "->" Expresion while Expresion ":" EndLines Instrucciones EndLines ".~"
     {
-      let (varIter, e1) = $2 in ForWhile varIter e1 $4 $6 $9 
+      let (varIter, e1) = $2 in ForWhile varIter e1 $4 $6 (reverse $9)
     }
  | for InitVar1 "->" Expresion ":" EndLines ".~"
     {
@@ -341,7 +343,7 @@ Controller :: { Instr }
     }
  | for InitVar2 ":" EndLines Instrucciones EndLines ".~"
     {
-      let (varIter, e1) = $2 in ForEach varIter e1 $5
+      let (varIter, e1) = $2 in ForEach varIter e1 (reverse $5)
     }
  | for InitVar2 ":" EndLines ".~"
     {
@@ -387,7 +389,7 @@ InitVar2 :: { (Nombre, Expr) }
 Play :: { Instr }
   : do ":" EndLines Instrucciones EndLines while Expresion EndLines ".~"
     {
-      crearWhile $7 $4 $1
+      crearWhile $7 (reverse $4) $1
     }
   | do ":" EndLines while Expresion EndLines ".~"
     {
@@ -539,7 +541,7 @@ Expresion :: { Expr }
   | "|)" Expresiones "(|"        { crearArrLstExpr $2 }
   | "<<" Expresiones ">>"        { crearArrLstExpr $2 }
   | "<<"  ">>"                   { crearArrLstExpr [] }
-  | new Tipo                     { OpUnario New Null (TApuntador $2) }
+  | new Tipo                     { OpUnario New (IdTipo $2) (TApuntador $2) }
 
   -- Falta la conversion automatica de string a tipo de regreso segun el rdm
   | input Expresion %prec input  { crearRead $2 $1 }
@@ -627,7 +629,7 @@ parseError :: [Token] -> MonadSymTab a
 parseError [] =  error $ "\n\nPrograma invalido "
 parseError (h:t) =  do
     file <- ask
-    error $ "\n\nParse error:" ++ file ++ ": " ++ show pos ++ ":\n\tToken '" ++
+    error $ "\n\nParse error: " ++ file ++ ": " ++ show pos ++ ":\n\tToken '" ++
             token ++ "'.\n"
   where
       token = getTk h

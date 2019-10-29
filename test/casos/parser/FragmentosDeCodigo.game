@@ -21,6 +21,10 @@ Inventory Rectangle:
 Inventory Producto:
   Power precioReal
 .~
+Items Shape:
+  Circle c
+  Rectangle r
+.~
 boss areaCirculo(Circle ?c) :
   unlock 3'14 * c spawn radius * c spawn radius
 .~
@@ -86,7 +90,8 @@ world %FragmentosDeCodigo%:
   Runes|}5{| edades = |)~12~, ~23~, ~15~, ~40~, ~15~(|
   Runes|}5{| nombres2 = |)~Natascha~, ~Francisco~, ~Manuel~, ~Ricardo~, ~Haskell~(|
   controller i = 0 -> 4:
-    drop ~Hola ~, nombres|)i(|, ~ tienes ~, edad|)i(|, ~ anios!~
+    drop ~Hola\n~
+    drop nombres|)i(|, ~ tienes ~, edad|)i(|, ~ anios!~
   .~
 
   play:

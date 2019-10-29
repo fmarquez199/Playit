@@ -38,12 +38,15 @@ createInitSymTab st = (insertSymbols symbols info st,[0],0)
         words = ["Win", "Lose", "free", "puff", "DeathZone", "boss", "monster",
             "controller", "drop", "joystick", "Button", "notPressed", "kill",
             "lock", "play", "gameOver", "keepPlaying", "spawn", "summon",
-            "unlock", "world"]
+            "unlock", "world", "portalRunesToRune", "portalRuneToRunes",
+            "portalPowerToRunes", "portalSkillToRunes", "portalRunesToPower",
+            "portalRunesToSkill"]
         info = tI ++ wI
         tI = [power, skill, rune, runes, battle, inventory, items, listOf
             ]
         wI = [bools, bools, apt, apt, apt, proc, func, for, out, input, ifElse,
-            ifElse, kill, lock, play, break, continue, spawn, apt, unlock, world]
+            ifElse, kill, lock, play, break, continue, spawn, apt, unlock, world,
+            portalSC, portalCS, portalIS, portalFS, portalSI, portalSF]
         power = SymbolInfo TInt 0 Tipos []
         skill = SymbolInfo TFloat 0 Tipos []
         rune = SymbolInfo TChar 0 Tipos []
@@ -56,6 +59,12 @@ createInitSymTab st = (insertSymbols symbols info st,[0],0)
         apt = SymbolInfo (TApuntador TDummy) 0 Apuntadores [] -- Tipo?
         proc = SymbolInfo TDummy 0 Procedimientos [] -- Tipo?
         func = SymbolInfo TDummy 0 Funciones [] -- Tipo?
+        portalSC = SymbolInfo TChar 0 Funciones []
+        portalCS = SymbolInfo TStr 0 Funciones []
+        portalIS = SymbolInfo TStr 0 Funciones []
+        portalFS = SymbolInfo TStr 0 Funciones []
+        portalSI = SymbolInfo TInt 0 Funciones []
+        portalSF = SymbolInfo TFloat 0 Funciones []
         for = SymbolInfo TDummy 0 Constantes [] -- Categoria y tipo?
         out = SymbolInfo TStr 0 Constantes [] -- Categoria?
         input = SymbolInfo TDummy 0 Constantes [] -- Categoria y tipo?
@@ -186,14 +195,14 @@ lookupInScopes' scopes (Just symInfo)
 
 -------------------------------------------------------------------------------
 updateType :: Nombre -> Alcance -> Tipo -> MonadSymTab ()
-updateType name scope t = do
+updateType n a t = do
     (symTab@(SymTab table), scopes, scope) <- get
-    let infos = lookupInSymTab name symTab
+    let infos = lookupInSymTab n symTab
     when (isJust infos) $ do
-        let isTarget sym = getScope sym == scope
+        let isTarget sym = getScope sym == a
             updateType' = 
                 fmap (\sym -> if isTarget sym then modifyType sym t else sym)
-        put(SymTab $ M.adjust updateType' name table, scopes, scope)
+        put(SymTab $ M.adjust updateType' n table, scopes, scope)
 -------------------------------------------------------------------------------
 
 

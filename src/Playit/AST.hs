@@ -60,13 +60,15 @@ crearVarCompIndex :: Vars -> Nombre -> Posicion -> MonadSymTab Vars
 crearVarCompIndex v campo p = do
     (symTab, scopes, _) <- get
     file <- ask
+    
+    -- Verificar que 'v' tiene como tipo un reg
     let tname = case typeVar v of 
-            (TNuevo tname) -> tname
+            (TNuevo name) -> name
             _ -> ""
     
     if tname == "" then
         error ("\n\nError: " ++ file ++ ": " ++ show p ++ "\n\t'" ++ show v ++ 
-            " no es registro o union.\n")
+            "' no es registro o union.\n")
     else do
         
         --chequearTipo tname p
@@ -74,7 +76,7 @@ crearVarCompIndex v campo p = do
         let info = lookupInSymTab campo symTab
         if isJust info then do
         
-            let isInRegUnion (SymbolInfo _ _ c e) = c == Campos && fromJust (getRegName e) == tname
+            let isInRegUnion (SymbolInfo _ _ c e) = c == Campos && getRegName e == tname
                 symbols = filter isInRegUnion (fromJust info ) -- Debería tener un elemento o ninguno
                         
             if null symbols then
@@ -433,8 +435,14 @@ crearSubrutinaCall nombre params p = do
 crearFuncCall :: Subrutina -> MonadSymTab Expr
 crearFuncCall subrutina@(SubrutinaCall nombre _) = do
     (symtab, activeScope:_, scope) <- get
+    file <- ask
     let sym = fromJust $ lookupInScopes [1] nombre symtab
-    return $ FuncCall subrutina (getType sym)
+    -- ??
+    if getCategory sym == Funciones then
+        return $ FuncCall subrutina (getType sym)
+    else
+        error $ "\n\nError: " ++ file ++ ": (f,c)" ++ "\n\tSubrutina '" ++
+            nombre ++ "' no es una funcion.\n"
 -------------------------------------------------------------------------------
 
 
@@ -464,7 +472,7 @@ definirRegistro id decls  p = do
                 map (\sym -> if getScope sym == activeScope then modifySym sym else sym)
 
             newSymTab = SymTab $ M.map updtSym table
-            info = [SymbolInfo TRegistro 1 Tipos [AST decls]]
+            info = [SymbolInfo TRegistro 1 Tipos []]
 
         addToSymTab [id] info newSymTab activeScopes scope
         return decls
@@ -487,7 +495,7 @@ definirUnion id decls p = do
                 map (\sym -> if getScope sym == activeScope then modifySym sym else sym)
 
             newSymTab = SymTab $ M.map updSym table
-            info = [SymbolInfo TUnion 1 Tipos [AST decls]]
+            info = [SymbolInfo TUnion 1 Tipos []]
         addToSymTab [id] info newSymTab activeScopes scope
         return decls
 -------------------------------------------------------------------------------
@@ -528,6 +536,15 @@ crearRead e _ = Read e
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 
+
+-------------------------------------------------------------------------------
+-- Crea el tipo que tenga uno o mas apuntadores a otro tipo
+crearTApuntador :: Tipo -> Tipo -> Tipo
+crearTApuntador (TApuntador TDummy) t = TApuntador t
+crearTApuntador (TApuntador t') t = TApuntador $ crearTApuntador t' t
+-------------------------------------------------------------------------------
+
+
 -------------------------------------------------------------------------------
 -- Crea el nodo para una instruccion Free
 crearFree :: Nombre -> Posicion -> MonadSymTab Instr
@@ -544,3 +561,12 @@ crearFree var p = do
         error $ "Error: " ++ file ++ ": " ++ show p ++ "\n\tVariable '" ++
                 var ++ "' no definida.\n"
 -------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+--                           Funciones auxiliares
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+
+

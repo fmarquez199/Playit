@@ -1,0 +1,12 @@
+boss b1():
+    drop ~Nada~
+.~
+monster m1() Power:
+    Power i = 0
+    unlock i
+.~
+world %subrutinas%:
+
+    Power m1 = kill m1()
+    Power b1 = kill b1()
+.~

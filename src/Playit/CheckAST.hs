@@ -94,21 +94,44 @@ isList _ = False
 
 -------------------------------------------------------------------------------
 -- Determina el tipo base de los elementos del arreglo
-typeArrLst (TArray _ t@(TArray _ _))    = typeArrLst t
-typeArrLst (TArray _ t)                 = t
-typeArrLst (TLista t@(TLista _))        = typeArrLst t
-typeArrLst (TLista t)                   = t
+typeArrLst (TArray _ t@(TArray _ _)) = typeArrLst t
+typeArrLst (TArray _ t)              = t
+typeArrLst (TLista t@(TLista _))     = typeArrLst t
+typeArrLst (TLista t)                = t
 -------------------------------------------------------------------------------
 
 --------------------------------------------------------------------------------
 -- Obtiene el tipo asociado a una variable
-typeVar :: Vars -> Tipo
-typeVar (Var _ t)               = t
-typeVar (VarIndex _ _ t)        = t
-typeVar (Param _ t _)           = t
-typeVar (VarCompIndex _ _ t)    = t
-typeVar (PuffValue _ t)         = t
+-- typeVar :: Vars -> Tipo
+-- typeVar (Var _ t)            = t
+-- typeVar (VarIndex _ _ t)     = t
+-- typeVar (Param _ t _)        = t
+-- typeVar (VarCompIndex v _ t) = t
+-- typeVar (PuffValue v)        = typeVar v
 --------------------------------------------------------------------------------
+
+typeVar :: Vars -> Tipo
+typeVar (Var _ t)            = typeTipo t
+typeVar (VarIndex _ _ t)     = typeTipo t
+typeVar (Param _ t _)        = typeTipo t
+typeVar (VarCompIndex v _ t) = typeTipo t
+typeVar (PuffValue v)        = typeVar v
+--------------------------------------------------------------------------------
+
+typeTipo :: Tipo -> Tipo
+typeTipo (TLista t)     = typeTipo t
+typeTipo (TArray _ t)   = typeTipo t
+typeTipo (TApuntador t) = typeTipo t
+typeTipo TBool          = TBool
+typeTipo TChar          = TChar
+typeTipo TDummy         = TDummy
+typeTipo TError         = TError
+typeTipo TFloat         = TFloat
+typeTipo TInt           = TInt
+typeTipo TRegistro      = TRegistro
+typeTipo TStr           = TStr
+typeTipo TUnion         = TUnion
+typeTipo t              = t
 
 
 --------------------------------------------------------------------------------

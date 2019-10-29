@@ -67,9 +67,9 @@ data ExtraInfo =
     deriving (Eq, Ord)
 
 instance Show ExtraInfo where
-    show (AST secInstr) = "      AST:\n    " ++ concatMap show secInstr ++ "\n"
-    show (Params p)     = "    Parametros: " ++ show p ++ "\n"
-    show (FromReg n)     = "    Campo del registro: " ++ show n ++ "\n"
+    show (AST s)     = "    AST:\n      " ++ intercalate "\t  " (map show s)
+    show (Params p)  = "    Parametros: " ++ show p ++ "\n"
+    show (FromReg n) = "    Campo del registro: " ++ show n
 
 -- Tipo de dato que pueden ser las expresiones
 data Tipo = 
@@ -92,35 +92,36 @@ data Tipo =
 
 
 instance Show Tipo where
-    show (TApuntador t) = "Apuntador de " ++ show t
-    show (TArray e t)   = "Arreglo de tamano " ++ show e ++ " de " ++ show t
-    show TBool          = "Booleano"
-    show TChar          = "Caracter"
+    show (TApuntador t) = "Apt (" ++ show t ++ ") "
+    show (TArray e t)   = show t ++ "|}" ++ show e ++ "{| "
+    show TBool          = "Battle"
+    show TChar          = "Rune"
     show TDummy         = "Sin tipo aun"
     show TError         = "Mal tipado"   
-    show TFloat         = "Flotante"
-    show TInt           = "Entero"
-    show (TLista t)     = "Lista de " ++ show t
+    show TFloat         = "Skill"
+    show TInt           = "Power"
+    show (TLista t)     = "Kit of (" ++ show t ++ ") "
     show (TNuevo str)   = str
-    show TRegistro      = "Registro"
-    show TStr           = "String"
-    show TUnion         = "Union"
+    show TRegistro      = "Inventory"
+    show TStr           = "Runes"
+    show TUnion         = "Items"
 
 
 data Vars =
     Param Nombre Tipo Ref         |
-    PuffValue Vars Tipo           | -- Variable deferenciada con puff
+    PuffValue Vars                | -- Variable desreferenciada con puff
     Var Nombre Tipo               |
     VarIndex Vars Expr Tipo       | -- Indice para array, listas
     VarCompIndex Vars Nombre Tipo   -- Campos de los registros y uniones
     deriving (Eq, Ord)
 
 instance Show Vars where
-    show (Param n t r)    = "Parametro: " ++ n ++ " de tipo: " ++ show t ++ " pasado por: " ++ show r
-    show (PuffValue v t)  = show t ++ " puff " ++ show v
-    show (Var n t)        = show t ++ " " ++ n
-    show (VarIndex v e t) = show t ++ " " ++ show v ++ " index: " ++ show e
-    show (VarCompIndex v n t) = show t ++ " " ++ show v ++ " spawn " ++ n
+    show (Param n t Valor)    = "Parametro: " ++ show t ++ " " ++ n
+    show (Param n t r)        = "Parametro: " ++ show t ++ " ?" ++ n
+    show (PuffValue v)        = "puff (" ++ show v ++ ") "
+    show (Var n t)            = show t ++ " " ++ n
+    show (VarIndex v e t)     = show t ++ " " ++ show v ++ " index: " ++ show e
+    show (VarCompIndex v n t) = show t ++ " (" ++ show v ++ ") spawn " ++ n
 
 -- Especifica si un parametro es pasado como valor o por referencia
 data Ref =
@@ -148,27 +149,33 @@ data Instr  =
 
 instance Show Instr where
 -- Esto imprime el tipo de instruccion pero no imprime la secuenciaInstr
-    show (Asignacion v e)        = "\t" ++ show v ++ " = " ++ show e ++ "\n"
-    show Break                   = "\tGameOver\n"
-    show Continue                = "\tKeepPlaying\n"
-    show (For n e1 e2 s)         = "\tFor " ++ n ++ " = " ++ show e1 ++ " -> "
-        ++ show e2 ++ ":\n\t" ++ concatMap show s ++ "\n"
-    show (ForEach n e s)         = "\tForEach " ++ n ++ " <- " ++ show e ++
-        ":\n\t" ++ concatMap show s ++ "\n"
-    show (ForWhile n e1 e2 e3 s) = "\tFor " ++ n ++ " = " ++ show e1 ++ " -> " ++
-        show e2 ++ " while: " ++ show e3 ++ ":\n\t" ++ concatMap show s ++ "\n"
-    show (Free n)                = "\tfree " ++ n ++ "\n"
-    show (Print e)               = "\tdrop " ++ show e ++ "\n"
-    show (ProcCall s)            = "\tkill " ++ show s ++ "\n"
-    show (Programa c)            = "\nworld:\n" ++ concatMap show c ++ "\n"
-    show (Return e)              = "\tunlock " ++ show e ++ "\n"
-    show (Asignaciones s)        = concatMap show s ++ "\n"
-    show (IF s)                  = "\tIF:\n" ++ concat guardias
+    show (Asignacion v e)        = "  " ++ show v ++ " = " ++ show e ++ "\n"
+    show Break                   = "  GameOver\n"
+    show Continue                = "  KeepPlaying\n"
+    show (For n e1 e2 s)         = "  For " ++ n ++ " = " ++ show e1 ++ " -> "
+        ++ show e2 ++ ":\n    " ++ intercalate "    " (map show s) ++ "\n"
+
+    show (ForEach n e s)         = "  ForEach " ++ n ++ " <- " ++ show e ++
+        ":\n    " ++ intercalate "    " (map show s) ++ "\n"
+
+    show (ForWhile n e1 e2 e3 s) = "  For " ++ n ++ " = " ++ show e1 ++ " -> " ++
+        show e2 ++ " while: " ++ show e3 ++ ":\n    " ++ 
+        intercalate "    " (map show s) ++ "\n"
+
+    show (Free n)                = "  free " ++ n ++ "\n"
+    show (Print e)               = "  drop " ++ show e
+    show (ProcCall s)            = "  kill " ++ show s ++ "\n"
+    show (Programa s)            = "\nworld:\n" ++ concatMap show s ++ "\n"
+    show (Return e)              = "  unlock " ++ show e
+    show (Asignaciones s)        = intercalate "  " (map show s)
+    show (IF s)                  = "  IF:\n    " ++ concat guardias
         where
             conds = map (show . fst) s
             instrs =  map (concatMap show . snd) s
-            guardias = [c ++ " }\n" ++ i | c <- conds, i <- instrs, elemIndex c conds == elemIndex i instrs]
-    show (While e s)             = "\tWhile " ++ show e ++ ":\n\t" ++ concatMap show s ++ "\n"
+            guardias = [c ++ " }\n    " ++ i | c <- conds, i <- instrs, elemIndex c conds == elemIndex i instrs]
+
+    show (While e s)             = "  While " ++ show e ++ ":\n    " ++
+        intercalate "    " (map show s) ++ "\n"
 
 
 -- 
@@ -182,6 +189,7 @@ instance Show Subrutina where
 data Expr   = 
     ArrLstExpr [Expr] Tipo         |
     FuncCall Subrutina Tipo        |
+    IdTipo Tipo                    |
     IfSimple Expr Expr Expr Tipo   |
     Literal Literal Tipo           |
     Null                           |
@@ -194,6 +202,7 @@ data Expr   =
 instance Show Expr where
     show (ArrLstExpr lst _)     = "[" ++ intercalate "," (map show lst) ++ "]"
     show (FuncCall s _)         = "kill " ++ show s
+    show (IdTipo t)             = show t
     show (IfSimple e1 e2 e3 t)  = show e1 ++ " ? " ++ show e2 ++ " : " ++ show e3
     show (Literal lit _)        = show lit
     show Null                   = "DeathZone"
@@ -246,22 +255,22 @@ data BinOp =
     deriving (Eq, Ord)
 
 instance Show BinOp where
-    show And            = "&&"
-    show Anexo          = ":"
-    show Concatenacion  = "::"
-    show Desigual       = "!="
-    show DivEntera      = "//"
-    show Division       = "/"
-    show Igual          = "=="
-    show Mayor          = ">"
-    show MayorIgual     = ">="
-    show Menor          = "<"
-    show MenorIgual     = "<="
-    show Modulo         = "%"
-    show Multiplicacion = "*"
-    show Or             = "||"
-    show Resta          = "-"
-    show Suma           = "+"
+    show And            = " && "
+    show Anexo          = " : "
+    show Concatenacion  = " :: "
+    show Desigual       = " != "
+    show DivEntera      = " // "
+    show Division       = " / "
+    show Igual          = " == "
+    show Mayor          = " > "
+    show MayorIgual     = " >= "
+    show Menor          = " < "
+    show MenorIgual     = " <= "
+    show Modulo         = " % "
+    show Multiplicacion = " * "
+    show Or             = " || "
+    show Resta          = " - "
+    show Suma           = " + "
 
 
 -- Operadores unarios
@@ -276,7 +285,7 @@ data UnOp =
     deriving (Eq, Ord)
 
 instance Show UnOp where
-    show Desreferenciar = "puff "
+    show Desreferenciar = "puff " -- no es un operador??
     show Longitud       = "#"
     show LowerCase      = "."
     show Negativo       = "-"
@@ -310,7 +319,9 @@ data SymbolInfo = SymbolInfo {
 instance Show SymbolInfo where
     show (SymbolInfo t s c i) = "\n  Tipo: " ++ show t ++ " | Alcance: " ++
         show s ++ " | Categoria: "++ show c ++
-        if not (null i) then "\n    Extra:\n  " ++ concatMap show i ++ "\n" else ""
+        if not (null i) then
+            "\n    Extra:\n  " ++ intercalate "  " (map show i) ++ "\n"
+        else ""
 
 
 {- Nuevo tipo de dato para representar la tabla de simbolos
@@ -351,9 +362,9 @@ type MonadSymTab a = RWST String () (SymTab, ActiveScopes, Alcance) IO a
 
 -------------------------------------------------------------------------------
 -- Determina si el simbolo es de un registro o union
-getRegName :: [ExtraInfo] -> Maybe String
-getRegName [] = Nothing
-getRegName (FromReg rname:rs) = Just rname
+getRegName :: [ExtraInfo] -> String
+getRegName [] = ""
+getRegName (FromReg rname:rs) = rname
 getRegName (_:rs) = getRegName rs
 -------------------------------------------------------------------------------
 
