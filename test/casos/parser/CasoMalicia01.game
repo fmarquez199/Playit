@@ -7,6 +7,22 @@
 * 
 * 
 ******************************************************************************'"
+Inventory PrimerNombre2:
+    Skill flotante
+    Power entero
+.~
+Inventory Nombre2:
+    PrimerNombre2 puff regpn
+.~
+Inventory Contacto2:
+    Nombre2 regnombre
+    Skill flotante
+.~
+Inventory Contacto3:
+    Nombre2 puff pointernombre
+    Power|}3{| arraypower
+.~
+
 
 Inventory PrimerNombre:
     Runes nombre
@@ -24,7 +40,7 @@ boss f2():
 .~
 monster f3() Contacto:
 .~
-monster f(Power p11,Contacto? c11,Contacto2 c221,Runes c3) Contacto:
+monster f(Power p11,Contacto? c11,Contacto c221,Runes c3) Contacto:
 .~
 
 world %caso_malicia'M'%: 
@@ -35,39 +51,81 @@ world %caso_malicia'M'%:
 
     Battle b1 = Win , b2=Lose 
     Battle b3 
-    Battle b4 = (b1 && b2) || b3,b5 = b1 > 3? Win:Lose
+    Battle b4 = (b1 && b2) || b3,b5 = (2 > 3)? Win:Lose
 
     Power a2 = 0,b20 = 1
-    Power c2 = a2 + 1,d2 = a2*b2
+    Power c2 = a2 + 1,d2 = a2*2
 
-    Skill a3 = 1,b31 = 1'0,abc = c2 + 1,d3 = c2*b3
+    Skill a3 = 1,b31 = 1'0,abc = c2 + 1,d3 = c2*2
+  Battle listab1 = <<2>> == <<>>
+  Battle listab2 = <<>> == <<>>
+  Battle listab3 = <<>> == <<2>>
+  Battle listab3'1 = <<<<>>>> == <<<<2>>>>
+
+  Battle listab4 = <<2>> == <<>>
+  Battle listab5 = (2:<<>>) == <<>>
+  Battle listab6 = <<>>::<<>> == <<>>
+  Battle listab7 = <<2>>::<<>> == <<2>>
+  Battle listab8 = <<>>::<<3>> == <<3>>
+  Battle listab8'1 = (<<2>>:<<<<3>>>>) == <<<<2>>,<<3>>>>
+  Battle listab9 = <<<<>>>> == <<<<2>>>>
+  Battle listab10 = (<<>>:<<<<2>>>>) == <<<<>>,<<2>>>>
+  Battle listab11 = <<<<>>>> == <<<<>>>>
+
+    Contacto3 nombre
     
-    a3 = a2 
+    Contacto3 puff test = summon Contacto3
+    PrimerNombre2 puff test2 = summon PrimerNombre2
     
-    Power|}2{| enteros1,enteros2 = |)a2,c2 + a3,(abc|)0(| + b2 ) * (b2? a2 + 1 : abc|)b1 - 1(|) (|
+    puff(puff(puff test spawn pointernombre) spawn regpn) spawn entero = puff(puff(puff test spawn pointernombre) spawn regpn) spawn entero + nombre spawn arraypower|)0(|
+
+    
+    Power|}3{| hola1
+    Power|}3{| hola2
+    
+    hola1 = hola2
+    
+    test = summon Contacto3
+    
+    puff test = nombre
+    
+    nombre = nombre
+    
+    Kit of Power hola3
+    
+    hola3 = (2 + 1):hola3
+    hola3 = (hola1|)0(| + puff(puff(puff test spawn pointernombre) spawn regpn) spawn entero):hola3
+    hola3 = puff(puff(puff test spawn pointernombre) spawn regpn) spawn entero:hola3
+
+
+    
+    a3 = a3
     
     Power |}2{| abc2
 
-    abc|)0(| = 0
-
-    abc|)1(| = 1
-
-    abc|)(abc|)0(| + b2 ) * ( b2? a2 + 1 : abc|)b1 - 1(| )(| = (abc|>0<| + b2 ) * (b2? a2 + 1 : abc|>b1 - 1<|)
+    Power|}2{| enteros1,enteros2 = |)a2,c2 + 2,(abc2|)0(| + 2 ) * (b2? a2 + 1 : abc2|)abc2|)2(| - 1(|) (|
     
-    Kit of Kit of Power lista1 = << <<a2,a3>> , <<a2,a3>>  >>
+
+    abc2|)0(| = 0
+
+    abc2|)1(| = 1
+
     
-    lista1|>0<| = 240
+    Kit of Kit of Power lista1 = << <<a2,a2>> , <<a2,a2>>  >>
+    
+    lista1|>0<||>0<| = 240
 
     
     Kit of Power l1 = <<1,2,3,4,4>>
     Contacto c = {<<l1,l1>>, a2}
     c spawn n spawn n spawn nombre = joystick ~Dame un nombre YEH NOW BB~
-    c spawn lista1|>2<||>1<| = joystick ~HEY LOL~
+    @c spawn lista1|>2<||>1<| = joystick ~HEY LOL~
+    @c spawn lista1|>2<||>1<| = joystick ~HEY LOL~
     c spawn tip = *c*    
         
     Power puff p = summon Power
     
-    puff p = (b2? a2 + 1 : abc|>b1 - 1<|)
+    puff p = (b2? a2 + 1 : abc2|>3 - 1<|)
     
     puff p = 15
     
@@ -85,8 +143,8 @@ world %caso_malicia'M'%:
     Kit of Power puff plista3 = summon Kit of Power @jejelol
     Kit of Power puff plista4 = summon Kit of Power @jejelol
     
-    puff plista3 = <<<<2>>>>::<<>>
-    puff plista3 = (b2? a2 + 1 : abc|>b1 - 1<|):<<1,2>>
+    puff plista3 = 2:<<>>::<<>>::<<>>::<<22>>
+    puff plista3 = (b2? a2 + 1 : abc2|>l2|>0<| - lista1|>2<||>2<|<|):<<1,2>>
     puff plista3 = <<1,2>>
     
     puff plista4 = puff plista3
@@ -96,23 +154,42 @@ world %caso_malicia'M'%:
     @ Esto deberia dar error p1 = p2
     
     Power p1,p4 = 0
-    puff p2|>-(((p1)))<| = joystick ~HEY LOL~
-    p4|>p1<| = joystick
+    @puff p2|>-(((p1)))<| = joystick ~HEY LOL~
+
     
     
-    Power a = l2 + 2 + 2 * 3 // 3 / 4  % 4 - 5 - -1 + #l2
+    Power a = l2|>2<| + 2 + 2 * 3 // 3 / 4  % 4 - 5 - -1 + #l2
      
     Power b = ((a + (2)) + 2) * ((3 // 3) / (4  % 4) - 5) - ((-1) + #l2)
     
-    c = ((b1 || Win && Lose || !b2 ) == Win && b4 != (b2? Win:Lose))
-     
+    Battle c22
+    c22 = ((b1 || Win && Lose || !b2 ) == Win && b4 != (b2? Win:Lose))
+    
+    Power|}2{| manu1
+    Power|}30{| manu2
+    
+    c22 = manu1 == manu1
+
+    Kit of Power manukitpower1
+    Kit of Power manukitpower2
+    
+    c22 = manukitpower1 == manukitpower2
+
+    Power puff manukitpower3
+    Kit of Kit of Power puff puff puff manukitpower4
+    
+    c22 = puff manukitpower3 == puff puff puff manukitpower4|>12<||>3<|
+         
     Rune c1 = ^*c*
-    Rune c22 = .*c*
-    Rune c3 = ^.c
-    Rune c4 = .^c
-    Rune c5 = .(^c)
-    Rune c6 = (.(^c))
-    Rune c7 = ^(.(c))
+    Rune c223 = .*c*
+
+    Rune c2222
+    Rune c3 = ^.c2222
+    
+    Rune c4 = .^c2222
+    Rune c5 = .(^c2222)
+    Rune c6 = (.(^c2222))
+    Rune c7 = ^(.(c2222))
     
     
     "' Hola '"
@@ -123,24 +200,24 @@ world %caso_malicia'M'%:
             keepPlaying
        
         @ Notar que la condicion de lock debe ser booleana
-        controller Power i = (2 - 2) -> 10 - 1 lock (abc|>0<| + b2 ) * (b2? a2 + 1 : abc|>b1 - 1<|):
+        controller Power i = (2 - 2) -> 10 - 1 lock (abc2|>0<| + 2 ) * (b2? a2 + 1 : abc2|>5 - 1<|):
 
             Button:
-                | n1 > 2 }
+                | 12 > 2 }
             gameOver
             keepPlaying
                     Power a
             .~    
             Button:
-                | n1 > 2 }
-                    unlock n1 + 2
+                | 1'0 > 2'2 }
+                    unlock i + 2
                 | notPressed }
-                    unlock n1 + 2
+                    unlock i + 2
             .~    
         .~ 
              
     @  asd
-    lock (abc|>0<| + b2 ) * (b2? a2 + 1 : abc|>b1 - 1<|)
+    lock (abc2|>0<| + 1 ) * (b2? a2 + 1 : abc2|>2 - 1<|)
     .~
 
     controller Power i <- abc:
@@ -150,5 +227,5 @@ world %caso_malicia'M'%:
     controller Contacto i <- abc:
     .~ 
     
-    Power a222 = kill f()
+    Power a222 = kill f(1,2,3,4)
 .~

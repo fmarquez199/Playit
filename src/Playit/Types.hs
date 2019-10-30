@@ -61,8 +61,8 @@ instance Show Categoria where
 
 
 data ExtraInfo =
-    AST SecuenciaInstr |
-    Params Int         |
+    AST SecuenciaInstr    |
+    Params [Nombre] |
     FromReg Nombre       -- Registro o union al que pertenece el campo/variable
     deriving (Eq, Ord)
 
@@ -87,7 +87,8 @@ data Tipo =
     TNuevo String    |
     TRegistro        |
     TStr             |
-    TUnion
+    TUnion           |
+    TVoid              -- Tipo de los procedimientos
     deriving(Eq, Ord)
 
 
@@ -105,6 +106,7 @@ instance Show Tipo where
     show TRegistro      = "Inventory"
     show TStr           = "Runes"
     show TUnion         = "Items"
+    show TVoid          = "Void"
 
 
 data Vars =
@@ -116,12 +118,12 @@ data Vars =
     deriving (Eq, Ord)
 
 instance Show Vars where
-    show (Param n t Valor)    = "Parametro: " ++ show t ++ " " ++ n
-    show (Param n t r)        = "Parametro: " ++ show t ++ " ?" ++ n
+    show (Param n t Valor)    = "Parametro: (" ++ show t ++ ") " ++ n
+    show (Param n t r)        = "Parametro: (" ++ show t ++ ") ?" ++ n
     show (PuffValue v)        = "puff (" ++ show v ++ ") "
-    show (Var n t)            = show t ++ " " ++ n
-    show (VarIndex v e t)     = show t ++ " " ++ show v ++ " index: " ++ show e
-    show (VarCompIndex v n t) = show t ++ " (" ++ show v ++ ") spawn " ++ n
+    show (Var n t)            = " (" ++ show t ++ ") " ++ n
+    show (VarIndex v e t)     = " (" ++ show t ++ ") " ++ show v ++ " index: " ++ show e
+    show (VarCompIndex v n t) = " (" ++ show t ++ ") (" ++ show v ++ ") spawn " ++ n
 
 -- Especifica si un parametro es pasado como valor o por referencia
 data Ref =
@@ -183,7 +185,7 @@ data Subrutina = SubrutinaCall Nombre Parametros
                 deriving (Eq, Ord)
 
 instance Show Subrutina where
-    show (SubrutinaCall n p) = n ++ "(" ++ concatMap show p ++ ")"
+    show (SubrutinaCall n p) = n ++ "(" ++ intercalate "," (map show p) ++ ")"
 
 
 data Expr   = 
@@ -192,7 +194,7 @@ data Expr   =
     IdTipo Tipo                    |
     IfSimple Expr Expr Expr Tipo   |
     Literal Literal Tipo           |
-    Null                           |
+    Null                           | -- tipo: compatible con apt de lo que sea o que el contexto lo diga
     OpBinario BinOp Expr Expr Tipo |
     OpUnario UnOp Expr Tipo        |
     Read Expr                      |
@@ -373,6 +375,6 @@ getRegName (_:rs) = getRegName rs
 -- Obtiene la cantidad de parametros
 getNParams :: [ExtraInfo] -> Maybe Int
 getNParams [] = Nothing
-getNParams (Params n:rs) = Just n
+getNParams (Params p:rs) = Just $ length p
 getNParams (_:rs) = getNParams rs
 -------------------------------------------------------------------------------

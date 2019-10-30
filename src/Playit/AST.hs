@@ -367,20 +367,10 @@ crearWhile e i (line,_) = While e i
 
 -------------------------------------------------------------------------------
 -- Actualiza el tipo y  la informacion extra de la subrutina
-definirSubrutina' :: Nombre -> Int -> SecuenciaInstr -> Categoria
+definirSubrutina' :: Nombre -> SecuenciaInstr -> Categoria
                     -> MonadSymTab SecuenciaInstr
-definirSubrutina' name 0 [] c = do
-    updateExtraInfo name c []
-    return []
-definirSubrutina' name 0 i c = do
-    updateExtraInfo name c [AST i]
-    return i
-definirSubrutina' name params [] c = do
-    updateExtraInfo name c [Params params]
-    return []
-definirSubrutina' name params i c = do
-    updateExtraInfo name c [Params params, AST i]
-    return i
+definirSubrutina' name [] c = return (updateExtraInfo name c) >> return []
+definirSubrutina' name i c = return (updateExtraInfo name c [AST i]) >> return i
 -------------------------------------------------------------------------------
 
 
@@ -404,24 +394,40 @@ definirSubrutina nombre categoria p = do
 
 -------------------------------------------------------------------------------
 -- Define el parametro en la tabla de simbolos
-definirParam :: Vars -> MonadSymTab Expr
+definirParam :: Vars -> MonadSymTab Nombre
 definirParam param@(Param name t ref) = do
     (symtab, activeScopes@(activeScope:_), scope) <- get
     let info = [SymbolInfo t activeScope (Parametros ref) []]
     addToSymTab [name] info symtab activeScopes scope
-    return $ Variables param t
+    return name
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
 -- Crea el nodo para la instruccion que llama a la subrutina
 crearSubrutinaCall :: Nombre -> Parametros -> Posicion -> MonadSymTab Subrutina
-crearSubrutinaCall nombre params p = do
+crearSubrutinaCall nombre args p = do
     (symtab, activeScopes, scope) <- get
     file <- ask
-    let isNombreDef = isJust $ lookupInSymTab nombre symtab
-    if isNombreDef then
-        return $ SubrutinaCall nombre params
+    let symbols = lookupInScopes [1] nombre  symtab
+    
+    if isJust symbols then do
+        let sym =  fromJust symbols
+
+        if getCategory sym `elem` [Procedimientos, Funciones] then do
+            
+            let nParams = fromJust $ getNParams (getExtraInfo sym )
+                nArgs = length args
+            
+            if nArgs == nParams then
+                return $ SubrutinaCall nombre args
+            else
+                error $ "\n\nError: " ++ file ++ ": " ++ show p ++ 
+                    "\n\tSubrutina '" ++ nombre ++ "' espera '" ++ show nParams
+                    ++ "' argumentos y se pasaron '" ++ show nArgs ++ "'.\n"
+        else
+            error $ "\n\nError: " ++ file ++ ": " ++ show p ++ "\n\t'" ++
+                    nombre ++ "' no es una subrutina.\n"
     else
         error $ "\n\nError: " ++ file ++ ": " ++ show p ++ "\n\tSubrutina '" ++
                 nombre ++ "' no definida.\n"
@@ -437,7 +443,7 @@ crearFuncCall subrutina@(SubrutinaCall nombre _) = do
     (symtab, activeScope:_, scope) <- get
     file <- ask
     let sym = fromJust $ lookupInScopes [1] nombre symtab
-    -- ??
+    
     if getCategory sym == Funciones then
         return $ FuncCall subrutina (getType sym)
     else

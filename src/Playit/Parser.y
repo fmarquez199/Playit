@@ -422,25 +422,32 @@ Free :: { Instr }
 DefinirSubrutina :: { SecuenciaInstr }
   : Firma ":" EndLines Instrucciones EndLines ".~"
     { %
-      let ((nombre,categoria), params) = $1
-      in definirSubrutina' nombre params (reverse $4) categoria
+      let (nombre,categoria) = $1
+      in definirSubrutina' nombre (reverse $4) categoria
     }
   | Firma ":" EndLines ".~" 
   { %
-    let ((nombre,categoria), params) = $1
-    in definirSubrutina' nombre params [] categoria
+    let (nombre,categoria) = $1
+    in definirSubrutina' nombre [] categoria
   }
 
 
 -------------------------------------------------------------------------------
 -- Firma de la subrutina, se agrega antes a la symtab por la recursividad
-Firma :: { ((Nombre, Categoria),Int) }
-  : Nombre PushScope Params       { ($1, $3) }
+Firma :: { (Nombre, Categoria) }
+  : Nombre PushScope Params
+  { % do
+    let (nombre,cat) = $1
+    updateExtraInfo nombre cat [Params (reverse $3)]
+    updateType nombre 1 TVoid
+    return $1
+  }
   | Nombre PushScope Params Tipo 
-    {% do
-        let (nombre,_) = $1
-        updateType nombre 1 $4
-        return ($1, $3)
+    { % do
+      let (nombre,cat) = $1
+      updateExtraInfo nombre cat [Params (reverse $3)]
+      updateType nombre 1 $4
+      return $1
     }
 
 -------------------------------------------------------------------------------
@@ -459,16 +466,16 @@ Nombre :: { (Nombre, Categoria) }
 
 -------------------------------------------------------------------------------
 -- Definicion de los parametros de las subrutinas
-Params ::{ Int }
-  : "(" Parametros ")" { length $2 }
-  | "(" ")"            { 0 }
+Params ::{ [Nombre] }
+  : "(" Parametros ")" { $2 }
+  | "(" ")"            { [] }
 
-Parametros :: { [Expr] }
+Parametros :: { [Nombre] }
   : Parametros "," Parametro  { $3 : $1 }
   | Parametro                 { [$1] }
 
 
-Parametro :: { Expr }
+Parametro :: { Nombre }
   : Tipo nombre       { % definirParam (Param (getTk $2) $1 Valor) }
   | Tipo "?" nombre   { % definirParam (Param (getTk $3) $1 Referencia) }
 -------------------------------------------------------------------------------
@@ -535,13 +542,14 @@ Expresion :: { Expr }
     {
       crearIfSimple $1 $3 $5 TDummy $2
     }
-  | FuncCall                     { $1 }
-  | "(" Expresion ")"            { $2 }
-  | "{" Expresiones "}"          { crearArrLstExpr $2 }
-  | "|)" Expresiones "(|"        { crearArrLstExpr $2 }
-  | "<<" Expresiones ">>"        { crearArrLstExpr $2 }
-  | "<<"  ">>"                   { crearArrLstExpr [] }
-  | new Tipo                     { OpUnario New (IdTipo $2) (TApuntador $2) }
+  | FuncCall               { $1 }
+  | "(" Expresion ")"      { $2 }
+  | "{" Expresiones "}"    { crearArrLstExpr $2 } -- Inic de Reg/Union
+  | "{" "}"                { crearArrLstExpr [] } -- Inic de Reg/Union por default
+  | "|)" Expresiones "(|"  { crearArrLstExpr $2 }
+  | "<<" Expresiones ">>"  { crearArrLstExpr $2 }
+  | "<<" ">>"              { crearArrLstExpr [] }
+  | new Tipo               { OpUnario New (IdTipo $2) (TApuntador $2) }
 
   -- Falta la conversion automatica de string a tipo de regreso segun el rdm
   | input Expresion %prec input  { crearRead $2 $1 }
@@ -629,8 +637,8 @@ parseError :: [Token] -> MonadSymTab a
 parseError [] =  error $ "\n\nPrograma invalido "
 parseError (h:t) =  do
     file <- ask
-    error $ "\n\nParse error: " ++ file ++ ": " ++ show pos ++ ":\n\tToken '" ++
-            token ++ "'.\n"
+    error $ "\n\nParse error: " ++ file ++ ": " ++ show pos ++ ":\n\tAntes de '"
+          ++ token ++ "'.\n"           
   where
       token = getTk h
       pos = getPos h

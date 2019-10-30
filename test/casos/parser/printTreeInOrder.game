@@ -1,0 +1,91 @@
+"'
+PrintArbol.game
+
+Crea un arbol utilizando registros, punteros, y subrutinas.
+
+Luego lo imprime en forma in-order : el nodo izquierdo | nodo central |  nodo derecho
+
+'"
+
+
+Inventory Nodo:
+    "'Representa un nodo del arbol'"
+    Nodo puff izqui  @ Puntero al nodo izquierdo
+    Nodo puff dere   @ Puntero al nodo derecho
+    Power puff dato  @ Puntero al dato de este nodo
+.~
+
+boss iniciar(Nodo? nodo,Power dato):
+    "'Inicia un nodo con un valor'"
+    nodo spawn izqui = DeathZone
+    nodo spawn dere = DeathZone
+    nodo spawn dato = summon Power
+    puff(nodo spawn dato) = dato
+
+.~
+
+boss print(Nodo? nodo):
+    "'Imprime el arbol in-order'"
+
+    Button:
+    | nodo spawn izqui == DeathZone } 
+        kill print(nodo spawn izqui)
+    .~
+
+    drop nodo spawn dato
+
+    Button:
+    | nodo spawn dere == DeathZone } 
+        kill print(nodo spawn dere)
+    .~
+
+.~
+
+boss insert(Nodo? nodo, Power dato):
+    "'Inserta un valor en el'"
+
+    Button:
+    | nodo spawn dato != DeathZone } @ Si el nodo tiene un valor
+
+        Power dato_n = puff (nodo spawn dato)
+    
+        Button:
+        | dato < dato_n }  @ Si el valor a insertar es MENOR al valor de este nodo
+            Button:
+            | nodo spawn izqui == DeathZone } 
+                nodo spawn izqui = summon Nodo
+                kill iniciar(puff nodo spawn izqui,dato)
+            | notPressed }
+                kill insert(puff nodo spawn izqui,dato)
+            .~
+        | dato > dato_n }  @ Si el valor a insertar es MAYOR al valor de este nodo
+            Button:
+            | nodo spawn dere == DeathZone } 
+                nodo spawn dere = summon Nodo
+                kill iniciar(puff nodo spawn dere,dato)
+            | notPressed }
+                kill insert(puff nodo spawn dere,dato)
+            .~
+        .~
+    | notPressed }  @ Si el nodo no tiene un valor
+        kill iniciar(puff nodo,dato)
+    .~
+
+.~
+
+world %tree%:
+
+    Nodo root 
+    Nodo puff root1
+    root = {}
+    @root = summon Nodo @Da error con ckecktypes
+    root1 = summon Nodo
+
+    kill iniciar(root,10)
+    kill insert(root,6)
+    kill insert(root,14)
+    kill insert(root,3)
+
+    kill print(root)
+
+.~
