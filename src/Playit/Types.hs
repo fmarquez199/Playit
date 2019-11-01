@@ -9,7 +9,6 @@
 module Playit.Types where
 
 import Control.Monad.Trans.RWS
-import Control.Monad.IO.Class
 import qualified Data.Map as M
 import Data.List (intercalate,elemIndex)
 
@@ -93,7 +92,7 @@ data Tipo =
 
 
 instance Show Tipo where
-    show (TApuntador t) = "Apt (" ++ show t ++ ") "
+    show (TApuntador t) = "Apt(" ++ show t ++ ")"
     show (TArray e t)   = show t ++ "|}" ++ show e ++ "{| "
     show TBool          = "Battle"
     show TChar          = "Rune"
@@ -101,7 +100,7 @@ instance Show Tipo where
     show TError         = "Mal tipado"   
     show TFloat         = "Skill"
     show TInt           = "Power"
-    show (TLista t)     = "Kit of (" ++ show t ++ ") "
+    show (TLista t)     = "Kit of(" ++ show t ++ ")"
     show (TNuevo str)   = str
     show TRegistro      = "Inventory"
     show TStr           = "Runes"
@@ -111,19 +110,19 @@ instance Show Tipo where
 
 data Vars =
     Param Nombre Tipo Ref         |
-    PuffValue Vars                | -- Variable desreferenciada con puff
+    PuffValue Vars Tipo           | -- Variable desreferenciada con puff
     Var Nombre Tipo               |
     VarIndex Vars Expr Tipo       | -- Indice para array, listas
     VarCompIndex Vars Nombre Tipo   -- Campos de los registros y uniones
     deriving (Eq, Ord)
 
 instance Show Vars where
-    show (Param n t Valor)    = "Parametro: (" ++ show t ++ ") " ++ n
-    show (Param n t r)        = "Parametro: (" ++ show t ++ ") ?" ++ n
-    show (PuffValue v)        = "puff (" ++ show v ++ ") "
-    show (Var n t)            = " (" ++ show t ++ ") " ++ n
-    show (VarIndex v e t)     = " (" ++ show t ++ ") " ++ show v ++ " index: " ++ show e
-    show (VarCompIndex v n t) = " (" ++ show t ++ ") (" ++ show v ++ ") spawn " ++ n
+    show (Param n t Valor)    = "Parametro: " ++ {-"("++show t++")"++-}n
+    show (Param n t _)        = "Parametro: ?" ++ {-"("++show t ++")?"++-}n
+    show (PuffValue v t)      = {-"("++show t++")"++-}"puff (" ++ show v ++ ")"
+    show (Var n t)            = {-"("++show t++")"++-}n
+    show (VarIndex v e t)     = {-"("++show t++")"++-}show v ++ " index: " ++ show e
+    show (VarCompIndex v n t) = {-"("++show t++") ("++-}show v ++ " spawn " ++ n
 
 -- Especifica si un parametro es pasado como valor o por referencia
 data Ref =
@@ -205,7 +204,7 @@ instance Show Expr where
     show (ArrLstExpr lst _)     = "[" ++ intercalate "," (map show lst) ++ "]"
     show (FuncCall s _)         = "kill " ++ show s
     show (IdTipo t)             = show t
-    show (IfSimple e1 e2 e3 t)  = show e1 ++ " ? " ++ show e2 ++ " : " ++ show e3
+    show (IfSimple e1 e2 e3 _)  = show e1 ++ " ? " ++ show e2 ++ " : " ++ show e3
     show (Literal lit _)        = show lit
     show Null                   = "DeathZone"
     show (OpBinario op e1 e2 _) = "(" ++ show e1 ++ show op ++ show e2 ++ ")"
@@ -228,6 +227,8 @@ instance Show Literal where
     show (ArrLst l@(Booleano _:_)) = show $ map ((\x->read x::Bool) . show) l
     show (ArrLst l@(Caracter _:_)) = show $ map ((\x->read x::Char) . show) l
     show (ArrLst l@(Entero _:_))   = show $ map ((\x->read x::Int) . show) l
+    show (ArrLst l@(Flotante _:_)) = show $ map ((\x->read x::Float) . show) l
+    show (ArrLst l)                = concatMap show l
     show (Booleano val)            = show val
     show (Caracter val)            = show val
     show (Entero val)              = show val
@@ -341,10 +342,10 @@ instance Show SymTab where
             info = "- Simbolo | Informacion asociada \n------------\n"
             tabla = M.toList hash
             symbols' = map fst $ M.toList $ M.filter (any (>0)) $ M.map (map getScope) hash
-            showInfo info = if getScope info > 0 then show info else ""
+            showInfo i = if getScope i > 0 then show i else ""
             showTable (k,v) = 
                 if k `elem` symbols' then
-                    k ++ " -> " ++ concatMap showInfo v ++ "\n"
+                    k ++ " -> " ++ concatMap showInfo (reverse v) ++ "\n"
                 else ""
             -- showTable (k,v) = k ++ " -> " ++ concatMap show v
             symbols = concatMap showTable tabla
@@ -352,7 +353,7 @@ instance Show SymTab where
 
 -- Transformador monadico para crear y manejar la tabla de simbolos junto con 
 -- la pila de alcances y cuales estan activos
-type MonadSymTab a = RWST String () (SymTab, ActiveScopes, Alcance) IO a
+type MonadSymTab a = RWST String [String] (SymTab, ActiveScopes, Alcance) IO a
 
 
 -------------------------------------------------------------------------------
@@ -366,7 +367,7 @@ type MonadSymTab a = RWST String () (SymTab, ActiveScopes, Alcance) IO a
 -- Determina si el simbolo es de un registro o union
 getRegName :: [ExtraInfo] -> String
 getRegName [] = ""
-getRegName (FromReg rname:rs) = rname
+getRegName (FromReg rname:_) = rname
 getRegName (_:rs) = getRegName rs
 -------------------------------------------------------------------------------
 
@@ -375,6 +376,6 @@ getRegName (_:rs) = getRegName rs
 -- Obtiene la cantidad de parametros
 getNParams :: [ExtraInfo] -> Maybe Int
 getNParams [] = Nothing
-getNParams (Params p:rs) = Just $ length p
+getNParams (Params p:_) = Just $ length p
 getNParams (_:rs) = getNParams rs
 -------------------------------------------------------------------------------
