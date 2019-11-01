@@ -1,3 +1,4 @@
+
 {-
 Modulo para la creacion y manejo de la tabla de simbolos
 
@@ -9,9 +10,9 @@ Modulo para la creacion y manejo de la tabla de simbolos
 module Playit.SymbolTable where
 
 import Control.Monad.Trans.RWS
-import Control.Monad (void,forM,when)
+import Control.Monad (forM, when)
 import qualified Data.Map as M
-import Data.Maybe (fromJust, isJust, isNothing)
+import Data.Maybe (fromJust, isJust)
 import Playit.Types
 
 
@@ -31,51 +32,29 @@ initState = createInitSymTab (SymTab M.empty)
 createInitSymTab :: SymTab -> (SymTab,ActiveScopes,Alcance)
 createInitSymTab st = (insertSymbols symbols info st,[0],0)
     where
-        symbols = t ++ words
-        t = ["Power", "Skill", "Rune", "Runes", "Battle", "Inventory", "Items",
-            "Kit of"]
-        words = ["Win", "Lose", "free", "puff", "DeathZone", "boss", "monster",
-            "controller", "drop", "joystick", "Button", "notPressed", "kill",
-            "lock", "play", "gameOver", "keepPlaying", "spawn", "summon",
-            "unlock", "world", "portalRunesToRune", "portalRuneToRunes",
-            "portalPowerToRunes", "portalSkillToRunes", "portalRunesToPower",
-            "portalRunesToSkill"]
-        info = tI ++ wI
-        tI = [power, skill, rune, runes, battle, inventory, items, listOf
-            ]
-        wI = [bools, bools, apt, apt, apt, proc, func, for, out, input, ifElse,
-            ifElse, kill, lock, play, break, continue, spawn, apt, unlock, world,
-            portalSC, portalCS, portalIS, portalFS, portalSI, portalSF]
+        symbols = ["Power", "Skill", "Rune", "Runes", "Battle", "Inventory",
+            "Items", "Kit of", "Win", "Lose", "DeathZone", "portalRunesToRune",
+            "portalRuneToRunes", "portalPowerToRunes", "portalSkillToRunes",
+            "portalRunesToPower", "portalRunesToSkill"]
+        info = [power, skill, rune, runes, battle, inventory, items, listOf,
+            bools, bools, apt, portalSC, portalCS, portalIS, portalFS,
+            portalSI, portalSF]
         power = SymbolInfo TInt 0 Tipos []
         skill = SymbolInfo TFloat 0 Tipos []
         rune = SymbolInfo TChar 0 Tipos []
         runes = SymbolInfo TStr 0 Tipos []
         battle = SymbolInfo TBool 0 Tipos []
-        listOf = SymbolInfo (TLista TDummy) 0 Tipos [] -- Tipo?
+        listOf = SymbolInfo (TLista TDummy) 0 ConstructoresTipos [] -- Tipo?
         inventory = SymbolInfo TRegistro 0 ConstructoresTipos []
         items = SymbolInfo TUnion 0 ConstructoresTipos []
         bools = SymbolInfo TBool 0 Constantes []
         apt = SymbolInfo (TApuntador TDummy) 0 Apuntadores [] -- Tipo?
-        proc = SymbolInfo TDummy 0 Procedimientos [] -- Tipo?
-        func = SymbolInfo TDummy 0 Funciones [] -- Tipo?
         portalSC = SymbolInfo TChar 0 Funciones []
         portalCS = SymbolInfo TStr 0 Funciones []
         portalIS = SymbolInfo TStr 0 Funciones []
         portalFS = SymbolInfo TStr 0 Funciones []
         portalSI = SymbolInfo TInt 0 Funciones []
         portalSF = SymbolInfo TFloat 0 Funciones []
-        for = SymbolInfo TDummy 0 Constantes [] -- Categoria y tipo?
-        out = SymbolInfo TStr 0 Constantes [] -- Categoria?
-        input = SymbolInfo TDummy 0 Constantes [] -- Categoria y tipo?
-        ifElse = SymbolInfo TBool 0 Constantes [] -- Categoria?
-        kill = SymbolInfo TDummy 0 Constantes [] -- Categoria y tipo?
-        lock = SymbolInfo TDummy 0 Constantes [] -- Categoria y tipo?
-        play = SymbolInfo TDummy 0 Constantes [] -- Categoria y tipo?
-        break = SymbolInfo TDummy 0 Constantes [] -- Categoria y tipo?
-        continue = SymbolInfo TDummy 0 Constantes [] -- Categoria y tipo?
-        spawn = SymbolInfo TDummy 0 Constantes [] -- Categoria y tipo?
-        unlock = SymbolInfo TDummy 0 Constantes [] -- Categoria y tipo?
-        world = SymbolInfo TDummy 0 Constantes [] -- Categoria y tipo?
 -------------------------------------------------------------------------------
 
 
@@ -103,8 +82,8 @@ popScope = do
 --  Tipo, alcance, categoria
 addToSymTab :: [Nombre] -> [SymbolInfo] -> SymTab -> ActiveScopes -> Alcance
             -> MonadSymTab ()
-addToSymTab ids info actualSymTab activeScopes scope = 
-    put (insertSymbols ids info actualSymTab, activeScopes, scope)
+addToSymTab ns info actualSymTab activeScopes scope = 
+    put (insertSymbols ns info actualSymTab, activeScopes, scope)
 -------------------------------------------------------------------------------
 
 
@@ -112,14 +91,14 @@ addToSymTab ids info actualSymTab activeScopes scope =
 -- Inserta los identificadores con su tipo en la tabla de simbolos dada
 insertSymbols :: [Nombre] -> [SymbolInfo] -> SymTab -> SymTab
 insertSymbols [] _ symTab = symTab
-insertSymbols (id:ids) (info:infos) (SymTab table)
-    | M.member id table = insertSymbols ids infos updSymTab
-    | otherwise = insertSymbols ids infos newSymTab
+insertSymbols (n:ns) (info:infos) (SymTab table)
+    | M.member n table = insertSymbols ns infos updSymTab
+    | otherwise = insertSymbols ns infos newSymTab
     
     where
         -- Tabla de simbolos con el identificador insertado
-        newSymTab = SymTab $ M.insert id [info] table
-        updSymTab = SymTab $ M.adjust (info:) id table
+        newSymTab = SymTab $ M.insert n [info] table
+        updSymTab = SymTab $ M.adjust (info:) n table
 -------------------------------------------------------------------------------
 
 
@@ -131,11 +110,11 @@ insertDeclarations ids t asigs = do
     (symTab, activeScopes@(activeScope:_), scope) <- get
     file <- ask
 
-    checkedIds <- forM ids $ \(id,p) -> do
-        let idScopeInfo = lookupInScopes [activeScope] id symTab
+    checkedIds <- forM ids $ \(id',p) -> do
+        let idScopeInfo = lookupInScopes [activeScope] id' symTab
         
         when (isJust idScopeInfo) $
-            let info = fromJust $ lookupInSymTab id symTab
+            let info = fromJust $ lookupInSymTab id' symTab
                 scopeInfo = [i | i <- info, getScope i == activeScope]
                 
                 idCategories = map getCategory scopeInfo
@@ -147,8 +126,8 @@ insertDeclarations ids t asigs = do
             in
             when (isInAnyCategory && isInActualScope) $
                 error $ "\n\nError: " ++ file ++ ": " ++ show p ++
-                    "\n\tVariable '" ++ id ++ "' ya esta declarada.\n"
-        return id
+                    "\n\tVariable '" ++ id' ++ "' ya esta declarada.\n"
+        return id'
     
     let info = replicate (length ids) (SymbolInfo t activeScope Variable [])
     addToSymTab checkedIds info symTab activeScopes scope
@@ -183,7 +162,7 @@ lookupInScopes scopes nombre symtab =
 -------------------------------------------------------------------------------
 -- Busca la informacion dentro de la cadena estatica
 lookupInScopes' :: [Alcance]-> Maybe [SymbolInfo] ->  Maybe SymbolInfo
-lookupInScopes' scopes Nothing = Nothing
+lookupInScopes' _ Nothing = Nothing
 lookupInScopes' scopes (Just symInfo) 
     | null symScopes  = Nothing
     | otherwise = Just $ fst $ head symScopes
@@ -197,6 +176,7 @@ updateType :: Nombre -> Alcance -> Tipo -> MonadSymTab ()
 updateType n a t = do
     (symTab@(SymTab table), scopes, scope) <- get
     let infos = lookupInSymTab n symTab
+    
     when (isJust infos) $ do
         let isTarget sym = getScope sym == a
             updateType' = 
@@ -235,5 +215,5 @@ updateExtraInfo name category extraInfo = do
 -- Actualiza la informacion extra del simbolo con la nueva
 modifyExtraInfo :: SymbolInfo -> [ExtraInfo] -> SymbolInfo
 modifyExtraInfo (SymbolInfo t s c []) extraInfo = SymbolInfo t s c extraInfo
-modifyExtraInfo (SymbolInfo t s c ei) extraInfo = SymbolInfo t s c (extraInfo ++ ei)
+modifyExtraInfo (SymbolInfo t s c ei) extraInfo = SymbolInfo t s c (ei ++ extraInfo)
 -------------------------------------------------------------------------------
