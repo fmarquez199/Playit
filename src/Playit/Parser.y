@@ -9,8 +9,8 @@
 -}
 
 module Playit.Parser (parse, error) where
+
 import Control.Monad.Trans.RWS
-import Control.Monad.IO.Class
 import Playit.SymbolTable
 import Playit.CheckAST
 import Playit.Lexer
@@ -154,10 +154,10 @@ import Playit.AST
 -------------------------------------------------------------------------------
 
 ProgramaWrapper :: { Instr }
-  : EndLines Programa EndLines  { % return $2 }
-  | EndLines Programa           { % return $2 }
-  | Programa EndLines           { % return $1 }
-  | Programa                    { % return $1 }
+  : EndLines Programa EndLines  { $2 }
+  | EndLines Programa           { $2 }
+  | Programa EndLines           { $1 }
+  | Programa                    { $1 }
 
   
 Programa :: { Instr }
@@ -235,12 +235,11 @@ Identificador :: { ((Nombre, Posicion), SecuenciaInstr) }
 
 -- Lvalues, contenedores que identifican a las variables
 Lvalue :: { Vars }
-  : Lvalue "." nombre           { % crearVarCompIndex $1 (getTk $3) (getPos $3) }
+  : Lvalue "." nombre           { % crearCampo $1 (getTk $3) (getPos $3) }
   | Lvalue "|)" Expresion "(|"  { crearVarIndex $1 $3 }   -- Indexacion arreglo
   | Lvalue "|>" Expresion "<|"  { crearVarIndex $1 $3 }   -- Indexacion lista
-  -- | "(" Lvalue ")"  %prec ")"   { $2 } -- da s/r
-  | pointer Lvalue              { PuffValue $2 }
-  | pointer "(" Lvalue ")"      { PuffValue $3 }
+  | pointer Lvalue              { PuffValue $2 (typeVar $2) }
+  | pointer "(" Lvalue ")"      { PuffValue $3 (typeVar $3) }
   | nombre                      { % crearIdvar (getTk $1) (getPos $1) }
 
 
@@ -635,11 +634,11 @@ PushScope  ::  { () }
 {
 parseError :: [Token] -> MonadSymTab a
 parseError [] =  error $ "\n\nPrograma invalido "
-parseError (h:t) =  do
+parseError (tk:tks) =  do
     file <- ask
     error $ "\n\nParse error: " ++ file ++ ": " ++ show pos ++ ":\n\tAntes de '"
           ++ token ++ "'.\n"           
   where
-      token = getTk h
-      pos = getPos h
+      token = getTk tk
+      pos = getPos tk
 }

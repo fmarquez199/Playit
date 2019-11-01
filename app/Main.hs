@@ -43,7 +43,7 @@ main = do
     case checkExt args of
         Left msg -> putStrLn msg
         Right checkedFile -> do
-            code <- refFile checkedFile
+            code <- readFile checkedFile
 
             if null code || isEmptyFile code then putStrLn "\nEmptyFile\n"
             else do
@@ -52,7 +52,7 @@ main = do
 
                 if hasErr then putStrLn $ showAllErrors code pos
                 else do
-                    mapM_ print tokens
-                    (ast,(st,_,_), _) <- runRWST (parse tokens) checkedFile initState
-                    print ast
-                    print st
+                    -- mapM_ print tokens
+                    (ast,(st,_,_),errors) <- runRWST (parse tokens) checkedFile initState
+                    
+                    if null errors then print ast >> print st else print errors                    

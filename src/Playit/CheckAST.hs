@@ -102,20 +102,20 @@ typeArrLst (TLista t)                = t
 
 --------------------------------------------------------------------------------
 -- Obtiene el tipo asociado a una variable
--- typeVar :: Vars -> Tipo
--- typeVar (Var _ t)            = t
--- typeVar (VarIndex _ _ t)     = t
--- typeVar (Param _ t _)        = t
--- typeVar (VarCompIndex v _ t) = t
--- typeVar (PuffValue v)        = typeVar v
+typeVar :: Vars -> Tipo
+typeVar (Var _ t)            = t
+typeVar (VarIndex _ _ t)     = t
+typeVar (Param _ t _)        = t
+typeVar (VarCompIndex _ _ t) = t
+typeVar (PuffValue v t)      = t
 --------------------------------------------------------------------------------
 
-typeVar :: Vars -> Tipo
-typeVar (Var _ t)            = typeTipo t
-typeVar (VarIndex _ _ t)     = typeTipo t
-typeVar (Param _ t _)        = typeTipo t
-typeVar (VarCompIndex v _ t) = typeTipo t
-typeVar (PuffValue v)        = typeVar v
+typeVar' :: Vars -> Tipo
+typeVar' (Var _ t)            = typeTipo t
+typeVar' (VarIndex _ _ t)     = typeTipo t
+typeVar' (Param _ t _)        = typeTipo t
+typeVar' (VarCompIndex v _ t) = typeTipo t
+typeVar' (PuffValue v _)        = typeVar' v
 --------------------------------------------------------------------------------
 
 typeTipo :: Tipo -> Tipo
