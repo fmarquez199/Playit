@@ -9,8 +9,8 @@
 -}
 
 module Playit.Parser (parse, error) where
+
 import Control.Monad.Trans.RWS
-import Control.Monad.IO.Class
 import Playit.SymbolTable
 import Playit.CheckAST
 import Playit.Lexer
@@ -131,7 +131,7 @@ import Playit.AST
 
 
 %nonassoc nombre of
-%left "=" ":" "<-"
+%left "=" ":" "<-" ")"
 %right "."
 %left "||"
 %left "&&"
@@ -143,7 +143,7 @@ import Playit.AST
 %left "++" "|}" "{|" "<<" ">>" "::" "|)" "(|" "|>" "<|"
 %left "--"
 %right "#" pointer endLine
-%left "?"
+%left "?" 
 
 %%
 
@@ -154,10 +154,10 @@ import Playit.AST
 -------------------------------------------------------------------------------
 
 ProgramaWrapper :: { Instr }
-  : EndLines Programa EndLines  { % return $2 }
-  | EndLines Programa           { % return $2 }
-  | Programa EndLines           { % return $1 }
-  | Programa                    { % return $1 }
+  : EndLines Programa EndLines  { $2 }
+  | EndLines Programa           { $2 }
+  | Programa EndLines           { $1 }
+  | Programa                    { $1 }
 
   
 Programa :: { Instr }
@@ -209,7 +209,7 @@ Declaracion :: { SecuenciaInstr }
 Identificadores :: { ([(Nombre, Posicion)], SecuenciaInstr) }
   : Identificadores "," Identificador
   { 
-    let ((ids, asigs), (id, asig)) = ($1, $3) in (id : ids, asig ++ asigs)
+    let ((ids,asigs), (id,asig)) = ($1,$3) in (id:ids, asig ++ asigs)
   }
   | Identificador
   { 
@@ -217,13 +217,14 @@ Identificadores :: { ([(Nombre, Posicion)], SecuenciaInstr) }
   }
 
 Identificador :: { ((Nombre, Posicion), SecuenciaInstr) }
-  : nombre "=" Expresion  { ((getTk $1,getPos $1), [Asignacion (Var (getTk $1) TDummy) $3]) }
-  | nombre                { ((getTk $1,getPos $1), []) }
-  -- Para puff (puff ...) var(si es que se permite apuntador de varios apuntadores),
-  -- podemos colocar aqui Tipo nombre [= Expr], pero habria que verificar luego 
-  -- en la regla Declaracion que todos los tipos sean coherentes?
-  | pointer nombre "=" Expresion  { ((getTk $2,getPos $2), [Asignacion (Var (getTk $2) TDummy) $4]) }
-  | pointer nombre                { ((getTk $2,getPos $2), []) }
+  : nombre "=" Expresion
+    {
+      ( (getTk $1,getPos $1), [Asignacion (Var (getTk $1) TDummy) $3] )
+    }
+  | nombre
+    {
+      ( (getTk $1,getPos $1), [] )
+    }
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
@@ -234,17 +235,18 @@ Identificador :: { ((Nombre, Posicion), SecuenciaInstr) }
 
 -- Lvalues, contenedores que identifican a las variables
 Lvalue :: { Vars }
-  : Lvalue "." nombre           { % crearVarCompIndex $1 (getTk $3) (getPos $3) }
+  : Lvalue "." nombre           { % crearCampo $1 (getTk $3) (getPos $3) }
   | Lvalue "|)" Expresion "(|"  { crearVarIndex $1 $3 }   -- Indexacion arreglo
   | Lvalue "|>" Expresion "<|"  { crearVarIndex $1 $3 }   -- Indexacion lista
   | pointer Lvalue              { PuffValue $2 (typeVar $2) }
+  | pointer "(" Lvalue ")"      { PuffValue $3 (typeVar $3) }
   | nombre                      { % crearIdvar (getTk $1) (getPos $1) }
 
 
 -- Tipos de datos
 Tipo :: { Tipo }
-  : Tipo "|}" Expresion "{|" %prec "|}"   { TArray $3 $1 }
-  | list of Tipo                          { TLista $3 }
+  : Tipo "|}" Expresion "{|"  %prec "|}"  { TArray $3 $1 }
+  | list of Tipo  %prec "?"               { TLista $3 }
   | Tipo pointer                          { TApuntador $1 }
   | "(" Tipo ")"                          { $2 }
   | int                                   { TInt }
@@ -252,8 +254,10 @@ Tipo :: { Tipo }
   | bool                                  { TBool }
   | char                                  { TChar }
   | str                                   { TStr }
-  | idtipo                                { TDummy } -- No se sabe si es Reg o Union
-  -- | pointer                               { TApuntador TDummy } 
+  | idtipo
+    { % do
+      return $ TNuevo (getTk $1) 
+    }
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
@@ -264,20 +268,19 @@ Tipo :: { Tipo }
 Instrucciones :: { SecuenciaInstr }
   : Instrucciones EndLines Instruccion  { $3 : $1 }
   | Instruccion                         { [$1] }
-  -- | Declaraciones %prec STMT  { $1 }
 
 Instruccion :: { Instr }
-  : Asignacion            { $1 }
-  | Declaracion           { Asignaciones $1 }
+  : Asignacion                      { $1 }
+  | Declaracion                     { Asignaciones $1 }
   | PushScope Controller PopScope   { $2 }
   | PushScope Play PopScope         { $2 }
-  | Button                { $1 }
-  | ProcCall              { $1 }
-  | EntradaSalida         { $1 }
-  | Free                  { $1 }
-  | return Expresion      { Return $2 }
-  | break {-PopScope-}        { Break }
-  | continue              { Continue }
+  | Button                          { $1 }
+  | ProcCall                        { $1 }
+  | EntradaSalida                   { $1 }
+  | Free                            { $1 }
+  | return Expresion                { Return $2 }
+  | break                           { Break }
+  | continue                        { Continue }
 
 
 -------------------------------------------------------------------------------
@@ -323,11 +326,11 @@ Guardia :: { (Expr, SecuenciaInstr) }
 Controller :: { Instr }
  : for InitVar1 "->" Expresion ":" EndLines Instrucciones EndLines ".~"
     {
-      let (varIter, e1) = $2 in For varIter e1 $4 $7
+      let (varIter, e1) = $2 in For varIter e1 $4 (reverse $7)
     }
  | for InitVar1 "->" Expresion while Expresion ":" EndLines Instrucciones EndLines ".~"
     {
-      let (varIter, e1) = $2 in ForWhile varIter e1 $4 $6 $9 
+      let (varIter, e1) = $2 in ForWhile varIter e1 $4 $6 (reverse $9)
     }
  | for InitVar1 "->" Expresion ":" EndLines ".~"
     {
@@ -339,7 +342,7 @@ Controller :: { Instr }
     }
  | for InitVar2 ":" EndLines Instrucciones EndLines ".~"
     {
-      let (varIter, e1) = $2 in ForEach varIter e1 $5
+      let (varIter, e1) = $2 in ForEach varIter e1 (reverse $5)
     }
  | for InitVar2 ":" EndLines ".~"
     {
@@ -351,9 +354,7 @@ Controller :: { Instr }
 InitVar1 :: { (Nombre, Expr) }
   : nombre "=" Expresion
     { % do
-      -- TODO: Verificar que nombre este en la symtab, el scope concuerde con el actual
-      -- y cambiar TDummy por el tipo de Expresion
-      let var = Var (getTk $1) TDummy
+      var <- crearIdvar (getTk $1) (getPos $1)
       return $ crearAsignacion var $3 $2
       return ((getTk $1), $3)
     }
@@ -368,9 +369,7 @@ InitVar1 :: { (Nombre, Expr) }
 InitVar2 :: { (Nombre, Expr) }
   : nombre "<-" Expresion %prec "<-"
     { % do
-      -- TODO: Verificar que nombre este en la symtab, el scope concuerde con el actual
-      -- y cambiar TDummy por el tipo de Expresion
-      let var = Var (getTk $1) TDummy
+      var <- crearIdvar (getTk $1) (getPos $1)
       return $ crearAsignacion var $3 $2
       return ((getTk $1), $3)
     }
@@ -389,7 +388,7 @@ InitVar2 :: { (Nombre, Expr) }
 Play :: { Instr }
   : do ":" EndLines Instrucciones EndLines while Expresion EndLines ".~"
     {
-      crearWhile $7 $4 $1
+      crearWhile $7 (reverse $4) $1
     }
   | do ":" EndLines while Expresion EndLines ".~"
     {
@@ -420,32 +419,35 @@ Free :: { Instr }
 -------------------------------------------------------------------------------
 
 DefinirSubrutina :: { SecuenciaInstr }
-  : Proc  { $1 }
-  | Func  { $1 }
-
-Proc :: { SecuenciaInstr }
-  : Nombre PushScope Params ":" EndLines Instrucciones EndLines ".~"
+  : Firma ":" EndLines Instrucciones EndLines ".~"
     { %
-      let ((nombre,categoria), params) = ($1, $3)
-      in definirSubrutina' nombre params $6 categoria TDummy
+      let (nombre,categoria) = $1
+      in definirSubrutina' nombre (reverse $4) categoria
     }
-  | Nombre PushScope Params ":" EndLines ".~" 
+  | Firma ":" EndLines ".~" 
   { %
-    let ((nombre,categoria), params) = ($1, $3)
-    in definirSubrutina' nombre params [] categoria TDummy
+    let (nombre,categoria) = $1
+    in definirSubrutina' nombre [] categoria
   }
 
-Func :: { SecuenciaInstr }
-  : Nombre PushScope Params Tipo ":" EndLines Instrucciones EndLines ".~"
-    { %
-      let ((nombre,categoria), params) = ($1, $3)
-      in definirSubrutina' nombre params $7 categoria $4
-    }
-  | Nombre PushScope Params Tipo ":" EndLines ".~" 
-  { %
-    let ((nombre,categoria), params) = ($1, $3)
-    in definirSubrutina' nombre params [] categoria $4
+
+-------------------------------------------------------------------------------
+-- Firma de la subrutina, se agrega antes a la symtab por la recursividad
+Firma :: { (Nombre, Categoria) }
+  : Nombre PushScope Params
+  { % do
+    let (nombre,cat) = $1
+    updateExtraInfo nombre cat [Params (reverse $3)]
+    updateType nombre 1 TVoid
+    return $1
   }
+  | Nombre PushScope Params Tipo 
+    { % do
+      let (nombre,cat) = $1
+      updateExtraInfo nombre cat [Params (reverse $3)]
+      updateType nombre 1 $4
+      return $1
+    }
 
 -------------------------------------------------------------------------------
 -- Nombre de la subrutina, se agrega antes a la symtab por la recursividad
@@ -463,16 +465,16 @@ Nombre :: { (Nombre, Categoria) }
 
 -------------------------------------------------------------------------------
 -- Definicion de los parametros de las subrutinas
-Params ::{ Int }
-  : "(" Parametros ")" { length $2 }
-  | "(" ")"            { 0 }
+Params ::{ [Nombre] }
+  : "(" Parametros ")" { $2 }
+  | "(" ")"            { [] }
 
-Parametros :: { [Expr] }
+Parametros :: { [Nombre] }
   : Parametros "," Parametro  { $3 : $1 }
   | Parametro                 { [$1] }
 
 
-Parametro :: { Expr }
+Parametro :: { Nombre }
   : Tipo nombre       { % definirParam (Param (getTk $2) $1 Valor) }
   | Tipo "?" nombre   { % definirParam (Param (getTk $3) $1 Referencia) }
 -------------------------------------------------------------------------------
@@ -501,7 +503,6 @@ PasarParametros :: { Parametros }
   | ParametroPasado                       { [$1] }
 
 ParametroPasado :: { Expr }
--- TODO: Verificar aqui que el parametro esta definido
   : Expresion       { $1 }
   | "?" Expresion   { $2 }
 -------------------------------------------------------------------------------
@@ -516,11 +517,6 @@ ParametroPasado :: { Expr }
 Expresiones::{ [Expr] }
   : Expresiones "," Expresion   { $3 : $1 }
   | Expresion                   { [$1] }
-
--- crearOpBin : 
---      TipoExpresion1 x TipoExpresion2 x TipoRetorno x Operacion x Expresion1 x Expresion2 =>
---      Chequea tipos
---      Crea la estructura de la operacion
 
 Expresion :: { Expr }
   : Expresion "+" Expresion            { crearOpBin Suma $1 $3 TInt TInt TInt }
@@ -545,13 +541,16 @@ Expresion :: { Expr }
     {
       crearIfSimple $1 $3 $5 TDummy $2
     }
-  | FuncCall                     { $1 }
-  | "(" Expresion ")"            { $2 }
-  | "{" Expresiones "}"          { crearArrLstExpr $2 }
-  | "|)" Expresiones "(|"        { crearArrLstExpr $2 }
-  | "<<" Expresiones ">>"        { crearArrLstExpr $2 }
-  | "<<"  ">>"                   { crearArrLstExpr [] }
-  | new Tipo                     { OpUnario New Null $2 }
+  | FuncCall               { $1 }
+  | "(" Expresion ")"      { $2 }
+  | "{" Expresiones "}"    { crearArrLstExpr $2 } -- Inic de Reg/Union
+  | "{" "}"                { crearArrLstExpr [] } -- Inic de Reg/Union por default
+  | "|)" Expresiones "(|"  { crearArrLstExpr $2 }
+  | "<<" Expresiones ">>"  { crearArrLstExpr $2 }
+  | "<<" ">>"              { crearArrLstExpr [] }
+  | new Tipo               { OpUnario New (IdTipo $2) (TApuntador $2) }
+
+  -- Falta la conversion automatica de string a tipo de regreso segun el rdm
   | input Expresion %prec input  { crearRead $2 $1 }
   | input
     {
@@ -633,11 +632,13 @@ PushScope  ::  { () }
 -------------------------------------------------------------------------------
 
 {
-parseError :: [Token] -> a
-parseError (h:t) = 
-  error $ "\n\nError sintactico del parser antes de: '" ++ token ++ "'. " ++
-          show pos ++ "\n"
+parseError :: [Token] -> MonadSymTab a
+parseError [] =  error $ "\n\nPrograma invalido "
+parseError (tk:tks) =  do
+    file <- ask
+    error $ "\n\nParse error: " ++ file ++ ": " ++ show pos ++ ":\n\tAntes de '"
+          ++ token ++ "'.\n"           
   where
-      token = getTk h
-      pos = getPos h
+      token = getTk tk
+      pos = getPos tk
 }

@@ -9,7 +9,6 @@
 module Playit.Types where
 
 import Control.Monad.Trans.RWS
-import Control.Monad.IO.Class
 import qualified Data.Map as M
 import Data.List (intercalate,elemIndex)
 
@@ -51,28 +50,28 @@ data Categoria  =
     deriving (Eq, Ord)
 
 instance Show Categoria where
-    show Apuntadores        = "Apuntador"
+    show Apuntadores        = "Apuntadores"
     show Campos             = "Campos"
-    show Constantes         = "Constante"
-    show ConstructoresTipos = "Constructor de Tipos"
+    show Constantes         = "Constantes"
+    show ConstructoresTipos = "Constructores de Tipos"
     show Funciones          = "Funciones"
-    show (Parametros r)     = "Parametro por " ++ show r
-    show Procedimientos     = "Procedimiento"
-    show Tipos              = "Tipo"
-    show Variable           = "Variable"
+    show (Parametros r)     = "Parametros por " ++ show r
+    show Procedimientos     = "Procedimientos"
+    show Tipos              = "Tipos"
+    show Variable           = "Variables"
 
 
 data ExtraInfo =
-    AST SecuenciaInstr |
-    Params [Expr]        |
-    FromReg Nombre     | -- Registro o union al que pertenece el campo/variable
-    Nada
-    deriving (Eq, Ord,Show)
+    AST SecuenciaInstr    |
+    Params [Nombre] |
+    FromReg Nombre       -- Registro o union al que pertenece el campo/variable
+    deriving (Eq, Ord)
 
-{-instance Show ExtraInfo where
-    show (AST secInstr) = "AST:\n" ++ show secInstr
-    show Nada           = "No hay informacion extra"
--}
+instance Show ExtraInfo where
+    show (AST s)     = "    AST:\n      " ++ intercalate "\t  " (map show s)
+    show (Params p)  = "    Parametros: " ++ show p ++ "\n"
+    show (FromReg n) = "    Campo del registro: " ++ show n
+
 -- Tipo de dato que pueden ser las expresiones
 data Tipo = 
     TApuntador Tipo  |
@@ -86,39 +85,45 @@ data Tipo =
     TFloat           |
     TInt             |
     TLista Tipo      |
+    TNuevo String    |
     TRegistro        |
     TStr             |
-    TUnion
+    TUnion           |
+    TVoid              -- Tipo de los procedimientos
     deriving(Eq, Ord)
 
 instance Show Tipo where
-    show (TApuntador t) = "Apuntador de " ++ show t
-    show (TArray e t)   = "Arreglo de tamano " ++ show e ++ " de " ++ show t
-    show TBool          = "Booleano"
-    show TChar          = "Caracter"
-    show TDummy         = "Sin tipo definido aun"
+    show (TApuntador t) = "Apt(" ++ show t ++ ")"
+    show (TArray e t)   = show t ++ "|}" ++ show e ++ "{| "
+    show TBool          = "Battle"
+    show TChar          = "Rune"
+    show TDummy         = "Sin tipo aun"
     show TError         = "Mal tipado"   
-    show TFloat         = "Flotante"
-    show TInt           = "Entero"
-    show (TLista t)     = "Lista de " ++ show t
-    show TRegistro      = "Registro"
-    show TStr           = "String"
-    show TUnion         = "Union"
+    show TFloat         = "Skill"
+    show TInt           = "Power"
+    show (TLista t)     = "Kit of(" ++ show t ++ ")"
+    show (TNuevo str)   = str
+    show TRegistro      = "Inventory"
+    show TStr           = "Runes"
+    show TUnion         = "Items"
+    show TVoid          = "Void"
 
 data Vars =
     Param Nombre Tipo Ref         |
-    PuffValue Vars Tipo           | -- Variable deferenciada con puff
+    PuffValue Vars Tipo           | -- Variable desreferenciada con puff
     Var Nombre Tipo               |
     VarIndex Vars Expr Tipo       | -- Indice para array, listas
     VarCompIndex Vars Nombre Tipo   -- Campos de los registros y uniones
     deriving (Eq, Ord)
 
 instance Show Vars where
-    show (Param n t r)    = "Parametro: " ++ n ++ " de tipo: " ++ show t ++ " pasado por: " ++ show r
-    show (PuffValue v t)  = "Desreferenciacion de: " ++ show v ++ " de tipo: " ++ show t
-    show (Var n t)        = "Variable: " ++ n ++ " de tipo: " ++ show t
-    show (VarIndex v e t) = "Indexacion de: " ++ show v ++ " en la posicion " ++ show e ++ "de tipo: " ++ show t
-    show (VarCompIndex v n t) = "Variable: " ++ show v ++ " accede a campo: " ++ n ++ " de tipo: " ++ show t
+    show (Param n t Valor)    = "Parametro: " ++ {-"("++show t++")"++-}n
+    show (Param n t _)        = "Parametro: ?" ++ {-"("++show t ++")?"++-}n
+    show (PuffValue v t)      = {-"("++show t++")"++-}"puff (" ++ show v ++ ")"
+    show (Var n t)            = {-"("++show t++")"++-}n
+    show (VarIndex v e t)     = {-"("++show t++")"++-}show v ++ " index: " ++ show e
+    show (VarCompIndex v n t) = {-"("++show t++") ("++-}show v ++ " spawn " ++ n
+
 -- Especifica si un parametro es pasado como valor o por referencia
 data Ref =
     Referencia |
@@ -145,27 +150,33 @@ data Instr  =
 
 instance Show Instr where
 -- Esto imprime el tipo de instruccion pero no imprime la secuenciaInstr
-    show (Asignacion v e)        = "\t" ++ show v ++ " = " ++ show e ++ "\n"
-    show Break                   = "\tGameOver\n"
-    show Continue                = "\tKeepPlaying\n"
-    show (For n e1 e2 s)         = "\tFor " ++ n ++ " = " ++ show e1 ++ " -> "
-        ++ show e2 ++ ":\n\t" ++ concatMap show s ++ "\n"
-    show (ForEach n e s)         = "\tForEach " ++ n ++ " <- " ++ show e ++
-        ":\n\t" ++ concatMap show s ++ "\n"
-    show (ForWhile n e1 e2 e3 s) = "\tFor " ++ n ++ " = " ++ show e1 ++ " -> " ++
-        show e2 ++ " while: " ++ show e3 ++ ":\n\t" ++ concatMap show s ++ "\n"
-    show (Free n)                = "\tfree " ++ n ++ "\n"
-    show (Print e)               = "\tdrop " ++ show e ++ "\n"
-    show (ProcCall s)            = "\tkill " ++ show s ++ "\n"
-    show (Programa c)            = "\nworld:\n" ++ concatMap show c ++ "\n"
-    show (Return e)              = "\tunlock " ++ show e ++ "\n"
-    show (Asignaciones s)        = concatMap show s ++ "\n"
-    show (IF s)                  = "\tIF:\n" ++ concat guardias
+    show (Asignacion v e)        = "  " ++ show v ++ " = " ++ show e ++ "\n"
+    show Break                   = "  GameOver\n"
+    show Continue                = "  KeepPlaying\n"
+    show (For n e1 e2 s)         = "  For " ++ n ++ " = " ++ show e1 ++ " -> "
+        ++ show e2 ++ ":\n    " ++ intercalate "    " (map show s) ++ "\n"
+
+    show (ForEach n e s)         = "  ForEach " ++ n ++ " <- " ++ show e ++
+        ":\n    " ++ intercalate "    " (map show s) ++ "\n"
+
+    show (ForWhile n e1 e2 e3 s) = "  For " ++ n ++ " = " ++ show e1 ++ " -> " ++
+        show e2 ++ " while: " ++ show e3 ++ ":\n    " ++ 
+        intercalate "    " (map show s) ++ "\n"
+
+    show (Free n)                = "  free " ++ n ++ "\n"
+    show (Print e)               = "  drop " ++ show e
+    show (ProcCall s)            = "  kill " ++ show s ++ "\n"
+    show (Programa s)            = "\nworld:\n" ++ concatMap show s ++ "\n"
+    show (Return e)              = "  unlock " ++ show e
+    show (Asignaciones s)        = intercalate "  " (map show s)
+    show (IF s)                  = "  IF:\n    " ++ concat guardias
         where
             conds = map (show . fst) s
             instrs =  map (concatMap show . snd) s
-            guardias = [c ++ " }\n" ++ i | c <- conds, i <- instrs, elemIndex c conds == elemIndex i instrs]
-    show (While e s)             = "\tWhile " ++ show e ++ ":\n\t" ++ concatMap show s ++ "\n"
+            guardias = [c ++ " }\n    " ++ i | c <- conds, i <- instrs, elemIndex c conds == elemIndex i instrs]
+
+    show (While e s)             = "  While " ++ show e ++ ":\n    " ++
+        intercalate "    " (map show s) ++ "\n"
 
 
 -- 
@@ -173,30 +184,16 @@ data Subrutina = SubrutinaCall Nombre Parametros
                 deriving (Eq, Ord)
 
 instance Show Subrutina where
-    show (SubrutinaCall n p) = n ++ "(" ++ concatMap show p ++ ")"
-
-
--- Definiciones de las subrutinas, registros y uniones
-{-data Definicion = Defs
-                | Func Nombre Parametros Tipo SecuenciaInstr
-                | Proc Nombre Parametros SecuenciaInstr
-                | Registro Nombre SecuenciaInstr Tipo
-                | Union Nombre SecuenciaInstr Tipo
-                deriving (Eq)
-instance Show Definicion where
-    show Defs             = "Definiciones"
-    show (Func n p t s)   = "Funcion: " ++ n ++ " que recibe: " ++ show p ++ " y retorna un: " ++ show t ++ ": " ++ show s
-    show (Proc n p s)     = "Procedimiento: " ++ n ++ " que recibe: " ++ show p ++ ": " ++ show s
-    show (Registro n s t) = "Registro: " ++ n
-    show (Union n s t)    = "Union: " ++ n-}
+    show (SubrutinaCall n p) = n ++ "(" ++ intercalate "," (map show p) ++ ")"
 
 
 data Expr   = 
     ArrLstExpr [Expr] Tipo         |
     FuncCall Subrutina Tipo        |
+    IdTipo Tipo                    |
     IfSimple Expr Expr Expr Tipo   |
     Literal Literal Tipo           |
-    Null                           |
+    Null                           | -- tipo: compatible con apt de lo que sea o que el contexto lo diga
     OpBinario BinOp Expr Expr Tipo |
     OpUnario UnOp Expr Tipo        |
     Read Expr                      |
@@ -206,7 +203,8 @@ data Expr   =
 instance Show Expr where
     show (ArrLstExpr lst _)     = "[" ++ intercalate "," (map show lst) ++ "]"
     show (FuncCall s _)         = "kill " ++ show s
-    show (IfSimple e1 e2 e3 t)  = show e1 ++ " ? " ++ show e2 ++ " : " ++ show e3
+    show (IdTipo t)             = show t
+    show (IfSimple e1 e2 e3 _)  = show e1 ++ " ? " ++ show e2 ++ " : " ++ show e3
     show (Literal lit _)        = show lit
     show Null                   = "DeathZone"
     show (OpBinario op e1 e2 _) = "(" ++ show e1 ++ show op ++ show e2 ++ ")"
@@ -229,6 +227,8 @@ instance Show Literal where
     show (ArrLst l@(Booleano _:_)) = show $ map ((\x->read x::Bool) . show) l
     show (ArrLst l@(Caracter _:_)) = show $ map ((\x->read x::Char) . show) l
     show (ArrLst l@(Entero _:_))   = show $ map ((\x->read x::Int) . show) l
+    show (ArrLst l@(Flotante _:_)) = show $ map ((\x->read x::Float) . show) l
+    show (ArrLst l)                = concatMap show l
     show (Booleano val)            = show val
     show (Caracter val)            = show val
     show (Entero val)              = show val
@@ -287,7 +287,7 @@ data UnOp =
     deriving (Eq, Ord)
     
 instance Show UnOp where
-    show Desreferenciar = "puff "
+    show Desreferenciar = "puff " -- no es un operador??
     show Longitud       = "#"
     show LowerCase      = "."
     show Negativo       = "-"
@@ -318,8 +318,12 @@ data SymbolInfo = SymbolInfo {
     deriving (Eq, Ord)
 
 instance Show SymbolInfo where
-    show (SymbolInfo t s c i) = "Tipo: " ++ show t ++ ", en el alcance: " ++
-        show s ++ ", de categoria: "++ show c ++ ".\nExtra: " ++ concatMap show i ++ "\n"
+    show (SymbolInfo t s c i) = "\n  Tipo: " ++ show t ++ " | Alcance: " ++
+        show s ++ " | Categoria: "++ show c ++
+        if not (null i) then
+            "\n    Extra:\n  " ++ intercalate "  " (map show i) ++ "\n"
+        else ""
+
 
 {- Nuevo tipo de dato para representar la tabla de simbolos
 * Tabla de hash:
@@ -336,114 +340,39 @@ instance Show SymTab where
             info = "- Simbolo | Informacion asociada \n------------\n"
             tabla = M.toList hash
             symbols' = map fst $ M.toList $ M.filter (any (>0)) $ M.map (map getScope) hash
-            showInfo info = if getScope info > 0 then show info else ""
+            showInfo i = if getScope i > 0 then show i else ""
             showTable (k,v) = 
                 if k `elem` symbols' then
-                    k ++ " -> " ++ concatMap showInfo v
+                    k ++ " -> " ++ concatMap showInfo (reverse v) ++ "\n"
                 else ""
             -- showTable (k,v) = k ++ " -> " ++ concatMap show v
             symbols = concatMap showTable tabla
 
 -- Transformador monadico para crear y manejar la tabla de simbolos junto con 
 -- la pila de alcances y cuales estan activos
--- 
--- Poner a reader como el nombre del archivo.
--- Writer, para generar el código I guess ?
-type MonadSymTab a = RWST String () (SymTab, ActiveScopes, Alcance) IO a
-
+type MonadSymTab a = RWST String [String] (SymTab, ActiveScopes, Alcance) IO a
 
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
---                      Para mostrar mejor los errores
+--                           Funciones auxiliares
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 
-getNameParam :: Expr -> Nombre
-getNameParam (OpBinario _ e1 e2 _) =
-    getNameParam e1
-getNameParam (Variables x _) = showVar x
-getNameParam _ = ""
 
--- getTipoParametro :: Expr -> Tipo
--- getTipoParametro (Variables x _) = getTypeVar x
--- getTipoParametro _ = TError
-
--- getTypeVar :: Vars -> Tipo
--- getTypeVar (Var _ t) = t
--- getTypeVar (Param _ t _) = t
--- getTypeVar (PuffValue _ t) = t
--- getTypeVar (VarIndex _ _ t) = t
-
--- Show de las variables
-showVar :: Vars -> String
-showVar (Var name _) = name
-showVar (Param name _ _) = name
-showVar (PuffValue vars _) = showVar vars
-showVar (VarIndex vars e _) =
-    showVar vars ++ "|)" ++ show e ++ "(|" 
-    -- TODO : Falta mostrar lista
-
--- Show de las expresiones
-showE :: Expr -> String
-showE (Literal lit _)                           = showL lit
-showE (Variables vars _)                        = showVar vars
-showE (OpBinario Suma e1 e2 _)           = "(" ++ showE e1 ++ " + " ++ showE e2 ++ ")"
-showE (OpBinario Resta e1 e2 _)          = "(" ++ showE e1 ++ " - " ++ showE e2 ++ ")"
-showE (OpBinario Modulo e1 e2 _)         = "(" ++ showE e1 ++ " % " ++ showE e2 ++ ")"
-showE (OpBinario Division e1 e2 _)       = "(" ++ showE e1 ++ " / " ++ showE e2 ++ ")"
-showE (OpBinario Multiplicacion e1 e2 _) = "(" ++ showE e1 ++ " * " ++ showE e2 ++ ")"
-showE (OpBinario Menor e1 e2 _)          = "(" ++ showE e1 ++ " < " ++ showE e2 ++ ")"
-showE (OpBinario Mayor e1 e2 _)          = "(" ++ showE e1 ++ " > " ++ showE e2 ++ ")"
-showE (OpBinario Igual e1 e2 _)          = "(" ++ showE e1 ++ " == " ++ showE e2 ++ ")"
-showE (OpBinario Desigual e1 e2 _)       = "(" ++ showE e1 ++ " != " ++ showE e2 ++ ")"
-showE (OpBinario MenorIgual e1 e2 _)     = "(" ++ showE e1 ++ " <= " ++ showE e2 ++ ")"
-showE (OpBinario MayorIgual e1 e2 _)     = "(" ++ showE e1 ++ " >= " ++ showE e2 ++ ")"
-showE (OpBinario Concatenacion e1 e2 _)  = "(" ++ showE e1 ++ " :: " ++ showE e2 ++ ")"
-showE (OpBinario Or e1 e2 _)             = "(" ++ showE e1 ++ " || " ++ showE e2 ++ ")"
-showE (OpBinario And e1 e2 _)            = "(" ++ showE e1 ++ " && " ++ showE e2 ++ ")"
-showE (OpUnario Negativo e _)            = "-" ++ showE e
-showE (OpUnario Not e _)                 = "!" ++ showE e
-showE (ArrLstExpr lst _)                  = "[" ++ intercalate "," (map showE lst) ++ "]"
-showE (IfSimple e1 e2 e3 t)                = "(" ++ showE e1 ++ " ? " ++ showE e2 ++ " : " ++ showE e3 ++ ")"
-
--- 
-showL :: Literal -> String
-showL ValorVacio      = "Valor vacio"
-showL (Entero val)    = show val
-showL (Caracter val)  = show val
-showL (Booleano val)  = show val
-showL (ArrLst lst@(Entero _:_)) = show $ map ((\x->read x::Int) . showL) lst
-showL (ArrLst lst@(Booleano _:_)) = show $ map ((\x->read x::Bool) . showL) lst
-showL (ArrLst lst@(Caracter _:_)) = show $ map ((\x->read x::Char) . showL) lst
-showL (ArrLst lst@(ArrLst _:_)) = show $ map showL lst
-
--- Show para los tipos
-showType :: Tipo -> String
-showType TInt         = "Entero(s)"
-showType TFloat       = "Flotante(s)"
-showType TChar        = "Caracter(es)"
-showType TStr         = "String(s)"
-showType TBool        = "Booleano(s)"
-showType (TArray e t) = "Arreglo de tamaño " ++ showE e ++ " de " ++ showType t
-showType _            = "Ivalido"
+-------------------------------------------------------------------------------
+-- Determina si el simbolo es de un registro o union
+getRegName :: [ExtraInfo] -> String
+getRegName [] = ""
+getRegName (FromReg rname:_) = rname
+getRegName (_:rs) = getRegName rs
+-------------------------------------------------------------------------------
 
 
-getRef :: Vars -> Ref
-getRef (Param _ _ ref) = ref
-getRef _ = error "Esto no es un parametro, que haces aqui?"
-
-isVar :: Expr -> Bool
-isVar (Variables _ _) = True
-isVar (OpBinario _ x y _) = isVar x || isVar y
-isVar (OpUnario _ x _) = isVar x
-isVar (IfSimple x y z _) = isVar x || isVar y || isVar z
-isVar (ArrLstExpr x _) = any isVar x
-isVar _ = False
-
-getVar :: Expr -> [Vars]
-getVar (Variables v _) = [v]
-getVar (OpUnario _ x _) = getVar x
-getVar (OpBinario _ x y _) = concatMap getVar $ filter isVar $ x : [y]
-getVar (ArrLstExpr x _) = concatMap getVar $ filter isVar x
-getVar _ = error "Esto no tiene variables, que haces aqui?"
+-------------------------------------------------------------------------------
+-- Obtiene la cantidad de parametros
+getNParams :: [ExtraInfo] -> Maybe Int
+getNParams [] = Nothing
+getNParams (Params p:_) = Just $ length p
+getNParams (_:rs) = getNParams rs
+-------------------------------------------------------------------------------

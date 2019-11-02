@@ -153,8 +153,9 @@ Son construcciones válidas:
 <tipoN>|}<entero1>{||}<entero2>{|...|}<enteroN>{|
 ```
 
-La inicialización por defecto de los arreglos en Playit se hace inicializando
-cada posición del arreglo en el valor por defecto del tipo dado.
+Para acceder a los elementos de un arreglo se utiliza el operador de indexación
+**`|) indice (|`** y su inicialización por defecto se hace inicializando cada 
+posición del arreglo en el valor por defecto del tipo dado.
 
 Para acceder a los elementos de un arreglo se utiliza `|) indice (|`
 

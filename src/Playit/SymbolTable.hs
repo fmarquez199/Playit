@@ -1,3 +1,4 @@
+
 {-
 Modulo para la creacion y manejo de la tabla de simbolos
 * Copyright : (c) 
@@ -8,11 +9,9 @@ Modulo para la creacion y manejo de la tabla de simbolos
 module Playit.SymbolTable where
 
 import Control.Monad.Trans.RWS
-import Control.Monad (void,forM)
+import Control.Monad (forM, when)
 import qualified Data.Map as M
-import Playit.Lexer
--- import Data.List.Split (splitOn)
-import Data.Maybe (fromJust, isJust, isNothing)
+import Data.Maybe (fromJust, isJust)
 import Playit.Types
 --import Playit.ErrorM
 
@@ -33,22 +32,29 @@ initState = createInitSymTab (SymTab M.empty)
 createInitSymTab :: SymTab -> (SymTab,ActiveScopes,Alcance)
 createInitSymTab st = (insertSymbols symbols info st,[0],0)
     where
-        -- TODO: terminar de agregar todos los simbolos del lenguaje
-        symbols = t ++ words
-        t = ["Power", "Skill", "Rune", "Runes", "Battle", "Inventory", "Items"]
-        words = ["Win", "Lose", "free", "puff"]
-        info = ti ++ wi
-        ti = [pInfo, sInfo, rInfo, rsInfo, bInfo, inventoryInfo, itemsInfo]
-        wi = [boolsInfo, boolsInfo, aptInfo, aptInfo]
-        pInfo = SymbolInfo TInt 0 Tipos []
-        sInfo = SymbolInfo TFloat 0 Tipos []
-        rInfo = SymbolInfo TChar 0 Tipos []
-        rsInfo = SymbolInfo TStr 0 Tipos []
-        bInfo = SymbolInfo TBool 0 Tipos []
-        inventoryInfo = SymbolInfo TRegistro 0 ConstructoresTipos []
-        itemsInfo = SymbolInfo TUnion 0 ConstructoresTipos []
-        boolsInfo = SymbolInfo TBool 0 Variable []
-        aptInfo = SymbolInfo (TApuntador TDummy) 0 Apuntadores []
+        symbols = ["Power", "Skill", "Rune", "Runes", "Battle", "Inventory",
+            "Items", "Kit of", "Win", "Lose", "DeathZone", "portalRunesToRune",
+            "portalRuneToRunes", "portalPowerToRunes", "portalSkillToRunes",
+            "portalRunesToPower", "portalRunesToSkill"]
+        info = [power, skill, rune, runes, battle, inventory, items, listOf,
+            bools, bools, apt, portalSC, portalCS, portalIS, portalFS,
+            portalSI, portalSF]
+        power = SymbolInfo TInt 0 Tipos []
+        skill = SymbolInfo TFloat 0 Tipos []
+        rune = SymbolInfo TChar 0 Tipos []
+        runes = SymbolInfo TStr 0 Tipos []
+        battle = SymbolInfo TBool 0 Tipos []
+        listOf = SymbolInfo (TLista TDummy) 0 ConstructoresTipos [] -- Tipo?
+        inventory = SymbolInfo TRegistro 0 ConstructoresTipos []
+        items = SymbolInfo TUnion 0 ConstructoresTipos []
+        bools = SymbolInfo TBool 0 Constantes []
+        apt = SymbolInfo (TApuntador TDummy) 0 Apuntadores [] -- Tipo?
+        portalSC = SymbolInfo TChar 0 Funciones []
+        portalCS = SymbolInfo TStr 0 Funciones []
+        portalIS = SymbolInfo TStr 0 Funciones []
+        portalFS = SymbolInfo TStr 0 Funciones []
+        portalSI = SymbolInfo TInt 0 Funciones []
+        portalSF = SymbolInfo TFloat 0 Funciones []
 -------------------------------------------------------------------------------
 
 
@@ -76,8 +82,8 @@ popScope = do
 --  Tipo, alcance, categoria
 addToSymTab :: [Nombre] -> [SymbolInfo] -> SymTab -> ActiveScopes -> Alcance
             -> MonadSymTab ()
-addToSymTab ids info actualSymTab activeScopes scope = 
-    put (insertSymbols ids info actualSymTab, activeScopes, scope)
+addToSymTab ns info actualSymTab activeScopes scope = 
+    put (insertSymbols ns info actualSymTab, activeScopes, scope)
 -------------------------------------------------------------------------------
 
 
@@ -85,14 +91,14 @@ addToSymTab ids info actualSymTab activeScopes scope =
 -- Inserta los identificadores con su tipo en la tabla de simbolos dada
 insertSymbols :: [Nombre] -> [SymbolInfo] -> SymTab -> SymTab
 insertSymbols [] _ symTab = symTab
-insertSymbols (id:ids) (info:infos) (SymTab table)
-    | M.member id table = insertSymbols ids infos updSymTab
-    | otherwise = insertSymbols ids infos newSymTab
+insertSymbols (n:ns) (info:infos) (SymTab table)
+    | M.member n table = insertSymbols ns infos updSymTab
+    | otherwise = insertSymbols ns infos newSymTab
     
     where
         -- Tabla de simbolos con el identificador insertado
-        newSymTab = SymTab $ M.insert id [info] table
-        updSymTab = SymTab $ M.adjust (info:) id table
+        newSymTab = SymTab $ M.insert n [info] table
+        updSymTab = SymTab $ M.adjust (info:) n table
 -------------------------------------------------------------------------------
 
 
@@ -100,14 +106,27 @@ insertSymbols (id:ids) (info:infos) (SymTab table)
 -- Añade las variables a la tabla de simbolos
 insertDeclarations :: [(Nombre,Posicion)] -> Tipo -> SecuenciaInstr -> MonadSymTab SecuenciaInstr
 insertDeclarations ids t asigs = do
-    (actualSymTab, activeScopes@(activeScope:_), scope) <- get
+    (symTab, activeScopes@(activeScope:_), scope) <- get
+    file <- ask
+
+    checkedIds <- forM ids $ \(id',p) -> do
+        let idScopeInfo = lookupInScopes [activeScope] id' symTab
         
-    ids' <- forM ids $ \(id,(f,c)) -> do
-        _ <- if isJust $ lookupScopesNameInSymTab [activeScope] id actualSymTab then do
-                fileName <- ask
-                error $ "\n\n" ++ fileName ++ ": ("++ (show f) ++","++(show c)++"): error: redeclaración de \'" ++ id ++ "\'\n\n"
-            else return ()
-        return id
+        when (isJust idScopeInfo) $
+            let info = fromJust $ lookupInSymTab id' symTab
+                scopeInfo = [i | i <- info, getScope i == activeScope]
+                
+                idCategories = map getCategory scopeInfo
+                categorias = [Variable, Parametros Valor, Parametros Referencia]
+                isInAnyCategory = any (`elem` idCategories) categorias
+                
+                idScopes = map getScope scopeInfo
+                isInActualScope = getScope (fromJust idScopeInfo) `elem` idScopes
+            in
+            when (isInAnyCategory && isInActualScope) $
+                error $ "\n\nError: " ++ file ++ ": " ++ show p ++
+                    "\n\tVariable '" ++ id' ++ "' ya esta declarada.\n"
+        return id'
     
     let info = replicate (length ids) (SymbolInfo t activeScope Variable [Nada])
     addToSymTab ids' info actualSymTab activeScopes scope
@@ -139,33 +158,44 @@ lookupInScopes scopes nombre symtab =
     lookupInScopes' scopes (lookupInSymTab nombre symtab)
 -------------------------------------------------------------------------------
 
---------------------------------------------------------------------------------
--- Busca el identificador de una variable en la tabla de simbolos dada.
-lookupScopesInSymInfos :: [Alcance]-> Maybe [SymbolInfo] ->  Maybe SymbolInfo
-lookupScopesInSymInfos scopes Nothing = Nothing
-lookupScopesInSymInfos scopes (Just r) 
-    | null lstAlcances  = Nothing
-    | otherwise = Just $ fst $ head lstAlcances
+
+-------------------------------------------------------------------------------
+-- Busca la informacion dentro de la cadena estatica
+lookupInScopes' :: [Alcance]-> Maybe [SymbolInfo] ->  Maybe SymbolInfo
+lookupInScopes' _ Nothing = Nothing
+lookupInScopes' scopes (Just symInfo) 
+    | null symScopes  = Nothing
+    | otherwise = Just $ fst $ head symScopes
     where
         symScopes = [(s,a) | s <- symInfo, a <- scopes, getScope s == a]
 -------------------------------------------------------------------------------
 
 
-modifiExtraInfoSymbol (SymbolInfo t s c [Nada]) extraInfo = SymbolInfo t s c extraInfo
-modifiExtraInfoSymbol (SymbolInfo t s c ei) extraInfo = SymbolInfo t s c (extraInfo ++ ei)
+-------------------------------------------------------------------------------
+updateType :: Nombre -> Alcance -> Tipo -> MonadSymTab ()
+updateType n a t = do
+    (symTab@(SymTab table), scopes, scope) <- get
+    let infos = lookupInSymTab n symTab
+    
+    when (isJust infos) $ do
+        let isTarget sym = getScope sym == a
+            updateType' = 
+                fmap (\sym -> if isTarget sym then modifyType sym t else sym)
+        put(SymTab $ M.adjust updateType' n table, scopes, scope)
+-------------------------------------------------------------------------------
+
 
 -------------------------------------------------------------------------------
 -- 
 modifyType :: SymbolInfo -> Tipo -> SymbolInfo
-modifyType (SymbolInfo _ s Funciones ei) newT = SymbolInfo newT s Funciones ei
-modifyType symbolInfo _ = symbolInfo
+modifyType (SymbolInfo _ s c ei) newT = SymbolInfo newT s c ei
+-- modifyType symbolInfo _ = symbolInfo
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
--- Actualiza la informacion extra del simbolo con la nueva
--- Encuentra al simbolo al que se le quiere modificar la información extra dado su nombre y alcance
--- Modifica su entrada para informacón extra
+-- Actualiza la informacion extra del simbolo con la nueva dependiendo de la
+-- categoria a la que pertenece
 -- NOTA: Es primeramente para agregar como informacion extra en las subrutinas
 --      su AST y parametros, puede necesitar modificarse si se quiere usar para
 --      algo diferente
@@ -182,5 +212,9 @@ updateExtraInfo name scope extraInfo = do
             updateExtraInfo' = fmap (\sym -> if isTargetSymbol sym then modifiExtraInfoSymbol sym extraInfo else sym)
         put(SymTab $ M.adjust updateExtraInfo' name table, scopes, lastScope)
 
-    else return ()
+-------------------------------------------------------------------------------
+-- Actualiza la informacion extra del simbolo con la nueva
+modifyExtraInfo :: SymbolInfo -> [ExtraInfo] -> SymbolInfo
+modifyExtraInfo (SymbolInfo t s c []) extraInfo = SymbolInfo t s c extraInfo
+modifyExtraInfo (SymbolInfo t s c ei) extraInfo = SymbolInfo t s c (ei ++ extraInfo)
 -------------------------------------------------------------------------------
