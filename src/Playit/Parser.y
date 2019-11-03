@@ -13,6 +13,7 @@ module Playit.Parser (parse, error) where
 import Control.Monad.Trans.RWS
 import Playit.SymbolTable
 import Playit.CheckAST
+import Playit.Errors
 import Playit.Lexer
 import Playit.Types
 import Playit.AST
@@ -21,8 +22,8 @@ import Playit.AST
 
 %name parse
 %tokentype { Token }
-%error { parseError }
-%monad { MonadSymTab }
+%error     { parseError }
+%monad     { MonadSymTab }
 
 
 %token
@@ -171,20 +172,20 @@ Programa :: { Instr }
     { Programa [] }
 
 
-Definiciones :: { SecuenciaInstr }
-  : Definiciones EndLines Definicion { $1 ++ $3 }
-  | Definicion                       { $1 }
+Definiciones :: { () }
+  : Definiciones EndLines Definicion { }
+  | Definicion                       { }
 
 
-Definicion :: { SecuenciaInstr }
-  : DefinirSubrutina PopScope  { $1 }
-  | DefinirRegistro PopScope   { $1 }
-  | DefinirUnion PopScope      { $1 }
+Definicion :: { () }
+  : DefinirSubrutina PopScope  { }
+  | DefinirRegistro PopScope   { }
+  | DefinirUnion PopScope      { }
 
 
 EndLines :: { () }
-  : EndLines endLine  {}
-  | endLine           {}
+  : EndLines endLine  { }
+  | endLine           { }
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
@@ -418,17 +419,13 @@ Free :: { Instr }
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 
-DefinirSubrutina :: { SecuenciaInstr }
+DefinirSubrutina :: { () }
   : Firma ":" EndLines Instrucciones EndLines ".~"
     { %
       let (nombre,categoria) = $1
       in definirSubrutina' nombre (reverse $4) categoria
     }
-  | Firma ":" EndLines ".~" 
-  { %
-    let (nombre,categoria) = $1
-    in definirSubrutina' nombre [] categoria
-  }
+  | Firma ":" EndLines ".~"   { }
 
 
 -------------------------------------------------------------------------------
@@ -483,12 +480,12 @@ Parametro :: { Nombre }
 -------------------------------------------------------------------------------
 -- Llamada a subrutinas
 ProcCall :: { Instr }
-  : SubrutinaCall     { ProcCall $1 }
+  : SubrutinaCall     { ProcCall (fst $1) }
 
 FuncCall :: { Expr }
-  : SubrutinaCall     { % crearFuncCall $1 }
+  : SubrutinaCall     { % crearFuncCall (fst $1) (snd $1) }
 
-SubrutinaCall :: { Subrutina }
+SubrutinaCall :: { (Subrutina,Posicion) }
   : call nombre "(" PasarParametros ")"
     { % crearSubrutinaCall (getTk $2) (reverse $4) (getPos $2) }
   | call nombre "(" ")"
@@ -584,28 +581,28 @@ Expresion :: { Expr }
 
 -------------------------------------------------------------------------------
 -- Registros
-DefinirRegistro :: { SecuenciaInstr }
-  : registro idtipo ":" PushScope EndLines Declaraciones EndLines ".~"
+DefinirRegistro :: { () }
+  : registro idtipo ":" PushScope EndLines Declaraciones EndLines ".~"   
     { %
-      definirRegistro (getTk $2) $6 (getPos $2)
+      definirRegistro (getTk $2) (getPos $2)
     }
-  | registro idtipo ":" PushScope EndLines ".~"                        
+  | registro idtipo ":" PushScope EndLines ".~"                          
     { %
-      definirRegistro (getTk $2) [] (getPos $2)
+      definirRegistro (getTk $2) (getPos $2)
     }
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
 -- Uniones
-DefinirUnion :: { SecuenciaInstr }
-  : union idtipo ":" PushScope EndLines Declaraciones EndLines ".~"
+DefinirUnion :: { () }
+  : union idtipo ":" PushScope EndLines Declaraciones EndLines ".~"  
     { %
-      definirUnion (getTk $2) $6 (getPos $2)
+      definirUnion (getTk $2) (getPos $2)
     }
-  | union idtipo ":" PushScope EndLines ".~"                        
+  | union idtipo ":" PushScope EndLines ".~"                         
     { %
-      definirUnion (getTk $2) [] (getPos $2)
+      definirUnion (getTk $2) (getPos $2)
     }
 -------------------------------------------------------------------------------
 
@@ -630,15 +627,3 @@ PushScope  ::  { () }
 --                   Fin de la declaracion de las producciones
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
-
-{
-parseError :: [Token] -> MonadSymTab a
-parseError [] =  error $ "\n\nPrograma invalido "
-parseError (tk:tks) =  do
-    file <- ask
-    error $ "\n\nParse error: " ++ file ++ ": " ++ show pos ++ ":\n\tAntes de '"
-          ++ token ++ "'.\n"           
-  where
-      token = getTk tk
-      pos = getPos tk
-}

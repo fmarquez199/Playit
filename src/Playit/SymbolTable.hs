@@ -10,9 +10,11 @@ Modulo para la creacion y manejo de la tabla de simbolos
 module Playit.SymbolTable where
 
 import Control.Monad.Trans.RWS
-import Control.Monad (forM, when)
+import Control.Monad (when)
 import qualified Data.Map as M
+import Data.List (findIndices)
 import Data.Maybe (fromJust, isJust)
+import Playit.Errors
 import Playit.Types
 
 
@@ -108,29 +110,32 @@ insertDeclarations :: [(Nombre, Posicion)] -> Tipo -> SecuenciaInstr
                     -> MonadSymTab SecuenciaInstr
 insertDeclarations ids t asigs = do
     (symTab, activeScopes@(activeScope:_), scope) <- get
-    file <- ask
+    fileCode <- ask
+    let ids' = (map fst ids)
+        idsInfo = lookupInSymTab' ids' symTab
 
-    checkedIds <- forM ids $ \(id',p) -> do
-        let idScopeInfo = lookupInScopes [activeScope] id' symTab
-        
-        when (isJust idScopeInfo) $
-            let info = fromJust $ lookupInSymTab id' symTab
-                scopeInfo = [i | i <- info, getScope i == activeScope]
-                
-                idCategories = map getCategory scopeInfo
-                categorias = [Variable, Parametros Valor, Parametros Referencia]
-                isInAnyCategory = any (`elem` idCategories) categorias
-                
-                idScopes = map getScope scopeInfo
-                isInActualScope = getScope (fromJust idScopeInfo) `elem` idScopes
-            in
-            when (isInAnyCategory && isInActualScope) $
-                error $ "\n\nError: " ++ file ++ ": " ++ show p ++
-                    "\n\tVariable '" ++ id' ++ "' ya esta declarada.\n"
-        return id'
-    
-    let info = replicate (length ids) (SymbolInfo t activeScope Variable [])
-    addToSymTab checkedIds info symTab activeScopes scope
+    if all (==Nothing) idsInfo then
+    -- Si no hay ninguno declarado los agrego
+        let 
+            idInfo = SymbolInfo t activeScope Variable []
+            idsInfo' = replicate (length ids) idInfo
+
+        in addToSymTab ids' idsInfo' symTab activeScopes scope
+    else
+    -- Sino ver cual ya esta declarado en el alcance actual, el primero
+        let idsScopes = concatMap (map getScope . fromJust) $ filter isJust idsInfo
+            idsIndex = findIndices isJust idsInfo
+            isInActualScope = (idsScopes !! head idsIndex) == activeScope
+        in
+        if isInActualScope then
+            let p = snd $ ids !! head idsIndex
+            in error $ errorMessage "Redefined variable" fileCode p
+        else
+            let idsInScope = [i | i<-ids', index<-idsIndex, i== ids' !! index]
+                idInfo = SymbolInfo t activeScope Variable []
+                idsInfo' = replicate (length ids) idInfo
+            in addToSymTab idsInScope idsInfo' symTab activeScopes scope
+
     return asigs
 -------------------------------------------------------------------------------
 
@@ -203,6 +208,7 @@ updateExtraInfo :: Nombre -> Categoria -> [ExtraInfo] -> MonadSymTab ()
 updateExtraInfo name category extraInfo = do
     (symTab@(SymTab table), scopes, scope) <- get
     let infos = lookupInSymTab name symTab
+
     when (isJust infos) $ do
         let isTarget sym = getCategory sym == category
             updateExtraInfo' = 
@@ -214,6 +220,5 @@ updateExtraInfo name category extraInfo = do
 -------------------------------------------------------------------------------
 -- Actualiza la informacion extra del simbolo con la nueva
 modifyExtraInfo :: SymbolInfo -> [ExtraInfo] -> SymbolInfo
-modifyExtraInfo (SymbolInfo t s c []) extraInfo = SymbolInfo t s c extraInfo
 modifyExtraInfo (SymbolInfo t s c ei) extraInfo = SymbolInfo t s c (ei ++ extraInfo)
 -------------------------------------------------------------------------------

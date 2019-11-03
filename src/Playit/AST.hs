@@ -9,10 +9,12 @@
 -}
 module Playit.AST where
 
+import Control.Monad (void)
 import Control.Monad.Trans.RWS
 import qualified Data.Map as M
 import Data.Maybe (fromJust, isJust, isNothing)
 import Playit.CheckAST
+import Playit.Errors
 import Playit.SymbolTable
 import Playit.Types
 
@@ -29,13 +31,11 @@ import Playit.Types
 crearIdvar :: Nombre -> Posicion -> MonadSymTab Vars
 crearIdvar name p = do
     (symTab, scopes, _) <- get
-    file <- ask
+    fileCode <- ask
     let info = lookupInScopes scopes name symTab
 
     if isJust info then return $ Var name (getType $ fromJust info)
-    else 
-        error ("\n\nError: " ++ file ++ ": " ++ show p ++ "\n\tVariable '"
-                ++ name ++ "' no declarada.\n")
+    else error $ errorMessage "Variable not declared in active scopes" fileCode p
 -------------------------------------------------------------------------------
 
 
@@ -57,14 +57,14 @@ crearVarIndex v e =
 crearCampo :: Vars -> Nombre -> Posicion -> MonadSymTab Vars
 crearCampo v campo p = do
     (symTab, _, _) <- get
-    file <- ask
+    fileCode@(file,code) <- ask
     
     -- Verificar que 'v' tiene como tipo un reg
     let reg = case typeVar' v of 
             (TNuevo name) -> name
             _ -> ""
     
-    if reg == "" then
+    if reg == "" then -- Error de tipo
         error ("\n\nError: " ++ file ++ ": " ++ show p ++ "\n\t'" ++ show v ++ 
             "' no es registro o union.\n")
     else do
@@ -78,13 +78,11 @@ crearCampo v campo p = do
                 symbols = filter isInRegUnion (fromJust info ) -- Debería tener un elemento o ninguno
                         
             if null symbols then
-                error ("\n\nError: " ++ file ++ ": " ++ show p ++ "\n\t'" ++ 
-                    reg ++ "' no tiene campo '" ++ campo ++ "'.\n")
+                error $ errorMessage ("Field not in '"++reg++"'") fileCode p
             else 
                 return $ VarCompIndex v campo (getType $ head symbols) 
         else
-            error ("\n\nError: " ++ file ++ ": " ++ show p ++ "\n\tCampo '"
-                    ++ campo ++ "' no declarado.\n")
+            error $ errorMessage "Field not declared" fileCode p
 -------------------------------------------------------------------------------
 
 
@@ -365,10 +363,8 @@ crearWhile e i (line,_) = While e i
 
 -------------------------------------------------------------------------------
 -- Actualiza el tipo y  la informacion extra de la subrutina
-definirSubrutina' :: Nombre -> SecuenciaInstr -> Categoria
-                    -> MonadSymTab SecuenciaInstr
-definirSubrutina' n [] c = return (updateExtraInfo n c) >> return []
-definirSubrutina' n i c = return (updateExtraInfo n c [AST i]) >> return i
+definirSubrutina' :: Nombre -> SecuenciaInstr -> Categoria -> MonadSymTab ()
+definirSubrutina' n i c = void $ updateExtraInfo n c [AST i]
 -------------------------------------------------------------------------------
 
 
@@ -377,16 +373,14 @@ definirSubrutina' n i c = return (updateExtraInfo n c [AST i]) >> return i
 definirSubrutina :: Nombre -> Categoria -> Posicion -> MonadSymTab ()
 definirSubrutina nombre categoria p = do
     (symTab, activeScopes, scope) <- get
-    file <- ask
+    fileCode <- ask
     let info = lookupInSymTab nombre symTab
 
     if isNothing info then 
         let i = [SymbolInfo TDummy 1 categoria []]
         in addToSymTab [nombre] i symTab activeScopes scope
     else
-        error $ "\nError: " ++ file ++ ": " ++ show p ++ "\n\tSubrutina '" ++
-            nombre ++ "' ya esta definida.\n\t"
-            ++ concatMap show (fromJust info) ++ "\n"
+        error $ errorMessage "Redefined subroutine" fileCode p
     return ()
 -------------------------------------------------------------------------------
 
@@ -404,10 +398,11 @@ definirParam (Param name t ref) = do
 
 -------------------------------------------------------------------------------
 -- Crea el nodo para la instruccion que llama a la subrutina
-crearSubrutinaCall :: Nombre -> Parametros -> Posicion -> MonadSymTab Subrutina
+crearSubrutinaCall :: Nombre -> Parametros -> Posicion
+                    -> MonadSymTab (Subrutina,Posicion)
 crearSubrutinaCall nombre args p = do
     (symtab, _, _) <- get
-    file <- ask
+    fileCode <- ask
     let symbols = lookupInScopes [1] nombre  symtab
     
     if isJust symbols then do
@@ -419,17 +414,15 @@ crearSubrutinaCall nombre args p = do
                 nArgs = length args
             
             if nArgs == nParams then
-                return $ SubrutinaCall nombre args
+                return (SubrutinaCall nombre args,p)
             else
-                error $ "\n\nError: " ++ file ++ ": " ++ show p ++ 
-                    "\n\tSubrutina '" ++ nombre ++ "' espera '" ++ show nParams
-                    ++ "' argumentos y se pasaron '" ++ show nArgs ++ "'.\n"
+                let msj = "Amount of arguments: " ++ show nArgs ++
+                        " not equal to spected:" ++ show nParams
+                in error $ errorMessage msj fileCode p
         else
-            error $ "\n\nError: " ++ file ++ ": " ++ show p ++ "\n\t'" ++
-                    nombre ++ "' no es una subrutina.\n"
+            error $ errorMessage "This is not a subroutine" fileCode p
     else
-        error $ "\n\nError: " ++ file ++ ": " ++ show p ++ "\n\tSubrutina '" ++
-                nombre ++ "' no definida.\n"
+        error $ errorMessage "Not defined subroutine" fileCode p
 -------------------------------------------------------------------------------
 
 
@@ -437,17 +430,16 @@ crearSubrutinaCall nombre args p = do
 -- Crea el nodo para la instruccion que llama a la funcion
 -- NOTA: Se supone que ya se verifico que la subrutina este definida con
 --      crearSubrutinaCall, pues se ejecuta primero
-crearFuncCall :: Subrutina -> MonadSymTab Expr
-crearFuncCall subrutina@(SubrutinaCall nombre _) = do
+crearFuncCall :: Subrutina -> Posicion -> MonadSymTab Expr
+crearFuncCall subrutina@(SubrutinaCall nombre _) p = do
     (symtab, _, _) <- get
-    file <- ask
+    fileCode <- ask
     let sym = fromJust $ lookupInScopes [1] nombre symtab
     
     if getCategory sym == Funciones then
         return $ FuncCall subrutina (getType sym)
     else
-        error $ "\n\nError: " ++ file ++ ": (f,c)" ++ "\n\tSubrutina '" ++
-            nombre ++ "' no es una funcion.\n"
+        error $ errorMessage "This is not a function" fileCode p
 -------------------------------------------------------------------------------
 
 
@@ -460,49 +452,44 @@ crearFuncCall subrutina@(SubrutinaCall nombre _) = do
 
 -------------------------------------------------------------------------------
 -- Definicion de union
-definirRegistro :: Nombre -> SecuenciaInstr -> Posicion -> MonadSymTab SecuenciaInstr
-definirRegistro n decls  p = do
+definirRegistro :: Nombre -> Posicion -> MonadSymTab ()
+definirRegistro reg p = do
     (symTab@(SymTab table), activeScopes@(activeScope:_), scope) <- get
-    file <- ask
-    let infos = lookupInScopes [1] n symTab
-    if isJust infos then
-        error $ "\n\nError: " ++ file ++ ": " ++ show p ++ "\n\tInventory '" ++
-                n ++ "' ya esta definido.\n"
-    else do
-        {- TODO: No se puede guardar en el estado el TIPO del scope en el que estoy?
-        Lo que haría que cuando las inserto en la tabla de simbolos, ya sea con 
-        su categoria y el campo extra adecuado -}
-        let modifySym (SymbolInfo t s _ _) = SymbolInfo t s Campos [FromReg n]
+    fileCode <- ask
+    let regInfo = lookupInScopes [1] reg symTab
+
+    if isJust regInfo then
+        error $ errorMessage "Redefined Inventory" fileCode p
+    else
+        let modifySym (SymbolInfo t s _ _) = SymbolInfo t s Campos [FromReg reg]
             updtSym = 
                 map (\sym -> if getScope sym == activeScope then modifySym sym else sym)
 
             newSymTab = SymTab $ M.map updtSym table
             info = [SymbolInfo TRegistro 1 Tipos []]
 
-        addToSymTab [n] info newSymTab activeScopes scope
-        return decls
+        in void $ addToSymTab [reg] info newSymTab activeScopes scope
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
 -- Definicion de union
-definirUnion :: Nombre -> SecuenciaInstr -> Posicion -> MonadSymTab SecuenciaInstr
-definirUnion n decls p = do
+definirUnion :: Nombre -> Posicion -> MonadSymTab ()
+definirUnion reg p = do
     (symTab@(SymTab table), activeScopes@(activeScope:_), scope) <- get
-    file <- ask
-    let infos = lookupInScopes [1] n symTab
-    if isJust infos then
-        error $ "\n\nError: " ++ file ++ ": " ++ show p ++ "\n\tItems '" ++
-                n ++ "' ya esta definido.\n"
-    else do
-        let modifySym (SymbolInfo t s _ _) = SymbolInfo t s Campos [FromReg n]
+    fileCode <- ask
+    let regInfo = lookupInScopes [1] reg symTab
+
+    if isJust regInfo then
+        error $ errorMessage "Redefined Items" fileCode p
+    else
+        let modifySym (SymbolInfo t s _ _) = SymbolInfo t s Campos [FromReg reg]
             updSym = 
                 map (\sym -> if getScope sym == activeScope then modifySym sym else sym)
 
             newSymTab = SymTab $ M.map updSym table
             info = [SymbolInfo TUnion 1 Tipos []]
-        addToSymTab [n] info newSymTab activeScopes scope
-        return decls
+        in void $ addToSymTab [reg] info newSymTab activeScopes scope
 -------------------------------------------------------------------------------
 
 
@@ -519,7 +506,7 @@ crearPrint :: Expr -> Posicion -> MonadSymTab Instr
 crearPrint e p
     | tE /= TError = return $ Print e
     | otherwise = do
-        file <- ask
+        (file,code) <- ask
         error ("\n\nError: " ++ file ++ ": " ++ show p ++
                 "\nExpresion del 'print': '" ++
                 show e ++ "', de tipo: " ++ show tE ++ "\n")
@@ -555,16 +542,16 @@ crearTApuntador (TApuntador t') t = TApuntador $ crearTApuntador t' t
 crearFree :: Nombre -> Posicion -> MonadSymTab Instr
 crearFree var p = do
     (symtab, activeScope:_, _) <- get
-    file <- ask
+    fileCode <- ask
     let info = lookupInSymTab var symtab
+    
     if isJust info then
         let scopeOk = activeScope `elem` map getScope (fromJust info) in
+        
         if scopeOk then return $ Free var
-        else error $ "Error: " ++ file ++ ": " ++ show p ++ "\n\tVariable '" ++
-                    var ++ "' fuera de alcance.\n"
+        else error $ errorMessage "Variable out of scope" fileCode p
     else
-        error $ "Error: " ++ file ++ ": " ++ show p ++ "\n\tVariable '" ++
-                var ++ "' no definida.\n"
+        error $ errorMessage "Variable not defined" fileCode p
 -------------------------------------------------------------------------------
 
 

@@ -16,6 +16,7 @@ import System.Environment
 import System.IO.Error
 import System.IO (readFile)
 import Playit.SymbolTable
+import Playit.Errors
 import Playit.Parser
 import Playit.Lexer
 import Playit.Types
@@ -48,11 +49,11 @@ main = do
             if null code || isEmptyFile code then putStrLn "\nEmptyFile\n"
             else do
                 let tokens = alexScanTokens code
-                    (hasErr,pos) = hasError tokens
+                    (hasErr,pos) = lexerErrors tokens
 
-                if hasErr then putStrLn $ showAllErrors code pos
+                if hasErr then putStrLn $ showLexerErrors (checkedFile,code) pos
                 else do
                     -- mapM_ print tokens
-                    (ast,(st,_,_),errors) <- runRWST (parse tokens) checkedFile initState
+                    (ast,(st,_,_),errors) <- runRWST (parse tokens) (checkedFile,code) initState
                     
                     if null errors then print ast >> print st else print errors                    

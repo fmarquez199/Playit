@@ -12,13 +12,7 @@ module Playit.Lexer (
     Token(..),
     AlexPosn(..), 
     alexScanTokens,
-    hasError,
-    showAllErrors,
-    tokerr
 ) where
-
-import Data.List (intercalate)
-import Data.List.Split (splitOn)
 }
 
 %wrapper "posn"
@@ -57,109 +51,109 @@ tokens :-
   
   -- Palabras reservadas
 
-  Battle               { tok (\(AlexPn _ f c) tk -> TkBATLE tk (f,c)) }
-  DeathZone            { tok (\(AlexPn _ f c) tk -> TkDeathZone tk (f,c)) }
-  Inventory            { tok (\(AlexPn _ f c) tk -> TkINVENTORY tk (f,c)) }
-  Items                { tok (\(AlexPn _ f c) tk -> TkITEMS tk (f,c)) }
-  Kit                  { tok (\(AlexPn _ f c) tk -> TkKIT tk (f,c)) }
-  Power                { tok (\(AlexPn _ f c) tk -> TkPOWER tk (f,c)) }
-  Rune                 { tok (\(AlexPn _ f c) tk -> TkRUNE tk (f,c)) }
-  Runes                { tok (\(AlexPn _ f c) tk -> TkRUNES tk (f,c)) }
-  Skill                { tok (\(AlexPn _ f c) tk -> TkSKILL tk (f,c)) }
-  Button               { tok (\(AlexPn _ f c) tk -> TkBUTTON tk (f,c)) }
-  boss                 { tok (\(AlexPn _ f c) tk -> TkBOSS tk (f,c)) }
-  controller           { tok (\(AlexPn _ f c) tk -> TkCONTROLLER tk (f,c)) }
-  drop                 { tok (\(AlexPn _ f c) tk -> TkDROP tk (f,c)) }
-  notPressed           { tok (\(AlexPn _ f c) tk -> TkNotPressed tk (f,c)) }
-  free                 { tok (\(AlexPn _ f c) tk -> TkFREE tk (f,c)) }
-  gameOver             { tok (\(AlexPn _ f c) tk -> TkGameOver tk (f,c)) }
-  joystick             { tok (\(AlexPn _ f c) tk -> TkJOYSTICK tk (f,c)) }
-  keepPlaying          { tok (\(AlexPn _ f c) tk -> TkKeepPlaying tk (f,c)) }
-  kill                 { tok (\(AlexPn _ f c) tk -> TkKILL tk (f,c)) }
-  lock                 { tok (\(AlexPn _ f c) tk -> TkLOCK tk (f,c)) }
-  monster              { tok (\(AlexPn _ f c) tk -> TkMONSTER tk (f,c)) }
-  play                 { tok (\(AlexPn _ f c) tk -> TkPLAY tk (f,c)) }
-  puff                 { tok (\(AlexPn _ f c) tk -> TkPUFF tk (f,c)) }
-  spawn                { tok (\(AlexPn _ f c) tk -> TkSPAWN tk (f,c)) }
-  summon               { tok (\(AlexPn _ f c) tk -> TkSUMMON tk (f,c)) }
-  unlock               { tok (\(AlexPn _ f c) tk -> TkUNLOCK tk (f,c)) }
-  world                { tok (\(AlexPn _ f c) tk -> TkWORLD tk (f,c)) }
-  of                   { tok (\(AlexPn _ f c) tk -> TkOF tk (f,c)) }
-  @endLine             { tok (\(AlexPn _ f c) tk -> TkEndLine tk (f,c)) }
+  Battle              { tok (\(AlexPn _ f c) tk -> TkBATLE tk (f,c)) }
+  DeathZone           { tok (\(AlexPn _ f c) tk -> TkDeathZone tk (f,c)) }
+  Inventory           { tok (\(AlexPn _ f c) tk -> TkINVENTORY tk (f,c)) }
+  Items               { tok (\(AlexPn _ f c) tk -> TkITEMS tk (f,c)) }
+  Kit                 { tok (\(AlexPn _ f c) tk -> TkKIT tk (f,c)) }
+  Power               { tok (\(AlexPn _ f c) tk -> TkPOWER tk (f,c)) }
+  Rune                { tok (\(AlexPn _ f c) tk -> TkRUNE tk (f,c)) }
+  Runes               { tok (\(AlexPn _ f c) tk -> TkRUNES tk (f,c)) }
+  Skill               { tok (\(AlexPn _ f c) tk -> TkSKILL tk (f,c)) }
+  Button              { tok (\(AlexPn _ f c) tk -> TkBUTTON tk (f,c)) }
+  boss                { tok (\(AlexPn _ f c) tk -> TkBOSS tk (f,c)) }
+  controller          { tok (\(AlexPn _ f c) tk -> TkCONTROLLER tk (f,c)) }
+  drop                { tok (\(AlexPn _ f c) tk -> TkDROP tk (f,c)) }
+  notPressed          { tok (\(AlexPn _ f c) tk -> TkNotPressed tk (f,c)) }
+  free                { tok (\(AlexPn _ f c) tk -> TkFREE tk (f,c)) }
+  gameOver            { tok (\(AlexPn _ f c) tk -> TkGameOver tk (f,c)) }
+  joystick            { tok (\(AlexPn _ f c) tk -> TkJOYSTICK tk (f,c)) }
+  keepPlaying         { tok (\(AlexPn _ f c) tk -> TkKeepPlaying tk (f,c)) }
+  kill                { tok (\(AlexPn _ f c) tk -> TkKILL tk (f,c)) }
+  lock                { tok (\(AlexPn _ f c) tk -> TkLOCK tk (f,c)) }
+  monster             { tok (\(AlexPn _ f c) tk -> TkMONSTER tk (f,c)) }
+  play                { tok (\(AlexPn _ f c) tk -> TkPLAY tk (f,c)) }
+  puff                { tok (\(AlexPn _ f c) tk -> TkPUFF tk (f,c)) }
+  spawn               { tok (\(AlexPn _ f c) tk -> TkSPAWN tk (f,c)) }
+  summon              { tok (\(AlexPn _ f c) tk -> TkSUMMON tk (f,c)) }
+  unlock              { tok (\(AlexPn _ f c) tk -> TkUNLOCK tk (f,c)) }
+  world               { tok (\(AlexPn _ f c) tk -> TkWORLD tk (f,c)) }
+  of                  { tok (\(AlexPn _ f c) tk -> TkOF tk (f,c)) }
+  @endLine            { tok (\(AlexPn _ f c) tk -> TkEndLine tk (f,c)) }
 
   -- Literales booleanos
   
-  Win                  { tok (\(AlexPn _ f c) tk -> TkWIN tk (f,c)) }
-  Lose                 { tok (\(AlexPn _ f c) tk -> TkLOSE tk (f,c)) }
+  Win                 { tok (\(AlexPn _ f c) tk -> TkWIN tk (f,c)) }
+  Lose                { tok (\(AlexPn _ f c) tk -> TkLOSE tk (f,c)) }
 
   -- Identificadores
 
-  @programas           { tok (\(AlexPn _ f c) tk -> TkProgramName tk (f,c)) }
-  @id                  { tok (\(AlexPn _ f c) tk -> TkID tk (f,c)) }
-  @id_tipo             { tok (\(AlexPn _ f c) tk -> TkIDTipo tk (f,c)) }
+  @programas          { tok (\(AlexPn _ f c) tk -> TkProgramName tk (f,c)) }
+  @id                 { tok (\(AlexPn _ f c) tk -> TkID tk (f,c)) }
+  @id_tipo            { tok (\(AlexPn _ f c) tk -> TkIDTipo tk (f,c)) }
 
   -- Caracteres
 
-  @caracter            { createTkCARACTER }
-  @strings             { tok (\(AlexPn _ f c) tk -> TkSTRINGS tk (f,c)) }
+  @caracter           { createTkCARACTER }
+  @strings            { tok (\(AlexPn _ f c) tk -> TkSTRINGS tk (f,c)) }
   
   -- Literares numericos
   
-  $digitos+            { createTkINT }
-  @float               { createTkFLOAT }
+  $digitos+           { createTkINT }
+  @float              { createTkFLOAT }
 
   -- Simbolos
 
-  ".~"                 { tok (\(AlexPn _ f c) tk -> TkFIN tk (f,c)) }
-  "//"                 { tok (\(AlexPn _ f c) tk -> TkDivEntera tk (f,c)) }
-  "||"                 { tok (\(AlexPn _ f c) tk -> TkOR tk (f,c)) }
-  "&&"                 { tok (\(AlexPn _ f c) tk -> TkAND tk (f,c)) }
-  "<="                 { tok (\(AlexPn _ f c) tk -> TkLessEqual tk (f,c)) }
-  "=="                 { tok (\(AlexPn _ f c) tk -> TkEQUAL tk (f,c)) }
-  "!="                 { tok (\(AlexPn _ f c) tk -> TkNotEqual tk (f,c)) }
-  ">="                 { tok (\(AlexPn _ f c) tk -> TkGreaterEqual tk (f,c)) }
-  "<<"                 { tok (\(AlexPn _ f c) tk -> TkOpenList tk (f,c)) }
-  ">>"                 { tok (\(AlexPn _ f c) tk -> TkCloseList tk (f,c)) }
-  "|>"                 { tok (\(AlexPn _ f c) tk -> TkOpenListIndex tk (f,c)) }
-  "<|"                 { tok (\(AlexPn _ f c) tk -> TkCloseListIndex tk (f,c)) }
-  "++"                 { tok (\(AlexPn _ f c) tk -> TkINCREMENT tk (f,c)) }
-  "--"                 { tok (\(AlexPn _ f c) tk -> TkDECREMENT tk (f,c)) }
-  "<-"                 { tok (\(AlexPn _ f c) tk -> TkIN tk (f,c)) }
-  "->"                 { tok (\(AlexPn _ f c) tk -> TkTO tk (f,c)) }
-  "|}"                 { tok (\(AlexPn _ f c) tk -> TkOpenArray tk (f,c)) }
-  "{|"                 { tok (\(AlexPn _ f c) tk -> TkCloseArray tk (f,c)) }
-  "|)"                 { tok (\(AlexPn _ f c) tk -> TkOpenArrayIndex tk (f,c)) }
-  "(|"                 { tok (\(AlexPn _ f c) tk -> TkCloseArrayIndex tk (f,c)) }
-  "+"                  { tok (\(AlexPn _ f c) tk -> TkSUM tk (f,c)) }
-  "-"                  { tok (\(AlexPn _ f c) tk -> TkMIN tk (f,c)) }
-  "*"                  { tok (\(AlexPn _ f c) tk -> TkMULT tk (f,c)) }
-  "/"                  { tok (\(AlexPn _ f c) tk -> TkDIV tk (f,c)) }
-  "%"                  { tok (\(AlexPn _ f c) tk -> TkMOD tk (f,c)) }
-  "#"                  { tok (\(AlexPn _ f c) tk -> TkLEN tk (f,c)) }
-  "?"                  { tok (\(AlexPn _ f c) tk -> TkREF tk (f,c)) }
-  "!"                  { tok (\(AlexPn _ f c) tk -> TkNOT tk (f,c)) }
-  "<"                  { tok (\(AlexPn _ f c) tk -> TkLessThan tk (f,c)) }
-  ">"                  { tok (\(AlexPn _ f c) tk -> TkGreaterThan tk (f,c)) }
-  "("                  { tok (\(AlexPn _ f c) tk -> TkOpenParenthesis tk (f,c)) }
-  ")"                  { tok (\(AlexPn _ f c) tk -> TkCloseParenthesis tk (f,c)) }
-  "{"                  { tok (\(AlexPn _ f c) tk -> TkOpenBrackets tk (f,c)) }
-  "}"                  { tok (\(AlexPn _ f c) tk -> TkCloseBrackets tk (f,c)) }
-  ","                  { tok (\(AlexPn _ f c) tk -> TkCOMA tk (f,c)) }
-  ":"                  { tok (\(AlexPn _ f c) tk -> TkANEXO tk (f,c)) }
-  "::"                 { tok (\(AlexPn _ f c) tk -> TkCONCAT tk (f,c)) }
-  "|"                  { tok (\(AlexPn _ f c) tk -> TkGUARD tk (f,c)) }
-  "="                  { tok (\(AlexPn _ f c) tk -> TkASING tk (f,c)) }
-  "^"                  { tok (\(AlexPn _ f c) tk -> TkUPPER tk (f,c)) }
-  "."                  { tok (\(AlexPn _ f c) tk -> TkLOWER tk (f,c)) }
+  ".~"                { tok (\(AlexPn _ f c) tk -> TkFIN tk (f,c)) }
+  "//"                { tok (\(AlexPn _ f c) tk -> TkDivEntera tk (f,c)) }
+  "||"                { tok (\(AlexPn _ f c) tk -> TkOR tk (f,c)) }
+  "&&"                { tok (\(AlexPn _ f c) tk -> TkAND tk (f,c)) }
+  "<="                { tok (\(AlexPn _ f c) tk -> TkLessEqual tk (f,c)) }
+  "=="                { tok (\(AlexPn _ f c) tk -> TkEQUAL tk (f,c)) }
+  "!="                { tok (\(AlexPn _ f c) tk -> TkNotEqual tk (f,c)) }
+  ">="                { tok (\(AlexPn _ f c) tk -> TkGreaterEqual tk (f,c)) }
+  "<<"                { tok (\(AlexPn _ f c) tk -> TkOpenList tk (f,c)) }
+  ">>"                { tok (\(AlexPn _ f c) tk -> TkCloseList tk (f,c)) }
+  "|>"                { tok (\(AlexPn _ f c) tk -> TkOpenListIndex tk (f,c)) }
+  "<|"                { tok (\(AlexPn _ f c) tk -> TkCloseListIndex tk (f,c)) }
+  "++"                { tok (\(AlexPn _ f c) tk -> TkINCREMENT tk (f,c)) }
+  "--"                { tok (\(AlexPn _ f c) tk -> TkDECREMENT tk (f,c)) }
+  "<-"                { tok (\(AlexPn _ f c) tk -> TkIN tk (f,c)) }
+  "->"                { tok (\(AlexPn _ f c) tk -> TkTO tk (f,c)) }
+  "|}"                { tok (\(AlexPn _ f c) tk -> TkOpenArray tk (f,c)) }
+  "{|"                { tok (\(AlexPn _ f c) tk -> TkCloseArray tk (f,c)) }
+  "|)"                { tok (\(AlexPn _ f c) tk -> TkOpenArrayIndex tk (f,c)) }
+  "(|"                { tok (\(AlexPn _ f c) tk -> TkCloseArrayIndex tk (f,c)) }
+  "+"                 { tok (\(AlexPn _ f c) tk -> TkSUM tk (f,c)) }
+  "-"                 { tok (\(AlexPn _ f c) tk -> TkMIN tk (f,c)) }
+  "*"                 { tok (\(AlexPn _ f c) tk -> TkMULT tk (f,c)) }
+  "/"                 { tok (\(AlexPn _ f c) tk -> TkDIV tk (f,c)) }
+  "%"                 { tok (\(AlexPn _ f c) tk -> TkMOD tk (f,c)) }
+  "#"                 { tok (\(AlexPn _ f c) tk -> TkLEN tk (f,c)) }
+  "?"                 { tok (\(AlexPn _ f c) tk -> TkREF tk (f,c)) }
+  "!"                 { tok (\(AlexPn _ f c) tk -> TkNOT tk (f,c)) }
+  "<"                 { tok (\(AlexPn _ f c) tk -> TkLessThan tk (f,c)) }
+  ">"                 { tok (\(AlexPn _ f c) tk -> TkGreaterThan tk (f,c)) }
+  "("                 { tok (\(AlexPn _ f c) tk -> TkOpenParenthesis tk (f,c)) }
+  ")"                 { tok (\(AlexPn _ f c) tk -> TkCloseParenthesis tk (f,c)) }
+  "{"                 { tok (\(AlexPn _ f c) tk -> TkOpenBrackets tk (f,c)) }
+  "}"                 { tok (\(AlexPn _ f c) tk -> TkCloseBrackets tk (f,c)) }
+  ","                 { tok (\(AlexPn _ f c) tk -> TkCOMA tk (f,c)) }
+  ":"                 { tok (\(AlexPn _ f c) tk -> TkANEXO tk (f,c)) }
+  "::"                { tok (\(AlexPn _ f c) tk -> TkCONCAT tk (f,c)) }
+  "|"                 { tok (\(AlexPn _ f c) tk -> TkGUARD tk (f,c)) }
+  "="                 { tok (\(AlexPn _ f c) tk -> TkASING tk (f,c)) }
+  "^"                 { tok (\(AlexPn _ f c) tk -> TkUPPER tk (f,c)) }
+  "."                 { tok (\(AlexPn _ f c) tk -> TkLOWER tk (f,c)) }
   
   -- Comentarios
 
-  @comments            ;
-  @comment             ;
+  @comments           ;
+  @comment            ;
 
   -- Caracteres invalidos
 
-  @error               { tok (\(AlexPn _ f c) err -> TkError err (f,c)) }
+  @error              { tok (\(AlexPn _ f c) err -> TkError err (f,c)) }
 
 {
 -------------------------------------------------------------------------------
@@ -171,51 +165,14 @@ tokens :-
 tok :: (AlexPosn -> String -> Token) -> AlexPosn -> String -> Token
 tok f p tk = f p tk
 
-createTkCARACTER (AlexPn _ f c) char =
-    TkCARACTER char (f, c) (read (map (\c -> if c == '*' then '\'' else c) char) :: Char)
-createTkINT (AlexPn _ f c) int = TkINT int (f, c) (read int :: Int)
-createTkFLOAT (AlexPn _ f c) float =
-    TkFLOAT float (f, c) (read (map (\c -> if c == '\'' then '.' else c) float) :: Float)
+createTkINT (AlexPn _ f c) tk = TkINT tk (f, c) (read tk :: Int)
 
--------------------------------------------------------------------------------
--------------------------------------------------------------------------------
---                       Manejo de los tokens erroneos
--------------------------------------------------------------------------------
--------------------------------------------------------------------------------
+createTkCARACTER (AlexPn _ f c) tk = TkCARACTER tk (f,c) (toChar tk)
+    where toChar c = (read (map (\x-> if x == '*' then '\'' else x) c)::Char)
 
--- 'hasError' : Obtiene todos los tokens erroneos.
-hasError :: [Token] -> (Bool, [(Int,Int)])
-hasError [] = (False, [(-1::Int, -1::Int)])
-hasError ((TkError _ p):tks) = (True, p : map isError tks)
-hasError (_:tks) = hasError tks
+createTkFLOAT (AlexPn _ f c) tk = TkFLOAT tk (f, c) (toFloat tk)
+    where toFloat f = (read (map (\x-> if x == '\'' then '.' else x) f)::Float)
 
---  'isError' : Obtiene la posicion de un token erroneo.
-isError :: Token -> (Int,Int)
-isError (TkError _ p) = p
-isError _ = (-1::Int, -1::Int)
-
--- 'tokerr' : Traduce los errores a un formato.
-tokerr :: String -> (Int,Int) -> String
-tokerr code (l,c) = 
-  "\n\t\x1b[1;52;94m¡¡¡PLAYIT FATALITY!!!\n" ++ fs
-  
-  where
-    allLines = splitOn "\n" code
-    maxSize = foldl max (-1) $ map length allLines
-    buildRuler = flip replicate '.'
-    rule = buildRuler maxSize ++ "\n"
-    relevantLines = drop (l-1) allLines
-    firstLine = head relevantLines ++ "\n"
-    errorRuler = "\t\x1b[1;93m" ++ buildRuler (c-1) ++ "\x1b[5;31m^\x1b[25;93m"
-      ++ {-buildRuler (maxSize - c) ++-} "\n"
-    fs = "\x1b[93m| " ++ show l ++ "\t\x1b[0;96m" ++ firstLine ++ errorRuler
-
-
--- 'showAllErrors': Muestra todos los errores lexicos encontrados.
-showAllErrors :: String -> [(Int,Int)] -> String
-showAllErrors code [] = ""
-showAllErrors code ((-1, -1):pos) = showAllErrors code pos
-showAllErrors code (p:pos) = concat $ tokerr code p : [showAllErrors code pos]
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------

@@ -336,24 +336,27 @@ newtype SymTab  = SymTab { getSymTab :: M.Map Nombre [SymbolInfo] }
                 deriving (Eq)
 
 instance Show SymTab where
-    show (SymTab hash) = header ++ info ++ symbols
+    show (SymTab st) = header ++ info ++ symbols
         where
             header = "\n------------\n Tabla de simbolos \n------------\n"
             info = "- Simbolo | Informacion asociada \n------------\n"
-            tabla = M.toList hash
-            symbols' = map fst $ M.toList $ M.filter (any (>0)) $ M.map (map getScope) hash
+            tabla = M.toList st
+            stWithScopes = M.map (map getScope) st
+            symbols' = map fst $ M.toList $ M.filter (any (>0)) stWithScopes
             showInfo i = if getScope i > 0 then show i else ""
             showTable (k,v) = 
                 if k `elem` symbols' then
                     k ++ " -> " ++ concatMap showInfo (reverse v) ++ "\n"
                 else ""
-            -- showTable (k,v) = k ++ " -> " ++ concatMap show v
             symbols = concatMap showTable tabla
 
+type SymTabState = (SymTab, ActiveScopes, Alcance)
+
+type FileCodeReader = (String,String)
 
 -- Transformador monadico para crear y manejar la tabla de simbolos junto con 
 -- la pila de alcances y cuales estan activos
-type MonadSymTab a = RWST String [String] (SymTab, ActiveScopes, Alcance) IO a
+type MonadSymTab a = RWST FileCodeReader [String] SymTabState IO a
 
 
 -------------------------------------------------------------------------------
