@@ -9,6 +9,8 @@ monster n(Power n) Power:
 .~
 
 world %n%:
-    Power n
-    n = kill n(n) @Falla con verificacion de tipos
+    @Falla con verificacion de tipos, nosfalla (agarra el n de la func)
+    @Power n = kill n(n)
+    
+    Power n2 = kill n(n)
 .~

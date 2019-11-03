@@ -18,7 +18,7 @@ world %apts%:
     @ puff c spawn pointernombre2 spawn flotante = 2'2 @ reg no tiene campo
     @ puff c spawn p spawn flotante = 2'2 @ campo no declarado
     
-    
+
     Power puff apt
     Kit of Power puff apt2
     Kit of Power puff puff apt3
