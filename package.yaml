@@ -60,3 +60,40 @@ tests:
     - test-framework
     - test-framework-hunit
     - HUnit
+
+  lexer-tests:
+    main:                Spec.hs
+    source-dirs:         test-hspec/Lexer
+    ghc-options:
+    - -Wall
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - Playit
+    - hspec
+    - hspec-discover
+  parser-tests:
+    main:                Spec.hs
+    source-dirs:         test-hspec/Parser
+    ghc-options:
+    - -Wall
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - Playit
+    - hspec
+    - hspec-discover
+  semantic-tests:
+    main:                Spec.hs
+    source-dirs:         test-hspec/Semantic
+    ghc-options:
+    - -Wall
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - Playit
+    - hspec
+    - hspec-discover
