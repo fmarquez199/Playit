@@ -540,10 +540,10 @@ Expresion :: { Expr }
     }
   | FuncCall               { $1 }
   | "(" Expresion ")"      { $2 }
-  | "{" Expresiones "}"    { crearArrLstExpr $2 } -- Inic de Reg/Union
+  | "{" Expresiones "}"    { crearArrLstExpr $ reverse $2 } -- Inic de Reg/Union
   | "{" "}"                { crearArrLstExpr [] } -- Inic de Reg/Union por default
-  | "|)" Expresiones "(|"  { crearArrLstExpr $2 }
-  | "<<" Expresiones ">>"  { crearArrLstExpr $2 }
+  | "|)" Expresiones "(|"  { crearArrLstExpr $ reverse $2 }
+  | "<<" Expresiones ">>"  { crearArrLstExpr $ reverse $2 }
   | "<<" ">>"              { crearArrLstExpr [] }
   | new Tipo               { OpUnario New (IdTipo $2) (TApuntador $2) }
 
