@@ -401,7 +401,7 @@ Play :: { Instr }
 -------------------------------------------------------------------------------
 -- Instrucciones de E/S 'drop' y 'joystick'
 EntradaSalida :: { Instr }
-  : print Expresiones       { % crearPrint (crearArrLstExpr $2) $1 }
+  : print Expresiones       { % crearPrint (crearArrLstExpr $ reverse $2) $1 }
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
