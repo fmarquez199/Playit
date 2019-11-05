@@ -1,7 +1,6 @@
-boss a(Power a,Power b):
+monster a(Power a,Power b) Power:
 .~
 
 world %HolaMundo%:
     Power a
-    a = 2 + 2'1
 .~

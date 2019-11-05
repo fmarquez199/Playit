@@ -14,7 +14,7 @@ import Control.Monad (mapM_)
 import Control.Exception
 import System.Environment
 import System.IO.Error
-import System.IO (readFile)
+import System.IO (readFile,openFile)
 import Playit.SymbolTable
 import Playit.Errors
 import Playit.Parser
@@ -55,5 +55,5 @@ main = do
                 else do
                     -- mapM_ print tokens
                     (ast,(st,_,_),errors) <- runRWST (parse tokens) (checkedFile,code) initState
-                    
-                    if null errors then print ast >> print st else print errors                    
+                    print ast
+                    --if null errors then print ast >> print st else print errors
