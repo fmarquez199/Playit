@@ -1,9 +1,1 @@
-String "~ esto es un String ~", pos (1,1)
-(\n), pos (1,22)
-(\n), pos (4,3)
-Caracter '*\n*', pos (5,1)
-(\n), pos (6,2)
-String "~\*\*~", pos (7,1)
-(\n), pos (7,7)
-(:), pos (9,1)
-(\n), pos (9,14)
+"[String \"~ esto es un String ~\", pos (1,1),(\\n), pos (1,22),(\\n), pos (4,3),Caracter '*\\n*', pos (5,1),(\\n), pos (5,5),~,\\,(*), pos (6,3),(*), pos (6,4),~,(\\n), pos (6,6),(:), pos (8,1),(\\n), pos (8,15)]"

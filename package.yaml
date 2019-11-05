@@ -30,7 +30,6 @@ dependencies:
 - containers
 - mtl
 - split
-# - hspec
 - tostring
 library:
   source-dirs: src

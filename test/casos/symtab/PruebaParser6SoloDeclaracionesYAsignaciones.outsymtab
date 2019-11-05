@@ -1,0 +1,61 @@
+
+------------
+ Tabla de simbolos 
+------------
+- Simbolo | Informacion asociada 
+------------
+Estudiante -> 
+  Tipo: Items | Alcance: 1 | Categoria: Tipos
+Trimestre -> 
+  Tipo: Inventory | Alcance: 1 | Categoria: Tipos
+abril_Julio_2019 -> 
+  Tipo: Trimestre | Alcance: 1 | Categoria: Variables
+b -> 
+  Tipo: Battle | Alcance: 1 | Categoria: Variables
+char -> 
+  Tipo: Rune | Alcance: 1 | Categoria: Variables
+estudiante -> 
+  Tipo: Runes | Alcance: 2 | Categoria: Campos
+    Extra:
+      Campo del registro: "Trimestre"
+
+estudiante' -> 
+  Tipo: Estudiante | Alcance: 1 | Categoria: Variables
+f -> 
+  Tipo: Battle | Alcance: 3 | Categoria: Campos
+    Extra:
+      Campo del registro: "Estudiante"
+
+float -> 
+  Tipo: Skill | Alcance: 1 | Categoria: Variables
+indice -> 
+  Tipo: Skill | Alcance: 2 | Categoria: Campos
+    Extra:
+      Campo del registro: "Trimestre"
+
+inscripcion_ok -> 
+  Tipo: Battle | Alcance: 2 | Categoria: Campos
+    Extra:
+      Campo del registro: "Trimestre"
+
+int -> 
+  Tipo: Power | Alcance: 1 | Categoria: Variables
+l -> 
+  Tipo: Kit of(Skill) | Alcance: 1 | Categoria: Variables
+p -> 
+  Tipo: Apt(Power) | Alcance: 1 | Categoria: Variables
+r -> 
+  Tipo: Runes|}int{|  | Alcance: 1 | Categoria: Variables
+string -> 
+  Tipo: Runes | Alcance: 1 | Categoria: Variables
+uc -> 
+  Tipo: Power | Alcance: 2 | Categoria: Campos
+    Extra:
+      Campo del registro: "Trimestre"
+
+v -> 
+  Tipo: Power | Alcance: 3 | Categoria: Campos
+    Extra:
+      Campo del registro: "Estudiante"
+
+

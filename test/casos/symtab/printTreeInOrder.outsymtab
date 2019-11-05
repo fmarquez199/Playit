@@ -1,0 +1,87 @@
+
+------------
+ Tabla de simbolos 
+------------
+- Simbolo | Informacion asociada 
+------------
+Nodo -> 
+  Tipo: Inventory | Alcance: 1 | Categoria: Tipos
+dato -> 
+  Tipo: Apt(Power) | Alcance: 2 | Categoria: Campos
+    Extra:
+      Campo del registro: "Nodo"
+
+  Tipo: Power | Alcance: 3 | Categoria: Parametros por Valor
+  Tipo: Power | Alcance: 7 | Categoria: Parametros por Valor
+dato_n -> 
+  Tipo: Power | Alcance: 8 | Categoria: Variables
+dere -> 
+  Tipo: Apt(Nodo) | Alcance: 2 | Categoria: Campos
+    Extra:
+      Campo del registro: "Nodo"
+
+iniciar -> 
+  Tipo: Void | Alcance: 1 | Categoria: Procedimientos
+    Extra:
+      Parametros: ["nodo","dato"]
+      AST:
+        nodo spawn izqui = DeathZone
+	    nodo spawn dere = DeathZone
+	    nodo spawn dato = summon Power
+	    puff (nodo spawn dato) = dato
+
+
+insert -> 
+  Tipo: Void | Alcance: 1 | Categoria: Procedimientos
+    Extra:
+      Parametros: ["nodo","dato"]
+      AST:
+        IF:
+    (nodo spawn dato != DeathZone) }
+      IF:
+    (dato < dato_n) }
+      IF:
+    (nodo spawn izqui == DeathZone) }
+      kill iniciar(puff (nodo) spawn izqui,dato)
+  nodo spawn izqui = summon Nodo
+True }
+      kill insert(puff (nodo) spawn izqui,dato)
+(dato > dato_n) }
+      IF:
+    (nodo spawn dere == DeathZone) }
+      kill iniciar(puff (nodo) spawn dere,dato)
+  nodo spawn dere = summon Nodo
+True }
+      kill insert(puff (nodo) spawn dere,dato)
+  dato_n = puff (nodo spawn dato)
+True }
+      kill iniciar(puff (nodo),dato)
+
+
+izqui -> 
+  Tipo: Apt(Nodo) | Alcance: 2 | Categoria: Campos
+    Extra:
+      Campo del registro: "Nodo"
+
+nodo -> 
+  Tipo: Nodo | Alcance: 3 | Categoria: Parametros por Referencia
+  Tipo: Nodo | Alcance: 4 | Categoria: Parametros por Referencia
+  Tipo: Nodo | Alcance: 7 | Categoria: Parametros por Referencia
+print -> 
+  Tipo: Void | Alcance: 1 | Categoria: Procedimientos
+    Extra:
+      Parametros: ["nodo"]
+      AST:
+        IF:
+    (nodo spawn izqui == DeathZone) }
+      kill print(nodo spawn izqui)
+	    drop [nodo spawn dato]	    IF:
+    (nodo spawn dere == DeathZone) }
+      kill print(nodo spawn dere)
+
+
+root -> 
+  Tipo: Nodo | Alcance: 1 | Categoria: Variables
+root1 -> 
+  Tipo: Apt(Nodo) | Alcance: 1 | Categoria: Variables
+

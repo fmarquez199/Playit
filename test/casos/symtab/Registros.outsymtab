@@ -1,0 +1,36 @@
+
+------------
+ Tabla de simbolos 
+------------
+- Simbolo | Informacion asociada 
+------------
+PotionsHealth -> 
+  Tipo: Inventory | Alcance: 1 | Categoria: Tipos
+PotionsHealth2 -> 
+  Tipo: Inventory | Alcance: 1 | Categoria: Tipos
+PotionsMana -> 
+  Tipo: Inventory | Alcance: 1 | Categoria: Tipos
+PotionsMana2 -> 
+  Tipo: Inventory | Alcance: 1 | Categoria: Tipos
+p -> 
+  Tipo: Power | Alcance: 2 | Categoria: Campos
+    Extra:
+      Campo del registro: "PotionsHealth"
+
+  Tipo: Power | Alcance: 3 | Categoria: Campos
+    Extra:
+      Campo del registro: "PotionsHealth2"
+
+  Tipo: Skill | Alcance: 4 | Categoria: Campos
+    Extra:
+      Campo del registro: "PotionsMana"
+
+  Tipo: Skill | Alcance: 5 | Categoria: Campos
+    Extra:
+      Campo del registro: "PotionsMana2"
+
+ph -> 
+  Tipo: PotionsHealth | Alcance: 1 | Categoria: Variables
+pm -> 
+  Tipo: PotionsMana | Alcance: 1 | Categoria: Variables
+

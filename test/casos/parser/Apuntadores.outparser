@@ -1,0 +1,9 @@
+
+world:
+  c = summon Contacto
+  puff (puff (puff (c)) spawn pointernombre) spawn flotante = 2.2
+  c = (puff (apt) == puff (apt2) index: 12)
+  c = (puff (apt) == puff (puff (apt3)) index: 12)
+  c = (puff (apt) == puff (puff (puff (apt4))) index: 12)
+
+

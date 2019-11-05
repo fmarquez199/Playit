@@ -1,0 +1,11 @@
+
+world:
+  root = []
+  root1 = summon Nodo
+  kill iniciar(root,10)
+  kill insert(root,6)
+  kill insert(root,14)
+  kill insert(root,3)
+  kill print(root)
+
+

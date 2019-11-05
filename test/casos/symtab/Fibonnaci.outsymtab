@@ -1,0 +1,28 @@
+
+------------
+ Tabla de simbolos 
+------------
+- Simbolo | Informacion asociada 
+------------
+fibonnaci -> 
+  Tipo: Contacto | Alcance: 1 | Categoria: Funciones
+    Extra:
+      Parametros: ["primero","segundo","limite"]
+      AST:
+        drop [primero]	    drop [segundo]	    n = primero
+	    While (limite > 0):
+      drop [(primero + segundo)]      primero = segundo
+      segundo = (n + segundo)
+      limite = (limite - 1)
+
+
+
+limite -> 
+  Tipo: Power | Alcance: 2 | Categoria: Parametros por Valor
+n -> 
+  Tipo: Power | Alcance: 2 | Categoria: Variables
+primero -> 
+  Tipo: Power | Alcance: 2 | Categoria: Parametros por Valor
+segundo -> 
+  Tipo: Power | Alcance: 2 | Categoria: Parametros por Valor
+

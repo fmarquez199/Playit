@@ -1,0 +1,19 @@
+
+------------
+ Tabla de simbolos 
+------------
+- Simbolo | Informacion asociada 
+------------
+n -> 
+  Tipo: Power | Alcance: 1 | Categoria: Funciones
+    Extra:
+      Parametros: ["n"]
+      AST:
+        While True:
+          drop [n]
+	    unlock n
+
+  Tipo: Power | Alcance: 2 | Categoria: Parametros por Valor
+  Tipo: Battle | Alcance: 3 | Categoria: Variables
+  Tipo: Power | Alcance: 1 | Categoria: Variables
+

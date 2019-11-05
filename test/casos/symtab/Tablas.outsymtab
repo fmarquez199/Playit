@@ -1,0 +1,13 @@
+
+------------
+ Tabla de simbolos 
+------------
+- Simbolo | Informacion asociada 
+------------
+i -> 
+  Tipo: Power | Alcance: 1 | Categoria: Variables
+numero -> 
+  Tipo: Power | Alcance: 1 | Categoria: Variables
+seguir -> 
+  Tipo: Rune | Alcance: 1 | Categoria: Variables
+

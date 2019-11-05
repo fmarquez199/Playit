@@ -1,0 +1,10 @@
+world %iterations%:
+    
+    Power i
+
+    controller Power i=0->10:
+        Skill x
+        i=9 @ Poder hacer esto? -> No
+    .~
+.~
+    

@@ -1,0 +1,34 @@
+
+------------
+ Tabla de simbolos 
+------------
+- Simbolo | Informacion asociada 
+------------
+Contacto -> 
+  Tipo: Inventory | Alcance: 1 | Categoria: Tipos
+a0 -> 
+  Tipo: Apt(Power|}5{| ) | Alcance: 1 | Categoria: Variables
+a1 -> 
+  Tipo: Apt(Power|}5{| ) | Alcance: 1 | Categoria: Variables
+a2 -> 
+  Tipo: Power | Alcance: 1 | Categoria: Variables
+a3 -> 
+  Tipo: Power | Alcance: 1 | Categoria: Variables
+array -> 
+  Tipo: Contacto|}10{|  | Alcance: 1 | Categoria: Variables
+asd -> 
+  Tipo: Kit of(Kit of(Kit of(Power))) | Alcance: 1 | Categoria: Variables
+c1 -> 
+  Tipo: Contacto | Alcance: 1 | Categoria: Variables
+c2 -> 
+  Tipo: Contacto | Alcance: 1 | Categoria: Variables
+c3 -> 
+  Tipo: Contacto | Alcance: 1 | Categoria: Variables
+id -> 
+  Tipo: Runes | Alcance: 2 | Categoria: Campos
+    Extra:
+      Campo del registro: "Contacto"
+
+lista -> 
+  Tipo: Kit of(Contacto) | Alcance: 1 | Categoria: Variables
+

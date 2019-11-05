@@ -1,0 +1,38 @@
+
+------------
+ Tabla de simbolos 
+------------
+- Simbolo | Informacion asociada 
+------------
+Contacto -> 
+  Tipo: Inventory | Alcance: 1 | Categoria: Tipos
+Contacto2 -> 
+  Tipo: Inventory | Alcance: 1 | Categoria: Tipos
+Nombre -> 
+  Tipo: Inventory | Alcance: 1 | Categoria: Tipos
+apt -> 
+  Tipo: Apt(Power) | Alcance: 1 | Categoria: Variables
+apt2 -> 
+  Tipo: Apt(Kit of(Power)) | Alcance: 1 | Categoria: Variables
+apt3 -> 
+  Tipo: Apt(Apt(Kit of(Power))) | Alcance: 1 | Categoria: Variables
+apt4 -> 
+  Tipo: Apt(Apt(Apt(Kit of(Power)))) | Alcance: 1 | Categoria: Variables
+c -> 
+  Tipo: Apt(Apt(Contacto)) | Alcance: 1 | Categoria: Variables
+flotante -> 
+  Tipo: Skill | Alcance: 2 | Categoria: Campos
+    Extra:
+      Campo del registro: "Nombre"
+
+pointernombre -> 
+  Tipo: Apt(Nombre) | Alcance: 3 | Categoria: Campos
+    Extra:
+      Campo del registro: "Contacto"
+
+pointernombre2 -> 
+  Tipo: Nombre | Alcance: 4 | Categoria: Campos
+    Extra:
+      Campo del registro: "Contacto2"
+
+

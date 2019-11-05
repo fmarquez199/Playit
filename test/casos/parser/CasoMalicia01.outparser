@@ -1,0 +1,103 @@
+
+world:
+  ast2 = '\''
+    u1 = 'u'
+    n1 = 'n'
+    a1 = 'a'
+    ast1 = '\''
+  m1 = 'M'
+  b2 = False
+    b1 = True
+  b5 = (2 > 3) ? True : False
+    b4 = ((b1 && b2) || b3)
+  b20 = 1
+    a2 = 0
+  d2 = (a2 * 2)
+    c2 = (a2 + 1)
+  d3 = (c2 * 2)
+    abc = (c2 + 1)
+    b31 = 1.0
+    a3 = 1
+  listab1 = ([2] == [])
+  listab2 = ([] == [])
+  listab3 = ([] == [2])
+  listab3'1 = ([[]] == [[2]])
+  listab4 = ([2] == [])
+  listab5 = ((2 : []) == [])
+  listab6 = (([] :: []) == [])
+  listab7 = (([2] :: []) == [2])
+  listab8 = (([] :: [3]) == [3])
+  listab8'1 = (([2] : [[3]]) == [[2],[3]])
+  listab9 = ([[]] == [[2]])
+  listab10 = (([] : [[2]]) == [[],[2]])
+  listab11 = ([[]] == [[]])
+  test = summon Contacto3
+  test2 = summon PrimerNombre2
+  puff (puff (puff (test) spawn pointernombre) spawn regpn) spawn entero = (puff (puff (puff (test) spawn pointernombre) spawn regpn) spawn entero + nombre spawn arraypower index: 0)
+  hola1 = hola2
+  test = summon Contacto3
+  puff (test) = nombre
+  nombre = nombre
+  hola3 = ((2 + 1) : hola3)
+  hola3 = ((hola1 index: 0 + puff (puff (puff (test) spawn pointernombre) spawn regpn) spawn entero) : hola3)
+  hola3 = (puff (puff (puff (test) spawn pointernombre) spawn regpn) spawn entero : hola3)
+  a3 = a3
+  enteros2 = [a2,(c2 + 2),((abc2 index: 0 + 2) * b2 ? (a2 + 1) : abc2 index: (abc2 index: 2 - 1))]
+  abc2 index: 0 = 0
+  abc2 index: 1 = 1
+  lista1 = [[a2,a2],[a2,a2]]
+  lista1 index: 0 index: 0 = 240
+  l1 = [1,2,3,4,4]
+  c = [[l1,l1],a2]
+  c spawn n spawn n spawn nombre = joystick "~Dame un nombre YEH NOW BB~"
+  c spawn tip = 'c'
+  p = summon Power
+  puff (p) = b2 ? (a2 + 1) : abc2 index: (3 - 1)
+  puff (p) = 15
+  free p
+  p2 = summon Power
+  puff (p2) index: 0 = 21
+  free p2
+  l2 = []
+  plista3 = summon Kit of(Power)
+  plista4 = summon Kit of(Power)
+  puff (plista3) = (2 : ((([] :: []) :: []) :: [22]))
+  puff (plista3) = (b2 ? (a2 + 1) : abc2 index: (l2 index: 0 - lista1 index: 2 index: 2) : [1,2])
+  puff (plista3) = [1,2]
+  puff (plista4) = puff (plista3)
+  p4 = 0
+  a = (((((l2 index: 2 + 2) + ((((2 * 3) // 3) / 4) % 4)) - 5) - -1) + #l2)
+  b = ((((a + 2) + 2) * (((3 // 3) / (4 % 4)) - 5)) - (-1 + #l2))
+  c22 = ((((b1 || (True && False)) || !b2) == True) && (b4 != b2 ? True : False))
+  c22 = (manu1 == manu1)
+  c22 = (manukitpower1 == manukitpower2)
+  c22 = (puff (manukitpower3) == puff (puff (puff (manukitpower4))) index: 12 index: 3)
+  c1 = ^'c'
+  c223 = .'c'
+  c3 = ^.c2222
+  c4 = .^c2222
+  c5 = .^c2222
+  c6 = .^c2222
+  c7 = ^.c2222
+  While ((abc2 index: 0 + 1) * b2 ? (a2 + 1) : abc2 index: (2 - 1)):
+      GameOver
+      KeepPlaying
+      For i = (2 - 2) -> (10 - 1) while: ((abc2 index: 0 + 2) * b2 ? (a2 + 1) : abc2 index: (5 - 1)):
+      IF:
+    (12 > 2) }
+      KeepPlaying
+  GameOver
+      IF:
+    (1.0 > 2.2) }
+      unlock (i + 2)(1.0 > 2.2) }
+      unlock (i + 2)
+
+  ForEach i <- abc:
+    
+  ForEach i <- abc:
+    
+  ForEach i <- abc:
+    
+  a222 = kill f(1,2,3,4)
+
+

@@ -1,0 +1,5 @@
+
+world:
+  f = kill factorial(10)
+
+

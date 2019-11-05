@@ -1,0 +1,6 @@
+
+world:
+  arista = joystick "~Introduzca arista: ~"
+  volumen = ((arista * arista) * arista)
+  drop [volumen,"~el volumen del cubo es: ~"]
+
