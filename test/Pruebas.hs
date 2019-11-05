@@ -38,18 +38,59 @@ import Test.Framework
 import Test.Framework.Providers.HUnit
 import Data.Monoid
 import Data.Strings (strEndsWith,strBreak)
+import Data.Char (isSpace)
 import System.Environment
 import System.IO
 import System.IO.Error
-import Control.Monad.RWS
 import Control.Exception
 import Control.Monad (forM)
 import Playit.Lexer
 import Playit.Parser
-import Playit.SymbolTable
-import Playit.Types
 import Util(getRecursiveContents)
+import Playit.SymbolTable
+import Control.Monad.Trans.RWS
 
+pruebasSymTab :: IO Test.HUnit.Test
+pruebasSymTab = do
+  -- Obtiene todos los archivos en test/casos
+  files <- getRecursiveContents "test/casos/symtab"
+  -- Filtra los archivos a aquellos que terminen en .game
+  filesToTest <- forM files $ \filen -> 
+    if strEndsWith filen ".game" then do
+      let (fname,ext) = strBreak ".game" filen
+      return [fname]
+    else return []
+    
+    -- return fname
+  
+  -- Aplana la lista filtrada (filesToTest era una lista de lista)
+  let filesToTestDotGame = concat filesToTest
+  
+  -- Recorremos todos los .game y creamos los casos de prueba
+  testCases <- forM filesToTestDotGame $ \filen -> do
+    -- Lee el codigo 
+    fileSource        <- openFile (filen ++ ".game")    ReadMode  
+    -- Lee la salida esperada del Parser
+    fileExpectedOut   <- openFile (filen ++ ".outsymtab") ReadMode
+
+    -- Extrae el codigo del archivo
+    strSourceCode     <- S.hGetContents fileSource
+    -- Extrae la salida esperada del archivo
+    strExpectedOut    <- S.hGetContents fileExpectedOut
+    
+    (ast, (st,_,_), errors) <- runRWST (parse (alexScanTokens $ TS.toString strSourceCode)) (filen ++ ".game","") initState
+
+    
+    let testCase = [TestCase $ assertEqual ("\n***Error en  parser:" ++ filen ++ ".game ***") strExpectedOut (BS.pack $ show st)]
+
+    -- Cerramos los archivos
+    hClose fileSource
+    hClose fileExpectedOut
+
+    return testCase
+
+  return $ TestList $ concat testCases
+  
 pruebasLexer :: IO Test.HUnit.Test
 pruebasLexer = do
     -- Obtiene todos los archivos en test/casos
@@ -79,15 +120,15 @@ pruebasLexer = do
         strExpectedOut    <- S.hGetContents fileExpectedOut
 
         -- Separa el contenido por los saltos de lineas 
-        let lstStrExpectedOut = lines $ BS.unpack strExpectedOut
+        let lstStrExpectedOut = dropWhile isSpace (reverse $ BS.unpack strExpectedOut)
         
         -- Obtiene la lista de Tokens reconocidos en el codigo
         let lstRecognizedTkns         = alexScanTokens $ BS.unpack strSourceCode 
         -- Crea una lista de strings con los Tokens 
-        let lstStrRecognizedTokens    = map show lstRecognizedTkns     
+        let lstStrRecognizedTokens    = show lstRecognizedTkns     
             
         
-        let testCases = [TestCase $ assertEqual ("\n***Error en tokens de:" ++ filen ++ ".game ***") lineExpected lineRecognized | (lineExpected , lineRecognized) <- zip lstStrExpectedOut lstStrRecognizedTokens]
+        let testCases = [TestCase $ assertEqual ("\n***Error en tokens de:" ++ filen ++ ".game ***") lstStrExpectedOut lstStrRecognizedTokens]
         
         -- Cerramos los archivos
         hClose fileSource
@@ -98,81 +139,44 @@ pruebasLexer = do
     return $ TestList $ concat testCases
 
 
-
 pruebasParser :: IO Test.HUnit.Test
 pruebasParser = do
-    -- Obtiene todos los archivos en test/casos
-    files <- getRecursiveContents "test/casos/parser"
-    -- Filtra los archivos a aquellos que terminen en .game
-    filesToTest <- forM files $ \filen -> 
-        if strEndsWith filen ".game" then do
-            let (fname,ext) = strBreak ".game" filen
-            return [fname]
-        else return []
-        
-        -- return fname
-    
-    -- Aplana la lista filtrada (filesToTest era una lista de lista)
-    let filesToTestDotGame = concat filesToTest
-    
-    -- Recorremos todos los .game y creamos los casos de prueba
-    testCases <- forM filesToTestDotGame $ \filen -> do
-        -- Lee el codigo 
-        fileSource        <- openFile (filen ++ ".game")    ReadMode  
-        -- Lee la salida esperada del Parser
-        fileExpectedOut   <- openFile (filen ++ ".outparser") ReadMode
-        
-        -- Extrae el codigo del archivo
-        strSourceCode     <- S.hGetContents fileSource
-        -- Extrae la salida esperada del archivo
-        strExpectedOut    <- S.hGetContents fileExpectedOut
-        
-        (ast, (st,_,_), errors) <- runRWST (parse (alexScanTokens $ TS.toString strSourceCode)) (filen ++ ".game","") initState
-        return [TestCase $ assertEqual ("\n***Error en  parser:" ++ filen ++ ".game ***") strExpectedOut (BS.pack $ show ast)]
-
-        -- Cerramos los archivos
-        hClose fileSource
-        hClose fileExpectedOut
-
-    return $ TestList $ concat testCases
-
-pruebasSymTab :: IO Test.HUnit.Test
-pruebasSymTab = do
-    -- Obtiene todos los archivos en test/casos
-    files <- getRecursiveContents "test/casos/parser"
-    -- Filtra los archivos a aquellos que terminen en .game
-    filesToTest <- forM files $ \filen -> 
-        if strEndsWith filen ".game" then do
-            let (fname,ext) = strBreak ".game" filen
-            return [fname]
-        else return []
+  -- Obtiene todos los archivos en test/casos
+  files <- getRecursiveContents "test/casos/parser"
+  -- Filtra los archivos a aquellos que terminen en .game
+  filesToTest <- forM files $ \filen -> 
+    if strEndsWith filen ".game" then do
+      let (fname,ext) = strBreak ".game" filen
+      return [fname]
+    else return []
     
     -- return fname
   
-    -- Aplana la lista filtrada (filesToTest era una lista de lista)
-    let filesToTestDotGame = concat filesToTest
+  -- Aplana la lista filtrada (filesToTest era una lista de lista)
+  let filesToTestDotGame = concat filesToTest
   
-    -- Recorremos todos los .game y creamos los casos de prueba
-    testCases <- forM filesToTestDotGame $ \filen -> do
-        -- Lee el codigo 
-        fileSource        <- openFile (filen ++ ".game")    ReadMode  
-        -- Lee la salida esperada del Parser
-        fileExpectedOut   <- openFile (filen ++ ".outsymtab") ReadMode
+  -- Recorremos todos los .game y creamos los casos de prueba
+  testCases <- forM filesToTestDotGame $ \filen -> do
+    -- Lee el codigo 
+    fileSource        <- openFile (filen ++ ".game")    ReadMode  
+    -- Lee la salida esperada del Parser
+    fileExpectedOut   <- openFile (filen ++ ".outparser") ReadMode
 
-        -- Extrae el codigo del archivo
-        strSourceCode     <- S.hGetContents fileSource
-        -- Extrae la salida esperada del archivo
-        strExpectedOut    <- S.hGetContents fileExpectedOut
-        
-        (ast, (st,_,_), errors) <- runRWST (parse (alexScanTokens $ TS.toString strSourceCode)) (filen ++ ".game","") initState
-        return [TestCase $ assertEqual ("\n***Error en  parser:" ++ filen ++ ".game ***") strExpectedOut (BS.pack $ show st)]
+    -- Extrae el codigo del archivo
+    strSourceCode     <- S.hGetContents fileSource
+    -- Extrae la salida esperada del archivo
+    strExpectedOut    <- S.hGetContents fileExpectedOut
+    
+    (ast, (st,_,_), errors) <- runRWST (parse (alexScanTokens $ TS.toString strSourceCode)) (filen ++ ".game","") initState
+    
+    let testCases = [TestCase $ assertEqual ("\n***Error en  parser:" ++ filen ++ ".game ***") strExpectedOut (BS.pack $ show ast)]
+    -- Cerramos los archivos
+    hClose fileSource
+    hClose fileExpectedOut
 
-        -- Cerramos los archivos
-        hClose fileSource
-        hClose fileExpectedOut
+    return testCases
 
-    return $ TestList $ concat testCases
-
+  return $ TestList $ concat testCases
 
 
 main :: IO ()
@@ -183,7 +187,7 @@ main = do
 
     tlParser <- pruebasParser
     runTestTT tlParser
-
+    
     tlSymTab <- pruebasSymTab
     runTestTT tlSymTab
 
