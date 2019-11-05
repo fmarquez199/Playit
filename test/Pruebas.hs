@@ -50,6 +50,9 @@ import Util(getRecursiveContents)
 import Playit.SymbolTable
 import Control.Monad.Trans.RWS
 
+quitarEndOfLine str = reverse (drop 1 (reverse (str)))
+
+
 pruebasSymTab :: IO Test.HUnit.Test
 pruebasSymTab = do
   -- Obtiene todos los archivos en test/casos
@@ -77,8 +80,9 @@ pruebasSymTab = do
     strSourceCode     <- S.hGetContents fileSource
     -- Extrae la salida esperada del archivo
     strExpectedOut    <- S.hGetContents fileExpectedOut
+    let strExpected = quitarEndOfLine (BS.unpack strExpectedOut)
     
-    (ast, (st,_,_), errors) <- runRWST (parse (alexScanTokens $ TS.toString strSourceCode)) (filen ++ ".game","") initState
+    (ast, (st,_,_), errors) <- runRWST (parse (alexScanTokens strExpected)) (filen ++ ".game","") initState
 
     
     let testCase = [TestCase $ assertEqual ("\n***Error en  parser:" ++ filen ++ ".game ***") strExpectedOut (BS.pack $ show st)]
@@ -120,7 +124,7 @@ pruebasLexer = do
         strExpectedOut    <- S.hGetContents fileExpectedOut
 
         -- Separa el contenido por los saltos de lineas 
-        let lstStrExpectedOut = dropWhile isSpace (reverse $ BS.unpack strExpectedOut)
+        let lstStrExpectedOut = quitarEndOfLine (BS.unpack strExpectedOut)
         
         -- Obtiene la lista de Tokens reconocidos en el codigo
         let lstRecognizedTkns         = alexScanTokens $ BS.unpack strSourceCode 

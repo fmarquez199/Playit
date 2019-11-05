@@ -1,1 +1,1 @@
-[(world), pos (1,1),(%HolaMundo%), pos (1,7),(:), pos (1,18),(\n), pos (1,19),(drop), pos (2,3),String "~Hello World!~", pos (2,8),(\n), pos (2,22),(.~), pos (3,1),(\n), pos (3,3)]
+"[(world), pos (1,1),(%HolaMundo%), pos (1,7),(:), pos (1,18),(\\n), pos (1,19),(drop), pos (2,3),String \"~Hello World!~\", pos (2,8),(\\n), pos (2,22),(.~), pos (3,1),(\\n), pos (3,3)]"

@@ -1,1 +1,14 @@
-Programa [Asignaciones [Asignacion (Var "int" TDummy) 1],Asignaciones [Asignacion (Var "float" TDummy) 1.5],Asignaciones [Asignacion (Var "char" TDummy) .^'c'],Asignaciones [Asignacion (Var "string" TDummy) "~Hola Mundo!~"],Asignaciones [Asignacion (Var "b" TDummy) ((True && False) == False)],Asignaciones [Asignacion (Var "r" TDummy) ['H','i']],Asignaciones [Asignacion (Var "l" TDummy) [2.7999,2.8,2.9999,3.0,4.25,4.2501,4.7499,4.75,5.0]],Asignaciones [Asignacion (Var "abril_Julio_2019" TDummy) [False,0,4.1416,"~12-11163~"]],Asignaciones [],Asignacion (VarCompIndex (Var "estudiante'" (TNuevo "Estudiante")) "f" TBool) True,Asignaciones [Asignacion (Var "p" TDummy) summon TNuevo "Trimestre"]]
+
+world:
+  int = 1
+  float = 1.5
+  char = .^'c'
+  string = "~Hola Mundo!~"
+  b = ((True && False) == False)
+  r = ['H','i']
+  l = [2.7999,2.8,2.9999,3.0,4.25,4.2501,4.7499,4.75,5.0]
+  abril_Julio_2019 = [False,0,4.1416,"~12-11163~"]
+  estudiante' spawn f = True
+  p = summon Trimestre
+
+

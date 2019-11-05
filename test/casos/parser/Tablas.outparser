@@ -1,1 +1,13 @@
-Programa [Asignaciones [Asignacion (Var "seguir" TDummy) 's'],Asignaciones [],While (Var "seguir" TChar != 'n') [Asignacion (Var "numero" TInt) joystick "~Introduzca un numero entero: ~",Print ["~ es:~",Var "numero" TInt,"~La tabla de multiplicar del ~"],Asignacion (Var "i" TInt) 1,While (Var "i" TInt <= 10) [Print [(Var "i" TInt * Var "numero" TInt),"~ = ~",Var "i" TInt,"~ \\* ~",Var "numero" TInt],Asignacion (Var "i" TInt) (Var "i" TInt + 1)],Asignacion (Var "seguir" TChar) kill SubrutinaCall "portalRunesToRune" [joystick "~Desea ver otra tabla (s/n)?: ~"]]]
+
+world:
+  seguir = 's'
+  While (seguir != 'n'):
+      numero = joystick "~Introduzca un numero entero: ~"
+      drop ["~ es:~",numero,"~La tabla de multiplicar del ~"]      i = 1
+      While (i <= 10):
+      drop [(i * numero),"~ = ~",i,"~ \\* ~",numero]      i = (i + 1)
+
+      seguir = kill portalRunesToRune(joystick "~Desea ver otra tabla (s/n)?: ~")
+
+
+

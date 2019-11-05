@@ -5,16 +5,21 @@
 - Simbolo | Informacion asociada 
 ------------
 b -> 
-  Tipo: TVoid | Alcance: 1 | Categoria: Procedimientos
+  Tipo: Void | Alcance: 1 | Categoria: Procedimientos
     Extra:
-  Params []  AST [Print ["~Nada~"]]
+      Parametros: []
+      AST:
+        drop ["~Nada~"]
 
 i -> 
-  Tipo: TInt | Alcance: 3 | Categoria: Variable
+  Tipo: Power | Alcance: 3 | Categoria: Variables
 m -> 
-  Tipo: TInt | Alcance: 1 | Categoria: Funciones
+  Tipo: Power | Alcance: 1 | Categoria: Funciones
     Extra:
-  Params []  AST [Asignaciones [Asignacion (Var "i" TDummy) 0],Return Var "i" TInt]
+      Parametros: []
+      AST:
+        i = 0
+	    unlock i
 
-  Tipo: TInt | Alcance: 1 | Categoria: Variable
+  Tipo: Power | Alcance: 1 | Categoria: Variables
 

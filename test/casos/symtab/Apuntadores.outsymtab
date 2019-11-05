@@ -5,34 +5,34 @@
 - Simbolo | Informacion asociada 
 ------------
 Contacto -> 
-  Tipo: TRegistro | Alcance: 1 | Categoria: Tipos
+  Tipo: Inventory | Alcance: 1 | Categoria: Tipos
 Contacto2 -> 
-  Tipo: TRegistro | Alcance: 1 | Categoria: Tipos
+  Tipo: Inventory | Alcance: 1 | Categoria: Tipos
 Nombre -> 
-  Tipo: TRegistro | Alcance: 1 | Categoria: Tipos
+  Tipo: Inventory | Alcance: 1 | Categoria: Tipos
 apt -> 
-  Tipo: TApuntador TInt | Alcance: 1 | Categoria: Variable
+  Tipo: Apt(Power) | Alcance: 1 | Categoria: Variables
 apt2 -> 
-  Tipo: TApuntador (TLista TInt) | Alcance: 1 | Categoria: Variable
+  Tipo: Apt(Kit of(Power)) | Alcance: 1 | Categoria: Variables
 apt3 -> 
-  Tipo: TApuntador (TApuntador (TLista TInt)) | Alcance: 1 | Categoria: Variable
+  Tipo: Apt(Apt(Kit of(Power))) | Alcance: 1 | Categoria: Variables
 apt4 -> 
-  Tipo: TApuntador (TApuntador (TApuntador (TLista TInt))) | Alcance: 1 | Categoria: Variable
+  Tipo: Apt(Apt(Apt(Kit of(Power)))) | Alcance: 1 | Categoria: Variables
 c -> 
-  Tipo: TApuntador (TApuntador (TNuevo "Contacto")) | Alcance: 1 | Categoria: Variable
+  Tipo: Apt(Apt(Contacto)) | Alcance: 1 | Categoria: Variables
 flotante -> 
-  Tipo: TFloat | Alcance: 2 | Categoria: Campos
+  Tipo: Skill | Alcance: 2 | Categoria: Campos
     Extra:
-  FromReg "Nombre"
+      Campo del registro: "Nombre"
 
 pointernombre -> 
-  Tipo: TApuntador (TNuevo "Nombre") | Alcance: 3 | Categoria: Campos
+  Tipo: Apt(Nombre) | Alcance: 3 | Categoria: Campos
     Extra:
-  FromReg "Contacto"
+      Campo del registro: "Contacto"
 
 pointernombre2 -> 
-  Tipo: TNuevo "Nombre" | Alcance: 4 | Categoria: Campos
+  Tipo: Nombre | Alcance: 4 | Categoria: Campos
     Extra:
-  FromReg "Contacto2"
+      Campo del registro: "Contacto2"
 
 

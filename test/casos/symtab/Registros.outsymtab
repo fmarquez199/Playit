@@ -5,32 +5,32 @@
 - Simbolo | Informacion asociada 
 ------------
 PotionsHealth -> 
-  Tipo: TRegistro | Alcance: 1 | Categoria: Tipos
+  Tipo: Inventory | Alcance: 1 | Categoria: Tipos
 PotionsHealth2 -> 
-  Tipo: TRegistro | Alcance: 1 | Categoria: Tipos
+  Tipo: Inventory | Alcance: 1 | Categoria: Tipos
 PotionsMana -> 
-  Tipo: TRegistro | Alcance: 1 | Categoria: Tipos
+  Tipo: Inventory | Alcance: 1 | Categoria: Tipos
 PotionsMana2 -> 
-  Tipo: TRegistro | Alcance: 1 | Categoria: Tipos
+  Tipo: Inventory | Alcance: 1 | Categoria: Tipos
 p -> 
-  Tipo: TInt | Alcance: 2 | Categoria: Campos
+  Tipo: Power | Alcance: 2 | Categoria: Campos
     Extra:
-  FromReg "PotionsHealth"
+      Campo del registro: "PotionsHealth"
 
-  Tipo: TInt | Alcance: 3 | Categoria: Campos
+  Tipo: Power | Alcance: 3 | Categoria: Campos
     Extra:
-  FromReg "PotionsHealth2"
+      Campo del registro: "PotionsHealth2"
 
-  Tipo: TFloat | Alcance: 4 | Categoria: Campos
+  Tipo: Skill | Alcance: 4 | Categoria: Campos
     Extra:
-  FromReg "PotionsMana"
+      Campo del registro: "PotionsMana"
 
-  Tipo: TFloat | Alcance: 5 | Categoria: Campos
+  Tipo: Skill | Alcance: 5 | Categoria: Campos
     Extra:
-  FromReg "PotionsMana2"
+      Campo del registro: "PotionsMana2"
 
 ph -> 
-  Tipo: TNuevo "PotionsHealth" | Alcance: 1 | Categoria: Variable
+  Tipo: PotionsHealth | Alcance: 1 | Categoria: Variables
 pm -> 
-  Tipo: TNuevo "PotionsMana" | Alcance: 1 | Categoria: Variable
+  Tipo: PotionsMana | Alcance: 1 | Categoria: Variables
 

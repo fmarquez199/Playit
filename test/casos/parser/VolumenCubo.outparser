@@ -1,1 +1,6 @@
-Programa [Asignaciones [],Asignacion (Var "arista" TFloat) joystick "~Introduzca arista: ~",Asignacion (Var "volumen" TFloat) ((Var "arista" TFloat * Var "arista" TFloat) * Var "arista" TFloat),Print [Var "volumen" TFloat,"~el volumen del cubo es: ~"]]
+
+world:
+  arista = joystick "~Introduzca arista: ~"
+  volumen = ((arista * arista) * arista)
+  drop [volumen,"~el volumen del cubo es: ~"]
+

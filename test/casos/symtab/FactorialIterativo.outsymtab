@@ -5,7 +5,7 @@
 - Simbolo | Informacion asociada 
 ------------
 factorial -> 
-  Tipo: TInt | Alcance: 1 | Categoria: Variable
+  Tipo: Power | Alcance: 1 | Categoria: Variables
 numero -> 
-  Tipo: TInt | Alcance: 1 | Categoria: Variable
+  Tipo: Power | Alcance: 1 | Categoria: Variables
 

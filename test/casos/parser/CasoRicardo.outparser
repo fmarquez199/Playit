@@ -1,1 +1,5 @@
-Programa [Asignaciones [],Asignacion (Var "n" TInt) kill SubrutinaCall "n" [Var "n" TInt]]
+
+world:
+  n = kill n(n)
+
+

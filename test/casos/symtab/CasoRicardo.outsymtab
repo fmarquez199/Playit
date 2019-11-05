@@ -5,11 +5,15 @@
 - Simbolo | Informacion asociada 
 ------------
 n -> 
-  Tipo: TInt | Alcance: 1 | Categoria: Funciones
+  Tipo: Power | Alcance: 1 | Categoria: Funciones
     Extra:
-  Params ["n"]  AST [While True [Asignaciones [],Print [Var "n" TBool]],Return Var "n" TInt]
+      Parametros: ["n"]
+      AST:
+        While True:
+          drop [n]
+	    unlock n
 
-  Tipo: TInt | Alcance: 2 | Categoria: Parametros Valor
-  Tipo: TBool | Alcance: 3 | Categoria: Variable
-  Tipo: TInt | Alcance: 1 | Categoria: Variable
+  Tipo: Power | Alcance: 2 | Categoria: Parametros por Valor
+  Tipo: Battle | Alcance: 3 | Categoria: Variables
+  Tipo: Power | Alcance: 1 | Categoria: Variables
 

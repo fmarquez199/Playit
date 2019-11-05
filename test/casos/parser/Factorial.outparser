@@ -1,1 +1,5 @@
-Programa [Asignaciones [Asignacion (Var "f" TDummy) kill SubrutinaCall "factorial" [10]]]
+
+world:
+  f = kill factorial(10)
+
+

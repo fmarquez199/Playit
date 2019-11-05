@@ -5,159 +5,165 @@
 - Simbolo | Informacion asociada 
 ------------
 Circle -> 
-  Tipo: TRegistro | Alcance: 1 | Categoria: Tipos
+  Tipo: Inventory | Alcance: 1 | Categoria: Tipos
 Contacto -> 
-  Tipo: TRegistro | Alcance: 1 | Categoria: Tipos
+  Tipo: Inventory | Alcance: 1 | Categoria: Tipos
 Producto -> 
-  Tipo: TRegistro | Alcance: 1 | Categoria: Tipos
+  Tipo: Inventory | Alcance: 1 | Categoria: Tipos
 Rectangle -> 
-  Tipo: TRegistro | Alcance: 1 | Categoria: Tipos
+  Tipo: Inventory | Alcance: 1 | Categoria: Tipos
 Registro -> 
-  Tipo: TRegistro | Alcance: 1 | Categoria: Tipos
+  Tipo: Inventory | Alcance: 1 | Categoria: Tipos
 Shape -> 
-  Tipo: TUnion | Alcance: 1 | Categoria: Tipos
+  Tipo: Items | Alcance: 1 | Categoria: Tipos
 a -> 
-  Tipo: TInt | Alcance: 1 | Categoria: Variable
+  Tipo: Power | Alcance: 1 | Categoria: Variables
 abc -> 
-  Tipo: TArray 3 TChar | Alcance: 1 | Categoria: Variable
+  Tipo: Rune|}3{|  | Alcance: 1 | Categoria: Variables
 alex -> 
-  Tipo: TNuevo "Contacto" | Alcance: 1 | Categoria: Variable
+  Tipo: Contacto | Alcance: 1 | Categoria: Variables
 areaCirculo -> 
-  Tipo: TVoid | Alcance: 1 | Categoria: Funciones
+  Tipo: Void | Alcance: 1 | Categoria: Funciones
     Extra:
-  Params ["c"]  AST [Return ((3.14 * VarCompIndex (Var "c" (TNuevo "Circle")) "radius" TFloat) * VarCompIndex (Var "c" (TNuevo "Circle")) "radius" TFloat)]
+      Parametros: ["c"]
+      AST:
+        unlock ((3.14 * c spawn radius) * c spawn radius)
 
 b -> 
-  Tipo: TInt | Alcance: 1 | Categoria: Variable
+  Tipo: Power | Alcance: 1 | Categoria: Variables
 bottomRightX -> 
-  Tipo: TFloat | Alcance: 5 | Categoria: Campos
+  Tipo: Skill | Alcance: 5 | Categoria: Campos
     Extra:
-  FromReg "Rectangle"
+      Campo del registro: "Rectangle"
 
 bottomRightY -> 
-  Tipo: TFloat | Alcance: 5 | Categoria: Campos
+  Tipo: Skill | Alcance: 5 | Categoria: Campos
     Extra:
-  FromReg "Rectangle"
+      Campo del registro: "Rectangle"
 
 c -> 
-  Tipo: TNuevo "Circle" | Alcance: 7 | Categoria: Campos
+  Tipo: Circle | Alcance: 7 | Categoria: Campos
     Extra:
-  FromReg "Shape"
+      Campo del registro: "Shape"
 
-  Tipo: TNuevo "Circle" | Alcance: 8 | Categoria: Parametros Referencia
+  Tipo: Circle | Alcance: 8 | Categoria: Parametros por Referencia
 calcularGanancia -> 
-  Tipo: TInt | Alcance: 1 | Categoria: Funciones
+  Tipo: Power | Alcance: 1 | Categoria: Funciones
     Extra:
-  Params ["precioComprado","precioVendido"]  AST [Return (Var "precioVendido" TInt - Var "precioComprado" TInt)]
+      Parametros: ["precioComprado","precioVendido"]
+      AST:
+        unlock (precioVendido - precioComprado)
 
 calcularGanancia2 -> 
-  Tipo: TInt | Alcance: 1 | Categoria: Funciones
+  Tipo: Power | Alcance: 1 | Categoria: Funciones
     Extra:
-  Params ["producto","precioVendido"]  AST [Return (Var "precioVendido" TInt - VarCompIndex (Var "producto" (TNuevo "Producto")) "precioReal" TInt)]
+      Parametros: ["producto","precioVendido"]
+      AST:
+        unlock (precioVendido - producto spawn precioReal)
 
 centerX -> 
-  Tipo: TFloat | Alcance: 4 | Categoria: Campos
+  Tipo: Skill | Alcance: 4 | Categoria: Campos
     Extra:
-  FromReg "Circle"
+      Campo del registro: "Circle"
 
 centerY -> 
-  Tipo: TFloat | Alcance: 4 | Categoria: Campos
+  Tipo: Skill | Alcance: 4 | Categoria: Campos
     Extra:
-  FromReg "Circle"
+      Campo del registro: "Circle"
 
 edad -> 
-  Tipo: TInt | Alcance: 3 | Categoria: Campos
+  Tipo: Power | Alcance: 3 | Categoria: Campos
     Extra:
-  FromReg "Contacto"
+      Campo del registro: "Contacto"
 
-  Tipo: TInt | Alcance: 1 | Categoria: Variable
+  Tipo: Power | Alcance: 1 | Categoria: Variables
 edades -> 
-  Tipo: TArray 5 TStr | Alcance: 1 | Categoria: Variable
+  Tipo: Runes|}5{|  | Alcance: 1 | Categoria: Variables
 esMayor -> 
-  Tipo: TBool | Alcance: 1 | Categoria: Variable
+  Tipo: Battle | Alcance: 1 | Categoria: Variables
 i -> 
-  Tipo: TInt | Alcance: 1 | Categoria: Variable
+  Tipo: Power | Alcance: 1 | Categoria: Variables
 indices -> 
-  Tipo: TArray 3 TFloat | Alcance: 1 | Categoria: Variable
+  Tipo: Skill|}3{|  | Alcance: 1 | Categoria: Variables
 lista1 -> 
-  Tipo: TLista TChar | Alcance: 1 | Categoria: Variable
+  Tipo: Kit of(Rune) | Alcance: 1 | Categoria: Variables
 n1 -> 
-  Tipo: TInt | Alcance: 1 | Categoria: Variable
+  Tipo: Power | Alcance: 1 | Categoria: Variables
 n2 -> 
-  Tipo: TInt | Alcance: 1 | Categoria: Variable
+  Tipo: Power | Alcance: 1 | Categoria: Variables
 n3 -> 
-  Tipo: TInt | Alcance: 1 | Categoria: Variable
+  Tipo: Power | Alcance: 1 | Categoria: Variables
 n4 -> 
-  Tipo: TInt | Alcance: 1 | Categoria: Variable
+  Tipo: Power | Alcance: 1 | Categoria: Variables
 nombre -> 
-  Tipo: TStr | Alcance: 3 | Categoria: Campos
+  Tipo: Runes | Alcance: 3 | Categoria: Campos
     Extra:
-  FromReg "Contacto"
+      Campo del registro: "Contacto"
 
 nombres -> 
-  Tipo: TArray 3 TStr | Alcance: 1 | Categoria: Variable
+  Tipo: Runes|}3{|  | Alcance: 1 | Categoria: Variables
 nombres2 -> 
-  Tipo: TArray 5 TStr | Alcance: 1 | Categoria: Variable
+  Tipo: Runes|}5{|  | Alcance: 1 | Categoria: Variables
 p1 -> 
-  Tipo: TApuntador (TArray 5 TInt) | Alcance: 1 | Categoria: Variable
+  Tipo: Apt(Power|}5{| ) | Alcance: 1 | Categoria: Variables
 p2 -> 
-  Tipo: TApuntador TInt | Alcance: 1 | Categoria: Variable
+  Tipo: Apt(Power) | Alcance: 1 | Categoria: Variables
 p3 -> 
-  Tipo: TNuevo "Producto" | Alcance: 1 | Categoria: Variable
+  Tipo: Producto | Alcance: 1 | Categoria: Variables
 precioComprado -> 
-  Tipo: TInt | Alcance: 9 | Categoria: Parametros Valor
+  Tipo: Power | Alcance: 9 | Categoria: Parametros por Valor
 precioReal -> 
-  Tipo: TInt | Alcance: 6 | Categoria: Campos
+  Tipo: Power | Alcance: 6 | Categoria: Campos
     Extra:
-  FromReg "Producto"
+      Campo del registro: "Producto"
 
 precioVendido -> 
-  Tipo: TInt | Alcance: 9 | Categoria: Parametros Valor
-  Tipo: TInt | Alcance: 10 | Categoria: Parametros Valor
+  Tipo: Power | Alcance: 9 | Categoria: Parametros por Valor
+  Tipo: Power | Alcance: 10 | Categoria: Parametros por Valor
 producto -> 
-  Tipo: TNuevo "Producto" | Alcance: 10 | Categoria: Parametros Referencia
+  Tipo: Producto | Alcance: 10 | Categoria: Parametros por Referencia
 puedeConducir -> 
-  Tipo: TBool | Alcance: 1 | Categoria: Variable
+  Tipo: Battle | Alcance: 1 | Categoria: Variables
 r -> 
-  Tipo: TNuevo "Rectangle" | Alcance: 7 | Categoria: Campos
+  Tipo: Rectangle | Alcance: 7 | Categoria: Campos
     Extra:
-  FromReg "Shape"
+      Campo del registro: "Shape"
 
-  Tipo: TFloat | Alcance: 1 | Categoria: Variable
+  Tipo: Skill | Alcance: 1 | Categoria: Variables
 r2 -> 
-  Tipo: TNuevo "Registro" | Alcance: 1 | Categoria: Variable
+  Tipo: Registro | Alcance: 1 | Categoria: Variables
 radius -> 
-  Tipo: TFloat | Alcance: 4 | Categoria: Campos
+  Tipo: Skill | Alcance: 4 | Categoria: Campos
     Extra:
-  FromReg "Circle"
+      Campo del registro: "Circle"
 
 sh -> 
-  Tipo: TNuevo "Shape" | Alcance: 1 | Categoria: Variable
+  Tipo: Shape | Alcance: 1 | Categoria: Variables
 sofia -> 
-  Tipo: TNuevo "Contacto" | Alcance: 1 | Categoria: Variable
+  Tipo: Contacto | Alcance: 1 | Categoria: Variables
 tieneTrabajo -> 
-  Tipo: TBool | Alcance: 3 | Categoria: Campos
+  Tipo: Battle | Alcance: 3 | Categoria: Campos
     Extra:
-  FromReg "Contacto"
+      Campo del registro: "Contacto"
 
 tip -> 
-  Tipo: TChar | Alcance: 2 | Categoria: Campos
+  Tipo: Rune | Alcance: 2 | Categoria: Campos
     Extra:
-  FromReg "Registro"
+      Campo del registro: "Registro"
 
 topLeftX -> 
-  Tipo: TFloat | Alcance: 5 | Categoria: Campos
+  Tipo: Skill | Alcance: 5 | Categoria: Campos
     Extra:
-  FromReg "Rectangle"
+      Campo del registro: "Rectangle"
 
 topLeftY -> 
-  Tipo: TFloat | Alcance: 5 | Categoria: Campos
+  Tipo: Skill | Alcance: 5 | Categoria: Campos
     Extra:
-  FromReg "Rectangle"
+      Campo del registro: "Rectangle"
 
 up -> 
-  Tipo: TInt | Alcance: 2 | Categoria: Campos
+  Tipo: Power | Alcance: 2 | Categoria: Campos
     Extra:
-  FromReg "Registro"
+      Campo del registro: "Registro"
 
 
