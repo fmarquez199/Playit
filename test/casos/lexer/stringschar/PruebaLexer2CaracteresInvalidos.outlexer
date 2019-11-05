@@ -1,1 +1,45 @@
-[(!), pos (1,1),(\n), pos (1,2),",(\n), pos (2,2),(#), pos (3,1),(\n), pos (3,2),$,(\n), pos (4,2),(%), pos (5,1),(\n), pos (5,2),&,(\n), pos (6,2),',(\n), pos (7,2),((), pos (8,1),(\n), pos (8,2),()), pos (9,1),(\n), pos (9,2),(*), pos (10,1),(\n), pos (10,2),(+), pos (11,1),(\n), pos (11,2),(,), pos (12,1),(\n), pos (12,2),(-), pos (13,1),(\n), pos (13,2),(.), pos (14,1),(\n), pos (14,2),(/), pos (15,1),(\n), pos (15,2),Entero 0, pos (16,1),(\n), pos (16,2),Entero 1, pos (17,1),(\n), pos (17,2),Entero 2, pos (18,1),(\n), pos (18,2),Entero 3, pos (19,1),(\n), pos (19,2),Entero 4, pos (20,1),(\n), pos (20,2),Entero 5, pos (21,1),(\n), pos (21,2),Entero 6, pos (22,1),(\n), pos (22,2),Entero 7, pos (23,1),(\n), pos (23,2),Entero 8, pos (24,1),(\n), pos (24,2),Entero 9, pos (25,1),(\n), pos (25,2),(:), pos (26,1),(\n), pos (26,2),;,(\n), pos (27,2),(<), pos (28,1),(\n), pos (28,2),(=), pos (29,1),(\n), pos (29,2),(>), pos (30,1),(\n), pos (30,2),(?), pos (31,1),(\n), pos (31,2),(\n), pos (32,3),Identificador de tipo "A", pos (33,1),(\n), pos (33,2),Identificador de tipo "B", pos (34,1),(\n), pos (34,2),Identificador de tipo "C", pos (35,1),(\n), pos (35,2),Identificador de tipo "D", pos (36,1),(\n), pos (36,2),Identificador de tipo "E", pos (37,1),(\n), pos (37,2),Identificador de tipo "F", pos (38,1),(\n), pos (38,2),Identificador de tipo "G", pos (39,1),(\n), pos (39,2),Identificador de tipo "H", pos (40,1),(\n), pos (40,2),Identificador de tipo "I", pos (41,1),(\n), pos (41,2),Identificador de tipo "J", pos (42,1),(\n), pos (42,2),Identificador de tipo "K", pos (43,1),(\n), pos (43,2),Identificador de tipo "L", pos (44,1),(\n), pos (44,2),Identificador de tipo "M", pos (45,1),(\n), pos (45,2),Identificador de tipo "N", pos (46,1),(\n), pos (46,2),Identificador de tipo "O", pos (47,1),(\n), pos (47,2),Identificador de tipo "P", pos (48,1),(\n), pos (48,2),Identificador de tipo "Q", pos (49,1),(\n), pos (49,2),Identificador de tipo "R", pos (50,1),(\n), pos (50,2),Identificador de tipo "S", pos (51,1),(\n), pos (51,2),Identificador de tipo "T", pos (52,1),(\n), pos (52,2),Identificador de tipo "U", pos (53,1),(\n), pos (53,2),Identificador de tipo "V", pos (54,1),(\n), pos (54,2),Identificador de tipo "W", pos (55,1),(\n), pos (55,2),Identificador de tipo "X", pos (56,1),(\n), pos (56,2),Identificador de tipo "Y", pos (57,1),(\n), pos (57,2),Identificador de tipo "Z", pos (58,1),(\n), pos (58,2),[,(\n), pos (59,2),\,(\n), pos (60,2),],(\n), pos (61,2),(^), pos (62,1),(\n), pos (62,2),_,(\n), pos (63,2),`,(\n), pos (64,2),Identificador "a", pos (65,1),(\n), pos (65,2),Identificador "b", pos (66,1),(\n), pos (66,2),Identificador "c", pos (67,1),(\n), pos (67,2),Identificador "d", pos (68,1),(\n), pos (68,2),Identificador "e", pos (69,1),(\n), pos (69,2),Identificador "f", pos (70,1),(\n), pos (70,2),Identificador "g", pos (71,1),(\n), pos (71,2),Identificador "h", pos (72,1),(\n), pos (72,2),Identificador "i", pos (73,1),(\n), pos (73,2),Identificador "j", pos (74,1),(\n), pos (74,2),Identificador "k", pos (75,1),(\n), pos (75,2),Identificador "l", pos (76,1),(\n), pos (76,2),Identificador "m", pos (77,1),(\n), pos (77,2),Identificador "n", pos (78,1),(\n), pos (78,2),Identificador "o", pos (79,1),(\n), pos (79,2),Identificador "p", pos (80,1),(\n), pos (80,2),Identificador "q", pos (81,1),(\n), pos (81,2),Identificador "r", pos (82,1),(\n), pos (82,2),Identificador "s", pos (83,1),(\n), pos (83,2),Identificador "t", pos (84,1),(\n), pos (84,2),Identificador "u", pos (85,1),(\n), pos (85,2),Identificador "v", pos (86,1),(\n), pos (86,2),Identificador "w", pos (87,1),(\n), pos (87,2),Identificador "x", pos (88,1),(\n), pos (88,2),Identificador "y", pos (89,1),(\n), pos (89,2),Identificador "z", pos (90,1),(\n), pos (90,2),({), pos (91,1),(\n), pos (91,2),(|), pos (92,1),(\n), pos (92,2),(}), pos (93,1),(\n), pos (93,2),~]
+
+	[1;52;94m???PLAYIT FATALITY!!!
+[93m| 2	[0;96m"
+	[1;93m[5;31m^[25;93m
+
+	[1;52;94m???PLAYIT FATALITY!!!
+[93m| 4	[0;96m$
+	[1;93m[5;31m^[25;93m
+
+	[1;52;94m???PLAYIT FATALITY!!!
+[93m| 6	[0;96m&
+	[1;93m[5;31m^[25;93m
+
+	[1;52;94m???PLAYIT FATALITY!!!
+[93m| 7	[0;96m'
+	[1;93m[5;31m^[25;93m
+
+	[1;52;94m???PLAYIT FATALITY!!!
+[93m| 27	[0;96m;
+	[1;93m[5;31m^[25;93m
+
+	[1;52;94m???PLAYIT FATALITY!!!
+[93m| 59	[0;96m[
+	[1;93m[5;31m^[25;93m
+
+	[1;52;94m???PLAYIT FATALITY!!!
+[93m| 60	[0;96m\
+	[1;93m[5;31m^[25;93m
+
+	[1;52;94m???PLAYIT FATALITY!!!
+[93m| 61	[0;96m]
+	[1;93m[5;31m^[25;93m
+
+	[1;52;94m???PLAYIT FATALITY!!!
+[93m| 63	[0;96m_
+	[1;93m[5;31m^[25;93m
+
+	[1;52;94m???PLAYIT FATALITY!!!
+[93m| 64	[0;96m`
+	[1;93m[5;31m^[25;93m
+
+	[1;52;94m???PLAYIT FATALITY!!!
+[93m| 94	[0;96m~
+	[1;93m[5;31m^[25;93m
+

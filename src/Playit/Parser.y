@@ -13,7 +13,6 @@ module Playit.Parser (parse, error) where
 import Control.Monad.Trans.RWS
 import Playit.SymbolTable
 import Playit.CheckAST
-import Playit.Errors
 import Playit.Lexer
 import Playit.Types
 import Playit.AST
@@ -22,8 +21,8 @@ import Playit.AST
 
 %name parse
 %tokentype { Token }
-%error     { parseError }
-%monad     { MonadSymTab }
+%error { parseError }
+%monad { MonadSymTab }
 
 
 %token
@@ -172,20 +171,20 @@ Programa :: { Instr }
     { Programa [] }
 
 
-Definiciones :: { () }
-  : Definiciones EndLines Definicion { }
-  | Definicion                       { }
+Definiciones :: { SecuenciaInstr }
+  : Definiciones EndLines Definicion { $1 ++ $3 }
+  | Definicion                       { $1 }
 
 
-Definicion :: { () }
-  : DefinirSubrutina PopScope  { }
-  | DefinirRegistro PopScope   { }
-  | DefinirUnion PopScope      { }
+Definicion :: { SecuenciaInstr }
+  : DefinirSubrutina PopScope  { $1 }
+  | DefinirRegistro PopScope   { $1 }
+  | DefinirUnion PopScope      { $1 }
 
 
 EndLines :: { () }
-  : EndLines endLine  { }
-  | endLine           { }
+  : EndLines endLine  {}
+  | endLine           {}
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
@@ -421,13 +420,17 @@ Free :: { Instr }
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 
-DefinirSubrutina :: { () }
+DefinirSubrutina :: { SecuenciaInstr }
   : Firma ":" EndLines Instrucciones EndLines ".~"
     { %
        let ((nombre,categoria), params,tipo) = $1
        in definirSubrutina' nombre $4 categoria
     }
-  | Firma ":" EndLines ".~"   { }
+  | Firma ":" EndLines ".~" 
+  { %
+    let ((nombre,categoria), params, tipo) = $1
+    in  definirSubrutina' nombre [] categoria
+  }
 
 
 -------------------------------------------------------------------------------
@@ -480,12 +483,12 @@ Parametro :: { Expr }
 -------------------------------------------------------------------------------
 -- Llamada a subrutinas
 ProcCall :: { Instr }
-  : SubrutinaCall     { ProcCall (fst $1) }
+  : SubrutinaCall     { ProcCall $1 }
 
 FuncCall :: { Expr }
-  : SubrutinaCall     { % crearFuncCall (fst $1) (snd $1) }
+  : SubrutinaCall     { % crearFuncCall $1 }
 
-SubrutinaCall :: { (Subrutina,Posicion) }
+SubrutinaCall :: { Subrutina }
   : call nombre "(" PasarParametros ")"
     { % crearSubrutinaCall (getTk $2) (reverse $4) (getPos $2) }
   | call nombre "(" ")"
@@ -557,20 +560,17 @@ Expresion :: { Expr }
   
   --
   | Expresion "?" Expresion ":" Expresion %prec "?"
-    {
-      crearIfSimple $1 $3 $5 TDummy $2
-    }
-  | FuncCall               { $1 }
-  | "(" Expresion ")"      { $2 }
-  | "{" Expresiones "}"    { crearArrLstExpr $ reverse $2 } -- Inic de Reg/Union
-  | "{" "}"                { crearArrLstExpr [] } -- Inic de Reg/Union por default
-  | "|)" Expresiones "(|"  { crearArrLstExpr $ reverse $2 }
-  | "<<" Expresiones ">>"  { crearArrLstExpr $ reverse $2 }
-  | "<<" ">>"              { crearArrLstExpr [] }
-  | new Tipo               { OpUnario New (IdTipo $2) (TApuntador $2) }
+    {% crearIfSimple $1 $3 $5 TDummy $2 }
+  | FuncCall                     { $1 }
+  | "(" Expresion ")"            { $2 }
+  | "{" Expresiones "}"          { crearArrLstExpr $2}-- TODO : 
+  | "|)" Expresiones "(|"        { crearArrLstExpr $2 } -- TODO : 
+  | "<<" Expresiones ">>"        {% crearLista $2 (getPos $1)}
+  | "<<"  ">>"                   {% crearLista [] (getPos $1)}
+  | new Tipo                     { OpUnario New Null (TApuntador $2) }
 
-  -- Falta la conversion automatica de string a tipo de regreso segun el rdm
-  | input Expresion %prec input  { crearRead $2 $1 }
+  -- Falta la conversión automática de string a tipo de regreso según el rdm
+  | input Expresion %prec input  { crearRead $2 $1 } 
   | input
     {
       crearRead (Literal ValorVacio TStr) $1
@@ -603,14 +603,14 @@ Expresion :: { Expr }
 
 -------------------------------------------------------------------------------
 -- Registros
-DefinirRegistro :: { () }
-  : registro idtipo ":" PushScope EndLines Declaraciones EndLines ".~"   
+DefinirRegistro :: { SecuenciaInstr }
+  : registro idtipo ":" PushScope EndLines Declaraciones EndLines ".~"
     { %
-      definirRegistro (getTk $2) (getPos $2)
+      definirRegistro (getTk $2) $6 (getPos $2)
     }
-  | registro idtipo ":" PushScope EndLines ".~"                          
+  | registro idtipo ":" PushScope EndLines ".~"                        
     { %
-      definirRegistro (getTk $2) (getPos $2)
+      definirRegistro (getTk $2) [] (getPos $2)
     }
 -------------------------------------------------------------------------------
 
@@ -619,14 +619,14 @@ DefinirRegistro :: { () }
 
 -------------------------------------------------------------------------------
 -- Uniones
-DefinirUnion :: { () }
-  : union idtipo ":" PushScope EndLines Declaraciones EndLines ".~"  
+DefinirUnion :: { SecuenciaInstr }
+  : union idtipo ":" PushScope EndLines Declaraciones EndLines ".~"
     { %
-      definirUnion (getTk $2) (getPos $2)
+      definirUnion (getTk $2) $6 (getPos $2)
     }
-  | union idtipo ":" PushScope EndLines ".~"                         
+  | union idtipo ":" PushScope EndLines ".~"                        
     { %
-      definirUnion (getTk $2) (getPos $2)
+      definirUnion (getTk $2) [] (getPos $2)
     }
 -------------------------------------------------------------------------------
 
@@ -651,3 +651,15 @@ PushScope  ::  { () }
 --                   Fin de la declaracion de las producciones
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
+
+{
+parseError :: [Token] -> MonadSymTab a
+parseError [] =  error $ "\n\nPrograma inválido "
+parseError (h:t) =  do
+    fileName <- ask
+    error $ "\n\n" ++ fileName ++ ": error sintactico del parser antes de: '" ++ token ++ "'. " ++
+          show pos ++ "\n"
+  where
+      token = getTk tk
+      pos = getPos tk
+}

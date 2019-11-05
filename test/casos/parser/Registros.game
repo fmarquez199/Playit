@@ -1,6 +1,5 @@
 Inventory PotionsHealth:
-    Power p
-    @Power p
+  Power p
 .~
 Inventory PotionsHealth2:
   Power p

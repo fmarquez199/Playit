@@ -8,11 +8,9 @@ Modulo para la creacion y manejo de la tabla de simbolos
 module Playit.SymbolTable where
 
 import Control.Monad.Trans.RWS
-import Control.Monad (when)
+import Control.Monad (void,forM,when)
 import qualified Data.Map as M
-import Data.List (findIndices)
-import Data.Maybe (fromJust, isJust, isNothing)
-import Playit.Errors
+import Data.Maybe (fromJust, isJust)
 import Playit.Types
 
 
@@ -32,29 +30,22 @@ initState = createInitSymTab (SymTab M.empty)
 createInitSymTab :: SymTab -> (SymTab,ActiveScopes,Alcance)
 createInitSymTab st = (insertSymbols symbols info st,[0],0)
     where
-        symbols = ["Power", "Skill", "Rune", "Runes", "Battle", "Inventory",
-            "Items", "Kit of", "Win", "Lose", "DeathZone", "portalRunesToRune",
-            "portalRuneToRunes", "portalPowerToRunes", "portalSkillToRunes",
-            "portalRunesToPower", "portalRunesToSkill"]
-        info = [power, skill, rune, runes, battle, inventory, items, listOf,
-            bools, bools, apt, portalSC, portalCS, portalIS, portalFS,
-            portalSI, portalSF]
-        power = SymbolInfo TInt 0 Tipos []
-        skill = SymbolInfo TFloat 0 Tipos []
-        rune = SymbolInfo TChar 0 Tipos []
-        runes = SymbolInfo TStr 0 Tipos []
-        battle = SymbolInfo TBool 0 Tipos []
-        listOf = SymbolInfo (TLista TDummy) 0 ConstructoresTipos [] -- Tipo?
-        inventory = SymbolInfo TRegistro 0 ConstructoresTipos []
-        items = SymbolInfo TUnion 0 ConstructoresTipos []
-        bools = SymbolInfo TBool 0 Constantes []
-        apt = SymbolInfo (TApuntador TDummy) 0 Apuntadores [] -- Tipo?
-        portalCS = SymbolInfo TStr 0 Funciones [Params ["rune"]]
-        portalIS = SymbolInfo TStr 0 Funciones [Params ["power"]]
-        portalFS = SymbolInfo TStr 0 Funciones [Params ["skill"]]
-        portalSI = SymbolInfo TInt 0 Funciones [Params ["runes"]]
-        portalSC = SymbolInfo TChar 0 Funciones [Params ["runes"]]
-        portalSF = SymbolInfo TFloat 0 Funciones [Params ["runes"]]
+        -- TODO: terminar de agregar todos los simbolos del lenguaje
+        symbols = t ++ words
+        t = ["Power", "Skill", "Rune", "Runes", "Battle", "Inventory", "Items"]
+        words = ["Win", "Lose", "free", "puff"]
+        info = ti ++ wi
+        ti = [pInfo, sInfo, rInfo, rsInfo, bInfo, inventoryInfo, itemsInfo]
+        wi = [boolsInfo, boolsInfo, aptInfo, aptInfo]
+        pInfo = SymbolInfo TInt 0 Tipos []
+        sInfo = SymbolInfo TFloat 0 Tipos []
+        rInfo = SymbolInfo TChar 0 Tipos []
+        rsInfo = SymbolInfo TStr 0 Tipos []
+        bInfo = SymbolInfo TBool 0 Tipos []
+        inventoryInfo = SymbolInfo TRegistro 0 Tipos []
+        itemsInfo = SymbolInfo TUnion 0 Tipos []
+        boolsInfo = SymbolInfo TBool 0 Variable []
+        aptInfo = SymbolInfo (TApuntador TDummy) 0 Apuntadores []
 -------------------------------------------------------------------------------
 
 
@@ -108,35 +99,33 @@ insertDeclarations :: [(Nombre, Posicion)] -> Tipo -> SecuenciaInstr
                     -> MonadSymTab SecuenciaInstr
 insertDeclarations ids t asigs = do
     (symTab, activeScopes@(activeScope:_), scope) <- get
-    fileCode <- ask
-    let ids' = (map fst ids)
-        idsInfo = lookupInSymTab' ids' symTab
+    file <- ask
 
-    if all (==Nothing) idsInfo then
-    -- Si no hay ninguno declarado los agrego
-        let 
-            idInfo = SymbolInfo t activeScope Variable []
-            idsInfo' = replicate (length ids) idInfo
+    checkedIds <- forM ids $ \(id',p) -> do
+        let idScopeInfo = lookupInScopes [activeScope] id' symTab
+        
+        when (isJust idScopeInfo) $
+            let info = fromJust $ lookupInSymTab id symTab
 
-        in addToSymTab ids' idsInfo' symTab activeScopes scope
-    else
-    -- Sino ver cual ya esta declarado en el alcance actual, el primero
-        let redefs = concatMap fromJust $ filter isJust idsInfo
-            isVar si = getCategory si == Variable
-            redefs' = filter isVar redefs
-            redefsScopes = map getScope redefs'
-            redefsIndexs = findIndices isJust idsInfo
-            isInActualScope = activeScope `elem` redefsScopes
-        in
-        if isInActualScope then
-            let p = snd $ ids !! head redefsIndexs
-            in error $ errorMessage "Redefined variable" fileCode p
-        else
-            let idsInScope = [i | i<-ids',index<-redefsIndexs,i== ids' !! index]
-                idInfo = SymbolInfo t activeScope Variable []
-                idsInfo' = replicate (length ids) idInfo
-            in addToSymTab idsInScope idsInfo' symTab activeScopes scope
+                scopeInfo = [i | i <- info, getScope i == activeScope] 
 
+                idScopes = map getScope scopeInfo
+                isInActualScope = getScope (fromJust idScopeInfo) `elem` idScopes
+
+                idCategories = map getCategory scopeInfo
+                categorias = [Variable, Parametros Valor, Parametros Referencia]
+                isInAnyCategory = any (`elem` idCategories) categorias
+                
+                idScopes = map getScope scopeInfo
+                isInActualScope = getScope (fromJust idScopeInfo) `elem` idScopes
+            in
+            when (isInAnyCategory || isInActualScope) $
+                error $ "\n\nError: " ++ file ++ ": " ++ show p ++
+                    "\n\tVariable '" ++ id' ++ "' ya esta declarada.\n"
+        return id'
+    
+    let info = replicate (length ids) (SymbolInfo t activeScope Variable [])
+    addToSymTab checkedIds info symTab activeScopes scope
     return asigs
 -------------------------------------------------------------------------------
 
@@ -159,16 +148,19 @@ lookupInSymTab' (x:xs) symtab = lookupInSymTab x symtab:lookupInSymTab' xs symta
         
 -------------------------------------------------------------------------------
 -- Busca el identificador dentro de su cadena estatica
-lookupInScopes :: [Alcance] -> Nombre -> SymTab -> Maybe [SymbolInfo]
-lookupInScopes scopes nombre symtab
-    | isNothing symInfo = Nothing
-    | otherwise =
-        if null symInfos then Nothing
-        else Just symInfos
-    
+lookupInScopes :: [Alcance] -> Nombre -> SymTab -> Maybe SymbolInfo
+lookupInScopes scopes nombre symtab =
+    lookupInScopes' scopes (lookupInSymTab nombre symtab)
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-- Busca la informacion dentro de la cadena estatica
+lookupInScopes' :: [Alcance]-> Maybe [SymbolInfo] ->  Maybe SymbolInfo
+lookupInScopes' _ Nothing = Nothing
+lookupInScopes' scopes (Just symInfo) 
+    | null symScopes  = Nothing
+    | otherwise = Just $ fst $ head symScopes
     where
-        symInfo = lookupInSymTab nombre symtab
-        symInfos = [si | si<-fromJust symInfo,s<-scopes,getScope si `elem` [s,0]] 
+        symScopes = [(s,a) | s <- symInfo, a <- scopes, getScope s == a]
 -------------------------------------------------------------------------------
 getRegName :: [ExtraInfo] -> Maybe String
 getRegName [] = Nothing
@@ -210,7 +202,6 @@ updateExtraInfo :: Nombre -> Categoria -> [ExtraInfo] -> MonadSymTab ()
 updateExtraInfo name category extraInfo = do
     (symTab@(SymTab table), scopes, scope) <- get
     let infos = lookupInSymTab name symTab
-
     when (isJust infos) $ do
         let isTarget sym = getCategory sym == category
             updateExtraInfo' = 
@@ -222,5 +213,6 @@ updateExtraInfo name category extraInfo = do
 -------------------------------------------------------------------------------
 -- Actualiza la informacion extra del simbolo con la nueva
 modifyExtraInfo :: SymbolInfo -> [ExtraInfo] -> SymbolInfo
-modifyExtraInfo (SymbolInfo t s c ei) extraInfo = SymbolInfo t s c (ei ++ extraInfo)
+modifyExtraInfo (SymbolInfo t s c []) extraInfo = SymbolInfo t s c extraInfo
+modifyExtraInfo (SymbolInfo t s c ei) extraInfo = SymbolInfo t s c (extraInfo ++ ei)
 -------------------------------------------------------------------------------
