@@ -1,0 +1,34 @@
+
+------------
+ Tabla de simbolos 
+------------
+- Simbolo | Informacion asociada 
+------------
+Contacto -> 
+  Tipo: TRegistro | Alcance: 1 | Categoria: Tipos
+a0 -> 
+  Tipo: TApuntador (TArray 5 TInt) | Alcance: 1 | Categoria: Variable
+a1 -> 
+  Tipo: TApuntador (TArray 5 TInt) | Alcance: 1 | Categoria: Variable
+a2 -> 
+  Tipo: TInt | Alcance: 1 | Categoria: Variable
+a3 -> 
+  Tipo: TInt | Alcance: 1 | Categoria: Variable
+array -> 
+  Tipo: TArray 10 (TNuevo "Contacto") | Alcance: 1 | Categoria: Variable
+asd -> 
+  Tipo: TLista (TLista (TLista TInt)) | Alcance: 1 | Categoria: Variable
+c1 -> 
+  Tipo: TNuevo "Contacto" | Alcance: 1 | Categoria: Variable
+c2 -> 
+  Tipo: TNuevo "Contacto" | Alcance: 1 | Categoria: Variable
+c3 -> 
+  Tipo: TNuevo "Contacto" | Alcance: 1 | Categoria: Variable
+id -> 
+  Tipo: TStr | Alcance: 2 | Categoria: Campos
+    Extra:
+  FromReg "Contacto"
+
+lista -> 
+  Tipo: TLista (TNuevo "Contacto") | Alcance: 1 | Categoria: Variable
+

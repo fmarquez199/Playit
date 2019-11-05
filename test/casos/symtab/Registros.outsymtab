@@ -1,0 +1,36 @@
+
+------------
+ Tabla de simbolos 
+------------
+- Simbolo | Informacion asociada 
+------------
+PotionsHealth -> 
+  Tipo: TRegistro | Alcance: 1 | Categoria: Tipos
+PotionsHealth2 -> 
+  Tipo: TRegistro | Alcance: 1 | Categoria: Tipos
+PotionsMana -> 
+  Tipo: TRegistro | Alcance: 1 | Categoria: Tipos
+PotionsMana2 -> 
+  Tipo: TRegistro | Alcance: 1 | Categoria: Tipos
+p -> 
+  Tipo: TInt | Alcance: 2 | Categoria: Campos
+    Extra:
+  FromReg "PotionsHealth"
+
+  Tipo: TInt | Alcance: 3 | Categoria: Campos
+    Extra:
+  FromReg "PotionsHealth2"
+
+  Tipo: TFloat | Alcance: 4 | Categoria: Campos
+    Extra:
+  FromReg "PotionsMana"
+
+  Tipo: TFloat | Alcance: 5 | Categoria: Campos
+    Extra:
+  FromReg "PotionsMana2"
+
+ph -> 
+  Tipo: TNuevo "PotionsHealth" | Alcance: 1 | Categoria: Variable
+pm -> 
+  Tipo: TNuevo "PotionsMana" | Alcance: 1 | Categoria: Variable
+

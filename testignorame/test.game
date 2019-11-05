@@ -1,0 +1,6 @@
+monster a(Power a,Power b) Power:
+.~
+
+world %HolaMundo%:
+    Power a
+.~

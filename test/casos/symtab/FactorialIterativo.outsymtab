@@ -1,0 +1,11 @@
+
+------------
+ Tabla de simbolos 
+------------
+- Simbolo | Informacion asociada 
+------------
+factorial -> 
+  Tipo: TInt | Alcance: 1 | Categoria: Variable
+numero -> 
+  Tipo: TInt | Alcance: 1 | Categoria: Variable
+

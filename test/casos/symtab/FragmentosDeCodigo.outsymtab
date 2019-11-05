@@ -1,0 +1,163 @@
+
+------------
+ Tabla de simbolos 
+------------
+- Simbolo | Informacion asociada 
+------------
+Circle -> 
+  Tipo: TRegistro | Alcance: 1 | Categoria: Tipos
+Contacto -> 
+  Tipo: TRegistro | Alcance: 1 | Categoria: Tipos
+Producto -> 
+  Tipo: TRegistro | Alcance: 1 | Categoria: Tipos
+Rectangle -> 
+  Tipo: TRegistro | Alcance: 1 | Categoria: Tipos
+Registro -> 
+  Tipo: TRegistro | Alcance: 1 | Categoria: Tipos
+Shape -> 
+  Tipo: TUnion | Alcance: 1 | Categoria: Tipos
+a -> 
+  Tipo: TInt | Alcance: 1 | Categoria: Variable
+abc -> 
+  Tipo: TArray 3 TChar | Alcance: 1 | Categoria: Variable
+alex -> 
+  Tipo: TNuevo "Contacto" | Alcance: 1 | Categoria: Variable
+areaCirculo -> 
+  Tipo: TVoid | Alcance: 1 | Categoria: Funciones
+    Extra:
+  Params ["c"]  AST [Return ((3.14 * VarCompIndex (Var "c" (TNuevo "Circle")) "radius" TFloat) * VarCompIndex (Var "c" (TNuevo "Circle")) "radius" TFloat)]
+
+b -> 
+  Tipo: TInt | Alcance: 1 | Categoria: Variable
+bottomRightX -> 
+  Tipo: TFloat | Alcance: 5 | Categoria: Campos
+    Extra:
+  FromReg "Rectangle"
+
+bottomRightY -> 
+  Tipo: TFloat | Alcance: 5 | Categoria: Campos
+    Extra:
+  FromReg "Rectangle"
+
+c -> 
+  Tipo: TNuevo "Circle" | Alcance: 7 | Categoria: Campos
+    Extra:
+  FromReg "Shape"
+
+  Tipo: TNuevo "Circle" | Alcance: 8 | Categoria: Parametros Referencia
+calcularGanancia -> 
+  Tipo: TInt | Alcance: 1 | Categoria: Funciones
+    Extra:
+  Params ["precioComprado","precioVendido"]  AST [Return (Var "precioVendido" TInt - Var "precioComprado" TInt)]
+
+calcularGanancia2 -> 
+  Tipo: TInt | Alcance: 1 | Categoria: Funciones
+    Extra:
+  Params ["producto","precioVendido"]  AST [Return (Var "precioVendido" TInt - VarCompIndex (Var "producto" (TNuevo "Producto")) "precioReal" TInt)]
+
+centerX -> 
+  Tipo: TFloat | Alcance: 4 | Categoria: Campos
+    Extra:
+  FromReg "Circle"
+
+centerY -> 
+  Tipo: TFloat | Alcance: 4 | Categoria: Campos
+    Extra:
+  FromReg "Circle"
+
+edad -> 
+  Tipo: TInt | Alcance: 3 | Categoria: Campos
+    Extra:
+  FromReg "Contacto"
+
+  Tipo: TInt | Alcance: 1 | Categoria: Variable
+edades -> 
+  Tipo: TArray 5 TStr | Alcance: 1 | Categoria: Variable
+esMayor -> 
+  Tipo: TBool | Alcance: 1 | Categoria: Variable
+i -> 
+  Tipo: TInt | Alcance: 1 | Categoria: Variable
+indices -> 
+  Tipo: TArray 3 TFloat | Alcance: 1 | Categoria: Variable
+lista1 -> 
+  Tipo: TLista TChar | Alcance: 1 | Categoria: Variable
+n1 -> 
+  Tipo: TInt | Alcance: 1 | Categoria: Variable
+n2 -> 
+  Tipo: TInt | Alcance: 1 | Categoria: Variable
+n3 -> 
+  Tipo: TInt | Alcance: 1 | Categoria: Variable
+n4 -> 
+  Tipo: TInt | Alcance: 1 | Categoria: Variable
+nombre -> 
+  Tipo: TStr | Alcance: 3 | Categoria: Campos
+    Extra:
+  FromReg "Contacto"
+
+nombres -> 
+  Tipo: TArray 3 TStr | Alcance: 1 | Categoria: Variable
+nombres2 -> 
+  Tipo: TArray 5 TStr | Alcance: 1 | Categoria: Variable
+p1 -> 
+  Tipo: TApuntador (TArray 5 TInt) | Alcance: 1 | Categoria: Variable
+p2 -> 
+  Tipo: TApuntador TInt | Alcance: 1 | Categoria: Variable
+p3 -> 
+  Tipo: TNuevo "Producto" | Alcance: 1 | Categoria: Variable
+precioComprado -> 
+  Tipo: TInt | Alcance: 9 | Categoria: Parametros Valor
+precioReal -> 
+  Tipo: TInt | Alcance: 6 | Categoria: Campos
+    Extra:
+  FromReg "Producto"
+
+precioVendido -> 
+  Tipo: TInt | Alcance: 9 | Categoria: Parametros Valor
+  Tipo: TInt | Alcance: 10 | Categoria: Parametros Valor
+producto -> 
+  Tipo: TNuevo "Producto" | Alcance: 10 | Categoria: Parametros Referencia
+puedeConducir -> 
+  Tipo: TBool | Alcance: 1 | Categoria: Variable
+r -> 
+  Tipo: TNuevo "Rectangle" | Alcance: 7 | Categoria: Campos
+    Extra:
+  FromReg "Shape"
+
+  Tipo: TFloat | Alcance: 1 | Categoria: Variable
+r2 -> 
+  Tipo: TNuevo "Registro" | Alcance: 1 | Categoria: Variable
+radius -> 
+  Tipo: TFloat | Alcance: 4 | Categoria: Campos
+    Extra:
+  FromReg "Circle"
+
+sh -> 
+  Tipo: TNuevo "Shape" | Alcance: 1 | Categoria: Variable
+sofia -> 
+  Tipo: TNuevo "Contacto" | Alcance: 1 | Categoria: Variable
+tieneTrabajo -> 
+  Tipo: TBool | Alcance: 3 | Categoria: Campos
+    Extra:
+  FromReg "Contacto"
+
+tip -> 
+  Tipo: TChar | Alcance: 2 | Categoria: Campos
+    Extra:
+  FromReg "Registro"
+
+topLeftX -> 
+  Tipo: TFloat | Alcance: 5 | Categoria: Campos
+    Extra:
+  FromReg "Rectangle"
+
+topLeftY -> 
+  Tipo: TFloat | Alcance: 5 | Categoria: Campos
+    Extra:
+  FromReg "Rectangle"
+
+up -> 
+  Tipo: TInt | Alcance: 2 | Categoria: Campos
+    Extra:
+  FromReg "Registro"
+
+
