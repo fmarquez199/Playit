@@ -1,1 +1,38 @@
-Programa [Asignaciones [Asignacion (Var "c" TDummy) summon TNuevo "Contacto"],Asignacion (VarCompIndex (PuffValue (VarCompIndex (PuffValue (PuffValue (Var "c" (TApuntador (TApuntador (TNuevo "Contacto")))) (TApuntador (TApuntador (TNuevo "Contacto")))) (TApuntador (TApuntador (TNuevo "Contacto")))) "pointernombre" (TApuntador (TNuevo "Nombre"))) (TApuntador (TNuevo "Nombre"))) "flotante" TFloat) 2.2,Asignaciones [],Asignaciones [],Asignaciones [],Asignaciones [],Asignacion (Var "c" (TApuntador (TApuntador (TNuevo "Contacto")))) (PuffValue (Var "apt" (TApuntador TInt)) (TApuntador TInt) == VarIndex (PuffValue (Var "apt2" (TApuntador (TLista TInt))) (TApuntador (TLista TInt))) 12 (TLista TInt)),Asignacion (Var "c" (TApuntador (TApuntador (TNuevo "Contacto")))) (PuffValue (Var "apt" (TApuntador TInt)) (TApuntador TInt) == VarIndex (PuffValue (PuffValue (Var "apt3" (TApuntador (TApuntador (TLista TInt)))) (TApuntador (TApuntador (TLista TInt)))) (TApuntador (TApuntador (TLista TInt)))) 12 (TApuntador (TLista TInt))),Asignacion (Var "c" (TApuntador (TApuntador (TNuevo "Contacto")))) (PuffValue (Var "apt" (TApuntador TInt)) (TApuntador TInt) == VarIndex (PuffValue (PuffValue (PuffValue (Var "apt4" (TApuntador (TApuntador (TApuntador (TLista TInt))))) (TApuntador (TApuntador (TApuntador (TLista TInt))))) (TApuntador (TApuntador (TApuntador (TLista TInt))))) (TApuntador (TApuntador (TApuntador (TLista TInt))))) 12 (TApuntador (TApuntador (TLista TInt))))]
+
+------------
+ Tabla de simbolos 
+------------
+- Simbolo | Informacion asociada 
+------------
+Contacto -> 
+  Tipo: TRegistro | Alcance: 1 | Categoria: Tipos
+Contacto2 -> 
+  Tipo: TRegistro | Alcance: 1 | Categoria: Tipos
+Nombre -> 
+  Tipo: TRegistro | Alcance: 1 | Categoria: Tipos
+apt -> 
+  Tipo: TApuntador TInt | Alcance: 1 | Categoria: Variable
+apt2 -> 
+  Tipo: TApuntador (TLista TInt) | Alcance: 1 | Categoria: Variable
+apt3 -> 
+  Tipo: TApuntador (TApuntador (TLista TInt)) | Alcance: 1 | Categoria: Variable
+apt4 -> 
+  Tipo: TApuntador (TApuntador (TApuntador (TLista TInt))) | Alcance: 1 | Categoria: Variable
+c -> 
+  Tipo: TApuntador (TApuntador (TNuevo "Contacto")) | Alcance: 1 | Categoria: Variable
+flotante -> 
+  Tipo: TFloat | Alcance: 2 | Categoria: Campos
+    Extra:
+  FromReg "Nombre"
+
+pointernombre -> 
+  Tipo: TApuntador (TNuevo "Nombre") | Alcance: 3 | Categoria: Campos
+    Extra:
+  FromReg "Contacto"
+
+pointernombre2 -> 
+  Tipo: TNuevo "Nombre" | Alcance: 4 | Categoria: Campos
+    Extra:
+  FromReg "Contacto2"
+
+

@@ -1,1 +1,9 @@
-Programa [Asignaciones [],Asignacion (Var "numero" TInt) joystick "~Introduzca un numero entero: ~",IF [(((Var "numero" TInt % 2) == 0),[Print ["~es par~"]]),(True,[Print ["~es impar~"]])]]
+
+------------
+ Tabla de simbolos 
+------------
+- Simbolo | Informacion asociada 
+------------
+numero -> 
+  Tipo: TInt | Alcance: 1 | Categoria: Variable
+

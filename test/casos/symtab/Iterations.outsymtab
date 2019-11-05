@@ -1,1 +1,12 @@
-Programa [Asignaciones [],For "i" 0 10 [Asignaciones [],Asignacion (Var "i" TInt) 9]]
+
+------------
+ Tabla de simbolos 
+------------
+- Simbolo | Informacion asociada 
+------------
+i -> 
+  Tipo: TInt | Alcance: 1 | Categoria: Variable
+  Tipo: TInt | Alcance: 2 | Categoria: Variable
+x -> 
+  Tipo: TFloat | Alcance: 2 | Categoria: Variable
+

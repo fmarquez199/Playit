@@ -1,1 +1,275 @@
-Programa [Asignaciones [Asignacion (Var "ast2" TDummy) '\'',Asignacion (Var "u1" TDummy) 'u',Asignacion (Var "n1" TDummy) 'n',Asignacion (Var "a1" TDummy) 'a',Asignacion (Var "ast1" TDummy) '\''],Asignacion (Var "m1" TChar) 'M',Asignaciones [Asignacion (Var "b2" TDummy) False,Asignacion (Var "b1" TDummy) True],Asignaciones [],Asignaciones [Asignacion (Var "b5" TDummy) (2 > 3) ? True : False,Asignacion (Var "b4" TDummy) ((Var "b1" TBool && Var "b2" TBool) || Var "b3" TBool)],Asignaciones [Asignacion (Var "b20" TDummy) 1,Asignacion (Var "a2" TDummy) 0],Asignaciones [Asignacion (Var "d2" TDummy) (Var "a2" TInt * 2),Asignacion (Var "c2" TDummy) (Var "a2" TInt + 1)],Asignaciones [Asignacion (Var "d3" TDummy) (Var "c2" TInt * 2),Asignacion (Var "abc" TDummy) (Var "c2" TInt + 1),Asignacion (Var "b31" TDummy) 1.0,Asignacion (Var "a3" TDummy) 1],Asignaciones [Asignacion (Var "listab1" TDummy) ([2] == [])],Asignaciones [Asignacion (Var "listab2" TDummy) ([] == [])],Asignaciones [Asignacion (Var "listab3" TDummy) ([] == [2])],Asignaciones [Asignacion (Var "listab3'1" TDummy) ([[]] == [[2]])],Asignaciones [Asignacion (Var "listab4" TDummy) ([2] == [])],Asignaciones [Asignacion (Var "listab5" TDummy) ((2 : []) == [])],Asignaciones [Asignacion (Var "listab6" TDummy) (([] :: []) == [])],Asignaciones [Asignacion (Var "listab7" TDummy) (([2] :: []) == [2])],Asignaciones [Asignacion (Var "listab8" TDummy) (([] :: [3]) == [3])],Asignaciones [Asignacion (Var "listab8'1" TDummy) (([2] : [[3]]) == [[2],[3]])],Asignaciones [Asignacion (Var "listab9" TDummy) ([[]] == [[2]])],Asignaciones [Asignacion (Var "listab10" TDummy) (([] : [[2]]) == [[],[2]])],Asignaciones [Asignacion (Var "listab11" TDummy) ([[]] == [[]])],Asignaciones [],Asignaciones [Asignacion (Var "test" TDummy) summon TNuevo "Contacto3"],Asignaciones [Asignacion (Var "test2" TDummy) summon TNuevo "PrimerNombre2"],Asignacion (VarCompIndex (PuffValue (VarCompIndex (PuffValue (VarCompIndex (PuffValue (Var "test" (TApuntador (TNuevo "Contacto3"))) (TApuntador (TNuevo "Contacto3"))) "pointernombre" (TApuntador (TNuevo "Nombre2"))) (TApuntador (TNuevo "Nombre2"))) "regpn" (TApuntador (TNuevo "PrimerNombre2"))) (TApuntador (TNuevo "PrimerNombre2"))) "entero" TInt) (VarCompIndex (PuffValue (VarCompIndex (PuffValue (VarCompIndex (PuffValue (Var "test" (TApuntador (TNuevo "Contacto3"))) (TApuntador (TNuevo "Contacto3"))) "pointernombre" (TApuntador (TNuevo "Nombre2"))) (TApuntador (TNuevo "Nombre2"))) "regpn" (TApuntador (TNuevo "PrimerNombre2"))) (TApuntador (TNuevo "PrimerNombre2"))) "entero" TInt + VarIndex (VarCompIndex (Var "nombre" (TNuevo "Contacto3")) "arraypower" (TArray 3 TInt)) 0 TInt),Asignaciones [],Asignaciones [],Asignacion (Var "hola1" (TArray 3 TInt)) Var "hola2" (TArray 3 TInt),Asignacion (Var "test" (TApuntador (TNuevo "Contacto3"))) summon TNuevo "Contacto3",Asignacion (PuffValue (Var "test" (TApuntador (TNuevo "Contacto3"))) (TApuntador (TNuevo "Contacto3"))) Var "nombre" (TNuevo "Contacto3"),Asignacion (Var "nombre" (TNuevo "Contacto3")) Var "nombre" (TNuevo "Contacto3"),Asignaciones [],Asignacion (Var "hola3" (TLista TInt)) ((2 + 1) : Var "hola3" (TLista TInt)),Asignacion (Var "hola3" (TLista TInt)) ((VarIndex (Var "hola1" (TArray 3 TInt)) 0 TInt + VarCompIndex (PuffValue (VarCompIndex (PuffValue (VarCompIndex (PuffValue (Var "test" (TApuntador (TNuevo "Contacto3"))) (TApuntador (TNuevo "Contacto3"))) "pointernombre" (TApuntador (TNuevo "Nombre2"))) (TApuntador (TNuevo "Nombre2"))) "regpn" (TApuntador (TNuevo "PrimerNombre2"))) (TApuntador (TNuevo "PrimerNombre2"))) "entero" TInt) : Var "hola3" (TLista TInt)),Asignacion (Var "hola3" (TLista TInt)) (VarCompIndex (PuffValue (VarCompIndex (PuffValue (VarCompIndex (PuffValue (Var "test" (TApuntador (TNuevo "Contacto3"))) (TApuntador (TNuevo "Contacto3"))) "pointernombre" (TApuntador (TNuevo "Nombre2"))) (TApuntador (TNuevo "Nombre2"))) "regpn" (TApuntador (TNuevo "PrimerNombre2"))) (TApuntador (TNuevo "PrimerNombre2"))) "entero" TInt : Var "hola3" (TLista TInt)),Asignacion (Var "a3" TFloat) Var "a3" TFloat,Asignaciones [],Asignaciones [Asignacion (Var "enteros2" TDummy) [Var "a2" TInt,(Var "c2" TInt + 2),((VarIndex (Var "abc2" (TArray 2 TInt)) 0 TInt + 2) * Var "b2" TBool ? (Var "a2" TInt + 1) : VarIndex (Var "abc2" (TArray 2 TInt)) (VarIndex (Var "abc2" (TArray 2 TInt)) 2 TInt - 1) TInt)]],Asignacion (VarIndex (Var "abc2" (TArray 2 TInt)) 0 TInt) 0,Asignacion (VarIndex (Var "abc2" (TArray 2 TInt)) 1 TInt) 1,Asignaciones [Asignacion (Var "lista1" TDummy) [[Var "a2" TInt,Var "a2" TInt],[Var "a2" TInt,Var "a2" TInt]]],Asignacion (VarIndex (VarIndex (Var "lista1" (TLista (TLista TInt))) 0 TInt) 0 TError) 240,Asignaciones [Asignacion (Var "l1" TDummy) [1,2,3,4,4]],Asignaciones [Asignacion (Var "c" TDummy) [[Var "l1" (TLista TInt),Var "l1" (TLista TInt)],Var "a2" TInt]],Asignacion (VarCompIndex (VarCompIndex (VarCompIndex (Var "c" (TNuevo "Contacto")) "n" (TNuevo "Nombre")) "n" (TNuevo "PrimerNombre")) "nombre" TStr) joystick "~Dame un nombre YEH NOW BB~",Asignacion (VarCompIndex (Var "c" (TNuevo "Contacto")) "tip" TChar) 'c',Asignaciones [Asignacion (Var "p" TDummy) summon TInt],Asignacion (PuffValue (Var "p" (TApuntador TInt)) (TApuntador TInt)) Var "b2" TBool ? (Var "a2" TInt + 1) : VarIndex (Var "abc2" (TArray 2 TInt)) (3 - 1) TInt,Asignacion (PuffValue (Var "p" (TApuntador TInt)) (TApuntador TInt)) 15,Free "p",Asignaciones [Asignacion (Var "p2" TDummy) summon TInt],Asignacion (VarIndex (PuffValue (Var "p2" (TApuntador (TArray 2 TInt))) (TApuntador (TArray 2 TInt))) 0 (TArray 2 TInt)) 21,Free "p2",Asignaciones [Asignacion (Var "l2" TDummy) []],Asignaciones [Asignacion (Var "plista3" TDummy) summon TLista TInt],Asignaciones [Asignacion (Var "plista4" TDummy) summon TLista TInt],Asignacion (PuffValue (Var "plista3" (TApuntador (TLista TInt))) (TApuntador (TLista TInt))) (2 : ((([] :: []) :: []) :: [22])),Asignacion (PuffValue (Var "plista3" (TApuntador (TLista TInt))) (TApuntador (TLista TInt))) (Var "b2" TBool ? (Var "a2" TInt + 1) : VarIndex (Var "abc2" (TArray 2 TInt)) (VarIndex (Var "l2" (TLista TInt)) 0 TInt - VarIndex (VarIndex (Var "lista1" (TLista (TLista TInt))) 2 TInt) 2 TError) TInt : [1,2]),Asignacion (PuffValue (Var "plista3" (TApuntador (TLista TInt))) (TApuntador (TLista TInt))) [1,2],Asignacion (PuffValue (Var "plista4" (TApuntador (TLista TInt))) (TApuntador (TLista TInt))) PuffValue (Var "plista3" (TApuntador (TLista TInt))) (TApuntador (TLista TInt)),Asignaciones [Asignacion (Var "p4" TDummy) 0],Asignaciones [Asignacion (Var "a" TDummy) (((((VarIndex (Var "l2" (TLista TInt)) 2 TInt + 2) + ((((2 * 3) // 3) / 4) % 4)) - 5) - -1) + #Var "l2" (TLista TInt))],Asignaciones [Asignacion (Var "b" TDummy) ((((Var "a" TInt + 2) + 2) * (((3 // 3) / (4 % 4)) - 5)) - (-1 + #Var "l2" (TLista TInt)))],Asignaciones [],Asignacion (Var "c22" TBool) ((((Var "b1" TBool || (True && False)) || !Var "b2" TBool) == True) && (Var "b4" TBool != Var "b2" TBool ? True : False)),Asignaciones [],Asignaciones [],Asignacion (Var "c22" TBool) (Var "manu1" (TArray 2 TInt) == Var "manu1" (TArray 2 TInt)),Asignaciones [],Asignaciones [],Asignacion (Var "c22" TBool) (Var "manukitpower1" (TLista TInt) == Var "manukitpower2" (TLista TInt)),Asignaciones [],Asignaciones [],Asignacion (Var "c22" TBool) (PuffValue (Var "manukitpower3" (TApuntador TInt)) (TApuntador TInt) == VarIndex (VarIndex (PuffValue (PuffValue (PuffValue (Var "manukitpower4" (TApuntador (TApuntador (TApuntador (TLista (TLista TInt)))))) (TApuntador (TApuntador (TApuntador (TLista (TLista TInt)))))) (TApuntador (TApuntador (TApuntador (TLista (TLista TInt)))))) (TApuntador (TApuntador (TApuntador (TLista (TLista TInt)))))) 12 (TApuntador (TApuntador (TLista (TLista TInt))))) 3 (TApuntador (TLista (TLista TInt)))),Asignaciones [Asignacion (Var "c1" TDummy) ^'c'],Asignaciones [Asignacion (Var "c223" TDummy) .'c'],Asignaciones [],Asignaciones [Asignacion (Var "c3" TDummy) ^.Var "c2222" TChar],Asignaciones [Asignacion (Var "c4" TDummy) .^Var "c2222" TChar],Asignaciones [Asignacion (Var "c5" TDummy) .^Var "c2222" TChar],Asignaciones [Asignacion (Var "c6" TDummy) .^Var "c2222" TChar],Asignaciones [Asignacion (Var "c7" TDummy) ^.Var "c2222" TChar],While ((VarIndex (Var "abc2" (TArray 2 TInt)) 0 TInt + 1) * Var "b2" TBool ? (Var "a2" TInt + 1) : VarIndex (Var "abc2" (TArray 2 TInt)) (2 - 1) TInt) [Break,Continue,ForWhile "i" (2 - 2) (10 - 1) ((VarIndex (Var "abc2" (TArray 2 TInt)) 0 TInt + 2) * Var "b2" TBool ? (Var "a2" TInt + 1) : VarIndex (Var "abc2" (TArray 2 TInt)) (5 - 1) TInt) [IF [((12 > 2),[Asignaciones [],Continue,Break])],IF [((1.0 > 2.2),[Return (Var "i" TInt + 2)]),(True,[Return (Var "i" TInt + 2)])]]],ForEach "i" Var "abc" TFloat [],ForEach "i" Var "abc" TFloat [],ForEach "i" Var "abc" TFloat [],Asignaciones [Asignacion (Var "a222" TDummy) kill SubrutinaCall "f" [1,2,3,4]]]
+
+------------
+ Tabla de simbolos 
+------------
+- Simbolo | Informacion asociada 
+------------
+Contacto -> 
+  Tipo: TRegistro | Alcance: 1 | Categoria: Tipos
+Contacto2 -> 
+  Tipo: TRegistro | Alcance: 1 | Categoria: Tipos
+Contacto3 -> 
+  Tipo: TRegistro | Alcance: 1 | Categoria: Tipos
+Nombre -> 
+  Tipo: TRegistro | Alcance: 1 | Categoria: Tipos
+Nombre2 -> 
+  Tipo: TRegistro | Alcance: 1 | Categoria: Tipos
+PrimerNombre -> 
+  Tipo: TRegistro | Alcance: 1 | Categoria: Tipos
+PrimerNombre2 -> 
+  Tipo: TRegistro | Alcance: 1 | Categoria: Tipos
+a -> 
+  Tipo: TInt | Alcance: 1 | Categoria: Variable
+  Tipo: TInt | Alcance: 14 | Categoria: Variable
+a1 -> 
+  Tipo: TChar | Alcance: 8 | Categoria: Campos
+    Extra:
+  FromReg "Contacto"
+
+  Tipo: TChar | Alcance: 1 | Categoria: Variable
+a2 -> 
+  Tipo: TInt | Alcance: 1 | Categoria: Variable
+a222 -> 
+  Tipo: TInt | Alcance: 1 | Categoria: Variable
+a3 -> 
+  Tipo: TFloat | Alcance: 1 | Categoria: Variable
+abc -> 
+  Tipo: TFloat | Alcance: 1 | Categoria: Variable
+abc2 -> 
+  Tipo: TArray 2 TInt | Alcance: 1 | Categoria: Variable
+arraypower -> 
+  Tipo: TArray 3 TInt | Alcance: 5 | Categoria: Campos
+    Extra:
+  FromReg "Contacto3"
+
+ast1 -> 
+  Tipo: TChar | Alcance: 8 | Categoria: Campos
+    Extra:
+  FromReg "Contacto"
+
+  Tipo: TChar | Alcance: 1 | Categoria: Variable
+ast2 -> 
+  Tipo: TChar | Alcance: 8 | Categoria: Campos
+    Extra:
+  FromReg "Contacto"
+
+  Tipo: TChar | Alcance: 1 | Categoria: Variable
+b -> 
+  Tipo: TInt | Alcance: 1 | Categoria: Variable
+b1 -> 
+  Tipo: TBool | Alcance: 1 | Categoria: Variable
+b2 -> 
+  Tipo: TBool | Alcance: 1 | Categoria: Variable
+b20 -> 
+  Tipo: TInt | Alcance: 1 | Categoria: Variable
+b3 -> 
+  Tipo: TBool | Alcance: 1 | Categoria: Variable
+b31 -> 
+  Tipo: TFloat | Alcance: 1 | Categoria: Variable
+b4 -> 
+  Tipo: TBool | Alcance: 1 | Categoria: Variable
+b5 -> 
+  Tipo: TBool | Alcance: 1 | Categoria: Variable
+c -> 
+  Tipo: TNuevo "Contacto" | Alcance: 1 | Categoria: Variable
+c1 -> 
+  Tipo: TChar | Alcance: 1 | Categoria: Variable
+c11 -> 
+  Tipo: TNuevo "Contacto" | Alcance: 11 | Categoria: Parametros Referencia
+c2 -> 
+  Tipo: TInt | Alcance: 1 | Categoria: Variable
+c22 -> 
+  Tipo: TBool | Alcance: 1 | Categoria: Variable
+c221 -> 
+  Tipo: TNuevo "Contacto" | Alcance: 11 | Categoria: Parametros Valor
+c2222 -> 
+  Tipo: TChar | Alcance: 1 | Categoria: Variable
+c223 -> 
+  Tipo: TChar | Alcance: 1 | Categoria: Variable
+c3 -> 
+  Tipo: TStr | Alcance: 11 | Categoria: Parametros Valor
+  Tipo: TChar | Alcance: 1 | Categoria: Variable
+c4 -> 
+  Tipo: TChar | Alcance: 1 | Categoria: Variable
+c5 -> 
+  Tipo: TChar | Alcance: 1 | Categoria: Variable
+c6 -> 
+  Tipo: TChar | Alcance: 1 | Categoria: Variable
+c7 -> 
+  Tipo: TChar | Alcance: 1 | Categoria: Variable
+d2 -> 
+  Tipo: TInt | Alcance: 1 | Categoria: Variable
+d3 -> 
+  Tipo: TFloat | Alcance: 1 | Categoria: Variable
+entero -> 
+  Tipo: TInt | Alcance: 2 | Categoria: Campos
+    Extra:
+  FromReg "PrimerNombre2"
+
+enteros1 -> 
+  Tipo: TArray 2 TInt | Alcance: 8 | Categoria: Campos
+    Extra:
+  FromReg "Contacto"
+
+  Tipo: TArray 2 TInt | Alcance: 1 | Categoria: Variable
+enteros2 -> 
+  Tipo: TArray 2 TInt | Alcance: 8 | Categoria: Campos
+    Extra:
+  FromReg "Contacto"
+
+  Tipo: TArray 2 TInt | Alcance: 1 | Categoria: Variable
+f -> 
+  Tipo: TNuevo "Contacto" | Alcance: 1 | Categoria: Funciones
+    Extra:
+  Params ["p11","c11","c221","c3"]
+
+f2 -> 
+  Tipo: TVoid | Alcance: 1 | Categoria: Procedimientos
+    Extra:
+  Params []
+
+f3 -> 
+  Tipo: TNuevo "Contacto" | Alcance: 1 | Categoria: Funciones
+    Extra:
+  Params []
+
+flotante -> 
+  Tipo: TFloat | Alcance: 2 | Categoria: Campos
+    Extra:
+  FromReg "PrimerNombre2"
+
+  Tipo: TFloat | Alcance: 4 | Categoria: Campos
+    Extra:
+  FromReg "Contacto2"
+
+hola1 -> 
+  Tipo: TArray 3 TInt | Alcance: 1 | Categoria: Variable
+hola2 -> 
+  Tipo: TArray 3 TInt | Alcance: 1 | Categoria: Variable
+hola3 -> 
+  Tipo: TLista TInt | Alcance: 1 | Categoria: Variable
+i -> 
+  Tipo: TInt | Alcance: 13 | Categoria: Variable
+  Tipo: TInt | Alcance: 17 | Categoria: Variable
+  Tipo: TFloat | Alcance: 18 | Categoria: Variable
+  Tipo: TNuevo "Contacto" | Alcance: 19 | Categoria: Variable
+l1 -> 
+  Tipo: TLista TInt | Alcance: 1 | Categoria: Variable
+l2 -> 
+  Tipo: TLista TInt | Alcance: 1 | Categoria: Variable
+lista1 -> 
+  Tipo: TLista (TLista TInt) | Alcance: 8 | Categoria: Campos
+    Extra:
+  FromReg "Contacto"
+
+  Tipo: TLista (TLista TInt) | Alcance: 1 | Categoria: Variable
+listab1 -> 
+  Tipo: TBool | Alcance: 1 | Categoria: Variable
+listab10 -> 
+  Tipo: TBool | Alcance: 1 | Categoria: Variable
+listab11 -> 
+  Tipo: TBool | Alcance: 1 | Categoria: Variable
+listab2 -> 
+  Tipo: TBool | Alcance: 1 | Categoria: Variable
+listab3 -> 
+  Tipo: TBool | Alcance: 1 | Categoria: Variable
+listab3'1 -> 
+  Tipo: TBool | Alcance: 1 | Categoria: Variable
+listab4 -> 
+  Tipo: TBool | Alcance: 1 | Categoria: Variable
+listab5 -> 
+  Tipo: TBool | Alcance: 1 | Categoria: Variable
+listab6 -> 
+  Tipo: TBool | Alcance: 1 | Categoria: Variable
+listab7 -> 
+  Tipo: TBool | Alcance: 1 | Categoria: Variable
+listab8 -> 
+  Tipo: TBool | Alcance: 1 | Categoria: Variable
+listab8'1 -> 
+  Tipo: TBool | Alcance: 1 | Categoria: Variable
+listab9 -> 
+  Tipo: TBool | Alcance: 1 | Categoria: Variable
+m1 -> 
+  Tipo: TChar | Alcance: 8 | Categoria: Campos
+    Extra:
+  FromReg "Contacto"
+
+  Tipo: TChar | Alcance: 1 | Categoria: Variable
+manu1 -> 
+  Tipo: TArray 2 TInt | Alcance: 1 | Categoria: Variable
+manu2 -> 
+  Tipo: TArray 30 TInt | Alcance: 1 | Categoria: Variable
+manukitpower1 -> 
+  Tipo: TLista TInt | Alcance: 1 | Categoria: Variable
+manukitpower2 -> 
+  Tipo: TLista TInt | Alcance: 1 | Categoria: Variable
+manukitpower3 -> 
+  Tipo: TApuntador TInt | Alcance: 1 | Categoria: Variable
+manukitpower4 -> 
+  Tipo: TApuntador (TApuntador (TApuntador (TLista (TLista TInt)))) | Alcance: 1 | Categoria: Variable
+n -> 
+  Tipo: TNuevo "PrimerNombre" | Alcance: 7 | Categoria: Campos
+    Extra:
+  FromReg "Nombre"
+
+  Tipo: TNuevo "Nombre" | Alcance: 8 | Categoria: Campos
+    Extra:
+  FromReg "Contacto"
+
+n1 -> 
+  Tipo: TChar | Alcance: 8 | Categoria: Campos
+    Extra:
+  FromReg "Contacto"
+
+  Tipo: TChar | Alcance: 1 | Categoria: Variable
+nombre -> 
+  Tipo: TStr | Alcance: 6 | Categoria: Campos
+    Extra:
+  FromReg "PrimerNombre"
+
+  Tipo: TNuevo "Contacto3" | Alcance: 1 | Categoria: Variable
+p -> 
+  Tipo: TApuntador TInt | Alcance: 1 | Categoria: Variable
+p1 -> 
+  Tipo: TInt | Alcance: 1 | Categoria: Variable
+p11 -> 
+  Tipo: TInt | Alcance: 11 | Categoria: Parametros Valor
+p2 -> 
+  Tipo: TApuntador (TArray 2 TInt) | Alcance: 1 | Categoria: Variable
+p4 -> 
+  Tipo: TInt | Alcance: 1 | Categoria: Variable
+plista3 -> 
+  Tipo: TApuntador (TLista TInt) | Alcance: 1 | Categoria: Variable
+plista4 -> 
+  Tipo: TApuntador (TLista TInt) | Alcance: 1 | Categoria: Variable
+pointernombre -> 
+  Tipo: TApuntador (TNuevo "Nombre2") | Alcance: 5 | Categoria: Campos
+    Extra:
+  FromReg "Contacto3"
+
+regnombre -> 
+  Tipo: TNuevo "Nombre2" | Alcance: 4 | Categoria: Campos
+    Extra:
+  FromReg "Contacto2"
+
+regpn -> 
+  Tipo: TApuntador (TNuevo "PrimerNombre2") | Alcance: 3 | Categoria: Campos
+    Extra:
+  FromReg "Nombre2"
+
+test -> 
+  Tipo: TApuntador (TNuevo "Contacto3") | Alcance: 1 | Categoria: Variable
+test2 -> 
+  Tipo: TApuntador (TNuevo "PrimerNombre2") | Alcance: 1 | Categoria: Variable
+tip -> 
+  Tipo: TChar | Alcance: 8 | Categoria: Campos
+    Extra:
+  FromReg "Contacto"
+
+u1 -> 
+  Tipo: TChar | Alcance: 8 | Categoria: Campos
+    Extra:
+  FromReg "Contacto"
+
+  Tipo: TChar | Alcance: 1 | Categoria: Variable
+

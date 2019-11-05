@@ -1,1 +1,11 @@
-Programa [Asignaciones [],Asignacion (Var "arista" TFloat) joystick "~Introduzca arista: ~",Asignacion (Var "volumen" TFloat) ((Var "arista" TFloat * Var "arista" TFloat) * Var "arista" TFloat),Print [Var "volumen" TFloat,"~el volumen del cubo es: ~"]]
+
+------------
+ Tabla de simbolos 
+------------
+- Simbolo | Informacion asociada 
+------------
+arista -> 
+  Tipo: TFloat | Alcance: 1 | Categoria: Variable
+volumen -> 
+  Tipo: TFloat | Alcance: 1 | Categoria: Variable
+

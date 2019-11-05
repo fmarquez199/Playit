@@ -1,1 +1,61 @@
-Programa [Asignaciones [Asignacion (Var "int" TDummy) 1],Asignaciones [Asignacion (Var "float" TDummy) 1.5],Asignaciones [Asignacion (Var "char" TDummy) .^'c'],Asignaciones [Asignacion (Var "string" TDummy) "~Hola Mundo!~"],Asignaciones [Asignacion (Var "b" TDummy) ((True && False) == False)],Asignaciones [Asignacion (Var "r" TDummy) ['H','i']],Asignaciones [Asignacion (Var "l" TDummy) [2.7999,2.8,2.9999,3.0,4.25,4.2501,4.7499,4.75,5.0]],Asignaciones [Asignacion (Var "abril_Julio_2019" TDummy) [False,0,4.1416,"~12-11163~"]],Asignaciones [],Asignacion (VarCompIndex (Var "estudiante'" (TNuevo "Estudiante")) "f" TBool) True,Asignaciones [Asignacion (Var "p" TDummy) summon TNuevo "Trimestre"]]
+
+------------
+ Tabla de simbolos 
+------------
+- Simbolo | Informacion asociada 
+------------
+Estudiante -> 
+  Tipo: TUnion | Alcance: 1 | Categoria: Tipos
+Trimestre -> 
+  Tipo: TRegistro | Alcance: 1 | Categoria: Tipos
+abril_Julio_2019 -> 
+  Tipo: TNuevo "Trimestre" | Alcance: 1 | Categoria: Variable
+b -> 
+  Tipo: TBool | Alcance: 1 | Categoria: Variable
+char -> 
+  Tipo: TChar | Alcance: 1 | Categoria: Variable
+estudiante -> 
+  Tipo: TStr | Alcance: 2 | Categoria: Campos
+    Extra:
+  FromReg "Trimestre"
+
+estudiante' -> 
+  Tipo: TNuevo "Estudiante" | Alcance: 1 | Categoria: Variable
+f -> 
+  Tipo: TBool | Alcance: 3 | Categoria: Campos
+    Extra:
+  FromReg "Estudiante"
+
+float -> 
+  Tipo: TFloat | Alcance: 1 | Categoria: Variable
+indice -> 
+  Tipo: TFloat | Alcance: 2 | Categoria: Campos
+    Extra:
+  FromReg "Trimestre"
+
+inscripcion_ok -> 
+  Tipo: TBool | Alcance: 2 | Categoria: Campos
+    Extra:
+  FromReg "Trimestre"
+
+int -> 
+  Tipo: TInt | Alcance: 1 | Categoria: Variable
+l -> 
+  Tipo: TLista TFloat | Alcance: 1 | Categoria: Variable
+p -> 
+  Tipo: TApuntador TInt | Alcance: 1 | Categoria: Variable
+r -> 
+  Tipo: TArray Var "int" TInt TStr | Alcance: 1 | Categoria: Variable
+string -> 
+  Tipo: TStr | Alcance: 1 | Categoria: Variable
+uc -> 
+  Tipo: TInt | Alcance: 2 | Categoria: Campos
+    Extra:
+  FromReg "Trimestre"
+
+v -> 
+  Tipo: TInt | Alcance: 3 | Categoria: Campos
+    Extra:
+  FromReg "Estudiante"
+
+

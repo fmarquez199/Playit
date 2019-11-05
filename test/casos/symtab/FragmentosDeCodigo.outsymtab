@@ -1,1 +1,163 @@
-Programa [Asignaciones [],Asignacion (Var "a" TInt) 1,Asignacion (Var "b" TInt) 3,Asignaciones [Asignacion (Var "esMayor" TDummy) False],Asignacion (Var "a" TInt) 1,Asignaciones [Asignacion (Var "r" TDummy) 0.5],Asignaciones [],Asignaciones [Asignacion (Var "nombres" TDummy) ["~Natascha~","~Francisco~","~Manuel~"]],Asignaciones [Asignacion (Var "indices" TDummy) [3.67,3.2,3.0]],Asignaciones [Asignacion (Var "lista1" TDummy) ['C','3']],Asignaciones [Asignacion (Var "r2" TDummy) [0,'f']],Asignaciones [Asignacion (Var "alex" TDummy) ["~Alex~",15,False]],Asignaciones [],Asignacion (VarCompIndex (Var "sofia" (TNuevo "Contacto")) "nombre" TStr) "~Sofia~",Asignacion (VarCompIndex (Var "sofia" (TNuevo "Contacto")) "edad" TInt) 29,Asignacion (VarCompIndex (Var "sofia" (TNuevo "Contacto")) "tieneTrabajo" TBool) True,Print [VarCompIndex (Var "sofia" (TNuevo "Contacto")) "nombre" TStr,"~Hola ~"],Asignaciones [],Asignacion (VarCompIndex (VarCompIndex (Var "sh" (TNuevo "Shape")) "c" (TNuevo "Circle")) "centerX" TFloat) 2.1,Asignacion (VarCompIndex (VarCompIndex (Var "sh" (TNuevo "Shape")) "c" (TNuevo "Circle")) "centerY" TFloat) 5.0,Asignacion (VarCompIndex (VarCompIndex (Var "sh" (TNuevo "Shape")) "c" (TNuevo "Circle")) "centerY" TFloat) 5.0,Asignacion (VarCompIndex (VarCompIndex (Var "sh" (TNuevo "Shape")) "c" (TNuevo "Circle")) "radius" TFloat) 15,Print [kill SubrutinaCall "areaCirculo" [VarCompIndex (Var "sh" (TNuevo "Shape")) "c" (TNuevo "Circle")],"~el area del circulo es ~"],Asignaciones [Asignacion (Var "p1" TDummy) summon TInt],Asignacion (VarIndex (PuffValue (Var "p1" (TApuntador (TArray 5 TInt))) (TApuntador (TArray 5 TInt))) 1 (TArray 5 TInt)) 15,Free "p1",Asignaciones [Asignacion (Var "p2" TDummy) summon TInt],Asignacion (PuffValue (Var "p2" (TApuntador TInt)) (TApuntador TInt)) 15,Free "p2",Asignaciones [Asignacion (Var "n2" TDummy) 13,Asignacion (Var "n1" TDummy) 15],Asignacion (Var "n1" TInt) (Var "n1" TInt + 1),Asignacion (Var "n2" TInt) (Var "n2" TInt - 1),Asignaciones [Asignacion (Var "n4" TDummy) Var "n2" TInt,Asignacion (Var "n3" TDummy) Var "n1" TInt],Asignacion (Var "a" TInt) (Var "a" TInt > Var "b" TInt ? True : False),Asignaciones [Asignacion (Var "puedeConducir" TDummy) False],Asignaciones [Asignacion (Var "edad" TDummy) 18],IF [((Var "edad" TInt >= 18),[Asignacion (Var "puedeConducir" TBool) True])],Asignaciones [Asignacion (Var "i" TDummy) 0],Asignaciones [Asignacion (Var "edades" TDummy) ["~12~","~23~","~15~","~40~","~15~"]],Asignaciones [Asignacion (Var "nombres2" TDummy) ["~Natascha~","~Francisco~","~Manuel~","~Ricardo~","~Haskell~"]],For "i" 0 4 [Print ["~Hola\\n~"],Print ["~ anios!~",VarIndex (Var "edad" TInt) Var "i" TInt TError,"~ tienes ~",VarIndex (Var "nombres" (TArray 3 TStr)) Var "i" TInt TStr]],While (Var "i" TInt < 5) [Print ["~ anios!~",VarIndex (Var "edad" TInt) Var "i" TInt TError,"~ tienes ~",VarIndex (Var "nombres" (TArray 3 TStr)) Var "i" TInt TStr,"~Hola ~"],Asignacion (Var "i" TInt) (Var "i" TInt + 1)],Print [kill SubrutinaCall "calcularGanancia" [1500,2000],"~Ganancia de ~"],Asignaciones [],Asignacion (VarCompIndex (Var "p3" (TNuevo "Producto")) "precioReal" TInt) 1500,Print [kill SubrutinaCall "calcularGanancia2" [PuffValue (Var "p3" (TNuevo "Producto")) (TNuevo "Producto"),2000],"~Ganancia de ~"]]
+
+------------
+ Tabla de simbolos 
+------------
+- Simbolo | Informacion asociada 
+------------
+Circle -> 
+  Tipo: TRegistro | Alcance: 1 | Categoria: Tipos
+Contacto -> 
+  Tipo: TRegistro | Alcance: 1 | Categoria: Tipos
+Producto -> 
+  Tipo: TRegistro | Alcance: 1 | Categoria: Tipos
+Rectangle -> 
+  Tipo: TRegistro | Alcance: 1 | Categoria: Tipos
+Registro -> 
+  Tipo: TRegistro | Alcance: 1 | Categoria: Tipos
+Shape -> 
+  Tipo: TUnion | Alcance: 1 | Categoria: Tipos
+a -> 
+  Tipo: TInt | Alcance: 1 | Categoria: Variable
+abc -> 
+  Tipo: TArray 3 TChar | Alcance: 1 | Categoria: Variable
+alex -> 
+  Tipo: TNuevo "Contacto" | Alcance: 1 | Categoria: Variable
+areaCirculo -> 
+  Tipo: TVoid | Alcance: 1 | Categoria: Funciones
+    Extra:
+  Params ["c"]  AST [Return ((3.14 * VarCompIndex (Var "c" (TNuevo "Circle")) "radius" TFloat) * VarCompIndex (Var "c" (TNuevo "Circle")) "radius" TFloat)]
+
+b -> 
+  Tipo: TInt | Alcance: 1 | Categoria: Variable
+bottomRightX -> 
+  Tipo: TFloat | Alcance: 5 | Categoria: Campos
+    Extra:
+  FromReg "Rectangle"
+
+bottomRightY -> 
+  Tipo: TFloat | Alcance: 5 | Categoria: Campos
+    Extra:
+  FromReg "Rectangle"
+
+c -> 
+  Tipo: TNuevo "Circle" | Alcance: 7 | Categoria: Campos
+    Extra:
+  FromReg "Shape"
+
+  Tipo: TNuevo "Circle" | Alcance: 8 | Categoria: Parametros Referencia
+calcularGanancia -> 
+  Tipo: TInt | Alcance: 1 | Categoria: Funciones
+    Extra:
+  Params ["precioComprado","precioVendido"]  AST [Return (Var "precioVendido" TInt - Var "precioComprado" TInt)]
+
+calcularGanancia2 -> 
+  Tipo: TInt | Alcance: 1 | Categoria: Funciones
+    Extra:
+  Params ["producto","precioVendido"]  AST [Return (Var "precioVendido" TInt - VarCompIndex (Var "producto" (TNuevo "Producto")) "precioReal" TInt)]
+
+centerX -> 
+  Tipo: TFloat | Alcance: 4 | Categoria: Campos
+    Extra:
+  FromReg "Circle"
+
+centerY -> 
+  Tipo: TFloat | Alcance: 4 | Categoria: Campos
+    Extra:
+  FromReg "Circle"
+
+edad -> 
+  Tipo: TInt | Alcance: 3 | Categoria: Campos
+    Extra:
+  FromReg "Contacto"
+
+  Tipo: TInt | Alcance: 1 | Categoria: Variable
+edades -> 
+  Tipo: TArray 5 TStr | Alcance: 1 | Categoria: Variable
+esMayor -> 
+  Tipo: TBool | Alcance: 1 | Categoria: Variable
+i -> 
+  Tipo: TInt | Alcance: 1 | Categoria: Variable
+indices -> 
+  Tipo: TArray 3 TFloat | Alcance: 1 | Categoria: Variable
+lista1 -> 
+  Tipo: TLista TChar | Alcance: 1 | Categoria: Variable
+n1 -> 
+  Tipo: TInt | Alcance: 1 | Categoria: Variable
+n2 -> 
+  Tipo: TInt | Alcance: 1 | Categoria: Variable
+n3 -> 
+  Tipo: TInt | Alcance: 1 | Categoria: Variable
+n4 -> 
+  Tipo: TInt | Alcance: 1 | Categoria: Variable
+nombre -> 
+  Tipo: TStr | Alcance: 3 | Categoria: Campos
+    Extra:
+  FromReg "Contacto"
+
+nombres -> 
+  Tipo: TArray 3 TStr | Alcance: 1 | Categoria: Variable
+nombres2 -> 
+  Tipo: TArray 5 TStr | Alcance: 1 | Categoria: Variable
+p1 -> 
+  Tipo: TApuntador (TArray 5 TInt) | Alcance: 1 | Categoria: Variable
+p2 -> 
+  Tipo: TApuntador TInt | Alcance: 1 | Categoria: Variable
+p3 -> 
+  Tipo: TNuevo "Producto" | Alcance: 1 | Categoria: Variable
+precioComprado -> 
+  Tipo: TInt | Alcance: 9 | Categoria: Parametros Valor
+precioReal -> 
+  Tipo: TInt | Alcance: 6 | Categoria: Campos
+    Extra:
+  FromReg "Producto"
+
+precioVendido -> 
+  Tipo: TInt | Alcance: 9 | Categoria: Parametros Valor
+  Tipo: TInt | Alcance: 10 | Categoria: Parametros Valor
+producto -> 
+  Tipo: TNuevo "Producto" | Alcance: 10 | Categoria: Parametros Referencia
+puedeConducir -> 
+  Tipo: TBool | Alcance: 1 | Categoria: Variable
+r -> 
+  Tipo: TNuevo "Rectangle" | Alcance: 7 | Categoria: Campos
+    Extra:
+  FromReg "Shape"
+
+  Tipo: TFloat | Alcance: 1 | Categoria: Variable
+r2 -> 
+  Tipo: TNuevo "Registro" | Alcance: 1 | Categoria: Variable
+radius -> 
+  Tipo: TFloat | Alcance: 4 | Categoria: Campos
+    Extra:
+  FromReg "Circle"
+
+sh -> 
+  Tipo: TNuevo "Shape" | Alcance: 1 | Categoria: Variable
+sofia -> 
+  Tipo: TNuevo "Contacto" | Alcance: 1 | Categoria: Variable
+tieneTrabajo -> 
+  Tipo: TBool | Alcance: 3 | Categoria: Campos
+    Extra:
+  FromReg "Contacto"
+
+tip -> 
+  Tipo: TChar | Alcance: 2 | Categoria: Campos
+    Extra:
+  FromReg "Registro"
+
+topLeftX -> 
+  Tipo: TFloat | Alcance: 5 | Categoria: Campos
+    Extra:
+  FromReg "Rectangle"
+
+topLeftY -> 
+  Tipo: TFloat | Alcance: 5 | Categoria: Campos
+    Extra:
+  FromReg "Rectangle"
+
+up -> 
+  Tipo: TInt | Alcance: 2 | Categoria: Campos
+    Extra:
+  FromReg "Registro"
+
+
