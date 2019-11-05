@@ -8,7 +8,7 @@
 -}
 module Main where
 
-import Data.Strings (strEndsWith, strReplace)
+import Data.Strings (strEndsWith)
 import Control.Monad.Trans.RWS
 import Control.Monad (mapM_)
 import Control.Exception
@@ -16,6 +16,7 @@ import System.Environment
 import System.IO.Error
 import System.IO (readFile)
 import Playit.SymbolTable
+import Playit.Errors
 import Playit.Parser
 import Playit.Lexer
 import Playit.Types
@@ -37,24 +38,22 @@ checkExt [file]     = if strEndsWith file ".game" then Right file
 
 main :: IO ()
 main = do
-  -- Tomar argumentos del terminal.
-  args <- getArgs
+    -- Tomar argumentos del terminal.
+    args <- getArgs
 
-  case checkExt args of
-    Left msg -> putStrLn msg
-    Right checkedFile -> do
-      code <- readFile checkedFile
+    case checkExt args of
+        Left msg -> putStrLn msg
+        Right checkedFile -> do
+            code <- readFile checkedFile
 
-      if null code || isEmptyFile code then putStrLn "\nEmptyFile\n"
-      else do
-        let tokens = alexScanTokens code
-            (hasErr, pos) = hasError tokens
+            if null code || isEmptyFile code then putStrLn "\nEmptyFile\n"
+            else do
+                let tokens = alexScanTokens code
+                    (hasErr,pos) = lexerErrors tokens
 
-                    if hasError tokens then
-                        putStrLn $ tkErrorToString $ filter isError tokens
-                    else do
-                        (ast@(Programa i),(st,_,_), _) <- runRWST (parse tokens) checkedFile initState
-                        -- putStrLn $ concatMap show i
-                        print ast
-                        print st
-
+                if hasErr then putStrLn $ showLexerErrors (checkedFile,code) pos
+                else do
+                    -- mapM_ print tokens
+                    (ast,(st,_,_),errors) <- runRWST (parse tokens) (checkedFile,code) initState
+                    
+                    if null errors then print ast >> print st else print errors

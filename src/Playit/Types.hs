@@ -60,15 +60,15 @@ instance Show Categoria where
 
 
 data ExtraInfo =
-    AST SecuenciaInstr |
-    Params Int         |
+    AST SecuenciaInstr    |
+    Params [Nombre{-,Tipo-}] | -- Para verif tipos [(Nombre,Tipo)]
     FromReg Nombre       -- Registro o union al que pertenece el campo/variable
     deriving (Eq, Ord)
 
 instance Show ExtraInfo where
-    show (AST secInstr) = "\t\tAST:\n" ++ concatMap show secInstr ++ "\n"
-    show (Params p)     = "\t\tParametros: " ++ show p ++ "\n"
-    show (FromReg n)     = "\t\tFrom reg: " ++ show n ++ "\n"
+    show (AST s)     = "    AST:\n      " ++ intercalate "\t  " (map show s)
+    show (Params p)  = "    Parametros: " ++ show p ++ "\n"
+    show (FromReg n) = "    Campo del registro: " ++ show n
 
 -- Tipo de dato que pueden ser las expresiones
 data Tipo = 
@@ -82,13 +82,14 @@ data Tipo =
     TError           | -- Tipo error, no machean los tipos como deben
     TFloat           |
     TInt             |
-    --TReal            |
     TLista Tipo      |
-    TStr             |
-    NuevoTipo String |
+    TNuevo String    |
     TRegistro        |
-    TUnion     
+    TStr             |
+    TUnion           |
+    TVoid              -- Tipo de los procedimientos
     deriving(Eq, Ord)
+
 
 instance Show Tipo where
     show (TApuntador t) = "Apt(" ++ show t ++ ")"
@@ -97,14 +98,15 @@ instance Show Tipo where
     show TChar          = "Rune"
     show TDummy         = "Sin tipo aun"
     show TError         = "Mal tipado"   
-    show TFloat         = "Flotante"
-    --show TReal          = "Real"
-    show TInt           = "Entero"
-    show (NuevoTipo str)            = str
-    show (TLista t)     = "Lista de " ++ show t
-    show TRegistro      = "Registro "
-    show TStr           = "String"
-    show TUnion         = "Union "
+    show TFloat         = "Skill"
+    show TInt           = "Power"
+    show (TLista t)     = "Kit of(" ++ show t ++ ")"
+    show (TNuevo str)   = str
+    show TRegistro      = "Inventory"
+    show TStr           = "Runes"
+    show TUnion         = "Items"
+    show TVoid          = "Void"
+
 
 data Vars =
     Param Nombre Tipo Ref         |
@@ -115,11 +117,12 @@ data Vars =
     deriving (Eq, Ord)
 
 instance Show Vars where
-    show (Param n t r)    = "Parametro: " ++ n ++ " de tipo: " ++ show t ++ " pasado por: " ++ show r
-    show (PuffValue v t)  = show t ++ " puff " ++ show v
-    show (Var n t)        = show t ++ " " ++ n
-    show (VarIndex v e t) = show t ++ " " ++ show v ++ " index: " ++ show e
-    show (VarCompIndex v n t) = show t ++ " " ++ show v ++ " spawn " ++ n
+    show (Param n t Valor)    = "Parametro: " ++ {-"("++show t++")"++-}n
+    show (Param n t _)        = "Parametro: ?" ++ {-"("++show t ++")?"++-}n
+    show (PuffValue v t)      = {-"("++show t++")"++-}"puff (" ++ show v ++ ")"
+    show (Var n t)            = {-"("++show t++")"++-}n
+    show (VarIndex v e t)     = {-"("++show t++")"++-}show v ++ " index: " ++ show e
+    show (VarCompIndex v n t) = {-"("++show t++") ("++-}show v ++ " spawn " ++ n
 
 -- Especifica si un parametro es pasado como valor o por referencia
 data Ref =
@@ -181,7 +184,7 @@ data Subrutina = SubrutinaCall Nombre Parametros
                 deriving (Eq, Ord)
 
 instance Show Subrutina where
-    show (SubrutinaCall n p) = n ++ "(" ++ concatMap show p ++ ")"
+    show (SubrutinaCall n p) = n ++ "(" ++ intercalate "," (map show p) ++ ")"
 
 
 data Expr   = 
@@ -195,7 +198,6 @@ data Expr   =
     OpUnario UnOp Expr Tipo        |
     Read Expr                      |
     Variables Vars Tipo
-    -- CastToType Expr Tipo
     deriving (Eq, Ord)
 
 instance Show Expr where
@@ -234,6 +236,7 @@ instance Show Literal where
     show (Str val)                 = show val
     show ValorVacio                = "Valor vacio"
 
+
 -- Operadores binarios
 data BinOp =
     And            |
@@ -253,25 +256,24 @@ data BinOp =
     Resta          |
     Suma
     deriving (Eq, Ord)
-    
 
 instance Show BinOp where
-    show And            = "&&"
-    show Anexo          = ":"
-    show Concatenacion  = "::"
-    show Desigual       = "!="
-    show DivEntera      = "//"
-    show Division       = "/"
-    show Igual          = "=="
-    show Mayor          = ">"
-    show MayorIgual     = ">="
-    show Menor          = "<"
-    show MenorIgual     = "<="
-    show Modulo         = "%"
-    show Multiplicacion = "*"
-    show Or             = "||"
-    show Resta          = "-"
-    show Suma           = "+"
+    show And            = " && "
+    show Anexo          = " : "
+    show Concatenacion  = " :: "
+    show Desigual       = " != "
+    show DivEntera      = " // "
+    show Division       = " / "
+    show Igual          = " == "
+    show Mayor          = " > "
+    show MayorIgual     = " >= "
+    show Menor          = " < "
+    show MenorIgual     = " <= "
+    show Modulo         = " % "
+    show Multiplicacion = " * "
+    show Or             = " || "
+    show Resta          = " - "
+    show Suma           = " + "
 
 
 -- Operadores unarios
@@ -284,7 +286,7 @@ data UnOp =
     Not            |
     UpperCase
     deriving (Eq, Ord)
-    
+
 instance Show UnOp where
     show Desreferenciar = "puff " -- no es un operador??
     show Longitud       = "#"
@@ -293,6 +295,7 @@ instance Show UnOp where
     show New            = "summon "
     show Not            = "!"
     show UpperCase      = "^"
+
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
@@ -317,10 +320,12 @@ data SymbolInfo = SymbolInfo {
     deriving (Eq, Ord)
 
 instance Show SymbolInfo where
-    show (SymbolInfo t s c i) = "Tipo: " ++ show t ++ " | Alcance: " ++
-        show s ++ " | Categoria: "++ show c ++ ".\n" ++ 
-        if length i > 0 then "\tExtra:\n" ++ concatMap show i ++ "\n" else ""
-    
+    show (SymbolInfo t s c i) = "\n  Tipo: " ++ show t ++ " | Alcance: " ++
+        show s ++ " | Categoria: "++ show c ++
+        if not (null i) then
+            "\n    Extra:\n  " ++ intercalate "  " (map show i) ++ "\n"
+        else ""
+
 
 {- Nuevo tipo de dato para representar la tabla de simbolos
 * Tabla de hash:
@@ -331,22 +336,49 @@ newtype SymTab  = SymTab { getSymTab :: M.Map Nombre [SymbolInfo] }
                 deriving (Eq)
 
 instance Show SymTab where
-    show (SymTab hash) = header ++ info ++ symbols
+    show (SymTab st) = header ++ info ++ symbols
         where
             header = "\n------------\n Tabla de simbolos \n------------\n"
             info = "- Simbolo | Informacion asociada \n------------\n"
-            tabla = M.toList hash
-            symbols' = map fst $ M.toList $ M.filter (any (>0)) $ M.map (map getScope) hash
+            tabla = M.toList st
+            stWithScopes = M.map (map getScope) st
+            symbols' = map fst $ M.toList $ M.filter (any (>0)) stWithScopes
             showInfo i = if getScope i > 0 then show i else ""
             showTable (k,v) = 
                 if k `elem` symbols' then
                     k ++ " -> " ++ concatMap showInfo (reverse v) ++ "\n"
                 else ""
-            -- showTable (k,v) = k ++ " -> " ++ concatMap show v
             symbols = concatMap showTable tabla
+
+type SymTabState = (SymTab, ActiveScopes, Alcance)
+
+type FileCodeReader = (String,String)
 
 -- Transformador monadico para crear y manejar la tabla de simbolos junto con 
 -- la pila de alcances y cuales estan activos
+type MonadSymTab a = RWST FileCodeReader [String] SymTabState IO a
 
-type MonadSymTab a = RWST String () (SymTab, ActiveScopes, Alcance) IO a
 
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+--                           Funciones auxiliares
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-- Determina si el simbolo es de un registro o union
+getRegName :: [ExtraInfo] -> String
+getRegName [] = ""
+getRegName (FromReg rname:_) = rname
+getRegName (_:rs) = getRegName rs
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-- Obtiene la cantidad de parametros
+getNParams :: [ExtraInfo] -> Maybe Int
+getNParams [] = Nothing
+getNParams (Params p:_) = Just $ length p
+getNParams (_:rs) = getNParams rs
+-------------------------------------------------------------------------------

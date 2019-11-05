@@ -13,6 +13,7 @@ module Playit.Parser (parse, error) where
 import Control.Monad.Trans.RWS
 import Playit.SymbolTable
 import Playit.CheckAST
+import Playit.Errors
 import Playit.Lexer
 import Playit.Types
 import Playit.AST
@@ -21,8 +22,8 @@ import Playit.AST
 
 %name parse
 %tokentype { Token }
-%error { parseError }
-%monad { MonadSymTab }
+%error     { parseError }
+%monad     { MonadSymTab }
 
 
 %token
@@ -171,20 +172,20 @@ Programa :: { Instr }
     { Programa [] }
 
 
-Definiciones :: { SecuenciaInstr }
-  : Definiciones EndLines Definicion { $1 ++ $3 }
-  | Definicion                       { $1 }
+Definiciones :: { () }
+  : Definiciones EndLines Definicion { }
+  | Definicion                       { }
 
 
-Definicion :: { SecuenciaInstr }
-  : DefinirSubrutina PopScope  { $1 }
-  | DefinirRegistro PopScope   { $1 }
-  | DefinirUnion PopScope      { $1 }
+Definicion :: { () }
+  : DefinirSubrutina PopScope  { }
+  | DefinirRegistro PopScope   { }
+  | DefinirUnion PopScope      { }
 
 
 EndLines :: { () }
-  : EndLines endLine  {}
-  | endLine           {}
+  : EndLines endLine  { }
+  | endLine           { }
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
@@ -217,13 +218,14 @@ Identificadores :: { ([(Nombre, Posicion)], SecuenciaInstr) }
   }
 
 Identificador :: { ((Nombre, Posicion), SecuenciaInstr) }
-  : nombre "=" Expresion  { ((getTk $1,getPos $1), [Asignacion (Var (getTk $1) TDummy) $3]) }
-  | nombre                { ((getTk $1,getPos $1), []) }
-  -- Para puff (puff ...) var(si es que se permite apuntador de varios apuntadores),
-  -- podemos colocar aqui Tipo nombre [= Expr], pero habria que verificar luego 
-  -- en la regla Declaracion que todos los tipos sean coherentes?
-  | pointer nombre "=" Expresion  { ((getTk $2,getPos $2), [Asignacion (Var (getTk $2) TDummy) $4]) }
-  | pointer nombre                { ((getTk $2,getPos $2), []) }
+  : nombre "=" Expresion
+    {
+      ( (getTk $1,getPos $1), [Asignacion (Var (getTk $1) TDummy) $3] )
+    }
+  | nombre
+    {
+      ( (getTk $1,getPos $1), [] )
+    }
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
@@ -234,18 +236,18 @@ Identificador :: { ((Nombre, Posicion), SecuenciaInstr) }
 
 -- Lvalues, contenedores que identifican a las variables
 Lvalue :: { Vars }
-  : Lvalue "." nombre           {% crearVarCompIndex $1 (getTk $3) (getPos $3) }
-  | Lvalue "|)" Expresion "(|"  {% crearVarIndex $1 $3 (getPos $2)}   -- Indexacion arreglo
-  | Lvalue "|>" Expresion "<|"  {% crearVarIndex $1 $3 (getPos $2)}   -- Indexacion lista
-  | pointer Lvalue              {% crearDeferenciacion $2 (getPos $1)}
-  | pointer "(" Lvalue ")"      {% crearDeferenciacion $3 (getPos $1)}
-  | nombre                      {% crearIdvar (getTk $1) (getPos $1) }
+  : Lvalue "." nombre           { % crearCampo $1 (getTk $3) (getPos $3) }
+  | Lvalue "|)" Expresion "(|"  { crearVarIndex $1 $3 }   -- Indexacion arreglo
+  | Lvalue "|>" Expresion "<|"  { crearVarIndex $1 $3 }   -- Indexacion lista
+  | pointer Lvalue              { PuffValue $2 (typeVar $2) }
+  | pointer "(" Lvalue ")"      { PuffValue $3 (typeVar $3) }
+  | nombre                      { % crearIdvar (getTk $1) (getPos $1) }
 
 
 -- Tipos de datos
 Tipo :: { Tipo }
-  : Tipo "|}" Expresion "{|" %prec "|}"   { TArray $3 $1 }
-  | list of Tipo     %prec "?"                     { TLista $3 }
+  : Tipo "|}" Expresion "{|"  %prec "|}"  { TArray $3 $1 }
+  | list of Tipo  %prec "?"               { TLista $3 }
   | Tipo pointer                          { TApuntador $1 }
   | "(" Tipo ")"                          { $2 }
   | int                                   { TInt }
@@ -253,13 +255,10 @@ Tipo :: { Tipo }
   | bool                                  { TBool }
   | char                                  { TChar }
   | str                                   { TStr }
-  | idtipo                                
-  {% do
-  
-    chequearTipo (getTk $1) (getPos $1)
-    return $ NuevoTipo (getTk $1)
-  } 
-  -- | pointer                               { TApuntador TDummy } 
+  | idtipo
+    { % do
+      return $ TNuevo (getTk $1) 
+    }
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
@@ -272,30 +271,30 @@ Instrucciones :: { SecuenciaInstr }
   | Instruccion                         { [$1] }
 
 Instruccion :: { Instr }
-  : Asignacion            { $1 }
-  | Declaracion           { Asignaciones $1 }
+  : Asignacion                      { $1 }
+  | Declaracion                     { Asignaciones $1 }
   | PushScope Controller PopScope   { $2 }
   | PushScope Play PopScope         { $2 }
-  | Button                { $1 }
-  | ProcCall              { $1 }
-  | EntradaSalida         { $1 }
-  | Free                  { $1 }
-  | return Expresion      { Return $2 }
-  | break {-PopScope-}    { Break    }
-  | continue              { Continue }
+  | Button                          { $1 }
+  | ProcCall                        { $1 }
+  | EntradaSalida                   { $1 }
+  | Free                            { $1 }
+  | return Expresion                { Return $2 }
+  | break                           { Break }
+  | continue                        { Continue }
 
 
 -------------------------------------------------------------------------------
 -- Instruccion de asignacion '='
 Asignacion :: { Instr }
-  : Lvalue "=" Expresion  {% crearAsignacion $1 $3 $2 }
+  : Lvalue "=" Expresion  { crearAsignacion $1 $3 $2 }
   | Lvalue "++"
-    {%
+    {
       let expr = OpBinario Suma (Variables $1 TInt) (Literal (Entero 1) TInt) TInt
       in crearAsignacion $1 expr $2
     }
   | Lvalue "--"
-    {%
+    {
       let expr = OpBinario Resta (Variables $1 TInt) (Literal (Entero 1) TInt) TInt
       in crearAsignacion $1 expr $2
     }
@@ -356,7 +355,7 @@ Controller :: { Instr }
 InitVar1 :: { (Nombre, Expr) }
   : nombre "=" Expresion
     { % do
-      var <- crearIdvar (getTk $1) (getPos $1) 
+      var <- crearIdvar (getTk $1) (getPos $1)
       return $ crearAsignacion var $3 $2
       return ((getTk $1), $3)
     }
@@ -371,7 +370,7 @@ InitVar1 :: { (Nombre, Expr) }
 InitVar2 :: { (Nombre, Expr) }
   : nombre "<-" Expresion %prec "<-"
     { % do
-      var <- crearIdvar (getTk $1) (getPos $1) 
+      var <- crearIdvar (getTk $1) (getPos $1)
       return $ crearAsignacion var $3 $2
       return ((getTk $1), $3)
     }
@@ -390,7 +389,7 @@ InitVar2 :: { (Nombre, Expr) }
 Play :: { Instr }
   : do ":" EndLines Instrucciones EndLines while Expresion EndLines ".~"
     {
-      crearWhile $7 $4 $1
+      crearWhile $7 (reverse $4) $1
     }
   | do ":" EndLines while Expresion EndLines ".~"
     {
@@ -420,35 +419,31 @@ Free :: { Instr }
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 
-DefinirSubrutina :: { SecuenciaInstr }
+DefinirSubrutina :: { () }
   : Firma ":" EndLines Instrucciones EndLines ".~"
     { %
-       let ((nombre,categoria), params,tipo) = $1
-       in definirSubrutina' nombre $4 categoria
+      let (nombre,categoria) = $1
+      in definirSubrutina' nombre (reverse $4) categoria
     }
-  | Firma ":" EndLines ".~" 
-  { %
-    let ((nombre,categoria), params, tipo) = $1
-    in  definirSubrutina' nombre [] categoria
-  }
+  | Firma ":" EndLines ".~"   { }
 
 
 -------------------------------------------------------------------------------
 -- Firma de la subrutina, se agrega antes a la symtab por la recursividad
-Firma :: { ((Nombre, Categoria),Int, Tipo) }
+Firma :: { (Nombre, Categoria) }
   : Nombre PushScope Params
-    {% do
-     
-      let (nombre,cat) = $1
-      updateExtraInfo nombre cat [Params $3]
-      return ($1, $3,TDummy)
-    }
+  { % do
+    let (nombre,cat) = $1
+    updateExtraInfo nombre cat [Params (reverse $3)]
+    updateType nombre 1 TVoid
+    return $1
+  }
   | Nombre PushScope Params Tipo 
-    {% do
-        let (nombre,cat) = $1
-        updateExtraInfo nombre cat [Params $3]
-        updateType nombre 1 $4
-        return ($1, $3,$4)
+    { % do
+      let (nombre,cat) = $1
+      updateExtraInfo nombre cat [Params (reverse $3)]
+      updateType nombre 1 $4
+      return $1
     }
 
 -------------------------------------------------------------------------------
@@ -464,6 +459,7 @@ Nombre :: { (Nombre, Categoria) }
       definirSubrutina (getTk $2) Funciones (getPos $2)
       return ((getTk $2), Funciones)
     }
+
 -------------------------------------------------------------------------------
 -- Definicion de los parametros de las subrutinas
 Params ::{ [Nombre] }
@@ -475,20 +471,21 @@ Parametros :: { [Nombre] }
   | Parametro                 { [$1] }
 
 
-Parametro :: { Expr }
+Parametro :: { Nombre }
   : Tipo nombre       { % definirParam (Param (getTk $2) $1 Valor) }
   | Tipo "?" nombre   { % definirParam (Param (getTk $3) $1 Referencia) }
+-------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
 -- Llamada a subrutinas
 ProcCall :: { Instr }
-  : SubrutinaCall     { ProcCall $1 }
+  : SubrutinaCall     { ProcCall (fst $1) }
 
 FuncCall :: { Expr }
-  : SubrutinaCall     { % crearFuncCall $1 }
+  : SubrutinaCall     { % crearFuncCall (fst $1) (snd $1) }
 
-SubrutinaCall :: { Subrutina }
+SubrutinaCall :: { (Subrutina,Posicion) }
   : call nombre "(" PasarParametros ")"
     { % crearSubrutinaCall (getTk $2) (reverse $4) (getPos $2) }
   | call nombre "(" ")"
@@ -519,69 +516,50 @@ Expresiones::{ [Expr] }
   | Expresion                   { [$1] }
 
 Expresion :: { Expr }
-  : Expresion "+" Expresion            {% crearOpBin Suma $1 $3 TInt TInt TInt (getPos $2)}
-  | Expresion "-" Expresion            {% crearOpBin Resta $1 $3 TInt TInt TInt (getPos $2)}
-  | Expresion "*" Expresion            {% crearOpBin Multiplicacion $1 $3  TInt TInt TInt (getPos $2)}
-  | Expresion "%" Expresion            {% crearOpBin Modulo $1 $3 TInt TInt TInt (getPos $2)}
-  | Expresion "/" Expresion            {% crearOpBin Division $1 $3 TInt TInt TInt (getPos $2)}
-  | Expresion "//" Expresion           {% crearOpBin DivEntera $1 $3 TInt TInt TInt (getPos $2)}
-
-  | Expresion "&&" Expresion           {% crearOpBin And $1 $3 TBool TBool TBool (getPos $2)}
-  | Expresion "||" Expresion           {% crearOpBin Or $1 $3 TBool TBool TBool (getPos $2)}
-
-  | Expresion "==" Expresion           
-  {% do
-    crearOpBinComparable Igual $1 $3 [TBool] TBool (getPos $2)
-  }
-  | Expresion "!=" Expresion
-  {% do
-    crearOpBinComparable Desigual $1 $3 [TBool] TBool (getPos $2)
-  }
-
-  | Expresion ">=" Expresion 
-  {% do
-    crearOpBinComparable MayorIgual $1 $3 [] TBool (getPos $2)
-  }
-  | Expresion "<=" Expresion    
-  {% do
-    crearOpBinComparable MenorIgual $1 $3 [] TBool (getPos $2)
-  }
-  | Expresion ">" Expresion
-  {% do
-    crearOpBinComparable Mayor $1 $3 [] TBool (getPos $2)
-  }
-  | Expresion "<" Expresion 
-  {% do
-    crearOpBinComparable Menor $1 $3 [] TBool (getPos $2)
-  }
-
-  | Expresion ":" Expresion %prec ":"  {% crearOpAnexo $1 $3 (getPos $2)}
-  | Expresion "::" Expresion           {% crearOpConcat $1 $3 (getPos $2) }
+  : Expresion "+" Expresion            { crearOpBin Suma $1 $3 TInt TInt TInt }
+  | Expresion "-" Expresion            { crearOpBin Resta $1 $3 TInt TInt TInt }
+  | Expresion "*" Expresion            { crearOpBin Multiplicacion $1 $3  TInt TInt TInt }
+  | Expresion "%" Expresion            { crearOpBin Modulo $1 $3 TInt TInt TInt }
+  | Expresion "/" Expresion            { crearOpBin Division $1 $3 TInt TInt TInt }
+  | Expresion "//" Expresion           { crearOpBin DivEntera $1 $3 TInt TInt TInt }
+  | Expresion "&&" Expresion           { crearOpBin And $1 $3 TBool TBool TBool }
+  | Expresion "||" Expresion           { crearOpBin Or $1 $3 TBool TBool TBool }
+  | Expresion "==" Expresion           { crearOpBin Igual $1 $3 TInt TInt TBool }
+  | Expresion "!=" Expresion           { crearOpBin Desigual $1 $3 TInt TInt TBool }
+  | Expresion ">=" Expresion           { crearOpBin MayorIgual $1 $3 TInt TInt TBool }
+  | Expresion "<=" Expresion           { crearOpBin MenorIgual $1 $3 TInt TInt TBool }
+  | Expresion ">" Expresion            { crearOpBin Mayor $1 $3 TInt TInt TBool }
+  | Expresion "<" Expresion            { crearOpBin Menor $1 $3 TInt TInt TBool }
+  | Expresion ":" Expresion %prec ":"  { crearOpAnexo Anexo $1 $3 }
+  | Expresion "::" Expresion           { crearOpConcat Concatenacion $1 $3 }
   
   --
   | Expresion "?" Expresion ":" Expresion %prec "?"
-    {% crearIfSimple $1 $3 $5 TDummy $2 }
-  | FuncCall                     { $1 }
-  | "(" Expresion ")"            { $2 }
-  | "{" Expresiones "}"          { crearArrLstExpr $2}-- TODO : 
-  | "|)" Expresiones "(|"        { crearArrLstExpr $2 } -- TODO : 
-  | "<<" Expresiones ">>"        {% crearLista $2 (getPos $1)}
-  | "<<"  ">>"                   {% crearLista [] (getPos $1)}
-  | new Tipo                     { OpUnario New Null (TApuntador $2) }
+    {
+      crearIfSimple $1 $3 $5 TDummy $2
+    }
+  | FuncCall               { $1 }
+  | "(" Expresion ")"      { $2 }
+  | "{" Expresiones "}"    { crearArrLstExpr $ reverse $2 } -- Inic de Reg/Union
+  | "{" "}"                { crearArrLstExpr [] } -- Inic de Reg/Union por default
+  | "|)" Expresiones "(|"  { crearArrLstExpr $ reverse $2 }
+  | "<<" Expresiones ">>"  { crearArrLstExpr $ reverse $2 }
+  | "<<" ">>"              { crearArrLstExpr [] }
+  | new Tipo               { OpUnario New (IdTipo $2) (TApuntador $2) }
 
-  -- Falta la conversión automática de string a tipo de regreso según el rdm
-  | input Expresion %prec input  { crearRead $2 $1 } 
+  -- Falta la conversion automatica de string a tipo de regreso segun el rdm
+  | input Expresion %prec input  { crearRead $2 $1 }
   | input
     {
       crearRead (Literal ValorVacio TStr) $1
     }
 
   -- Operadores unarios
-  | "#" Expresion                        {% crearOpLen $2 (getPos $1)}
-  | "-" Expresion %prec negativo         {% crearOpUn Negativo $2 TInt TInt (getPos $1)}
-  | "!" Expresion                        {% crearOpUn Not $2 TBool TBool (getPos $1)}
-  | upperCase Expresion %prec upperCase  {% crearOpUn UpperCase $2 TChar TChar (getPos $1)}
-  | lowerCase Expresion %prec lowerCase  {% crearOpUn LowerCase $2 TChar TChar (getPos $1)}
+  | "#" Expresion                        { crearOpLen Longitud $2 }
+  | "-" Expresion %prec negativo         { crearOpUn Negativo $2 TInt TInt }
+  | "!" Expresion                        { crearOpUn Not $2 TBool TBool }
+  | upperCase Expresion %prec upperCase  { crearOpUn UpperCase $2 TChar TChar }
+  | lowerCase Expresion %prec lowerCase  { crearOpUn LowerCase $2 TChar TChar }
   
   -- Literales
   | true      { Literal (Booleano True) TBool }
@@ -603,30 +581,28 @@ Expresion :: { Expr }
 
 -------------------------------------------------------------------------------
 -- Registros
-DefinirRegistro :: { SecuenciaInstr }
-  : registro idtipo ":" PushScope EndLines Declaraciones EndLines ".~"
+DefinirRegistro :: { () }
+  : registro idtipo ":" PushScope EndLines Declaraciones EndLines ".~"   
     { %
-      definirRegistro (getTk $2) $6 (getPos $2)
+      definirRegistro (getTk $2) (getPos $2)
     }
-  | registro idtipo ":" PushScope EndLines ".~"                        
+  | registro idtipo ":" PushScope EndLines ".~"                          
     { %
-      definirRegistro (getTk $2) [] (getPos $2)
+      definirRegistro (getTk $2) (getPos $2)
     }
 -------------------------------------------------------------------------------
 
--- RegistroNombre :: {(Nombre,Posicion)}
--- : registro idtipo {% }
 
 -------------------------------------------------------------------------------
 -- Uniones
-DefinirUnion :: { SecuenciaInstr }
-  : union idtipo ":" PushScope EndLines Declaraciones EndLines ".~"
+DefinirUnion :: { () }
+  : union idtipo ":" PushScope EndLines Declaraciones EndLines ".~"  
     { %
-      definirUnion (getTk $2) $6 (getPos $2)
+      definirUnion (getTk $2) (getPos $2)
     }
-  | union idtipo ":" PushScope EndLines ".~"                        
+  | union idtipo ":" PushScope EndLines ".~"                         
     { %
-      definirUnion (getTk $2) [] (getPos $2)
+      definirUnion (getTk $2) (getPos $2)
     }
 -------------------------------------------------------------------------------
 
@@ -651,15 +627,3 @@ PushScope  ::  { () }
 --                   Fin de la declaracion de las producciones
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
-
-{
-parseError :: [Token] -> MonadSymTab a
-parseError [] =  error $ "\n\nPrograma inválido "
-parseError (h:t) =  do
-    fileName <- ask
-    error $ "\n\n" ++ fileName ++ ": error sintactico del parser antes de: '" ++ token ++ "'. " ++
-          show pos ++ "\n"
-  where
-      token = getTk tk
-      pos = getPos tk
-}

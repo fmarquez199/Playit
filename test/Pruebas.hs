@@ -127,46 +127,18 @@ pruebasLexer = do
     let lstStrExpectedOut = lines $ BS.unpack strExpectedOut
     
     -- Obtiene la lista de Tokens reconocidos en el codigo
-    let lstRecognizedTkns         = alexScanTokens $ BS.unpack strSourceCode 
+    let lstRecognizedTkns      = alexScanTokens $ BS.unpack strSourceCode 
     -- Crea una lista de strings con los Tokens 
-    let lstStrRecognizedTokens    = map show lstRecognizedTkns     
-      
-    
-    -- Recorremos todos los .game y creamos los casos de prueba
-    testCases <- forM filesToTestDotGame $ \filen -> do
-        -- Lee el codigo 
-        fileSource        <- openFile (filen ++ ".game")    ReadMode  
-        -- Lee la salida esperada del Lexer
-        fileExpectedOut   <- openFile (filen ++ ".outlexer")     ReadMode
-
-        -- Extrae el codigo del archivo
-        strSourceCode     <- S.hGetContents fileSource
-        -- Extrae la salida esperada del archivo
-        strExpectedOut    <- S.hGetContents fileExpectedOut
-
-        -- Separa el contenido por los saltos de lineas 
-        let lstStrExpectedOut = quitarEndOfLine (BS.unpack strExpectedOut)
+    let lstStrRecognizedTokens = map show lstRecognizedTkns     
+           
+    let testCases = [TestCase $ assertEqual ("\n***Error en tokens de:" ++ filen ++ ".game ***") lstStrExpectedOut lstStrRecognizedTokens]
         
-        -- Obtiene la lista de Tokens reconocidos en el codigo
-        let lstRecognizedTkns         = alexScanTokens $ BS.unpack strSourceCode 
-        -- Crea una lista de strings con los Tokens 
-        let lstStrRecognizedTokens    = show lstRecognizedTkns     
-            
-        
-        let testCases = [TestCase $ assertEqual ("\n***Error en tokens de:" ++ filen ++ ".game ***") lstStrExpectedOut lstStrRecognizedTokens]
-        
-        -- Cerramos los archivos
-        hClose fileSource
-        hClose fileExpectedOut
-        
-        return testCases
-    
     -- Cerramos los archivos
     hClose fileSource
     hClose fileExpectedOut
-    
+
     return testCases
-  
+    
   return $ TestList $ concat testCases
 
 
@@ -209,8 +181,6 @@ pruebasParser = do
 
   return $ TestList $ concat testCases
 
-  return $ TestList $ concat testCases
-
 main :: IO ()
 main = do
   
@@ -219,11 +189,8 @@ main = do
 
   tlParser <- pruebasParser
   runTestTT tlParser
-
-    tlParser <- pruebasParser
-    runTestTT tlParser
     
-    tlSymTab <- pruebasSymTab
-    runTestTT tlSymTab
+  tlSymTab <- pruebasSymTab
+  runTestTT tlSymTab
 
   return ()
