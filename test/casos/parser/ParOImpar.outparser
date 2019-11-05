@@ -1,1 +1,8 @@
-Programa [Asignaciones [],Asignacion (Var "numero" TInt) joystick "~Introduzca un numero entero: ~",IF [(((Var "numero" TInt % 2) == 0),[Print ["~es par~"]]),(True,[Print ["~es impar~"]])]]
+
+world:
+  numero = joystick "~Introduzca un numero entero: ~"
+  IF:
+    ((numero % 2) == 0) }
+      drop ["~es par~"]True }
+      drop ["~es impar~"]
+

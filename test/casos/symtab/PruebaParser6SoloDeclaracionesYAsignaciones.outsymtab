@@ -5,57 +5,57 @@
 - Simbolo | Informacion asociada 
 ------------
 Estudiante -> 
-  Tipo: TUnion | Alcance: 1 | Categoria: Tipos
+  Tipo: Items | Alcance: 1 | Categoria: Tipos
 Trimestre -> 
-  Tipo: TRegistro | Alcance: 1 | Categoria: Tipos
+  Tipo: Inventory | Alcance: 1 | Categoria: Tipos
 abril_Julio_2019 -> 
-  Tipo: TNuevo "Trimestre" | Alcance: 1 | Categoria: Variable
+  Tipo: Trimestre | Alcance: 1 | Categoria: Variables
 b -> 
-  Tipo: TBool | Alcance: 1 | Categoria: Variable
+  Tipo: Battle | Alcance: 1 | Categoria: Variables
 char -> 
-  Tipo: TChar | Alcance: 1 | Categoria: Variable
+  Tipo: Rune | Alcance: 1 | Categoria: Variables
 estudiante -> 
-  Tipo: TStr | Alcance: 2 | Categoria: Campos
+  Tipo: Runes | Alcance: 2 | Categoria: Campos
     Extra:
-  FromReg "Trimestre"
+      Campo del registro: "Trimestre"
 
 estudiante' -> 
-  Tipo: TNuevo "Estudiante" | Alcance: 1 | Categoria: Variable
+  Tipo: Estudiante | Alcance: 1 | Categoria: Variables
 f -> 
-  Tipo: TBool | Alcance: 3 | Categoria: Campos
+  Tipo: Battle | Alcance: 3 | Categoria: Campos
     Extra:
-  FromReg "Estudiante"
+      Campo del registro: "Estudiante"
 
 float -> 
-  Tipo: TFloat | Alcance: 1 | Categoria: Variable
+  Tipo: Skill | Alcance: 1 | Categoria: Variables
 indice -> 
-  Tipo: TFloat | Alcance: 2 | Categoria: Campos
+  Tipo: Skill | Alcance: 2 | Categoria: Campos
     Extra:
-  FromReg "Trimestre"
+      Campo del registro: "Trimestre"
 
 inscripcion_ok -> 
-  Tipo: TBool | Alcance: 2 | Categoria: Campos
+  Tipo: Battle | Alcance: 2 | Categoria: Campos
     Extra:
-  FromReg "Trimestre"
+      Campo del registro: "Trimestre"
 
 int -> 
-  Tipo: TInt | Alcance: 1 | Categoria: Variable
+  Tipo: Power | Alcance: 1 | Categoria: Variables
 l -> 
-  Tipo: TLista TFloat | Alcance: 1 | Categoria: Variable
+  Tipo: Kit of(Skill) | Alcance: 1 | Categoria: Variables
 p -> 
-  Tipo: TApuntador TInt | Alcance: 1 | Categoria: Variable
+  Tipo: Apt(Power) | Alcance: 1 | Categoria: Variables
 r -> 
-  Tipo: TArray Var "int" TInt TStr | Alcance: 1 | Categoria: Variable
+  Tipo: Runes|}int{|  | Alcance: 1 | Categoria: Variables
 string -> 
-  Tipo: TStr | Alcance: 1 | Categoria: Variable
+  Tipo: Runes | Alcance: 1 | Categoria: Variables
 uc -> 
-  Tipo: TInt | Alcance: 2 | Categoria: Campos
+  Tipo: Power | Alcance: 2 | Categoria: Campos
     Extra:
-  FromReg "Trimestre"
+      Campo del registro: "Trimestre"
 
 v -> 
-  Tipo: TInt | Alcance: 3 | Categoria: Campos
+  Tipo: Power | Alcance: 3 | Categoria: Campos
     Extra:
-  FromReg "Estudiante"
+      Campo del registro: "Estudiante"
 
 

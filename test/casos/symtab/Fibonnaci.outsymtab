@@ -5,16 +5,24 @@
 - Simbolo | Informacion asociada 
 ------------
 fibonnaci -> 
-  Tipo: TNuevo "Contacto" | Alcance: 1 | Categoria: Funciones
+  Tipo: Contacto | Alcance: 1 | Categoria: Funciones
     Extra:
-  Params ["primero","segundo","limite"]  AST [Print [Var "primero" TInt],Print [Var "segundo" TInt],Asignaciones [Asignacion (Var "n" TDummy) Var "primero" TInt],While (Var "limite" TInt > 0) [Print [(Var "primero" TInt + Var "segundo" TInt)],Asignacion (Var "primero" TInt) Var "segundo" TInt,Asignacion (Var "segundo" TInt) (Var "n" TInt + Var "segundo" TInt),Asignacion (Var "limite" TInt) (Var "limite" TInt - 1)]]
+      Parametros: ["primero","segundo","limite"]
+      AST:
+        drop [primero]	    drop [segundo]	    n = primero
+	    While (limite > 0):
+      drop [(primero + segundo)]      primero = segundo
+      segundo = (n + segundo)
+      limite = (limite - 1)
+
+
 
 limite -> 
-  Tipo: TInt | Alcance: 2 | Categoria: Parametros Valor
+  Tipo: Power | Alcance: 2 | Categoria: Parametros por Valor
 n -> 
-  Tipo: TInt | Alcance: 2 | Categoria: Variable
+  Tipo: Power | Alcance: 2 | Categoria: Variables
 primero -> 
-  Tipo: TInt | Alcance: 2 | Categoria: Parametros Valor
+  Tipo: Power | Alcance: 2 | Categoria: Parametros por Valor
 segundo -> 
-  Tipo: TInt | Alcance: 2 | Categoria: Parametros Valor
+  Tipo: Power | Alcance: 2 | Categoria: Parametros por Valor
 

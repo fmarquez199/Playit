@@ -1,1 +1,9 @@
-Programa [Asignaciones [Asignacion (Var "c" TDummy) summon TNuevo "Contacto"],Asignacion (VarCompIndex (PuffValue (VarCompIndex (PuffValue (PuffValue (Var "c" (TApuntador (TApuntador (TNuevo "Contacto")))) (TApuntador (TApuntador (TNuevo "Contacto")))) (TApuntador (TApuntador (TNuevo "Contacto")))) "pointernombre" (TApuntador (TNuevo "Nombre"))) (TApuntador (TNuevo "Nombre"))) "flotante" TFloat) 2.2,Asignaciones [],Asignaciones [],Asignaciones [],Asignaciones [],Asignacion (Var "c" (TApuntador (TApuntador (TNuevo "Contacto")))) (PuffValue (Var "apt" (TApuntador TInt)) (TApuntador TInt) == VarIndex (PuffValue (Var "apt2" (TApuntador (TLista TInt))) (TApuntador (TLista TInt))) 12 (TLista TInt)),Asignacion (Var "c" (TApuntador (TApuntador (TNuevo "Contacto")))) (PuffValue (Var "apt" (TApuntador TInt)) (TApuntador TInt) == VarIndex (PuffValue (PuffValue (Var "apt3" (TApuntador (TApuntador (TLista TInt)))) (TApuntador (TApuntador (TLista TInt)))) (TApuntador (TApuntador (TLista TInt)))) 12 (TApuntador (TLista TInt))),Asignacion (Var "c" (TApuntador (TApuntador (TNuevo "Contacto")))) (PuffValue (Var "apt" (TApuntador TInt)) (TApuntador TInt) == VarIndex (PuffValue (PuffValue (PuffValue (Var "apt4" (TApuntador (TApuntador (TApuntador (TLista TInt))))) (TApuntador (TApuntador (TApuntador (TLista TInt))))) (TApuntador (TApuntador (TApuntador (TLista TInt))))) (TApuntador (TApuntador (TApuntador (TLista TInt))))) 12 (TApuntador (TApuntador (TLista TInt))))]
+
+world:
+  c = summon Contacto
+  puff (puff (puff (c)) spawn pointernombre) spawn flotante = 2.2
+  c = (puff (apt) == puff (apt2) index: 12)
+  c = (puff (apt) == puff (puff (apt3)) index: 12)
+  c = (puff (apt) == puff (puff (puff (apt4))) index: 12)
+
+

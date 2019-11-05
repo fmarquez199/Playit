@@ -5,9 +5,9 @@
 - Simbolo | Informacion asociada 
 ------------
 i -> 
-  Tipo: TInt | Alcance: 1 | Categoria: Variable
+  Tipo: Power | Alcance: 1 | Categoria: Variables
 numero -> 
-  Tipo: TInt | Alcance: 1 | Categoria: Variable
+  Tipo: Power | Alcance: 1 | Categoria: Variables
 seguir -> 
-  Tipo: TChar | Alcance: 1 | Categoria: Variable
+  Tipo: Rune | Alcance: 1 | Categoria: Variables
 

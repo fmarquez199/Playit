@@ -5,47 +5,83 @@
 - Simbolo | Informacion asociada 
 ------------
 Nodo -> 
-  Tipo: TRegistro | Alcance: 1 | Categoria: Tipos
+  Tipo: Inventory | Alcance: 1 | Categoria: Tipos
 dato -> 
-  Tipo: TApuntador TInt | Alcance: 2 | Categoria: Campos
+  Tipo: Apt(Power) | Alcance: 2 | Categoria: Campos
     Extra:
-  FromReg "Nodo"
+      Campo del registro: "Nodo"
 
-  Tipo: TInt | Alcance: 3 | Categoria: Parametros Valor
-  Tipo: TInt | Alcance: 7 | Categoria: Parametros Valor
+  Tipo: Power | Alcance: 3 | Categoria: Parametros por Valor
+  Tipo: Power | Alcance: 7 | Categoria: Parametros por Valor
 dato_n -> 
-  Tipo: TInt | Alcance: 8 | Categoria: Variable
+  Tipo: Power | Alcance: 8 | Categoria: Variables
 dere -> 
-  Tipo: TApuntador (TNuevo "Nodo") | Alcance: 2 | Categoria: Campos
+  Tipo: Apt(Nodo) | Alcance: 2 | Categoria: Campos
     Extra:
-  FromReg "Nodo"
+      Campo del registro: "Nodo"
 
 iniciar -> 
-  Tipo: TVoid | Alcance: 1 | Categoria: Procedimientos
+  Tipo: Void | Alcance: 1 | Categoria: Procedimientos
     Extra:
-  Params ["nodo","dato"]  AST [Asignacion (VarCompIndex (Var "nodo" (TNuevo "Nodo")) "izqui" (TApuntador (TNuevo "Nodo"))) DeathZone,Asignacion (VarCompIndex (Var "nodo" (TNuevo "Nodo")) "dere" (TApuntador (TNuevo "Nodo"))) DeathZone,Asignacion (VarCompIndex (Var "nodo" (TNuevo "Nodo")) "dato" (TApuntador TInt)) summon TInt,Asignacion (PuffValue (VarCompIndex (Var "nodo" (TNuevo "Nodo")) "dato" (TApuntador TInt)) (TApuntador TInt)) Var "dato" TInt]
+      Parametros: ["nodo","dato"]
+      AST:
+        nodo spawn izqui = DeathZone
+	    nodo spawn dere = DeathZone
+	    nodo spawn dato = summon Power
+	    puff (nodo spawn dato) = dato
+
 
 insert -> 
-  Tipo: TVoid | Alcance: 1 | Categoria: Procedimientos
+  Tipo: Void | Alcance: 1 | Categoria: Procedimientos
     Extra:
-  Params ["nodo","dato"]  AST [IF [((VarCompIndex (Var "nodo" (TNuevo "Nodo")) "dato" (TApuntador TInt) != DeathZone),[IF [((Var "dato" TInt < Var "dato_n" TInt),[IF [((VarCompIndex (Var "nodo" (TNuevo "Nodo")) "izqui" (TApuntador (TNuevo "Nodo")) == DeathZone),[ProcCall (SubrutinaCall "iniciar" [VarCompIndex (PuffValue (Var "nodo" (TNuevo "Nodo")) (TNuevo "Nodo")) "izqui" (TApuntador (TNuevo "Nodo")),Var "dato" TInt]),Asignacion (VarCompIndex (Var "nodo" (TNuevo "Nodo")) "izqui" (TApuntador (TNuevo "Nodo"))) summon TNuevo "Nodo"]),(True,[ProcCall (SubrutinaCall "insert" [VarCompIndex (PuffValue (Var "nodo" (TNuevo "Nodo")) (TNuevo "Nodo")) "izqui" (TApuntador (TNuevo "Nodo")),Var "dato" TInt])])]]),((Var "dato" TInt > Var "dato_n" TInt),[IF [((VarCompIndex (Var "nodo" (TNuevo "Nodo")) "dere" (TApuntador (TNuevo "Nodo")) == DeathZone),[ProcCall (SubrutinaCall "iniciar" [VarCompIndex (PuffValue (Var "nodo" (TNuevo "Nodo")) (TNuevo "Nodo")) "dere" (TApuntador (TNuevo "Nodo")),Var "dato" TInt]),Asignacion (VarCompIndex (Var "nodo" (TNuevo "Nodo")) "dere" (TApuntador (TNuevo "Nodo"))) summon TNuevo "Nodo"]),(True,[ProcCall (SubrutinaCall "insert" [VarCompIndex (PuffValue (Var "nodo" (TNuevo "Nodo")) (TNuevo "Nodo")) "dere" (TApuntador (TNuevo "Nodo")),Var "dato" TInt])])]])],Asignaciones [Asignacion (Var "dato_n" TDummy) PuffValue (VarCompIndex (Var "nodo" (TNuevo "Nodo")) "dato" (TApuntador TInt)) (TApuntador TInt)]]),(True,[ProcCall (SubrutinaCall "iniciar" [PuffValue (Var "nodo" (TNuevo "Nodo")) (TNuevo "Nodo"),Var "dato" TInt])])]]
+      Parametros: ["nodo","dato"]
+      AST:
+        IF:
+    (nodo spawn dato != DeathZone) }
+      IF:
+    (dato < dato_n) }
+      IF:
+    (nodo spawn izqui == DeathZone) }
+      kill iniciar(puff (nodo) spawn izqui,dato)
+  nodo spawn izqui = summon Nodo
+True }
+      kill insert(puff (nodo) spawn izqui,dato)
+(dato > dato_n) }
+      IF:
+    (nodo spawn dere == DeathZone) }
+      kill iniciar(puff (nodo) spawn dere,dato)
+  nodo spawn dere = summon Nodo
+True }
+      kill insert(puff (nodo) spawn dere,dato)
+  dato_n = puff (nodo spawn dato)
+True }
+      kill iniciar(puff (nodo),dato)
+
 
 izqui -> 
-  Tipo: TApuntador (TNuevo "Nodo") | Alcance: 2 | Categoria: Campos
+  Tipo: Apt(Nodo) | Alcance: 2 | Categoria: Campos
     Extra:
-  FromReg "Nodo"
+      Campo del registro: "Nodo"
 
 nodo -> 
-  Tipo: TNuevo "Nodo" | Alcance: 3 | Categoria: Parametros Referencia
-  Tipo: TNuevo "Nodo" | Alcance: 4 | Categoria: Parametros Referencia
-  Tipo: TNuevo "Nodo" | Alcance: 7 | Categoria: Parametros Referencia
+  Tipo: Nodo | Alcance: 3 | Categoria: Parametros por Referencia
+  Tipo: Nodo | Alcance: 4 | Categoria: Parametros por Referencia
+  Tipo: Nodo | Alcance: 7 | Categoria: Parametros por Referencia
 print -> 
-  Tipo: TVoid | Alcance: 1 | Categoria: Procedimientos
+  Tipo: Void | Alcance: 1 | Categoria: Procedimientos
     Extra:
-  Params ["nodo"]  AST [IF [((VarCompIndex (Var "nodo" (TNuevo "Nodo")) "izqui" (TApuntador (TNuevo "Nodo")) == DeathZone),[ProcCall (SubrutinaCall "print" [VarCompIndex (Var "nodo" (TNuevo "Nodo")) "izqui" (TApuntador (TNuevo "Nodo"))])])],Print [VarCompIndex (Var "nodo" (TNuevo "Nodo")) "dato" (TApuntador TInt)],IF [((VarCompIndex (Var "nodo" (TNuevo "Nodo")) "dere" (TApuntador (TNuevo "Nodo")) == DeathZone),[ProcCall (SubrutinaCall "print" [VarCompIndex (Var "nodo" (TNuevo "Nodo")) "dere" (TApuntador (TNuevo "Nodo"))])])]]
+      Parametros: ["nodo"]
+      AST:
+        IF:
+    (nodo spawn izqui == DeathZone) }
+      kill print(nodo spawn izqui)
+	    drop [nodo spawn dato]	    IF:
+    (nodo spawn dere == DeathZone) }
+      kill print(nodo spawn dere)
+
 
 root -> 
-  Tipo: TNuevo "Nodo" | Alcance: 1 | Categoria: Variable
+  Tipo: Nodo | Alcance: 1 | Categoria: Variables
 root1 -> 
-  Tipo: TApuntador (TNuevo "Nodo") | Alcance: 1 | Categoria: Variable
+  Tipo: Apt(Nodo) | Alcance: 1 | Categoria: Variables
 

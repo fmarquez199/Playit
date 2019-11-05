@@ -1,1 +1,7 @@
-Programa [Asignaciones [],For "i" 0 10 [Asignaciones [],Asignacion (Var "i" TInt) 9]]
+
+world:
+  For i = 0 -> 10:
+          i = 9
+
+
+

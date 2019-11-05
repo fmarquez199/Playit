@@ -5,271 +5,274 @@
 - Simbolo | Informacion asociada 
 ------------
 Contacto -> 
-  Tipo: TRegistro | Alcance: 1 | Categoria: Tipos
+  Tipo: Inventory | Alcance: 1 | Categoria: Tipos
 Contacto2 -> 
-  Tipo: TRegistro | Alcance: 1 | Categoria: Tipos
+  Tipo: Inventory | Alcance: 1 | Categoria: Tipos
 Contacto3 -> 
-  Tipo: TRegistro | Alcance: 1 | Categoria: Tipos
+  Tipo: Inventory | Alcance: 1 | Categoria: Tipos
 Nombre -> 
-  Tipo: TRegistro | Alcance: 1 | Categoria: Tipos
+  Tipo: Inventory | Alcance: 1 | Categoria: Tipos
 Nombre2 -> 
-  Tipo: TRegistro | Alcance: 1 | Categoria: Tipos
+  Tipo: Inventory | Alcance: 1 | Categoria: Tipos
 PrimerNombre -> 
-  Tipo: TRegistro | Alcance: 1 | Categoria: Tipos
+  Tipo: Inventory | Alcance: 1 | Categoria: Tipos
 PrimerNombre2 -> 
-  Tipo: TRegistro | Alcance: 1 | Categoria: Tipos
+  Tipo: Inventory | Alcance: 1 | Categoria: Tipos
 a -> 
-  Tipo: TInt | Alcance: 1 | Categoria: Variable
-  Tipo: TInt | Alcance: 14 | Categoria: Variable
+  Tipo: Power | Alcance: 1 | Categoria: Variables
+  Tipo: Power | Alcance: 14 | Categoria: Variables
 a1 -> 
-  Tipo: TChar | Alcance: 8 | Categoria: Campos
+  Tipo: Rune | Alcance: 8 | Categoria: Campos
     Extra:
-  FromReg "Contacto"
+      Campo del registro: "Contacto"
 
-  Tipo: TChar | Alcance: 1 | Categoria: Variable
+  Tipo: Rune | Alcance: 1 | Categoria: Variables
 a2 -> 
-  Tipo: TInt | Alcance: 1 | Categoria: Variable
+  Tipo: Power | Alcance: 1 | Categoria: Variables
 a222 -> 
-  Tipo: TInt | Alcance: 1 | Categoria: Variable
+  Tipo: Power | Alcance: 1 | Categoria: Variables
 a3 -> 
-  Tipo: TFloat | Alcance: 1 | Categoria: Variable
+  Tipo: Skill | Alcance: 1 | Categoria: Variables
 abc -> 
-  Tipo: TFloat | Alcance: 1 | Categoria: Variable
+  Tipo: Skill | Alcance: 1 | Categoria: Variables
 abc2 -> 
-  Tipo: TArray 2 TInt | Alcance: 1 | Categoria: Variable
+  Tipo: Power|}2{|  | Alcance: 1 | Categoria: Variables
 arraypower -> 
-  Tipo: TArray 3 TInt | Alcance: 5 | Categoria: Campos
+  Tipo: Power|}3{|  | Alcance: 5 | Categoria: Campos
     Extra:
-  FromReg "Contacto3"
+      Campo del registro: "Contacto3"
 
 ast1 -> 
-  Tipo: TChar | Alcance: 8 | Categoria: Campos
+  Tipo: Rune | Alcance: 8 | Categoria: Campos
     Extra:
-  FromReg "Contacto"
+      Campo del registro: "Contacto"
 
-  Tipo: TChar | Alcance: 1 | Categoria: Variable
+  Tipo: Rune | Alcance: 1 | Categoria: Variables
 ast2 -> 
-  Tipo: TChar | Alcance: 8 | Categoria: Campos
+  Tipo: Rune | Alcance: 8 | Categoria: Campos
     Extra:
-  FromReg "Contacto"
+      Campo del registro: "Contacto"
 
-  Tipo: TChar | Alcance: 1 | Categoria: Variable
+  Tipo: Rune | Alcance: 1 | Categoria: Variables
 b -> 
-  Tipo: TInt | Alcance: 1 | Categoria: Variable
+  Tipo: Power | Alcance: 1 | Categoria: Variables
 b1 -> 
-  Tipo: TBool | Alcance: 1 | Categoria: Variable
+  Tipo: Battle | Alcance: 1 | Categoria: Variables
 b2 -> 
-  Tipo: TBool | Alcance: 1 | Categoria: Variable
+  Tipo: Battle | Alcance: 1 | Categoria: Variables
 b20 -> 
-  Tipo: TInt | Alcance: 1 | Categoria: Variable
+  Tipo: Power | Alcance: 1 | Categoria: Variables
 b3 -> 
-  Tipo: TBool | Alcance: 1 | Categoria: Variable
+  Tipo: Battle | Alcance: 1 | Categoria: Variables
 b31 -> 
-  Tipo: TFloat | Alcance: 1 | Categoria: Variable
+  Tipo: Skill | Alcance: 1 | Categoria: Variables
 b4 -> 
-  Tipo: TBool | Alcance: 1 | Categoria: Variable
+  Tipo: Battle | Alcance: 1 | Categoria: Variables
 b5 -> 
-  Tipo: TBool | Alcance: 1 | Categoria: Variable
+  Tipo: Battle | Alcance: 1 | Categoria: Variables
 c -> 
-  Tipo: TNuevo "Contacto" | Alcance: 1 | Categoria: Variable
+  Tipo: Contacto | Alcance: 1 | Categoria: Variables
 c1 -> 
-  Tipo: TChar | Alcance: 1 | Categoria: Variable
+  Tipo: Rune | Alcance: 1 | Categoria: Variables
 c11 -> 
-  Tipo: TNuevo "Contacto" | Alcance: 11 | Categoria: Parametros Referencia
+  Tipo: Contacto | Alcance: 11 | Categoria: Parametros por Referencia
 c2 -> 
-  Tipo: TInt | Alcance: 1 | Categoria: Variable
+  Tipo: Power | Alcance: 1 | Categoria: Variables
 c22 -> 
-  Tipo: TBool | Alcance: 1 | Categoria: Variable
+  Tipo: Battle | Alcance: 1 | Categoria: Variables
 c221 -> 
-  Tipo: TNuevo "Contacto" | Alcance: 11 | Categoria: Parametros Valor
+  Tipo: Contacto | Alcance: 11 | Categoria: Parametros por Valor
 c2222 -> 
-  Tipo: TChar | Alcance: 1 | Categoria: Variable
+  Tipo: Rune | Alcance: 1 | Categoria: Variables
 c223 -> 
-  Tipo: TChar | Alcance: 1 | Categoria: Variable
+  Tipo: Rune | Alcance: 1 | Categoria: Variables
 c3 -> 
-  Tipo: TStr | Alcance: 11 | Categoria: Parametros Valor
-  Tipo: TChar | Alcance: 1 | Categoria: Variable
+  Tipo: Runes | Alcance: 11 | Categoria: Parametros por Valor
+  Tipo: Rune | Alcance: 1 | Categoria: Variables
 c4 -> 
-  Tipo: TChar | Alcance: 1 | Categoria: Variable
+  Tipo: Rune | Alcance: 1 | Categoria: Variables
 c5 -> 
-  Tipo: TChar | Alcance: 1 | Categoria: Variable
+  Tipo: Rune | Alcance: 1 | Categoria: Variables
 c6 -> 
-  Tipo: TChar | Alcance: 1 | Categoria: Variable
+  Tipo: Rune | Alcance: 1 | Categoria: Variables
 c7 -> 
-  Tipo: TChar | Alcance: 1 | Categoria: Variable
+  Tipo: Rune | Alcance: 1 | Categoria: Variables
 d2 -> 
-  Tipo: TInt | Alcance: 1 | Categoria: Variable
+  Tipo: Power | Alcance: 1 | Categoria: Variables
 d3 -> 
-  Tipo: TFloat | Alcance: 1 | Categoria: Variable
+  Tipo: Skill | Alcance: 1 | Categoria: Variables
 entero -> 
-  Tipo: TInt | Alcance: 2 | Categoria: Campos
+  Tipo: Power | Alcance: 2 | Categoria: Campos
     Extra:
-  FromReg "PrimerNombre2"
+      Campo del registro: "PrimerNombre2"
 
 enteros1 -> 
-  Tipo: TArray 2 TInt | Alcance: 8 | Categoria: Campos
+  Tipo: Power|}2{|  | Alcance: 8 | Categoria: Campos
     Extra:
-  FromReg "Contacto"
+      Campo del registro: "Contacto"
 
-  Tipo: TArray 2 TInt | Alcance: 1 | Categoria: Variable
+  Tipo: Power|}2{|  | Alcance: 1 | Categoria: Variables
 enteros2 -> 
-  Tipo: TArray 2 TInt | Alcance: 8 | Categoria: Campos
+  Tipo: Power|}2{|  | Alcance: 8 | Categoria: Campos
     Extra:
-  FromReg "Contacto"
+      Campo del registro: "Contacto"
 
-  Tipo: TArray 2 TInt | Alcance: 1 | Categoria: Variable
+  Tipo: Power|}2{|  | Alcance: 1 | Categoria: Variables
 f -> 
-  Tipo: TNuevo "Contacto" | Alcance: 1 | Categoria: Funciones
+  Tipo: Contacto | Alcance: 1 | Categoria: Funciones
     Extra:
-  Params ["p11","c11","c221","c3"]
+      Parametros: ["p11","c11","c221","c3"]
+
 
 f2 -> 
-  Tipo: TVoid | Alcance: 1 | Categoria: Procedimientos
+  Tipo: Void | Alcance: 1 | Categoria: Procedimientos
     Extra:
-  Params []
+      Parametros: []
+
 
 f3 -> 
-  Tipo: TNuevo "Contacto" | Alcance: 1 | Categoria: Funciones
+  Tipo: Contacto | Alcance: 1 | Categoria: Funciones
     Extra:
-  Params []
+      Parametros: []
+
 
 flotante -> 
-  Tipo: TFloat | Alcance: 2 | Categoria: Campos
+  Tipo: Skill | Alcance: 2 | Categoria: Campos
     Extra:
-  FromReg "PrimerNombre2"
+      Campo del registro: "PrimerNombre2"
 
-  Tipo: TFloat | Alcance: 4 | Categoria: Campos
+  Tipo: Skill | Alcance: 4 | Categoria: Campos
     Extra:
-  FromReg "Contacto2"
+      Campo del registro: "Contacto2"
 
 hola1 -> 
-  Tipo: TArray 3 TInt | Alcance: 1 | Categoria: Variable
+  Tipo: Power|}3{|  | Alcance: 1 | Categoria: Variables
 hola2 -> 
-  Tipo: TArray 3 TInt | Alcance: 1 | Categoria: Variable
+  Tipo: Power|}3{|  | Alcance: 1 | Categoria: Variables
 hola3 -> 
-  Tipo: TLista TInt | Alcance: 1 | Categoria: Variable
+  Tipo: Kit of(Power) | Alcance: 1 | Categoria: Variables
 i -> 
-  Tipo: TInt | Alcance: 13 | Categoria: Variable
-  Tipo: TInt | Alcance: 17 | Categoria: Variable
-  Tipo: TFloat | Alcance: 18 | Categoria: Variable
-  Tipo: TNuevo "Contacto" | Alcance: 19 | Categoria: Variable
+  Tipo: Power | Alcance: 13 | Categoria: Variables
+  Tipo: Power | Alcance: 17 | Categoria: Variables
+  Tipo: Skill | Alcance: 18 | Categoria: Variables
+  Tipo: Contacto | Alcance: 19 | Categoria: Variables
 l1 -> 
-  Tipo: TLista TInt | Alcance: 1 | Categoria: Variable
+  Tipo: Kit of(Power) | Alcance: 1 | Categoria: Variables
 l2 -> 
-  Tipo: TLista TInt | Alcance: 1 | Categoria: Variable
+  Tipo: Kit of(Power) | Alcance: 1 | Categoria: Variables
 lista1 -> 
-  Tipo: TLista (TLista TInt) | Alcance: 8 | Categoria: Campos
+  Tipo: Kit of(Kit of(Power)) | Alcance: 8 | Categoria: Campos
     Extra:
-  FromReg "Contacto"
+      Campo del registro: "Contacto"
 
-  Tipo: TLista (TLista TInt) | Alcance: 1 | Categoria: Variable
+  Tipo: Kit of(Kit of(Power)) | Alcance: 1 | Categoria: Variables
 listab1 -> 
-  Tipo: TBool | Alcance: 1 | Categoria: Variable
+  Tipo: Battle | Alcance: 1 | Categoria: Variables
 listab10 -> 
-  Tipo: TBool | Alcance: 1 | Categoria: Variable
+  Tipo: Battle | Alcance: 1 | Categoria: Variables
 listab11 -> 
-  Tipo: TBool | Alcance: 1 | Categoria: Variable
+  Tipo: Battle | Alcance: 1 | Categoria: Variables
 listab2 -> 
-  Tipo: TBool | Alcance: 1 | Categoria: Variable
+  Tipo: Battle | Alcance: 1 | Categoria: Variables
 listab3 -> 
-  Tipo: TBool | Alcance: 1 | Categoria: Variable
+  Tipo: Battle | Alcance: 1 | Categoria: Variables
 listab3'1 -> 
-  Tipo: TBool | Alcance: 1 | Categoria: Variable
+  Tipo: Battle | Alcance: 1 | Categoria: Variables
 listab4 -> 
-  Tipo: TBool | Alcance: 1 | Categoria: Variable
+  Tipo: Battle | Alcance: 1 | Categoria: Variables
 listab5 -> 
-  Tipo: TBool | Alcance: 1 | Categoria: Variable
+  Tipo: Battle | Alcance: 1 | Categoria: Variables
 listab6 -> 
-  Tipo: TBool | Alcance: 1 | Categoria: Variable
+  Tipo: Battle | Alcance: 1 | Categoria: Variables
 listab7 -> 
-  Tipo: TBool | Alcance: 1 | Categoria: Variable
+  Tipo: Battle | Alcance: 1 | Categoria: Variables
 listab8 -> 
-  Tipo: TBool | Alcance: 1 | Categoria: Variable
+  Tipo: Battle | Alcance: 1 | Categoria: Variables
 listab8'1 -> 
-  Tipo: TBool | Alcance: 1 | Categoria: Variable
+  Tipo: Battle | Alcance: 1 | Categoria: Variables
 listab9 -> 
-  Tipo: TBool | Alcance: 1 | Categoria: Variable
+  Tipo: Battle | Alcance: 1 | Categoria: Variables
 m1 -> 
-  Tipo: TChar | Alcance: 8 | Categoria: Campos
+  Tipo: Rune | Alcance: 8 | Categoria: Campos
     Extra:
-  FromReg "Contacto"
+      Campo del registro: "Contacto"
 
-  Tipo: TChar | Alcance: 1 | Categoria: Variable
+  Tipo: Rune | Alcance: 1 | Categoria: Variables
 manu1 -> 
-  Tipo: TArray 2 TInt | Alcance: 1 | Categoria: Variable
+  Tipo: Power|}2{|  | Alcance: 1 | Categoria: Variables
 manu2 -> 
-  Tipo: TArray 30 TInt | Alcance: 1 | Categoria: Variable
+  Tipo: Power|}30{|  | Alcance: 1 | Categoria: Variables
 manukitpower1 -> 
-  Tipo: TLista TInt | Alcance: 1 | Categoria: Variable
+  Tipo: Kit of(Power) | Alcance: 1 | Categoria: Variables
 manukitpower2 -> 
-  Tipo: TLista TInt | Alcance: 1 | Categoria: Variable
+  Tipo: Kit of(Power) | Alcance: 1 | Categoria: Variables
 manukitpower3 -> 
-  Tipo: TApuntador TInt | Alcance: 1 | Categoria: Variable
+  Tipo: Apt(Power) | Alcance: 1 | Categoria: Variables
 manukitpower4 -> 
-  Tipo: TApuntador (TApuntador (TApuntador (TLista (TLista TInt)))) | Alcance: 1 | Categoria: Variable
+  Tipo: Apt(Apt(Apt(Kit of(Kit of(Power))))) | Alcance: 1 | Categoria: Variables
 n -> 
-  Tipo: TNuevo "PrimerNombre" | Alcance: 7 | Categoria: Campos
+  Tipo: PrimerNombre | Alcance: 7 | Categoria: Campos
     Extra:
-  FromReg "Nombre"
+      Campo del registro: "Nombre"
 
-  Tipo: TNuevo "Nombre" | Alcance: 8 | Categoria: Campos
+  Tipo: Nombre | Alcance: 8 | Categoria: Campos
     Extra:
-  FromReg "Contacto"
+      Campo del registro: "Contacto"
 
 n1 -> 
-  Tipo: TChar | Alcance: 8 | Categoria: Campos
+  Tipo: Rune | Alcance: 8 | Categoria: Campos
     Extra:
-  FromReg "Contacto"
+      Campo del registro: "Contacto"
 
-  Tipo: TChar | Alcance: 1 | Categoria: Variable
+  Tipo: Rune | Alcance: 1 | Categoria: Variables
 nombre -> 
-  Tipo: TStr | Alcance: 6 | Categoria: Campos
+  Tipo: Runes | Alcance: 6 | Categoria: Campos
     Extra:
-  FromReg "PrimerNombre"
+      Campo del registro: "PrimerNombre"
 
-  Tipo: TNuevo "Contacto3" | Alcance: 1 | Categoria: Variable
+  Tipo: Contacto3 | Alcance: 1 | Categoria: Variables
 p -> 
-  Tipo: TApuntador TInt | Alcance: 1 | Categoria: Variable
+  Tipo: Apt(Power) | Alcance: 1 | Categoria: Variables
 p1 -> 
-  Tipo: TInt | Alcance: 1 | Categoria: Variable
+  Tipo: Power | Alcance: 1 | Categoria: Variables
 p11 -> 
-  Tipo: TInt | Alcance: 11 | Categoria: Parametros Valor
+  Tipo: Power | Alcance: 11 | Categoria: Parametros por Valor
 p2 -> 
-  Tipo: TApuntador (TArray 2 TInt) | Alcance: 1 | Categoria: Variable
+  Tipo: Apt(Power|}2{| ) | Alcance: 1 | Categoria: Variables
 p4 -> 
-  Tipo: TInt | Alcance: 1 | Categoria: Variable
+  Tipo: Power | Alcance: 1 | Categoria: Variables
 plista3 -> 
-  Tipo: TApuntador (TLista TInt) | Alcance: 1 | Categoria: Variable
+  Tipo: Apt(Kit of(Power)) | Alcance: 1 | Categoria: Variables
 plista4 -> 
-  Tipo: TApuntador (TLista TInt) | Alcance: 1 | Categoria: Variable
+  Tipo: Apt(Kit of(Power)) | Alcance: 1 | Categoria: Variables
 pointernombre -> 
-  Tipo: TApuntador (TNuevo "Nombre2") | Alcance: 5 | Categoria: Campos
+  Tipo: Apt(Nombre2) | Alcance: 5 | Categoria: Campos
     Extra:
-  FromReg "Contacto3"
+      Campo del registro: "Contacto3"
 
 regnombre -> 
-  Tipo: TNuevo "Nombre2" | Alcance: 4 | Categoria: Campos
+  Tipo: Nombre2 | Alcance: 4 | Categoria: Campos
     Extra:
-  FromReg "Contacto2"
+      Campo del registro: "Contacto2"
 
 regpn -> 
-  Tipo: TApuntador (TNuevo "PrimerNombre2") | Alcance: 3 | Categoria: Campos
+  Tipo: Apt(PrimerNombre2) | Alcance: 3 | Categoria: Campos
     Extra:
-  FromReg "Nombre2"
+      Campo del registro: "Nombre2"
 
 test -> 
-  Tipo: TApuntador (TNuevo "Contacto3") | Alcance: 1 | Categoria: Variable
+  Tipo: Apt(Contacto3) | Alcance: 1 | Categoria: Variables
 test2 -> 
-  Tipo: TApuntador (TNuevo "PrimerNombre2") | Alcance: 1 | Categoria: Variable
+  Tipo: Apt(PrimerNombre2) | Alcance: 1 | Categoria: Variables
 tip -> 
-  Tipo: TChar | Alcance: 8 | Categoria: Campos
+  Tipo: Rune | Alcance: 8 | Categoria: Campos
     Extra:
-  FromReg "Contacto"
+      Campo del registro: "Contacto"
 
 u1 -> 
-  Tipo: TChar | Alcance: 8 | Categoria: Campos
+  Tipo: Rune | Alcance: 8 | Categoria: Campos
     Extra:
-  FromReg "Contacto"
+      Campo del registro: "Contacto"
 
-  Tipo: TChar | Alcance: 1 | Categoria: Variable
+  Tipo: Rune | Alcance: 1 | Categoria: Variables
 

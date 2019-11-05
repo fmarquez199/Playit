@@ -5,12 +5,18 @@
 - Simbolo | Informacion asociada 
 ------------
 f -> 
-  Tipo: TInt | Alcance: 1 | Categoria: Variable
+  Tipo: Power | Alcance: 1 | Categoria: Variables
 factorial -> 
-  Tipo: TInt | Alcance: 1 | Categoria: Funciones
+  Tipo: Power | Alcance: 1 | Categoria: Funciones
     Extra:
-  Params ["n"]  AST [IF [((Var "n" TInt < 0),[Return 0]),((Var "n" TInt == 0),[Return 1]),((Var "n" TInt > 0),[Return (Var "n" TInt * kill SubrutinaCall "factorial" [(Var "n" TInt - 1)])])]]
+      Parametros: ["n"]
+      AST:
+        IF:
+    (n < 0) }
+      unlock 0(n == 0) }
+      unlock 1(n > 0) }
+      unlock (n * kill factorial((n - 1)))
 
 n -> 
-  Tipo: TInt | Alcance: 2 | Categoria: Parametros Valor
+  Tipo: Power | Alcance: 2 | Categoria: Parametros por Valor
 

@@ -5,7 +5,7 @@
 - Simbolo | Informacion asociada 
 ------------
 arista -> 
-  Tipo: TFloat | Alcance: 1 | Categoria: Variable
+  Tipo: Skill | Alcance: 1 | Categoria: Variables
 volumen -> 
-  Tipo: TFloat | Alcance: 1 | Categoria: Variable
+  Tipo: Skill | Alcance: 1 | Categoria: Variables
 

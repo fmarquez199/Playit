@@ -1,1 +1,103 @@
-Programa [Asignaciones [Asignacion (Var "ast2" TDummy) '\'',Asignacion (Var "u1" TDummy) 'u',Asignacion (Var "n1" TDummy) 'n',Asignacion (Var "a1" TDummy) 'a',Asignacion (Var "ast1" TDummy) '\''],Asignacion (Var "m1" TChar) 'M',Asignaciones [Asignacion (Var "b2" TDummy) False,Asignacion (Var "b1" TDummy) True],Asignaciones [],Asignaciones [Asignacion (Var "b5" TDummy) (2 > 3) ? True : False,Asignacion (Var "b4" TDummy) ((Var "b1" TBool && Var "b2" TBool) || Var "b3" TBool)],Asignaciones [Asignacion (Var "b20" TDummy) 1,Asignacion (Var "a2" TDummy) 0],Asignaciones [Asignacion (Var "d2" TDummy) (Var "a2" TInt * 2),Asignacion (Var "c2" TDummy) (Var "a2" TInt + 1)],Asignaciones [Asignacion (Var "d3" TDummy) (Var "c2" TInt * 2),Asignacion (Var "abc" TDummy) (Var "c2" TInt + 1),Asignacion (Var "b31" TDummy) 1.0,Asignacion (Var "a3" TDummy) 1],Asignaciones [Asignacion (Var "listab1" TDummy) ([2] == [])],Asignaciones [Asignacion (Var "listab2" TDummy) ([] == [])],Asignaciones [Asignacion (Var "listab3" TDummy) ([] == [2])],Asignaciones [Asignacion (Var "listab3'1" TDummy) ([[]] == [[2]])],Asignaciones [Asignacion (Var "listab4" TDummy) ([2] == [])],Asignaciones [Asignacion (Var "listab5" TDummy) ((2 : []) == [])],Asignaciones [Asignacion (Var "listab6" TDummy) (([] :: []) == [])],Asignaciones [Asignacion (Var "listab7" TDummy) (([2] :: []) == [2])],Asignaciones [Asignacion (Var "listab8" TDummy) (([] :: [3]) == [3])],Asignaciones [Asignacion (Var "listab8'1" TDummy) (([2] : [[3]]) == [[2],[3]])],Asignaciones [Asignacion (Var "listab9" TDummy) ([[]] == [[2]])],Asignaciones [Asignacion (Var "listab10" TDummy) (([] : [[2]]) == [[],[2]])],Asignaciones [Asignacion (Var "listab11" TDummy) ([[]] == [[]])],Asignaciones [],Asignaciones [Asignacion (Var "test" TDummy) summon TNuevo "Contacto3"],Asignaciones [Asignacion (Var "test2" TDummy) summon TNuevo "PrimerNombre2"],Asignacion (VarCompIndex (PuffValue (VarCompIndex (PuffValue (VarCompIndex (PuffValue (Var "test" (TApuntador (TNuevo "Contacto3"))) (TApuntador (TNuevo "Contacto3"))) "pointernombre" (TApuntador (TNuevo "Nombre2"))) (TApuntador (TNuevo "Nombre2"))) "regpn" (TApuntador (TNuevo "PrimerNombre2"))) (TApuntador (TNuevo "PrimerNombre2"))) "entero" TInt) (VarCompIndex (PuffValue (VarCompIndex (PuffValue (VarCompIndex (PuffValue (Var "test" (TApuntador (TNuevo "Contacto3"))) (TApuntador (TNuevo "Contacto3"))) "pointernombre" (TApuntador (TNuevo "Nombre2"))) (TApuntador (TNuevo "Nombre2"))) "regpn" (TApuntador (TNuevo "PrimerNombre2"))) (TApuntador (TNuevo "PrimerNombre2"))) "entero" TInt + VarIndex (VarCompIndex (Var "nombre" (TNuevo "Contacto3")) "arraypower" (TArray 3 TInt)) 0 TInt),Asignaciones [],Asignaciones [],Asignacion (Var "hola1" (TArray 3 TInt)) Var "hola2" (TArray 3 TInt),Asignacion (Var "test" (TApuntador (TNuevo "Contacto3"))) summon TNuevo "Contacto3",Asignacion (PuffValue (Var "test" (TApuntador (TNuevo "Contacto3"))) (TApuntador (TNuevo "Contacto3"))) Var "nombre" (TNuevo "Contacto3"),Asignacion (Var "nombre" (TNuevo "Contacto3")) Var "nombre" (TNuevo "Contacto3"),Asignaciones [],Asignacion (Var "hola3" (TLista TInt)) ((2 + 1) : Var "hola3" (TLista TInt)),Asignacion (Var "hola3" (TLista TInt)) ((VarIndex (Var "hola1" (TArray 3 TInt)) 0 TInt + VarCompIndex (PuffValue (VarCompIndex (PuffValue (VarCompIndex (PuffValue (Var "test" (TApuntador (TNuevo "Contacto3"))) (TApuntador (TNuevo "Contacto3"))) "pointernombre" (TApuntador (TNuevo "Nombre2"))) (TApuntador (TNuevo "Nombre2"))) "regpn" (TApuntador (TNuevo "PrimerNombre2"))) (TApuntador (TNuevo "PrimerNombre2"))) "entero" TInt) : Var "hola3" (TLista TInt)),Asignacion (Var "hola3" (TLista TInt)) (VarCompIndex (PuffValue (VarCompIndex (PuffValue (VarCompIndex (PuffValue (Var "test" (TApuntador (TNuevo "Contacto3"))) (TApuntador (TNuevo "Contacto3"))) "pointernombre" (TApuntador (TNuevo "Nombre2"))) (TApuntador (TNuevo "Nombre2"))) "regpn" (TApuntador (TNuevo "PrimerNombre2"))) (TApuntador (TNuevo "PrimerNombre2"))) "entero" TInt : Var "hola3" (TLista TInt)),Asignacion (Var "a3" TFloat) Var "a3" TFloat,Asignaciones [],Asignaciones [Asignacion (Var "enteros2" TDummy) [Var "a2" TInt,(Var "c2" TInt + 2),((VarIndex (Var "abc2" (TArray 2 TInt)) 0 TInt + 2) * Var "b2" TBool ? (Var "a2" TInt + 1) : VarIndex (Var "abc2" (TArray 2 TInt)) (VarIndex (Var "abc2" (TArray 2 TInt)) 2 TInt - 1) TInt)]],Asignacion (VarIndex (Var "abc2" (TArray 2 TInt)) 0 TInt) 0,Asignacion (VarIndex (Var "abc2" (TArray 2 TInt)) 1 TInt) 1,Asignaciones [Asignacion (Var "lista1" TDummy) [[Var "a2" TInt,Var "a2" TInt],[Var "a2" TInt,Var "a2" TInt]]],Asignacion (VarIndex (VarIndex (Var "lista1" (TLista (TLista TInt))) 0 TInt) 0 TError) 240,Asignaciones [Asignacion (Var "l1" TDummy) [1,2,3,4,4]],Asignaciones [Asignacion (Var "c" TDummy) [[Var "l1" (TLista TInt),Var "l1" (TLista TInt)],Var "a2" TInt]],Asignacion (VarCompIndex (VarCompIndex (VarCompIndex (Var "c" (TNuevo "Contacto")) "n" (TNuevo "Nombre")) "n" (TNuevo "PrimerNombre")) "nombre" TStr) joystick "~Dame un nombre YEH NOW BB~",Asignacion (VarCompIndex (Var "c" (TNuevo "Contacto")) "tip" TChar) 'c',Asignaciones [Asignacion (Var "p" TDummy) summon TInt],Asignacion (PuffValue (Var "p" (TApuntador TInt)) (TApuntador TInt)) Var "b2" TBool ? (Var "a2" TInt + 1) : VarIndex (Var "abc2" (TArray 2 TInt)) (3 - 1) TInt,Asignacion (PuffValue (Var "p" (TApuntador TInt)) (TApuntador TInt)) 15,Free "p",Asignaciones [Asignacion (Var "p2" TDummy) summon TInt],Asignacion (VarIndex (PuffValue (Var "p2" (TApuntador (TArray 2 TInt))) (TApuntador (TArray 2 TInt))) 0 (TArray 2 TInt)) 21,Free "p2",Asignaciones [Asignacion (Var "l2" TDummy) []],Asignaciones [Asignacion (Var "plista3" TDummy) summon TLista TInt],Asignaciones [Asignacion (Var "plista4" TDummy) summon TLista TInt],Asignacion (PuffValue (Var "plista3" (TApuntador (TLista TInt))) (TApuntador (TLista TInt))) (2 : ((([] :: []) :: []) :: [22])),Asignacion (PuffValue (Var "plista3" (TApuntador (TLista TInt))) (TApuntador (TLista TInt))) (Var "b2" TBool ? (Var "a2" TInt + 1) : VarIndex (Var "abc2" (TArray 2 TInt)) (VarIndex (Var "l2" (TLista TInt)) 0 TInt - VarIndex (VarIndex (Var "lista1" (TLista (TLista TInt))) 2 TInt) 2 TError) TInt : [1,2]),Asignacion (PuffValue (Var "plista3" (TApuntador (TLista TInt))) (TApuntador (TLista TInt))) [1,2],Asignacion (PuffValue (Var "plista4" (TApuntador (TLista TInt))) (TApuntador (TLista TInt))) PuffValue (Var "plista3" (TApuntador (TLista TInt))) (TApuntador (TLista TInt)),Asignaciones [Asignacion (Var "p4" TDummy) 0],Asignaciones [Asignacion (Var "a" TDummy) (((((VarIndex (Var "l2" (TLista TInt)) 2 TInt + 2) + ((((2 * 3) // 3) / 4) % 4)) - 5) - -1) + #Var "l2" (TLista TInt))],Asignaciones [Asignacion (Var "b" TDummy) ((((Var "a" TInt + 2) + 2) * (((3 // 3) / (4 % 4)) - 5)) - (-1 + #Var "l2" (TLista TInt)))],Asignaciones [],Asignacion (Var "c22" TBool) ((((Var "b1" TBool || (True && False)) || !Var "b2" TBool) == True) && (Var "b4" TBool != Var "b2" TBool ? True : False)),Asignaciones [],Asignaciones [],Asignacion (Var "c22" TBool) (Var "manu1" (TArray 2 TInt) == Var "manu1" (TArray 2 TInt)),Asignaciones [],Asignaciones [],Asignacion (Var "c22" TBool) (Var "manukitpower1" (TLista TInt) == Var "manukitpower2" (TLista TInt)),Asignaciones [],Asignaciones [],Asignacion (Var "c22" TBool) (PuffValue (Var "manukitpower3" (TApuntador TInt)) (TApuntador TInt) == VarIndex (VarIndex (PuffValue (PuffValue (PuffValue (Var "manukitpower4" (TApuntador (TApuntador (TApuntador (TLista (TLista TInt)))))) (TApuntador (TApuntador (TApuntador (TLista (TLista TInt)))))) (TApuntador (TApuntador (TApuntador (TLista (TLista TInt)))))) (TApuntador (TApuntador (TApuntador (TLista (TLista TInt)))))) 12 (TApuntador (TApuntador (TLista (TLista TInt))))) 3 (TApuntador (TLista (TLista TInt)))),Asignaciones [Asignacion (Var "c1" TDummy) ^'c'],Asignaciones [Asignacion (Var "c223" TDummy) .'c'],Asignaciones [],Asignaciones [Asignacion (Var "c3" TDummy) ^.Var "c2222" TChar],Asignaciones [Asignacion (Var "c4" TDummy) .^Var "c2222" TChar],Asignaciones [Asignacion (Var "c5" TDummy) .^Var "c2222" TChar],Asignaciones [Asignacion (Var "c6" TDummy) .^Var "c2222" TChar],Asignaciones [Asignacion (Var "c7" TDummy) ^.Var "c2222" TChar],While ((VarIndex (Var "abc2" (TArray 2 TInt)) 0 TInt + 1) * Var "b2" TBool ? (Var "a2" TInt + 1) : VarIndex (Var "abc2" (TArray 2 TInt)) (2 - 1) TInt) [Break,Continue,ForWhile "i" (2 - 2) (10 - 1) ((VarIndex (Var "abc2" (TArray 2 TInt)) 0 TInt + 2) * Var "b2" TBool ? (Var "a2" TInt + 1) : VarIndex (Var "abc2" (TArray 2 TInt)) (5 - 1) TInt) [IF [((12 > 2),[Asignaciones [],Continue,Break])],IF [((1.0 > 2.2),[Return (Var "i" TInt + 2)]),(True,[Return (Var "i" TInt + 2)])]]],ForEach "i" Var "abc" TFloat [],ForEach "i" Var "abc" TFloat [],ForEach "i" Var "abc" TFloat [],Asignaciones [Asignacion (Var "a222" TDummy) kill SubrutinaCall "f" [1,2,3,4]]]
+
+world:
+  ast2 = '\''
+    u1 = 'u'
+    n1 = 'n'
+    a1 = 'a'
+    ast1 = '\''
+  m1 = 'M'
+  b2 = False
+    b1 = True
+  b5 = (2 > 3) ? True : False
+    b4 = ((b1 && b2) || b3)
+  b20 = 1
+    a2 = 0
+  d2 = (a2 * 2)
+    c2 = (a2 + 1)
+  d3 = (c2 * 2)
+    abc = (c2 + 1)
+    b31 = 1.0
+    a3 = 1
+  listab1 = ([2] == [])
+  listab2 = ([] == [])
+  listab3 = ([] == [2])
+  listab3'1 = ([[]] == [[2]])
+  listab4 = ([2] == [])
+  listab5 = ((2 : []) == [])
+  listab6 = (([] :: []) == [])
+  listab7 = (([2] :: []) == [2])
+  listab8 = (([] :: [3]) == [3])
+  listab8'1 = (([2] : [[3]]) == [[2],[3]])
+  listab9 = ([[]] == [[2]])
+  listab10 = (([] : [[2]]) == [[],[2]])
+  listab11 = ([[]] == [[]])
+  test = summon Contacto3
+  test2 = summon PrimerNombre2
+  puff (puff (puff (test) spawn pointernombre) spawn regpn) spawn entero = (puff (puff (puff (test) spawn pointernombre) spawn regpn) spawn entero + nombre spawn arraypower index: 0)
+  hola1 = hola2
+  test = summon Contacto3
+  puff (test) = nombre
+  nombre = nombre
+  hola3 = ((2 + 1) : hola3)
+  hola3 = ((hola1 index: 0 + puff (puff (puff (test) spawn pointernombre) spawn regpn) spawn entero) : hola3)
+  hola3 = (puff (puff (puff (test) spawn pointernombre) spawn regpn) spawn entero : hola3)
+  a3 = a3
+  enteros2 = [a2,(c2 + 2),((abc2 index: 0 + 2) * b2 ? (a2 + 1) : abc2 index: (abc2 index: 2 - 1))]
+  abc2 index: 0 = 0
+  abc2 index: 1 = 1
+  lista1 = [[a2,a2],[a2,a2]]
+  lista1 index: 0 index: 0 = 240
+  l1 = [1,2,3,4,4]
+  c = [[l1,l1],a2]
+  c spawn n spawn n spawn nombre = joystick "~Dame un nombre YEH NOW BB~"
+  c spawn tip = 'c'
+  p = summon Power
+  puff (p) = b2 ? (a2 + 1) : abc2 index: (3 - 1)
+  puff (p) = 15
+  free p
+  p2 = summon Power
+  puff (p2) index: 0 = 21
+  free p2
+  l2 = []
+  plista3 = summon Kit of(Power)
+  plista4 = summon Kit of(Power)
+  puff (plista3) = (2 : ((([] :: []) :: []) :: [22]))
+  puff (plista3) = (b2 ? (a2 + 1) : abc2 index: (l2 index: 0 - lista1 index: 2 index: 2) : [1,2])
+  puff (plista3) = [1,2]
+  puff (plista4) = puff (plista3)
+  p4 = 0
+  a = (((((l2 index: 2 + 2) + ((((2 * 3) // 3) / 4) % 4)) - 5) - -1) + #l2)
+  b = ((((a + 2) + 2) * (((3 // 3) / (4 % 4)) - 5)) - (-1 + #l2))
+  c22 = ((((b1 || (True && False)) || !b2) == True) && (b4 != b2 ? True : False))
+  c22 = (manu1 == manu1)
+  c22 = (manukitpower1 == manukitpower2)
+  c22 = (puff (manukitpower3) == puff (puff (puff (manukitpower4))) index: 12 index: 3)
+  c1 = ^'c'
+  c223 = .'c'
+  c3 = ^.c2222
+  c4 = .^c2222
+  c5 = .^c2222
+  c6 = .^c2222
+  c7 = ^.c2222
+  While ((abc2 index: 0 + 1) * b2 ? (a2 + 1) : abc2 index: (2 - 1)):
+      GameOver
+      KeepPlaying
+      For i = (2 - 2) -> (10 - 1) while: ((abc2 index: 0 + 2) * b2 ? (a2 + 1) : abc2 index: (5 - 1)):
+      IF:
+    (12 > 2) }
+      KeepPlaying
+  GameOver
+      IF:
+    (1.0 > 2.2) }
+      unlock (i + 2)(1.0 > 2.2) }
+      unlock (i + 2)
+
+  ForEach i <- abc:
+    
+  ForEach i <- abc:
+    
+  ForEach i <- abc:
+    
+  a222 = kill f(1,2,3,4)
+
+

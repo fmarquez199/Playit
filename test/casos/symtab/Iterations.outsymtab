@@ -5,8 +5,8 @@
 - Simbolo | Informacion asociada 
 ------------
 i -> 
-  Tipo: TInt | Alcance: 1 | Categoria: Variable
-  Tipo: TInt | Alcance: 2 | Categoria: Variable
+  Tipo: Power | Alcance: 1 | Categoria: Variables
+  Tipo: Power | Alcance: 2 | Categoria: Variables
 x -> 
-  Tipo: TFloat | Alcance: 2 | Categoria: Variable
+  Tipo: Skill | Alcance: 2 | Categoria: Variables
 

@@ -1,1 +1,5 @@
-Programa [Asignaciones [Asignacion (Var "m" TDummy) kill SubrutinaCall "m" []]]
+
+world:
+  m = kill m()
+
+
