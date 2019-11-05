@@ -12,7 +12,6 @@ module Playit.Lexer (
     Token(..),
     AlexPosn(..), 
     alexScanTokens,
-    getTokenPosicion,
     hasError,
     showAllErrors,
     tokerr
@@ -163,8 +162,11 @@ tokens :-
   @error               { tok (\(AlexPn _ f c) err -> TkError err (f,c)) }
 
 {
-tok :: (AlexPosn -> String -> Token) -> AlexPosn -> String -> Token
-tok f p s = f p s
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+--                         Creacion de los tokens
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 tok :: (AlexPosn -> String -> Token) -> AlexPosn -> String -> Token
 tok f p tk = f p tk
@@ -175,98 +177,8 @@ createTkINT (AlexPn _ f c) int = TkINT int (f, c) (read int :: Int)
 createTkFLOAT (AlexPn _ f c) float =
     TkFLOAT float (f, c) (read (map (\c -> if c == '\'' then '.' else c) float) :: Float)
 
-getTokenPosicion :: Token -> (Int,Int)
-getTokenPosicion token = (f,c)
-    where (AlexPn _ f c) = getAlexPosn token
-
-
-data Token = TkWORLD {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkRUNE {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkLOSE {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkOF {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkBUTTON {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkWIN {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkBATLE {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkPOWER {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkSKILL {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkRUNES {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkKIT {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkINVENTORY {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkITEMS {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkSUMMON {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkFREE {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkDeathZone {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkJOYSTICK {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkDROP {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkNotPressed {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkCONTROLLER {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkIN  {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkTO  {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkPLAY {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkLOCK {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkUNLOCK {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkSPAWN {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkGameOver {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkKeepPlaying {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkKILL {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkMONSTER {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkBOSS {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkProgramName {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkID {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkIDTipo {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkCARACTER {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkSTRINGS {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkINT {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkFLOAT {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkDivEntera {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkOR {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkAND {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkLessEqual {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkEQUAL {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkNotEqual {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkGreaterEqual {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkOpenList {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkCloseList {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkOpenListIndex {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkCloseListIndex {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkINCREMENT {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkDECREMENT {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkSUM {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkMIN {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkMULT {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkDIV {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkMOD {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkLEN {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkREF {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkNOT {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkLessThan {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkGreaterThan {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkPUFF {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkOpenParenthesis {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkCloseParenthesis {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkOpenBrackets {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkCloseBrackets {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkCOMA {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkANEXO {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkGUARD {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkASING {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkUPPER {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkLOWER {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkCMV {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkCM1 {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkFIN {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkOpenArray {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkCloseArray {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkOpenArrayIndex {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkCloseArrayIndex {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkError {mensaje :: String}
-           | TkCONCAT {getAlexPosn :: AlexPosn,getTknStr :: String}
-           | TkEndLine {getAlexPosn :: AlexPosn,getTknStr :: String}
-           deriving (Eq)
-
-
---------------------------------------------------------------------------------
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 --                       Manejo de los tokens erroneos
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------

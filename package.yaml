@@ -30,6 +30,8 @@ dependencies:
 - containers
 - mtl
 - split
+# - hspec
+- tostring
 library:
   source-dirs: src
 
@@ -50,6 +52,7 @@ executables:
 tests:
   playit-test:
     main:                Pruebas.hs
+    # main:                Spec.hs
     source-dirs:         test
     ghc-options:
     - -threaded
@@ -60,3 +63,5 @@ tests:
     - test-framework
     - test-framework-hunit
     - HUnit
+    # - hspec
+    # - hspec-discover

@@ -25,7 +25,7 @@ Items Shape:
   Circle c
   Rectangle r
 .~
-boss areaCirculo(Circle ?c) :
+monster areaCirculo(Circle ?c) :
   unlock 3'14 * c spawn radius * c spawn radius
 .~
 monster calcularGanancia(Power precioComprado, Power precioVendido) Power:

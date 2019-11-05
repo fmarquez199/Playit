@@ -400,7 +400,7 @@ Play :: { Instr }
 -------------------------------------------------------------------------------
 -- Instrucciones de E/S 'drop' y 'joystick'
 EntradaSalida :: { Instr }
-  : print Expresiones       { % crearPrint (crearArrLstExpr $2) $1 }
+  : print Expresiones       { % crearPrint (crearArrLstExpr $ reverse $2) $1 }
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -543,10 +543,10 @@ Expresion :: { Expr }
     }
   | FuncCall               { $1 }
   | "(" Expresion ")"      { $2 }
-  | "{" Expresiones "}"    { crearArrLstExpr $2 } -- Inic de Reg/Union
+  | "{" Expresiones "}"    { crearArrLstExpr $ reverse $2 } -- Inic de Reg/Union
   | "{" "}"                { crearArrLstExpr [] } -- Inic de Reg/Union por default
-  | "|)" Expresiones "(|"  { crearArrLstExpr $2 }
-  | "<<" Expresiones ">>"  { crearArrLstExpr $2 }
+  | "|)" Expresiones "(|"  { crearArrLstExpr $ reverse $2 }
+  | "<<" Expresiones ">>"  { crearArrLstExpr $ reverse $2 }
   | "<<" ">>"              { crearArrLstExpr [] }
   | new Tipo               { OpUnario New (IdTipo $2) (TApuntador $2) }
 

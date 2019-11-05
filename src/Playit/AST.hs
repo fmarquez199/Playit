@@ -8,6 +8,7 @@
 *  Natascha Gamboa     12-11250
 -}
 module Playit.AST where
+
 import Control.Monad.Trans.RWS
 import qualified Data.Map as M
 import Data.Maybe (fromJust, isJust, isNothing)
@@ -384,7 +385,6 @@ definirSubrutina nombre categoria p = do
         error $ "\nError: " ++ file ++ ": " ++ show p ++ "\n\tSubrutina '" ++
             nombre ++ "' ya esta definida.\n\t"
             ++ concatMap show (fromJust info) ++ "\n"
-        error $ "Error: redeclaración de '" ++ nombre ++ "'."
     return ()
 -------------------------------------------------------------------------------
 
@@ -571,5 +571,3 @@ crearFree var p = do
 --                           Funciones auxiliares
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
-
-

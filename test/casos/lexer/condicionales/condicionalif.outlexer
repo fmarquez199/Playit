@@ -1,87 +1,68 @@
-Token world en la fila: 1, columna: 1
-Token nombre programa %HolaMundo% en la fila: 1, columna: 7
-Token : en la fila: 1, columna: 18
-Token End Instruction \n en la fila: 1, columna: 19
-Token Button en la fila: 3, columna: 5
-Token identificador "edad" en la fila: 3, columna: 12
-Token = en la fila: 3, columna: 17
-Token entero 18 en la fila: 3, columna: 19
-Token End Instruction \n en la fila: 3, columna: 21
-Token Battle en la fila: 5, columna: 5
-Token identificador "puedeConducir" en la fila: 5, columna: 12
-Token End Instruction \n en la fila: 5, columna: 25
-Token Button en la fila: 6, columna: 5
-Token : en la fila: 6, columna: 11
-Token End Instruction \n en la fila: 6, columna: 12
-Token | en la fila: 7, columna: 5
-Token identificador "edad" en la fila: 7, columna: 7
-Token >= en la fila: 7, columna: 12
-Token entero 18 en la fila: 7, columna: 15
-Token } en la fila: 7, columna: 17
-Token End Instruction \n en la fila: 7, columna: 18
-Token identificador "puedeConducir" en la fila: 8, columna: 7
-Token = en la fila: 8, columna: 21
-Token Win en la fila: 8, columna: 23
-Token End Instruction \n en la fila: 8, columna: 26
-Token .~ en la fila: 9, columna: 5
-Token End Instruction \n en la fila: 9, columna: 7
-Token Button en la fila: 11, columna: 5
-Token : en la fila: 11, columna: 11
-Token End Instruction \n en la fila: 11, columna: 12
-Token | en la fila: 12, columna: 5
-Token identificador "edad" en la fila: 12, columna: 7
-Token >= en la fila: 12, columna: 12
-Token entero 18 en la fila: 12, columna: 15
-Token } en la fila: 12, columna: 17
-Token End Instruction \n en la fila: 12, columna: 18
-Token identificador "puedeConducir" en la fila: 13, columna: 7
-Token = en la fila: 13, columna: 21
-Token Win en la fila: 13, columna: 23
-Token End Instruction \n en la fila: 13, columna: 26
-Token | en la fila: 14, columna: 5
-Token identificador "edad" en la fila: 14, columna: 7
-Token >= en la fila: 14, columna: 12
-Token entero 18 en la fila: 14, columna: 15
-Token } en la fila: 14, columna: 17
-Token End Instruction \n en la fila: 14, columna: 18
-Token identificador "puedeConducir" en la fila: 15, columna: 7
-Token = en la fila: 15, columna: 21
-Token Win en la fila: 15, columna: 23
-Token End Instruction \n en la fila: 15, columna: 26
-Token .~ en la fila: 16, columna: 5
-Token End Instruction \n en la fila: 16, columna: 7
-Token Button en la fila: 18, columna: 5
-Token : en la fila: 18, columna: 11
-Token End Instruction \n en la fila: 18, columna: 12
-Token | en la fila: 19, columna: 5
-Token identificador "edad" en la fila: 19, columna: 7
-Token >= en la fila: 19, columna: 12
-Token entero 18 en la fila: 19, columna: 15
-Token } en la fila: 19, columna: 17
-Token End Instruction \n en la fila: 19, columna: 18
-Token identificador "puedeConducir" en la fila: 20, columna: 7
-Token = en la fila: 20, columna: 21
-Token Win en la fila: 20, columna: 23
-Token End Instruction \n en la fila: 20, columna: 26
-Token | en la fila: 21, columna: 5
-Token identificador "edad" en la fila: 21, columna: 7
-Token >= en la fila: 21, columna: 12
-Token entero 18 en la fila: 21, columna: 15
-Token } en la fila: 21, columna: 17
-Token End Instruction \n en la fila: 21, columna: 18
-Token identificador "puedeConducir" en la fila: 22, columna: 7
-Token = en la fila: 22, columna: 21
-Token Win en la fila: 22, columna: 23
-Token End Instruction \n en la fila: 22, columna: 26
-Token | en la fila: 23, columna: 5
-Token notPressed en la fila: 23, columna: 7
-Token } en la fila: 23, columna: 17
-Token End Instruction \n en la fila: 23, columna: 18
-Token identificador "puedeConducir" en la fila: 24, columna: 7
-Token = en la fila: 24, columna: 21
-Token Win en la fila: 24, columna: 23
-Token End Instruction \n en la fila: 24, columna: 26
-Token .~ en la fila: 25, columna: 5
-Token End Instruction \n en la fila: 25, columna: 7
-Token .~ en la fila: 26, columna: 1
-Token End Instruction \n en la fila: 26, columna: 3
+(world), pos (1,1)
+(%HolaMundo%), pos (1,7)
+(:), pos (1,18)
+(\n), pos (1,19)
+(Power), pos (2,3),Identificador "edad", pos (2,9)
+(=), pos (2,14),Entero 18, pos (2,16)
+(\n), pos (2,18)
+(Battle), pos (4,3),Identificador "puedeConducir", pos (4,10)
+(\n), pos (4,23)
+(Button), pos (5,3)
+(:), pos (5,9)
+(\n), pos (5,10)
+(|), pos (6,3),Identificador "edad", pos (6,5)
+(>=), pos (6,10),Entero 18, pos (6,13)
+(}), pos (6,15)
+(\n), pos (6,16),Identificador "puedeConducir", pos (7,5)
+(=), pos (7,19)
+(Win), pos (7,21)
+(\n), pos (7,24)
+(.~), pos (8,3)
+(\n), pos (8,5)
+(Button), pos (10,3)
+(:), pos (10,9)
+(\n), pos (10,10)
+(|), pos (11,3),Identificador "edad", pos (11,5)
+(>=), pos (11,10),Entero 18, pos (11,13)
+(}), pos (11,15)
+(\n), pos (11,16),Identificador "puedeConducir", pos (12,5)
+(=), pos (12,19)
+(Win), pos (12,21)
+(\n), pos (12,24)
+(|), pos (13,3),Identificador "edad", pos (13,5)
+(>=), pos (13,10),Entero 18, pos (13,13)
+(}), pos (13,15)
+(\n), pos (13,16),Identificador "puedeConducir", pos (14,5)
+(=), pos (14,19)
+(Win), pos (14,21)
+(\n), pos (14,24)
+(.~), pos (15,3)
+(\n), pos (15,5)
+(Button), pos (17,3)
+(:), pos (17,9)
+(\n), pos (17,10)
+(|), pos (18,3),Identificador "edad", pos (18,5)
+(>=), pos (18,10),Entero 18, pos (18,13)
+(}), pos (18,15)
+(\n), pos (18,16),Identificador "puedeConducir", pos (19,5)
+(=), pos (19,19)
+(Win), pos (19,21)
+(\n), pos (19,24)
+(|), pos (20,3),Identificador "edad", pos (20,5)
+(>=), pos (20,10),Entero 18, pos (20,13)
+(}), pos (20,15)
+(\n), pos (20,16),Identificador "puedeConducir", pos (21,5)
+(=), pos (21,19)
+(Win), pos (21,21)
+(\n), pos (21,24)
+(|), pos (22,3)
+(notPressed), pos (22,5)
+(}), pos (22,15)
+(\n), pos (22,16),Identificador "puedeConducir", pos (23,5)
+(=), pos (23,19)
+(Win), pos (23,21)
+(\n), pos (23,24)
+(.~), pos (24,3)
+(\n), pos (24,5)
+(.~), pos (25,1)
+(\n), pos (25,3)

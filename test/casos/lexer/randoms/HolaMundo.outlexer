@@ -1,9 +1,9 @@
-Token world en la fila: 1, columna: 1
-Token nombre programa %HolaMundo% en la fila: 1, columna: 7
-Token : en la fila: 1, columna: 18
-Token End Instruction \n en la fila: 1, columna: 19
-Token drop en la fila: 2, columna: 3
-Token string ~Hello World!~ en la fila: 2, columna: 8
-Token End Instruction \n en la fila: 2, columna: 22
-Token .~ en la fila: 3, columna: 1
-Token End Instruction \n en la fila: 3, columna: 3
+(world), pos (1,1)
+(%HolaMundo%), pos (1,7)
+(:), pos (1,18)
+(\n), pos (1,19)
+(drop), pos (2,3)
+String "~Hello World!~", pos (2,8)
+(\n), pos (2,22)
+(.~), pos (3,1)
+(\n), pos (3,3)

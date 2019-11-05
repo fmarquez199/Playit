@@ -1,5 +1,9 @@
-Token string ~ esto es un String ~ en la fila: 1, columna: 1
-Token End Instruction \n en la fila: 1, columna: 22
-Token End Instruction \n en la fila: 4, columna: 3
-Token caracter *\n* en la fila: 5, columna: 1
-Token End Instruction \n en la fila: 5, columna: 5
+String "~ esto es un String ~", pos (1,1)
+(\n), pos (1,22)
+(\n), pos (4,3)
+Caracter '*\n*', pos (5,1)
+(\n), pos (6,2)
+String "~\*\*~", pos (7,1)
+(\n), pos (7,7)
+(:), pos (9,1)
+(\n), pos (9,14)

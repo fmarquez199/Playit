@@ -1,12 +1,13 @@
 boss b():
-    drop ~Nada~
+  drop ~Nada~
 .~
-monster m() Power:
-    Power i = 0
-    unlock i
-.~
-world %subrutinas%:
 
-    Power m = kill m()
-    @Power b = kill b() @b no es una func
+monster m() Power:
+  Power i = 0
+  unlock i
+.~
+
+world %subrutinas%:
+  Power m = kill m()
+  kill b() @b no es una func
 .~

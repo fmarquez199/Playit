@@ -1,65 +1,65 @@
-Token Runes en la fila: 1, columna: 1
-Token identificador "s1" en la fila: 1, columna: 7
-Token = en la fila: 1, columna: 10
-Token string ~Hola1~ en la fila: 1, columna: 12
-Token End Instruction \n en la fila: 1, columna: 19
-Token Runes en la fila: 2, columna: 1
-Token identificador "s2" en la fila: 2, columna: 7
-Token = en la fila: 2, columna: 10
-Token string ~\*Hola\n1~ en la fila: 2, columna: 12
-Token End Instruction \n en la fila: 2, columna: 23
-Token Runes en la fila: 3, columna: 1
-Token identificador "s3" en la fila: 3, columna: 7
-Token = en la fila: 3, columna: 10
-Token string ~Hola2~ en la fila: 3, columna: 12
-Token End Instruction \n en la fila: 3, columna: 19
-Token Runes en la fila: 4, columna: 1
-Token |} en la fila: 4, columna: 6
-Token entero 5 en la fila: 4, columna: 8
-Token {| en la fila: 4, columna: 9
-Token identificador "s351" en la fila: 4, columna: 12
-Token = en la fila: 4, columna: 17
-Token string ~Hola2~ en la fila: 4, columna: 19
-Token End Instruction \n en la fila: 4, columna: 26
-Token Runes en la fila: 5, columna: 1
-Token |} en la fila: 5, columna: 6
-Token entero 5 en la fila: 5, columna: 8
-Token {| en la fila: 5, columna: 9
-Token identificador "s352" en la fila: 5, columna: 12
-Token = en la fila: 5, columna: 17
-Token |} en la fila: 5, columna: 19
-Token caracter *H* en la fila: 5, columna: 21
-Token , en la fila: 5, columna: 24
-Token caracter *o* en la fila: 5, columna: 25
-Token , en la fila: 5, columna: 28
-Token caracter *l* en la fila: 5, columna: 29
-Token , en la fila: 5, columna: 32
-Token caracter *a* en la fila: 5, columna: 33
-Token , en la fila: 5, columna: 36
-Token caracter *2* en la fila: 5, columna: 37
-Token {| en la fila: 5, columna: 40
-Token End Instruction \n en la fila: 5, columna: 42
-Token Runes en la fila: 6, columna: 1
-Token identificador "s4" en la fila: 6, columna: 7
-Token = en la fila: 6, columna: 10
-Token string ~Hola2\n~ en la fila: 6, columna: 12
-Token End Instruction \n en la fila: 6, columna: 21
-Token Runes en la fila: 7, columna: 1
-Token identificador "s5" en la fila: 7, columna: 7
-Token = en la fila: 7, columna: 10
-Token string ~Hey!, Como estas?~ en la fila: 7, columna: 12
-Token End Instruction \n en la fila: 7, columna: 31
-Token Power en la fila: 10, columna: 1
-Token identificador "length" en la fila: 10, columna: 7
-Token = en la fila: 10, columna: 14
-Token # en la fila: 10, columna: 16
-Token identificador "s1" en la fila: 10, columna: 17
-Token End Instruction \n en la fila: 10, columna: 19
-Token Rune en la fila: 12, columna: 1
-Token identificador "h" en la fila: 12, columna: 6
-Token = en la fila: 12, columna: 8
-Token identificador "s1" en la fila: 12, columna: 10
-Token |} en la fila: 12, columna: 12
-Token entero 0 en la fila: 12, columna: 14
-Token {| en la fila: 12, columna: 15
-Token End Instruction \n en la fila: 12, columna: 17
+(Runes), pos (1,1)
+Identificador "s1", pos (1,7)
+(=), pos (1,10)
+String "~Hola1~", pos (1,12)
+(\n), pos (1,19)
+(Runes), pos (2,1)
+Identificador "s2", pos (2,7)
+(=), pos (2,10)
+String "~\*Hola\n1~", pos (2,12)
+(\n), pos (2,23)
+(Runes), pos (3,1)
+Identificador "s3", pos (3,7)
+(=), pos (3,10)
+String "~Hola2~", pos (3,12)
+(\n), pos (3,19)
+(Runes), pos (4,1)
+(|}), pos (4,6)
+Entero 5, pos (4,8)
+({|), pos (4,9)
+Identificador "s351", pos (4,12)
+(=), pos (4,17)
+String "~Hola2~", pos (4,19)
+(\n), pos (4,26)
+(Runes), pos (5,1)
+(|}), pos (5,6)
+Entero 5, pos (5,8)
+({|), pos (5,9)
+Identificador "s352", pos (5,12)
+(=), pos (5,17)
+(|}), pos (5,19)
+Caracter '*H*', pos (5,21)
+(,), pos (5,24)
+Caracter '*o*', pos (5,25)
+(,), pos (5,28)
+Caracter '*l*', pos (5,29)
+(,), pos (5,32)
+Caracter '*a*', pos (5,33)
+(,), pos (5,36)
+Caracter '*2*', pos (5,37)
+({|), pos (5,40)
+(\n), pos (5,42)
+(Runes), pos (6,1)
+Identificador "s4", pos (6,7)
+(=), pos (6,10)
+String "~Hola2\n~", pos (6,12)
+(\n), pos (6,21)
+(Runes), pos (7,1)
+Identificador "s5", pos (7,7)
+(=), pos (7,10)
+String "~Hey!, Como estas?~", pos (7,12)
+(\n), pos (7,31)
+(Power), pos (10,1)
+Identificador "length", pos (10,7)
+(=), pos (10,14)
+(#), pos (10,16)
+Identificador "s1", pos (10,17)
+(\n), pos (10,19)
+(Rune), pos (12,1)
+Identificador "h", pos (12,6)
+(=), pos (12,8)
+Identificador "s1", pos (12,10)
+(|}), pos (12,12)
+Entero 0, pos (12,14)
+({|), pos (12,15)
+(\n), pos (12,17)

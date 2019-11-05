@@ -1,38 +1,38 @@
-Token world en la fila: 1, columna: 1
-Token nombre programa %ParOImpar% en la fila: 1, columna: 7
-Token : en la fila: 1, columna: 18
-Token End Instruction \n en la fila: 1, columna: 19
-Token End Instruction \n en la fila: 2, columna: 41
-Token Power en la fila: 3, columna: 3
-Token identificador "numero" en la fila: 3, columna: 9
-Token End Instruction \n en la fila: 3, columna: 15
-Token identificador "numero" en la fila: 4, columna: 3
-Token = en la fila: 4, columna: 10
-Token joystick en la fila: 4, columna: 12
-Token string ~Introduzca un numero entero: ~ en la fila: 4, columna: 21
-Token End Instruction \n en la fila: 4, columna: 52
-Token Button en la fila: 5, columna: 3
-Token : en la fila: 5, columna: 9
-Token End Instruction \n en la fila: 5, columna: 10
-Token | en la fila: 6, columna: 3
-Token identificador "numero" en la fila: 6, columna: 4
-Token % en la fila: 6, columna: 11
-Token entero 2 en la fila: 6, columna: 13
-Token == en la fila: 6, columna: 15
-Token entero 0 en la fila: 6, columna: 18
-Token } en la fila: 6, columna: 20
-Token End Instruction \n en la fila: 6, columna: 21
-Token drop en la fila: 7, columna: 5
-Token string ~es par~ en la fila: 7, columna: 10
-Token End Instruction \n en la fila: 7, columna: 18
-Token | en la fila: 8, columna: 3
-Token notPressed en la fila: 8, columna: 5
-Token } en la fila: 8, columna: 16
-Token End Instruction \n en la fila: 8, columna: 17
-Token drop en la fila: 9, columna: 5
-Token string ~es impar~ en la fila: 9, columna: 10
-Token End Instruction \n en la fila: 9, columna: 20
-Token .~ en la fila: 10, columna: 3
-Token End Instruction \n en la fila: 10, columna: 5
-Token .~ en la fila: 11, columna: 1
-Token End Instruction \n en la fila: 11, columna: 3
+(world), pos (1,1)
+(%ParOImpar%), pos (1,7)
+(:), pos (1,18)
+(\n), pos (1,19)
+(\n), pos (2,41)
+(Power), pos (3,3)
+Identificador \"numero\", pos (3,9)
+(\n), pos (3,15)
+Identificador \"numero\", pos (4,3)
+(=), pos (4,10)
+(joystick), pos (4,12)
+String \"~Introduzca un numero entero: ~\", pos (4,21)
+(\n), pos (4,52)
+(Button), pos (5,3)
+(:), pos (5,9)
+(\n), pos (5,10)
+(|), pos (6,3)
+Identificador \"numero\", pos (6,4)
+(%), pos (6,11)
+Entero 2, pos (6,13)
+(==), pos (6,15)
+Entero 0, pos (6,18)
+(}), pos (6,20)
+(\n), pos (6,21)
+(drop), pos (7,5)
+String \"~es par~\", pos (7,10)
+(\n), pos (7,18)
+(|), pos (8,3)
+(notPressed), pos (8,5)
+(}), pos (8,16)
+(\n), pos (8,17)
+(drop), pos (9,5)
+String \"~es impar~\", pos (9,10)
+(\n), pos (9,20)
+(.~), pos (10,3)
+(\n), pos (10,5)
+(.~), pos (11,1)
+(\n), pos (11,3)

@@ -1,17 +1,17 @@
 Inventory PotionsHealth:
-    Power p
+  Power p
 .~
 Inventory PotionsHealth2:
-    Power p
+  Power p
 .~
 Inventory PotionsMana:
-    Skill p
+  Skill p
 .~
 Inventory PotionsMana2:
-    Skill p
+  Skill p
 .~
 
 world %registros%:
-    PotionsHealth ph
-    PotionsMana   pm
+  PotionsHealth ph
+  PotionsMana   pm
 .~

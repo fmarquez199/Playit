@@ -8,7 +8,7 @@
 -}
 module Main where
 
-import Data.Strings (strEndsWith)
+import Data.Strings (strEndsWith, strReplace)
 import Control.Monad.Trans.RWS
 import Control.Monad (mapM_)
 import Control.Exception
@@ -37,22 +37,23 @@ checkExt [file]     = if strEndsWith file ".game" then Right file
 
 main :: IO ()
 main = do
-    -- Tomar argumentos del terminal.
-    args <- getArgs
+  -- Tomar argumentos del terminal.
+  args <- getArgs
 
-    case checkExt args of
-        Left msg -> putStrLn msg
-        Right checkedFile -> do
-            code <- readFile checkedFile
+  case checkExt args of
+    Left msg -> putStrLn msg
+    Right checkedFile -> do
+      code <- readFile checkedFile
 
-            if null code || isEmptyFile code then putStrLn "\nEmptyFile\n"
-            else do
-                let tokens = alexScanTokens code
-                    (hasErr,pos) = hasError tokens
+      if null code || isEmptyFile code then putStrLn "\nEmptyFile\n"
+      else do
+        let tokens = alexScanTokens code
+            (hasErr, pos) = hasError tokens
 
-                if hasErr then putStrLn $ showAllErrors code pos
-                else do
-                    -- mapM_ print tokens
-                    (ast,(st,_,_),errors) <- runRWST (parse tokens) checkedFile initState
-                    
-                    if null errors then print ast >> print st else print errors                    
+        if hasErr then do
+          putStrLn $ showAllErrors code pos
+        else do
+          -- mapM_ print tokens
+          (ast, (st,_,_), errors) <- runRWST (parse tokens) checkedFile initState
+          print ast
+          -- if null errors then print ast >> print st else print errors                    

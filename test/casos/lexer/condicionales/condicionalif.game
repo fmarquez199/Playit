@@ -1,27 +1,26 @@
 world %HolaMundo%:
+  Power edad = 18
 
-    Button edad = 18
-
-    Battle puedeConducir
-    Button:
-    | edad >= 18}
-      puedeConducir = Win
-    .~
-    
-    Button:
-    | edad >= 18}
-      puedeConducir = Win
-    | edad >= 18}
-      puedeConducir = Win
-    .~
-    
-    Button:
-    | edad >= 18}
-      puedeConducir = Win
-    | edad >= 18}
-      puedeConducir = Win
-    | notPressed}
-      puedeConducir = Win
-    .~      
+  Battle puedeConducir
+  Button:
+  | edad >= 18}
+    puedeConducir = Win
+  .~
+  
+  Button:
+  | edad >= 18}
+    puedeConducir = Win
+  | edad >= 18}
+    puedeConducir = Win
+  .~
+  
+  Button:
+  | edad >= 18}
+    puedeConducir = Win
+  | edad >= 18}
+    puedeConducir = Win
+  | notPressed}
+    puedeConducir = Win
+  .~      
 .~
 
