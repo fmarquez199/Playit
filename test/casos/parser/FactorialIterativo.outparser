@@ -1,16 +1,1 @@
-world %Caso2%:
-  Power numero = joystick ~Por favor dime un numero: ~
-  Power factorial = 1
-  play:
-    factorial = factorial * numero
-    numero--
-  lock numero > 1
-  .~
-  Button:
-    | numero > 0 }
-      drop ~El factorial del numero indicado es ~, factorial
-    | numero < 0 }
-      drop ~El factorial de un numero negativo no esta definido, saludos.~
-  .~
-  drop ~Nos veremos pronto.~
-.~
+Programa [Asignaciones [Asignacion (Var "numero" TDummy) joystick "~Por favor dime un numero: ~"],Asignaciones [Asignacion (Var "factorial" TDummy) 1],While (Var "numero" TInt > 1) [Asignacion (Var "factorial" TInt) (Var "factorial" TInt * Var "numero" TInt),Asignacion (Var "numero" TInt) (Var "numero" TInt - 1)],IF [((Var "numero" TInt > 0),[Print [Var "factorial" TInt,"~El factorial del numero indicado es ~"]]),((Var "numero" TInt < 0),[Print ["~El factorial de un numero negativo no esta definido, saludos.~"]])],Print ["~Nos veremos pronto.~"]]
