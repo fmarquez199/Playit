@@ -50,9 +50,6 @@ import Util(getRecursiveContents)
 import Playit.SymbolTable
 import Control.Monad.Trans.RWS
 
-quitarEndOfLine str = reverse (drop 1 (reverse (str)))
-
-
 pruebasSymTab :: IO Test.HUnit.Test
 pruebasSymTab = do
   -- Obtiene todos los archivos en test/casos
@@ -80,18 +77,21 @@ pruebasSymTab = do
     strSourceCode     <- S.hGetContents fileSource
     -- Extrae la salida esperada del archivo
     strExpectedOut    <- S.hGetContents fileExpectedOut
-    let strExpected = quitarEndOfLine (BS.unpack strExpectedOut)
+    let strExpected = BS.unpack strExpectedOut
     
-    (ast, (st,_,_), errors) <- runRWST (parse (alexScanTokens strExpected)) (filen ++ ".game","") initState
+    
+    (ast, (st,_,_), errors) <- runRWST (parse (alexScanTokens (BS.unpack strSourceCode))) (filen ++ ".game","") initState
 
-    
-    let testCase = [TestCase $ assertEqual ("\n***Error en  parser:" ++ filen ++ ".game ***") strExpectedOut (BS.pack $ show st)]
+    let strSymTab    = show st
+
+    let testCases = [TestCase $ assertEqual ("\n***Error en  symtab:" ++ filen ++ ".game ***") lineExpected lineRecognized | (lineExpected , lineRecognized) <- zip (lines strExpected) (lines strSymTab)]
+
 
     -- Cerramos los archivos
     hClose fileSource
     hClose fileExpectedOut
 
-    return testCase
+    return testCases
 
   return $ TestList $ concat testCases
   
@@ -126,12 +126,20 @@ pruebasLexer = do
     -- Separa el contenido por los saltos de lineas 
     let lstStrExpectedOut = lines $ BS.unpack strExpectedOut
     
-    -- Obtiene la lista de Tokens reconocidos en el codigo
-    let lstRecognizedTkns      = alexScanTokens $ BS.unpack strSourceCode 
-    -- Crea una lista de strings con los Tokens 
-    let lstStrRecognizedTokens = map show lstRecognizedTkns     
-           
-    let testCases = [TestCase $ assertEqual ("\n***Error en tokens de:" ++ filen ++ ".game ***") lstStrExpectedOut lstStrRecognizedTokens]
+    -- Recorremos todos los .game y creamos los casos de prueba
+    testCases <- forM filesToTestDotGame $ \filen -> do
+        -- Lee el codigo 
+        fileSource        <- openFile (filen ++ ".game")    ReadMode  
+        -- Lee la salida esperada del Lexer
+        fileExpectedOut   <- openFile (filen ++ ".outlexer")     ReadMode
+
+        -- Extrae el codigo del archivo
+        strSourceCode     <- S.hGetContents fileSource
+        -- Extrae la salida esperada del archivo
+        strExpectedOut    <- S.hGetContents fileExpectedOut
+
+        -- Separa el contenido por los saltos de lineas 
+        let lstStrExpectedOut = (lines $ BS.unpack strExpectedOut) !! 0
         
     -- Cerramos los archivos
     hClose fileSource
@@ -169,10 +177,13 @@ pruebasParser = do
     strSourceCode     <- S.hGetContents fileSource
     -- Extrae la salida esperada del archivo
     strExpectedOut    <- S.hGetContents fileExpectedOut
+    let strExpectedAST = lines $ BS.unpack strExpectedOut
+        
+    (ast, (st,_,_), errors) <- runRWST (parse (alexScanTokens $ BS.unpack strSourceCode)) (filen ++ ".game","") initState
     
-    (ast, (st,_,_), errors) <- runRWST (parse (alexScanTokens $ TS.toString strSourceCode)) (filen ++ ".game","") initState
-    
-    let testCases = [TestCase $ assertEqual ("\n***Error en  parser:" ++ filen ++ ".game ***") strExpectedOut (BS.pack $ show ast)]
+    let lstStrRecognizedAST    = lines $ show ast
+
+    let testCases = [TestCase $ assertEqual ("\n***Error en  parser:" ++ filen ++ ".game ***") lineExpected lineRecognized | (lineExpected , lineRecognized) <- zip strExpectedAST lstStrRecognizedAST]
     -- Cerramos los archivos
     hClose fileSource
     hClose fileExpectedOut
