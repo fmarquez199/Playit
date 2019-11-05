@@ -51,7 +51,7 @@ data Categoria  =
 
 data ExtraInfo =
     AST SecuenciaInstr    |
-    Params [Nombre] |
+    Params [Nombre{-,Tipo-}] | -- Para verif tipos [(Nombre,Tipo)]
     FromReg Nombre       -- Registro o union al que pertenece el campo/variable
     deriving (Eq, Ord,Show)
 

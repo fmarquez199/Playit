@@ -32,9 +32,18 @@ crearIdvar :: Nombre -> Posicion -> MonadSymTab Vars
 crearIdvar name p = do
     (symTab, scopes, _) <- get
     fileCode <- ask
-    let info = lookupInScopes scopes name symTab
+    let infos = lookupInScopes scopes name symTab
 
-    if isJust info then return $ Var name (getType $ fromJust info)
+    if isJust infos then do
+        let vars = [Variable,Parametros Valor,Parametros Referencia]
+            isVar si = getCategory si `elem` vars
+            var = filter isVar (fromJust infos)
+
+        if null var then
+            error $ errorMessage "This is not a variable" fileCode p
+        else
+            return $ Var name (getType $ head var)
+
     else error $ errorMessage "Variable not declared in active scopes" fileCode p
 -------------------------------------------------------------------------------
 
@@ -403,14 +412,16 @@ crearSubrutinaCall :: Nombre -> Parametros -> Posicion
 crearSubrutinaCall nombre args p = do
     (symtab, _, _) <- get
     fileCode <- ask
-    let symbols = lookupInScopes [1] nombre  symtab
+    let symInfos = lookupInScopes [1,0] nombre symtab
     
-    if isJust symbols then do
-        let sym =  fromJust symbols
+    if isJust symInfos then do
+        let isSubroutine si = getCategory si `elem` [Procedimientos,Funciones]
+            subroutine = filter isSubroutine (fromJust symInfos)
 
-        if getCategory sym `elem` [Procedimientos, Funciones] then do
-            
-            let nParams = fromJust $ getNParams (getExtraInfo sym )
+        if null subroutine then
+            error $ errorMessage "This is not a subroutine" fileCode p
+        else do
+            let nParams = fromJust $ getNParams $ getExtraInfo $ head subroutine
                 nArgs = length args
             
             if nArgs == nParams then
@@ -419,8 +430,6 @@ crearSubrutinaCall nombre args p = do
                 let msj = "Amount of arguments: " ++ show nArgs ++
                         " not equal to spected:" ++ show nParams
                 in error $ errorMessage msj fileCode p
-        else
-            error $ errorMessage "This is not a subroutine" fileCode p
     else
         error $ errorMessage "Not defined subroutine" fileCode p
 -------------------------------------------------------------------------------
@@ -434,12 +443,14 @@ crearFuncCall :: Subrutina -> Posicion -> MonadSymTab Expr
 crearFuncCall subrutina@(SubrutinaCall nombre _) p = do
     (symtab, _, _) <- get
     fileCode <- ask
-    let sym = fromJust $ lookupInScopes [1] nombre symtab
+    let infos = fromJust $ lookupInScopes [1] nombre symtab
+        isFunc si = getCategory si == Funciones
+        func = filter isFunc infos
     
-    if getCategory sym == Funciones then
-        return $ FuncCall subrutina (getType sym)
-    else
+    if null func then
         error $ errorMessage "This is not a function" fileCode p
+    else
+        return $ FuncCall subrutina (getType $ head func)
 -------------------------------------------------------------------------------
 
 
