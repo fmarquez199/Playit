@@ -55,5 +55,5 @@ main = do
                 else do
                     -- mapM_ print tokens
                     (ast,(st,_,_),errors) <- runRWST (parse tokens) (checkedFile,code) initState
-                    print ast
+                    print st
                     --if null errors then print ast >> print st else print errors

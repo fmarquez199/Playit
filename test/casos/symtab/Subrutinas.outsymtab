@@ -1,0 +1,20 @@
+
+------------
+ Tabla de simbolos 
+------------
+- Simbolo | Informacion asociada 
+------------
+b -> 
+  Tipo: TVoid | Alcance: 1 | Categoria: Procedimientos
+    Extra:
+  Params []  AST [Print ["~Nada~"]]
+
+i -> 
+  Tipo: TInt | Alcance: 3 | Categoria: Variable
+m -> 
+  Tipo: TInt | Alcance: 1 | Categoria: Funciones
+    Extra:
+  Params []  AST [Asignaciones [Asignacion (Var "i" TDummy) 0],Return Var "i" TInt]
+
+  Tipo: TInt | Alcance: 1 | Categoria: Variable
+
