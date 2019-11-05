@@ -30,7 +30,7 @@ dependencies:
 - containers
 - mtl
 - split
-- toString
+- tostring
 library:
   source-dirs: src
 

@@ -121,20 +121,20 @@ pruebasParser = do
         fileSource        <- openFile (filen ++ ".game")    ReadMode  
         -- Lee la salida esperada del Parser
         fileExpectedOut   <- openFile (filen ++ ".outparser") ReadMode
+        
+        -- Extrae el codigo del archivo
+        strSourceCode     <- S.hGetContents fileSource
+        -- Extrae la salida esperada del archivo
+        strExpectedOut    <- S.hGetContents fileExpectedOut
+        
+        (ast, (st,_,_), errors) <- runRWST (parse (alexScanTokens $ TS.toString strSourceCode)) (filen ++ ".game","") initState
+        return [TestCase $ assertEqual ("\n***Error en  parser:" ++ filen ++ ".game ***") strExpectedOut (BS.pack $ show ast)]
 
         -- Cerramos los archivos
         hClose fileSource
         hClose fileExpectedOut
 
-        -- Extrae el codigo del archivo
-        strSourceCode     <- S.hGetContents fileSource
-        -- Extrae la salida esperada del archivo
-        strExpectedOut    <- S.hGetContents fileExpectedOut
-
-        (ast, (st,_,_), errors) <- runRWST (parse (alexScanTokens $ TS.toString strSourceCode)) (filen ++ ".game") initState
-        return [TestCase $ assertEqual ("\n***Error en  parser:" ++ filen ++ ".game ***") strExpectedOut (BS.pack $ show ast)]
-
-        return $ TestList $ concat testCases
+    return $ TestList $ concat testCases
 
 pruebasSymTab :: IO Test.HUnit.Test
 pruebasSymTab = do
@@ -159,17 +159,17 @@ pruebasSymTab = do
         -- Lee la salida esperada del Parser
         fileExpectedOut   <- openFile (filen ++ ".outsymtab") ReadMode
 
-        -- Cerramos los archivos
-        hClose fileSource
-        hClose fileExpectedOut
-            
         -- Extrae el codigo del archivo
         strSourceCode     <- S.hGetContents fileSource
         -- Extrae la salida esperada del archivo
         strExpectedOut    <- S.hGetContents fileExpectedOut
         
-        (ast, (st,_,_), errors) <- runRWST (parse (alexScanTokens $ TS.toString strSourceCode)) (filen ++ ".game") initState
+        (ast, (st,_,_), errors) <- runRWST (parse (alexScanTokens $ TS.toString strSourceCode)) (filen ++ ".game","") initState
         return [TestCase $ assertEqual ("\n***Error en  parser:" ++ filen ++ ".game ***") strExpectedOut (BS.pack $ show st)]
+
+        -- Cerramos los archivos
+        hClose fileSource
+        hClose fileExpectedOut
 
     return $ TestList $ concat testCases
 
