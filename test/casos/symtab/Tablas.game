@@ -1,0 +1,22 @@
+world %Tablas%:
+  Rune seguir = *s*
+  Power i, numero
+  
+  play:
+    numero = joystick ~Introduzca un numero entero: ~
+  
+    drop ~La tabla de multiplicar del ~,numero,~ es:~
+  
+    @ Inicio del anidamiento
+    i = 1 
+    play:
+      drop numero, ~ \* ~, i, ~ = ~, i * numero
+      i++
+    lock i <= 10
+    .~
+    @ Fin del anidamiento
+  
+    seguir = kill portalRunesToRune( joystick ~Desea ver otra tabla (s/n)?: ~)
+  lock  seguir != *n*
+  .~
+.~
