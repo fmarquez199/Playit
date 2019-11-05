@@ -7,5 +7,4 @@ monster factorial(Power n) Power:
 .~
 world %Factorial%:
     Power f = kill factorial(10)
-    Skill factorial
 .~

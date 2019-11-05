@@ -1,0 +1,7 @@
+boss a(Power a,Power b):
+.~
+
+world %HolaMundo%:
+    Power a
+    a = 2 + 2'1
+.~
