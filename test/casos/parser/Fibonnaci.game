@@ -1,4 +1,7 @@
-boss fibonnaci(Power primero, Power segundo, Power limite):
+Inventory Contacto:
+.~
+
+monster fibonnaci(Power primero, Power segundo, Power limite) Contacto:
   drop primero
   drop segundo
   Power n = primero

@@ -50,10 +50,11 @@ main = do
         let tokens = alexScanTokens code
             (hasErr, pos) = hasError tokens
 
-        if hasErr then do
-          putStrLn $ showAllErrors code pos
-        else do
-          -- mapM_ print tokens
-          (ast, (st,_,_), errors) <- runRWST (parse tokens) checkedFile initState
-          print ast
-          -- if null errors then print ast >> print st else print errors                    
+                    if hasError tokens then
+                        putStrLn $ tkErrorToString $ filter isError tokens
+                    else do
+                        (ast@(Programa i),(st,_,_), _) <- runRWST (parse tokens) checkedFile initState
+                        -- putStrLn $ concatMap show i
+                        print ast
+                        print st
+

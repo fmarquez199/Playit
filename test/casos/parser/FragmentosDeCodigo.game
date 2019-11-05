@@ -25,7 +25,8 @@ Items Shape:
   Circle c
   Rectangle r
 .~
-monster areaCirculo(Circle ?c) :
+
+boss areaCirculo(Circle ?c) :
   unlock 3'14 * c spawn radius * c spawn radius
 .~
 monster calcularGanancia(Power precioComprado, Power precioVendido) Power:
@@ -60,7 +61,7 @@ world %FragmentosDeCodigo%:
   sh spawn c spawn centerX = 2'1
   sh spawn c spawn centerY = 5'0
   sh spawn c spawn centerY = 5'0
-  sh spawn c spawn radius = 15
+  sh spawn c spawn radius = 15'0
   drop ~el area del circulo es ~, kill areaCirculo(sh spawn c)
 
   Power|}5{| puff p1 = summon Power
@@ -76,7 +77,7 @@ world %FragmentosDeCodigo%:
   n2--
   Power n3 = n1, n4 = n2
 
-  a = a > b ? Win : Lose
+  a = (a > b) ? 2 : 1
 
   Battle puedeConducir = Lose
   Power edad = 18
@@ -90,12 +91,11 @@ world %FragmentosDeCodigo%:
   Runes|}5{| edades = |)~12~, ~23~, ~15~, ~40~, ~15~(|
   Runes|}5{| nombres2 = |)~Natascha~, ~Francisco~, ~Manuel~, ~Ricardo~, ~Haskell~(|
   controller i = 0 -> 4:
-    drop ~Hola\n~
-    drop nombres|)i(|, ~ tienes ~, edad|)i(|, ~ anios!~
+    drop ~Hola ~, nombres|)i(|, ~ tienes ~, edades|)i(|, ~ anios!~
   .~
 
   play:
-    drop ~Hola ~, nombres|)i(|, ~ tienes ~, edad|)i(|, ~ anios!~
+    drop ~Hola ~, nombres|)i(|, ~ tienes ~, edades|)i(|, ~ anios!~
     i++
   lock i < 5
   .~
@@ -104,5 +104,5 @@ world %FragmentosDeCodigo%:
 
   Producto p3
   p3 spawn precioReal = 1500
-  drop ~Ganancia de ~, kill calcularGanancia2(puff p3, 2000)
+  drop ~Ganancia de ~, kill calcularGanancia2(p3 spawn precioReal, 2000)
 .~

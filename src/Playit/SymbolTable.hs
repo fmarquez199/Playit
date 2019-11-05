@@ -8,7 +8,7 @@ Modulo para la creacion y manejo de la tabla de simbolos
 module Playit.SymbolTable where
 
 import Control.Monad.Trans.RWS
-import Control.Monad (forM, when)
+import Control.Monad (void,forM,when)
 import qualified Data.Map as M
 import Data.Maybe (fromJust, isJust)
 import Playit.Types
@@ -30,29 +30,22 @@ initState = createInitSymTab (SymTab M.empty)
 createInitSymTab :: SymTab -> (SymTab,ActiveScopes,Alcance)
 createInitSymTab st = (insertSymbols symbols info st,[0],0)
     where
-        symbols = ["Power", "Skill", "Rune", "Runes", "Battle", "Inventory",
-            "Items", "Kit of", "Win", "Lose", "DeathZone", "portalRunesToRune",
-            "portalRuneToRunes", "portalPowerToRunes", "portalSkillToRunes",
-            "portalRunesToPower", "portalRunesToSkill"]
-        info = [power, skill, rune, runes, battle, inventory, items, listOf,
-            bools, bools, apt, portalSC, portalCS, portalIS, portalFS,
-            portalSI, portalSF]
-        power = SymbolInfo TInt 0 Tipos []
-        skill = SymbolInfo TFloat 0 Tipos []
-        rune = SymbolInfo TChar 0 Tipos []
-        runes = SymbolInfo TStr 0 Tipos []
-        battle = SymbolInfo TBool 0 Tipos []
-        listOf = SymbolInfo (TLista TDummy) 0 ConstructoresTipos [] -- Tipo?
-        inventory = SymbolInfo TRegistro 0 ConstructoresTipos []
-        items = SymbolInfo TUnion 0 ConstructoresTipos []
-        bools = SymbolInfo TBool 0 Constantes []
-        apt = SymbolInfo (TApuntador TDummy) 0 Apuntadores [] -- Tipo?
-        portalSC = SymbolInfo TChar 0 Funciones []
-        portalCS = SymbolInfo TStr 0 Funciones []
-        portalIS = SymbolInfo TStr 0 Funciones []
-        portalFS = SymbolInfo TStr 0 Funciones []
-        portalSI = SymbolInfo TInt 0 Funciones []
-        portalSF = SymbolInfo TFloat 0 Funciones []
+        -- TODO: terminar de agregar todos los simbolos del lenguaje
+        symbols = t ++ words
+        t = ["Power", "Skill", "Rune", "Runes", "Battle", "Inventory", "Items"]
+        words = ["Win", "Lose", "free", "puff"]
+        info = ti ++ wi
+        ti = [pInfo, sInfo, rInfo, rsInfo, bInfo, inventoryInfo, itemsInfo]
+        wi = [boolsInfo, boolsInfo, aptInfo, aptInfo]
+        pInfo = SymbolInfo TInt 0 Tipos []
+        sInfo = SymbolInfo TFloat 0 Tipos []
+        rInfo = SymbolInfo TChar 0 Tipos []
+        rsInfo = SymbolInfo TStr 0 Tipos []
+        bInfo = SymbolInfo TBool 0 Tipos []
+        inventoryInfo = SymbolInfo TRegistro 0 Tipos []
+        itemsInfo = SymbolInfo TUnion 0 Tipos []
+        boolsInfo = SymbolInfo TBool 0 Variable []
+        aptInfo = SymbolInfo (TApuntador TDummy) 0 Apuntadores []
 -------------------------------------------------------------------------------
 
 
@@ -112,9 +105,13 @@ insertDeclarations ids t asigs = do
         let idScopeInfo = lookupInScopes [activeScope] id' symTab
         
         when (isJust idScopeInfo) $
-            let info = fromJust $ lookupInSymTab id' symTab
-                scopeInfo = [i | i <- info, getScope i == activeScope]
-                
+            let info = fromJust $ lookupInSymTab id symTab
+
+                scopeInfo = [i | i <- info, getScope i == activeScope] 
+
+                idScopes = map getScope scopeInfo
+                isInActualScope = getScope (fromJust idScopeInfo) `elem` idScopes
+
                 idCategories = map getCategory scopeInfo
                 categorias = [Variable, Parametros Valor, Parametros Referencia]
                 isInAnyCategory = any (`elem` idCategories) categorias
@@ -122,7 +119,7 @@ insertDeclarations ids t asigs = do
                 idScopes = map getScope scopeInfo
                 isInActualScope = getScope (fromJust idScopeInfo) `elem` idScopes
             in
-            when (isInAnyCategory && isInActualScope) $
+            when (isInAnyCategory || isInActualScope) $
                 error $ "\n\nError: " ++ file ++ ": " ++ show p ++
                     "\n\tVariable '" ++ id' ++ "' ya esta declarada.\n"
         return id'
@@ -155,8 +152,6 @@ lookupInScopes :: [Alcance] -> Nombre -> SymTab -> Maybe SymbolInfo
 lookupInScopes scopes nombre symtab =
     lookupInScopes' scopes (lookupInSymTab nombre symtab)
 -------------------------------------------------------------------------------
-
-
 -------------------------------------------------------------------------------
 -- Busca la informacion dentro de la cadena estatica
 lookupInScopes' :: [Alcance]-> Maybe [SymbolInfo] ->  Maybe SymbolInfo
@@ -167,27 +162,33 @@ lookupInScopes' scopes (Just symInfo)
     where
         symScopes = [(s,a) | s <- symInfo, a <- scopes, getScope s == a]
 -------------------------------------------------------------------------------
+getRegName :: [ExtraInfo] -> Maybe String
+getRegName [] = Nothing
+getRegName ((FromReg rname):rs) = Just rname
+getRegName (_:rs) = getRegName rs
 
+getNParams :: [ExtraInfo] -> Maybe Int
+getNParams [] = Nothing
+getNParams ((Params n):rs) = Just n
+getNParams (_:rs) = getNParams rs
 
 -------------------------------------------------------------------------------
-updateType :: Nombre -> Alcance -> Tipo -> MonadSymTab ()
-updateType n a t = do
-    (symTab@(SymTab table), scopes, scope) <- get
-    let infos = lookupInSymTab n symTab
-    
+updateType :: Nombre -> Alcance -> Tipo-> MonadSymTab ()
+updateType name scope newType = do
+    (symTab@(SymTab table), scopes, nscopes) <- get
+    let infos = lookupInSymTab name symTab
     when (isJust infos) $ do
-        let isTarget sym = getScope sym == a
+        let isTarget sym = getScope sym == scope
             updateType' = 
-                fmap (\sym -> if isTarget sym then modifyType sym t else sym)
-        put(SymTab $ M.adjust updateType' n table, scopes, scope)
+                fmap (\sym -> if isTarget sym then modifyType sym newType else sym)
+        put(SymTab $ M.adjust updateType' name table, scopes, nscopes)
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
 -- 
 modifyType :: SymbolInfo -> Tipo -> SymbolInfo
-modifyType (SymbolInfo _ s c ei) newT = SymbolInfo newT s c ei
--- modifyType symbolInfo _ = symbolInfo
+modifyType (SymbolInfo _ s cat ei) newT = SymbolInfo newT s cat ei
 -------------------------------------------------------------------------------
 
 
@@ -213,5 +214,5 @@ updateExtraInfo name category extraInfo = do
 -- Actualiza la informacion extra del simbolo con la nueva
 modifyExtraInfo :: SymbolInfo -> [ExtraInfo] -> SymbolInfo
 modifyExtraInfo (SymbolInfo t s c []) extraInfo = SymbolInfo t s c extraInfo
-modifyExtraInfo (SymbolInfo t s c ei) extraInfo = SymbolInfo t s c (ei ++ extraInfo)
+modifyExtraInfo (SymbolInfo t s c ei) extraInfo = SymbolInfo t s c (extraInfo ++ ei)
 -------------------------------------------------------------------------------

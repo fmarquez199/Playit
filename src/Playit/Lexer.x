@@ -195,27 +195,26 @@ isError (TkError _ p) = p
 isError _ = (-1::Int, -1::Int)
 
 -- 'tokerr' : Traduce los errores a un formato.
-tokerr :: String -> (Int,Int) -> String
-tokerr code (l,c) = 
-  "\n\t\x1b[1;52;94m¡¡¡PLAYIT FATALITY!!!\n" ++ fs
-  
-  where
-    allLines = splitOn "\n" code
-    maxSize = foldl max (-1) $ map length allLines
-    buildRuler = flip replicate '.'
-    rule = buildRuler maxSize ++ "\n"
-    relevantLines = drop (l-1) allLines
-    firstLine = head relevantLines ++ "\n"
-    errorRuler = "\t\x1b[1;93m" ++ buildRuler (c-1) ++ "\x1b[5;31m^\x1b[25;93m"
-      ++ {-buildRuler (maxSize - c) ++-} "\n"
-    fs = "\x1b[93m| " ++ show l ++ "\t\x1b[0;96m" ++ firstLine ++ errorRuler
+tokerr s (AlexPn _ l c) = 
+    "Error: Caracter inesperado " ++ s ++ 
+    " en la linea " ++ (show l) ++ ", columna " ++ (show c) ++ "."
+    -- "\x1b[1m\x1b[31mGAME OVER!!\x1b[0m Lexical error at line \x1b[1m\x1b[31m%d\x1b[0m, column \x1b[1m\x1b[31m%d\x1b[0m:\n%s\n"
+    -- ++ (show l) ++ (show c) ++ fs
+    -- where
+    --     allLines = splitOn "\n" s
+    --     maxSize = foldl max (-1) $ map length allLines
+    --     buildRuler = flip replicate '~'
+    --     rule = buildRuler maxSize ++ "\n"
+    --     relevantLines = drop (l-1) allLines
+    --     firstLine = head relevantLines ++ "\n"
+    --     restLines = take 4 $ tail relevantLines
+    --     errorRuler = "\x1b[1m\x1b[31m" ++ (buildRuler (c-1)) ++ "^" ++ buildRuler (maxSize - c) ++ "\x1b[0m\n"
+    --     fs = firstLine ++ errorRuler ++ (intercalate "\n" restLines)
 
 
--- 'showAllErrors': Muestra todos los errores lexicos encontrados.
-showAllErrors :: String -> [(Int,Int)] -> String
-showAllErrors code [] = ""
-showAllErrors code ((-1, -1):pos) = showAllErrors code pos
-showAllErrors code (p:pos) = concat $ tokerr code p : [showAllErrors code pos]
+-- 'tkErrorToString': Inserta nuevas lineas entre los errores para ser impresos.
+tkErrorToString :: [Token] -> String
+tkErrorToString tk = intercalate "\n" $ map mensaje tk
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
@@ -308,84 +307,84 @@ data Token = TkWORLD {getTk :: String, getPos :: (Int, Int)}
            deriving (Eq)
 
 instance Show Token where
-  show (TkWORLD tk p) = "(" ++ tk ++ "), pos " ++ show p -- world
-  show (TkOF tk p) = "(" ++ tk ++ "), pos " ++ show p -- of
-  show (TkEndLine tk p) = "(\\n), pos " ++ show p -- New line
-  show (TkBUTTON tk p) = "(" ++ tk ++ "), pos " ++ show p -- Button
-  show (TkRUNE tk p) = "(" ++ tk ++ "), pos " ++ show p -- rune
-  show (TkLOSE tk p) = "(" ++ tk ++ "), pos " ++ show p -- Lose
-  show (TkWIN tk p) = "(" ++ tk ++ "), pos " ++ show p -- Win
-  show (TkBATLE tk p) = "(" ++ tk ++ "), pos " ++ show p -- Battle
-  show (TkPOWER tk p) = "(" ++ tk ++ "), pos " ++ show p -- Power
-  show (TkSKILL tk p) = "(" ++ tk ++ "), pos " ++ show p -- Skill
-  show (TkRUNES tk p) = "(" ++ tk ++ "), pos " ++ show p -- Runes
-  show (TkCONCAT tk p) = "(" ++ tk ++ "), pos " ++ show p -- Concatenación de lista
-  show (TkKIT tk p) = "(" ++ tk ++ "), pos " ++ show p -- Kit
-  show (TkINVENTORY tk p) = "(" ++ tk ++ "), pos " ++ show p -- Inventory
-  show (TkITEMS tk p) = "(" ++ tk ++ "), pos " ++ show p -- Items
-  show (TkSUMMON tk p) = "(" ++ tk ++ "), pos " ++ show p -- summon
-  show (TkFREE tk p) = "(" ++ tk ++ "), pos " ++ show p -- free
-  show (TkDeathZone tk p) = "(" ++ tk ++ "), pos " ++ show p -- DeathZone
-  show (TkJOYSTICK tk p) = "(" ++ tk ++ "), pos " ++ show p -- joystick
-  show (TkDROP tk p) = "(" ++ tk ++ "), pos " ++ show p -- drop
-  show (TkNotPressed tk p) = "(" ++ tk ++ "), pos " ++ show p -- notPressed
-  show (TkCONTROLLER tk p) = "(" ++ tk ++ "), pos " ++ show p -- controller
-  show (TkIN tk p)  = "(" ++ tk ++ "), pos " ++ show p -- <-
-  show (TkTO tk p)  = "(" ++ tk ++ "), pos " ++ show p -- ->
-  show (TkPLAY tk p) = "(" ++ tk ++ "), pos " ++ show p -- play
-  show (TkLOCK tk p) = "(" ++ tk ++ "), pos " ++ show p -- lock
-  show (TkUNLOCK tk p) = "(" ++ tk ++ "), pos " ++ show p -- unlock
-  show (TkSPAWN tk p) = "(" ++ tk ++ "), pos " ++ show p -- spawn
-  show (TkGameOver tk p) = "(" ++ tk ++ "), pos " ++ show p -- gameOver
-  show (TkKeepPlaying tk p) = "(" ++ tk ++ "), pos " ++ show p -- keepPlaying
-  show (TkKILL tk p) = "(" ++ tk ++ "), pos " ++ show p -- kill
-  show (TkMONSTER tk p) = "(" ++ tk ++ "), pos " ++ show p -- monster
-  show (TkBOSS tk p) = "(" ++ tk ++ "), pos " ++ show p -- boss
-  show (TkProgramName tk p) = "(" ++ tk ++ "), pos " ++ show p -- Nombre programa
-  show (TkID tk p) = "Identificador \"" ++ tk ++ "\", pos " ++ show p -- Id
-  show (TkIDTipo tk p) = "Identificador de tipo \"" ++ tk ++ "\", pos " ++ show p -- Id
-  show (TkCARACTER tk p _) = "Caracter '" ++ tk ++ "', pos " ++ show p -- carActer
-  show (TkSTRINGS tk p) = "String \"" ++ tk ++ "\", pos " ++ show p -- String
-  show (TkINT tk p _) = "Entero " ++ tk ++ ", pos " ++ show p -- Entero
-  show (TkFLOAT tk p _) = "Flotante " ++ tk ++ ", pos " ++ show p -- Flotante
-  show (TkDivEntera tk p) = "(" ++ tk ++ "), pos " ++ show p -- //
-  show (TkOR tk p) = "(" ++ tk ++ "), pos " ++ show p -- ||
-  show (TkAND tk p) = "(" ++ tk ++ "), pos " ++ show p -- &&
-  show (TkLessEqual tk p) = "(" ++ tk ++ "), pos " ++ show p -- <=
-  show (TkEQUAL tk p) = "(" ++ tk ++ "), pos " ++ show p -- ==
-  show (TkNotEqual tk p) = "(" ++ tk ++ "), pos " ++ show p -- !=
-  show (TkGreaterEqual tk p) = "(" ++ tk ++ "), pos " ++ show p -- >=
-  show (TkOpenList tk p) = "(" ++ tk ++ "), pos " ++ show p -- <<
-  show (TkCloseList tk p) = "(" ++ tk ++ "), pos " ++ show p -- >>
-  show (TkOpenListIndex tk p) = "(" ++ tk ++ "), pos " ++ show p -- |>
-  show (TkCloseListIndex tk p) = "(" ++ tk ++ "), pos " ++ show p -- <°
-  show (TkINCREMENT tk p) = "(" ++ tk ++ "), pos " ++ show p -- ++
-  show (TkDECREMENT tk p) = "(" ++ tk ++ "), pos " ++ show p -- --
-  show (TkSUM tk p) = "(" ++ tk ++ "), pos " ++ show p -- +
-  show (TkMIN tk p) = "(" ++ tk ++ "), pos " ++ show p -- -
-  show (TkMULT tk p) = "(" ++ tk ++ "), pos " ++ show p -- *
-  show (TkDIV tk p) = "(" ++ tk ++ "), pos " ++ show p -- /
-  show (TkMOD tk p) = "(" ++ tk ++ "), pos " ++ show p -- %
-  show (TkLEN tk p) = "(" ++ tk ++ "), pos " ++ show p -- #
-  show (TkREF tk p) = "(" ++ tk ++ "), pos " ++ show p -- ?
-  show (TkNOT tk p) = "(" ++ tk ++ "), pos " ++ show p -- !
-  show (TkLessThan tk p) = "(" ++ tk ++ "), pos " ++ show p -- <
-  show (TkGreaterThan tk p) = "(" ++ tk ++ "), pos " ++ show p -- >
-  show (TkPUFF tk p) = "(" ++ tk ++ "), pos " ++ show p -- puff
-  show (TkOpenParenthesis tk p) = "(" ++ tk ++ "), pos " ++ show p -- (
-  show (TkCloseParenthesis tk p) = "(" ++ tk ++ "), pos " ++ show p -- )
-  show (TkOpenBrackets tk p) = "(" ++ tk ++ "), pos " ++ show p -- {
-  show (TkCloseBrackets tk p) = "(" ++ tk ++ "), pos " ++ show p -- }
-  show (TkCOMA tk p) = "(" ++ tk ++ "), pos " ++ show p -- ,
-  show (TkANEXO tk p) = "(" ++ tk ++ "), pos " ++ show p -- :
-  show (TkGUARD tk p) = "(" ++ tk ++ "), pos " ++ show p -- |
-  show (TkASING tk p) = "(" ++ tk ++ "), pos " ++ show p -- =
-  show (TkUPPER tk p) = "(" ++ tk ++ "), pos " ++ show p -- ^
-  show (TkLOWER tk p) = "(" ++ tk ++ "), pos " ++ show p -- .
-  show (TkFIN tk p) = "(" ++ tk ++ "), pos " ++ show p -- .~
-  show (TkOpenArray tk p) = "(" ++ tk ++ "), pos " ++ show p -- "|}"
-  show (TkCloseArray tk p) = "(" ++ tk ++ "), pos " ++ show p -- "{|"
-  show (TkOpenArrayIndex tk p) = "(" ++ tk ++ "), pos " ++ show p -- "|)"
-  show (TkCloseArrayIndex tk p) = "(" ++ tk ++ "), pos " ++ show p -- "(|"
-  show (TkError tk p) = tk
+    show (TkWORLD tk p) = "(" ++ tk ++ "), posicion " ++ show p -- world
+    show (TkOF tk p) = "(" ++ tk ++ "), posicion " ++ show p -- of
+    show (TkEndLine tk p) = "(" ++ tk ++  "), posicion " ++ show p -- New line
+    show (TkBUTTON tk p) = "(" ++ tk ++ "), posicion " ++ show p -- Button
+    show (TkRUNE tk p) = "(" ++ tk ++ "), posicion " ++ show p -- rune
+    show (TkLOSE tk p) = "(" ++ tk ++ "), posicion " ++ show p -- Lose
+    show (TkWIN tk p) = "(" ++ tk ++ "), posicion " ++ show p -- Win
+    show (TkBATLE tk p) = "(" ++ tk ++ "), posicion " ++ show p -- Battle
+    show (TkPOWER tk p) = "(" ++ tk ++ "), posicion " ++ show p -- Power
+    show (TkSKILL tk p) = "(" ++ tk ++ "), posicion " ++ show p -- Skill
+    show (TkRUNES tk p) = "(" ++ tk ++ "), posicion " ++ show p -- Runes
+    show (TkCONCAT tk p) = "(" ++ tk ++ "), posicion " ++ show p -- Concatenación de lista
+    show (TkKIT tk p) = "(" ++ tk ++ "), posicion " ++ show p -- Kit
+    show (TkINVENTORY tk p) = "(" ++ tk ++ "), posicion " ++ show p -- Inventory
+    show (TkITEMS tk p) = "(" ++ tk ++ "), posicion " ++ show p -- Items
+    show (TkSUMMON tk p) = "(" ++ tk ++ "), posicion " ++ show p -- summon
+    show (TkFREE tk p) = "(" ++ tk ++ "), posicion " ++ show p -- free
+    show (TkDeathZone tk p) = "(" ++ tk ++ "), posicion " ++ show p -- DeathZone
+    show (TkJOYSTICK tk p) = "(" ++ tk ++ "), posicion " ++ show p -- joystick
+    show (TkDROP tk p) = "(" ++ tk ++ "), posicion " ++ show p -- drop
+    show (TkNotPressed tk p) = "(" ++ tk ++ "), posicion " ++ show p -- notPressed
+    show (TkCONTROLLER tk p) = "(" ++ tk ++ "), posicion " ++ show p -- controller
+    show (TkIN tk p)  = "(" ++ tk ++ "), posicion " ++ show p -- <-
+    show (TkTO tk p)  = "(" ++ tk ++ "), posicion " ++ show p -- ->
+    show (TkPLAY tk p) = "(" ++ tk ++ "), posicion " ++ show p -- play
+    show (TkLOCK tk p) = "(" ++ tk ++ "), posicion " ++ show p -- lock
+    show (TkUNLOCK tk p) = "(" ++ tk ++ "), posicion " ++ show p -- unlock
+    show (TkSPAWN tk p) = "(" ++ tk ++ "), posicion " ++ show p -- spawn
+    show (TkGameOver tk p) = "(" ++ tk ++ "), posicion " ++ show p -- gameOver
+    show (TkKeepPlaying tk p) = "(" ++ tk ++ "), posicion " ++ show p -- keepPlaying
+    show (TkKILL tk p) = "(" ++ tk ++ "), posicion " ++ show p -- kill
+    show (TkMONSTER tk p) = "(" ++ tk ++ "), posicion " ++ show p -- monster
+    show (TkBOSS tk p) = "(" ++ tk ++ "), posicion " ++ show p -- boss
+    show (TkProgramName tk p) = "(" ++ tk ++ "), posicion " ++ show p -- Nombre programa
+    show (TkID tk p) = "Identificador \"" ++ tk ++ "\", posicion " ++ show p -- Id
+    show (TkIDTipo tk p) = "Identificador de tipo \"" ++ tk ++ "\", posicion " ++ show p -- Id
+    show (TkCARACTER tk p _) = "Caracter '" ++ tk ++ "', posicion " ++ show p -- carActer
+    show (TkSTRINGS tk p) = "String \"" ++ tk ++ "\", posicion " ++ show p -- String
+    show (TkINT tk p _) = "Entero " ++ tk ++ ", posicion " ++ show p -- Entero
+    show (TkFLOAT tk p _) = "Flotante " ++ tk ++ ", posicion " ++ show p -- Flotante
+    show (TkDivEntera tk p) = "(" ++ tk ++ "), posicion " ++ show p -- //
+    show (TkOR tk p) = "(" ++ tk ++ "), posicion " ++ show p -- ||
+    show (TkAND tk p) = "(" ++ tk ++ "), posicion " ++ show p -- &&
+    show (TkLessEqual tk p) = "(" ++ tk ++ "), posicion " ++ show p -- <=
+    show (TkEQUAL tk p) = "(" ++ tk ++ "), posicion " ++ show p -- ==
+    show (TkNotEqual tk p) = "(" ++ tk ++ "), posicion " ++ show p -- !=
+    show (TkGreaterEqual tk p) = "(" ++ tk ++ "), posicion " ++ show p -- >=
+    show (TkOpenList tk p) = "(" ++ tk ++ "), posicion " ++ show p -- <<
+    show (TkCloseList tk p) = "(" ++ tk ++ "), posicion " ++ show p -- >>
+    show (TkOpenListIndex tk p) = "(" ++ tk ++ "), posicion " ++ show p -- |>
+    show (TkCloseListIndex tk p) = "(" ++ tk ++ "), posicion " ++ show p -- <°
+    show (TkINCREMENT tk p) = "(" ++ tk ++ "), posicion " ++ show p -- ++
+    show (TkDECREMENT tk p) = "(" ++ tk ++ "), posicion " ++ show p -- --
+    show (TkSUM tk p) = "(" ++ tk ++ "), posicion " ++ show p -- +
+    show (TkMIN tk p) = "(" ++ tk ++ "), posicion " ++ show p -- -
+    show (TkMULT tk p) = "(" ++ tk ++ "), posicion " ++ show p -- *
+    show (TkDIV tk p) = "(" ++ tk ++ "), posicion " ++ show p -- /
+    show (TkMOD tk p) = "(" ++ tk ++ "), posicion " ++ show p -- %
+    show (TkLEN tk p) = "(" ++ tk ++ "), posicion " ++ show p -- #
+    show (TkREF tk p) = "(" ++ tk ++ "), posicion " ++ show p -- ?
+    show (TkNOT tk p) = "(" ++ tk ++ "), posicion " ++ show p -- !
+    show (TkLessThan tk p) = "(" ++ tk ++ "), posicion " ++ show p -- <
+    show (TkGreaterThan tk p) = "(" ++ tk ++ "), posicion " ++ show p -- >
+    show (TkPUFF tk p) = "(" ++ tk ++ "), posicion " ++ show p -- puff
+    show (TkOpenParenthesis tk p) = "(" ++ tk ++ "), posicion " ++ show p -- (
+    show (TkCloseParenthesis tk p) = "(" ++ tk ++ "), posicion " ++ show p -- )
+    show (TkOpenBrackets tk p) = "(" ++ tk ++ "), posicion " ++ show p -- {
+    show (TkCloseBrackets tk p) = "(" ++ tk ++ "), posicion " ++ show p -- }
+    show (TkCOMA tk p) = "(" ++ tk ++ "), posicion " ++ show p -- ,
+    show (TkANEXO tk p) = "(" ++ tk ++ "), posicion " ++ show p -- :
+    show (TkGUARD tk p) = "(" ++ tk ++ "), posicion " ++ show p -- |
+    show (TkASING tk p) = "(" ++ tk ++ "), posicion " ++ show p -- =
+    show (TkUPPER tk p) = "(" ++ tk ++ "), posicion " ++ show p -- ^
+    show (TkLOWER tk p) = "(" ++ tk ++ "), posicion " ++ show p -- .
+    show (TkFIN tk p) = "(" ++ tk ++ "), posicion " ++ show p -- .~
+    show (TkOpenArray tk p) = "(" ++ tk ++ "), posicion " ++ show p -- "|}"
+    show (TkCloseArray tk p) = "(" ++ tk ++ "), posicion " ++ show p -- "{|"
+    show (TkOpenArrayIndex tk p) = "(" ++ tk ++ "), posicion " ++ show p -- "|)"
+    show (TkCloseArrayIndex tk p) = "(" ++ tk ++ "), posicion " ++ show p -- "(|"
+    show (TkError msj) = msj
 }

@@ -9,6 +9,7 @@
 -}
 module Playit.AST where
 
+import Control.Monad
 import Control.Monad.Trans.RWS
 import qualified Data.Map as M
 import Data.Maybe (fromJust, isJust, isNothing)
@@ -24,6 +25,21 @@ import Playit.Types
 -------------------------------------------------------------------------------
 
 
+chequearTipo :: Nombre -> Posicion-> MonadSymTab ()
+chequearTipo name p = do
+    (symTab, scopes, _) <- get
+    file <- ask
+    let info = lookupInScopes [1] name symTab
+    if isJust info then do
+        let sym = fromJust info
+        if getCategory sym == Tipos then do
+            return ()
+        else do 
+            error $ "\n\nError: " ++ file ++ ": " ++ show p ++ "\n\t" ++"Identificador : '" ++ (show name) ++ "' no es un tipo."
+    else
+        error $ "\n\nError: " ++ file ++ ": " ++ show p ++ "\n\t" ++"El Tipo " ++ (show name) ++ " no ha sido creado."
+
+
 -------------------------------------------------------------------------------
 -- Crea el nodo para identificadores de variables y verifica que estén declarados
 crearIdvar :: Nombre -> Posicion -> MonadSymTab Vars
@@ -31,89 +47,98 @@ crearIdvar name p = do
     (symTab, scopes, _) <- get
     file <- ask
     let info = lookupInScopes scopes name symTab
-
-    if isJust info then return $ Var name (getType $ fromJust info)
+    
+    if isJust info then do
+        return $ Var name (getType $ fromJust info)
     else 
         error ("\n\nError: " ++ file ++ ": " ++ show p ++ "\n\tVariable '"
                 ++ name ++ "' no declarada.\n")
 -------------------------------------------------------------------------------
 
+crearDeferenciacion :: Vars -> Posicion -> MonadSymTab Vars
+crearDeferenciacion v p
+    | isPointer tVar = let (TApuntador t) = tVar in return $ PuffValue v t
+    | otherwise = do
+        fileName <- ask
+        error $ "\n\nError: " ++ fileName ++ ": " ++ show p ++ "\n\t" ++
+            "La variable : '" ++ (show v) ++ "' no es un apuntador."
+    where
+        tVar = typeVar v
 
 -------------------------------------------------------------------------------
 -- Crea el nodo para variables de indexacion
-crearVarIndex :: Vars -> Expr -> Vars
-crearVarIndex v e = 
-    let t = case typeVar v of 
-                tipo@(TArray _ _) -> typeArrLst tipo
-                tipo@(TLista _) -> typeArrLst tipo
-                tipo@(TApuntador t) -> t
+crearVarIndex :: Vars -> Expr -> Posicion -> MonadSymTab Vars
+crearVarIndex v e p 
+    | tVar == TError = do
+        fileName <- ask
+        error $ "\n\nError: " ++ fileName ++ ": " ++ show p ++ "\n\t" ++
+            "La variable : '" ++ (show v) ++ 
+            "' no es indexable, tiene que ser un array o una lista."
+    | tExpre /= TInt = do
+        fileName <- ask
+        error $ "\n\nError: " ++ fileName ++ ": " ++ show p ++ "\n\t" ++
+            "Expresion de indexación '" ++ (show e) ++ "' no es de tipo entero."
+    | otherwise = return $ VarIndex v e tVar
+    where
+        tVar = case typeVar v of 
+                tipo@(TArray _ t) -> t
+                tipo@(TLista t) -> t
                 _ -> TError
-    in VarIndex v e t
+        tExpre = typeE e
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
--- Crea el nodo para los campos de los registros y uniones
-crearCampo :: Vars -> Nombre -> Posicion -> MonadSymTab Vars
-crearCampo v campo p = do
-    (symTab, _, _) <- get
+-- Crea el nodo para variables de acceso a registros, uniones (campos)
+crearVarCompIndex :: Vars -> Nombre -> Posicion -> MonadSymTab Vars
+crearVarCompIndex v campo p = do
+    (symTab, scopes, _) <- get
     file <- ask
-    
-    -- Verificar que 'v' tiene como tipo un reg
-    let reg = case typeVar' v of 
-            (TNuevo name) -> name
+    let tname = case typeVar v of 
+            (NuevoTipo tname) -> tname
             _ -> ""
     
-    if reg == "" then
+    if (tname == "") then do
         error ("\n\nError: " ++ file ++ ": " ++ show p ++ "\n\t'" ++ show v ++ 
-            "' no es registro o union.\n")
+            " no es un registro o una union.\n")
     else do
         
-        --chequearTipo reg p
+        --chequearTipo tname p
         
         let info = lookupInSymTab campo symTab
         if isJust info then do
+        
+            let isInRegUnion (SymbolInfo typ scope cat ext) =  cat == Campos && (fromJust $ getRegName ext) == tname
 
-            let isInRegUnion (SymbolInfo _ _ c e) = c == Campos && getRegName e == reg
-                symbols = filter isInRegUnion (fromJust info ) -- Debería tener un elemento o ninguno
+            let symbols = filter isInRegUnion (fromJust info ) -- Debería tener un elemento o ninguno
                         
             if null symbols then
                 error ("\n\nError: " ++ file ++ ": " ++ show p ++ "\n\t'" ++ 
-                    reg ++ "' no tiene campo '" ++ campo ++ "'.\n")
+                    tname ++ "' no tiene  campo '" ++ campo ++ "' .\n")
             else 
-                return $ VarCompIndex v campo (getType $ head symbols) 
-        else
+                return $ VarCompIndex v campo (getType $ head $ symbols) 
+        else do
             error ("\n\nError: " ++ file ++ ": " ++ show p ++ "\n\tCampo '"
                     ++ campo ++ "' no declarado.\n")
+        
 -------------------------------------------------------------------------------
-
 
 -------------------------------------------------------------------------------
 -- Crear el nodo para asignar a un identificador de variable una expresion
 -- TODO: Modificar para que asigne el primer elemento de un arreglo/lista a la variable
-crearAsignacion :: Vars -> Expr -> Posicion -> Instr
--- crearAsignacion lval (ArrLstExpr [] _)
-crearAsignacion lval e (_,_) = Asignacion lval e
--- | tE == tV = Asignacion lval e
-    -- | otherwise =
-    --     error ("\n\nError semantico en la asignacion: '" ++ var ++
-    --             " <- " ++ expr ++ "'.\nEl tipo de la variable: " ++
-    --             showType tV' ++ ",\n\tno es igual al de la expresion: " ++
-    --             showType tE' ++ ".\nEn la linea: " ++ show line ++ "\n")
+crearAsignacion :: Vars -> Expr -> Posicion -> MonadSymTab Instr
+crearAsignacion lval e p
+    | isList(tE) && (typeArrLst tE) == TDummy && isList tV && (esTipoEscalar $ typeArrLst tV) = do -- List Tipo = <<<>>
+        return $ Asignacion lval e  
+    | tE == tV = return $ Asignacion lval e
+    | otherwise = do
+        file <- ask
+        error ("\n\nError: " ++ file ++ ": " ++ show p ++ "\n\tNo se puede asignar '"++
+            show e ++ "' a la variable '" ++ show lval ++ "' , los tipos no concuerdan.")
 
-    -- where
-    --     expr   = showE e
-    --     var    = showVar lval
-    --     tE'    = typeE e
-    --     tE     =
-    --         case tE' of
-    --             t@(TArray _ _) -> typeArray t
-    --             _ -> tE'
-    --     tV'    = typeVar lval
-    --     tV     = 
-    --         case tV' of
-    --             t@(TArray _ _) -> typeArray t
-    --             _ -> tV'
+    where
+        tE    = typeE e
+        tV    = typeVar lval
 -------------------------------------------------------------------------------
 
 
@@ -134,20 +159,72 @@ crearAsignacion lval e (_,_) = Asignacion lval e
 -- -}
 -------------------------------------------------------------------------------
 
+    
 
 -------------------------------------------------------------------------------
 -- Crea el nodo para un operador binario
-crearOpBin :: BinOp -> Expr -> Expr -> Tipo -> Tipo -> Tipo -> Expr
-crearOpBin op e1 e2 t1 t2 tOp = OpBinario op e1 e2 tOp
-    -- OpBinario op e1 e2 (checkBin e1 e2 t1 t2 tOp)
+crearOpBin :: BinOp -> Expr -> Expr -> Tipo -> Tipo -> Tipo -> Posicion -> MonadSymTab Expr
+crearOpBin op e1 e2 t1 t2 tOp p
+    -- | tE1 == TDummy || tE2 == TDummy = TDummy
+    | tE1 == t1 && tE2 == t2  = return $ OpBinario op e1 e2 tOp
+    | tE1 == TFloat && tE2 == TFloat && tOp == TInt  = return $ OpBinario op e1 e2 TFloat
+    | otherwise = do
+        fileName <- ask
+        error $ "\n\nError: " ++ fileName ++ ": " ++ show p ++ "\n\t" ++
+            "La operacion: '" ++ (show op) ++ "'," ++ " requiere que el tipo de '" 
+            ++ (show e1) ++ "' sea '" ++ (show t1) ++ "' y de '" ++  
+            (show e2) ++ "' sea '" ++ (show t2) ++ "'"
+    where
+        tE1 = typeE e1
+        tE2 = typeE e2
+
+
+
+-------------------------------------------------------------------------------
+-- Crea el nodo para un operador binario
+crearOpBinComparable :: BinOp -> Expr -> Expr -> [Tipo] -> Tipo -> Posicion -> MonadSymTab Expr
+crearOpBinComparable op e1 e2 tcomp tOp p
+    -- | tE1 == TDummy || tE2 == TDummy = TDummy
+    | tE1 `elem` allcomps && tE2 == tE1  = return $ OpBinario op e1 e2 tOp
+    | esopigualdad && isArray tE1 && isArray tE2 && tE1 == tE2 = 
+        return $ OpBinario op e1 e2 tOp
+    | esopigualdad && sonlistas && isJust (obtTipoListas [tE1,tE2])  =  -- <<>> == <<2>>
+        return $ OpBinario op e1 e2 tOp
+    | esopigualdad && isPointer tE1 && isPointer tE2 && tE1 == tE2 = 
+        return $ OpBinario op e1 e2 tOp
+    --  TODO: | TRegistro,TUnion
+    | otherwise = do
+        fileName <- ask
+        error $ "\n\nError: " ++ fileName ++ ": " ++ show p ++ 
+            "\n\t" ++"La operacion: '" ++ (show op) ++ "'," ++ 
+            " requiere que el tipo de '" ++ (show e1) ++ "' y de '" ++  
+            (show e2) ++ "' sean de tipos comparables entre ellos."
+    where
+        tE1 = typeE e1
+        tE2 = typeE e2
+        sonlistas = isList tE1 && isList tE2
+        esopigualdad = (op == Igual || op == Desigual)
+        allcomps = [TChar,TFloat,TInt,TStr] ++ tcomp
+
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
 -- Crea el nodo para un operador unario
-crearOpUn :: UnOp -> Expr -> Tipo -> Tipo -> Expr
-crearOpUn op e t tOp = OpUnario op e tOp
-    -- OpUnario op e (checkUn e t tOp)
+crearOpUn :: UnOp -> Expr -> Tipo -> Tipo -> Posicion -> MonadSymTab Expr
+crearOpUn op e t tOp p
+    | tE == t = return $ OpUnario op e tOp
+    | otherwise = do     
+        if (tE == TFloat && tOp == TInt) then do
+          {- Conversión automática que se encarga el compilador, ejemplo: -2.0 = -2.0 -}
+            return $ OpUnario op e TFloat
+        else do
+            fileName <- ask
+            error $ "\n\nError: " ++ fileName ++ ": " ++ show p ++ "\n\t" ++
+                "La operacion: '" ++ (show op) ++ "'," ++ 
+                " requiere que el tipo de '" ++ (show e) ++ "' sea '" ++ (show tOp) ++ "'"
+    where
+        tE = typeE e
 -------------------------------------------------------------------------------
 
 
@@ -160,43 +237,75 @@ crearOpUn op e t tOp = OpUnario op e tOp
 
 -------------------------------------------------------------------------------
 -- Crea el nodo para el operador concatenar 2 listas
-crearOpConcat :: BinOp -> Expr -> Expr -> Expr
-crearOpConcat op e1 e2 = 
-    OpBinario op e1 e2 tr
-
+crearOpConcat ::Expr -> Expr -> Posicion -> MonadSymTab Expr
+crearOpConcat e1 e2 p  
+    | isList te1 && isList te2 && isJust mbtypeList  = do -- <<2>>:: <<>>
+        return $ OpBinario Concatenacion e1 e2 (fromJust mbtypeList)
+    | otherwise = do
+        fileName <- ask
+        error $ "\n\nError: " ++ fileName ++ ": " ++ show p ++ "\n\t" ++
+            "La operación " ++ (show Concatenacion)  ++ " requiere que expresion '" 
+            ++ (show e1) ++ "' y expresion '" ++ show e2 ++ "' sean listas del mismo tipo."
     where
-        t1 = typeE e1
-        t2 = typeE e2
-        tr = if t1 == t2 then case t1 of
-                                (TLista _) -> t1
-                                _ -> TError
-             else TError
+        te1 = typeE e1
+        te2 = typeE e2
+        mbtypeList = obtTipoListas [te1,te2]
+        
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
 -- Crea el nodo para el operador agregar un elemento al inicio de la lista
-crearOpAnexo :: BinOp -> Expr -> Expr -> Expr
-crearOpAnexo op e1 e2 =
-    OpBinario op e1 e2 t
+crearOpAnexo ::  Expr -> Expr -> Posicion-> MonadSymTab Expr
+crearOpAnexo e1 e2 p
+    | isJust typeLR = do
+        return $ OpBinario Anexo e1 e2 (fromJust typeLR)
+    | not $ isList typee2  = do
+        fileName <- ask
+        error $ "\n\nError: " ++ fileName ++ ": " ++ show p ++ "\n\t" ++
+            "El segundo operando de : '" ++ (show Anexo) ++ "'," ++ 
+            "'" ++ (show e2) ++ "' debe ser una lista."
+    | typee1 /= typeArrLst typee2  = do
+        fileName <- ask
+        error $ "\n\nError: " ++ fileName ++ ": " ++ show p ++ "\n\t" ++
+            "El emento a anexar '" ++ (show e1) ++ "'," ++ "' debe ser de tipo '" 
+            ++ show (typeArrLst typee2) ++ "'."
 
     where
-        t2 = typeE e2
-        t = if isList t2 then t2 else TError 
+        typee1 = typeE e1
+        typee2 = typeE e2
+        typeLR = obtTipoListaAnexo typee1 typee2
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
 -- Crea el nodo para el operador tamaño de array o lista
-crearOpLen :: UnOp -> Expr -> Expr
-crearOpLen op e =
-    OpUnario op e tr
-    
+crearOpLen :: Expr -> Posicion -> MonadSymTab Expr
+crearOpLen e p
+    | isArray t || isList t = return $ OpUnario Longitud e TInt
+    | otherwise = do     
+        fileName <- ask
+        error $ "\n\nError: " ++ fileName ++ ": " ++ show p ++ "\n\t" ++
+            "La operacion de longitud: '" ++ (show Longitud) ++ "'," ++ 
+            " requiere que el tipo de '" ++ (show e) ++ "' sea un arreglo o lista."
     where
         t = typeE e
-        tr = if isArray t || isList t then t else TError
 -------------------------------------------------------------------------------
 
+
+
+crearLista :: [Expr] -> Posicion -> MonadSymTab Expr
+crearLista [] p = return $ ArrLstExpr [] (TLista TDummy) -- TODO : Recordar quitar el TDummy
+crearLista e  p
+    | isJust tipo  = do
+        return $ ArrLstExpr e (TLista (fromJust tipo))
+    | otherwise = do
+        fileName <- ask
+        error $ "\n\nError: " ++ fileName ++ ": " ++ show p ++ "\n\t" ++
+            "Las expresiones de la lista deben ser del mismo tipo."
+    where
+        mapaTipos   = map typeE e
+        tipo = obtTipoListas mapaTipos
 
 -------------------------------------------------------------------------------
 -- TODO
@@ -235,8 +344,30 @@ crearGuardiaIF exprCond seqInstrs (line, _) = (exprCond, seqInstrs)
 
 
 -------------------------------------------------------------------------------
-crearIfSimple :: Expr -> Expr -> Expr -> Tipo ->  Posicion -> Expr
-crearIfSimple cond v f t p = IfSimple cond v f t
+crearIfSimple :: Expr -> Expr -> Expr -> Tipo ->  Posicion -> MonadSymTab Expr
+crearIfSimple cond v f t p
+    | tCond == TBool &&  tFalse== tTrue = return $ IfSimple cond v f tTrue
+    | otherwise = do
+        
+        if (((tFalse == TFloat) && (tTrue == TInt)) || 
+            ((tTrue == TFloat) && (tFalse == TInt))) then do
+          {- Conversión automática que se encarga el compilador, (1 > 0) ? 1.3 : 5 -}
+            return $ IfSimple cond v f TFloat
+        else do        
+            fileName <- ask
+            if tCond /= TBool then do 
+                error $ "\n\nError: " ++ fileName ++ ": " ++ show p ++ "\n\t" ++
+                    "Condicion '" ++ (show tCond) ++ "' del operador ternario '? :'" ++ 
+                    " no es booleana."
+            else do
+                error $ "\n\nError: " ++ fileName ++ ": " ++ show p ++ "\n\t" ++
+                    "El operador ternario '? :'" ++ " requiere que el tipo de '" ++ 
+                    (show v) ++ "' y de '" ++  (show f) ++ "' sean iguales."
+  where 
+    tCond = typeE cond
+    tFalse = typeE f
+    tTrue = typeE v
+
 -------------------------------------------------------------------------------
 
 
@@ -363,10 +494,13 @@ crearWhile e i (line,_) = While e i
 
 -------------------------------------------------------------------------------
 -- Actualiza el tipo y  la informacion extra de la subrutina
-definirSubrutina' :: Nombre -> SecuenciaInstr -> Categoria
-                    -> MonadSymTab SecuenciaInstr
-definirSubrutina' n [] c = return (updateExtraInfo n c) >> return []
-definirSubrutina' n i c = return (updateExtraInfo n c [AST i]) >> return i
+definirSubrutina' :: Nombre  -> SecuenciaInstr -> Categoria -> MonadSymTab SecuenciaInstr
+definirSubrutina' name [] c = do
+    updateExtraInfo name c []
+    return []
+definirSubrutina' name i c = do
+    updateExtraInfo name c [AST i]
+    return i
 -------------------------------------------------------------------------------
 
 
@@ -379,8 +513,8 @@ definirSubrutina nombre categoria p = do
     let info = lookupInSymTab nombre symTab
 
     if isNothing info then 
-        let i = [SymbolInfo TDummy 1 categoria []]
-        in addToSymTab [nombre] i symTab activeScopes scope
+        let info = [SymbolInfo TDummy 1 categoria []]
+        in addToSymTab [nombre] info symTab activeScopes scope
     else
         error $ "\nError: " ++ file ++ ": " ++ show p ++ "\n\tSubrutina '" ++
             nombre ++ "' ya esta definida.\n\t"
@@ -406,23 +540,24 @@ crearSubrutinaCall :: Nombre -> Parametros -> Posicion -> MonadSymTab Subrutina
 crearSubrutinaCall nombre args p = do
     (symtab, _, _) <- get
     file <- ask
+
     let symbols = lookupInScopes [1] nombre  symtab
     
     if isJust symbols then do
         let sym =  fromJust symbols
-
-        if getCategory sym `elem` [Procedimientos, Funciones] then do
+        if (getCategory sym == Procedimientos || getCategory sym == Funciones) then do
             
-            let nParams = fromJust $ getNParams (getExtraInfo sym )
-                nArgs = length args
             
-            if nArgs == nParams then
-                return $ SubrutinaCall nombre args
-            else
-                error $ "\n\nError: " ++ file ++ ": " ++ show p ++ 
-                    "\n\tSubrutina '" ++ nombre ++ "' espera '" ++ show nParams
-                    ++ "' argumentos y se pasaron '" ++ show nArgs ++ "'.\n"
-        else
+            let nparamsesperados = fromJust $ getNParams (getExtraInfo sym )
+            
+            let nparamspasados = length params
+            if nparamspasados == nparamsesperados then do
+                return $ SubrutinaCall nombre params
+            else do
+                error $ "\n\nError: " ++ file ++ ": " ++ show p ++ "\n\tLa subrutina '" ++
+                        nombre ++ "' espera '" ++ show nparamsesperados ++ 
+                        "' argumentos pero se le pasaron '" ++ show nparamspasados ++ "'.\n"
+        else do
             error $ "\n\nError: " ++ file ++ ": " ++ show p ++ "\n\t'" ++
                     nombre ++ "' no es una subrutina.\n"
     else
@@ -437,15 +572,9 @@ crearSubrutinaCall nombre args p = do
 --      crearSubrutinaCall, pues se ejecuta primero
 crearFuncCall :: Subrutina -> MonadSymTab Expr
 crearFuncCall subrutina@(SubrutinaCall nombre _) = do
-    (symtab, _, _) <- get
-    file <- ask
-    let sym = fromJust $ lookupInScopes [1] nombre symtab
-    
-    if getCategory sym == Funciones then
-        return $ FuncCall subrutina (getType sym)
-    else
-        error $ "\n\nError: " ++ file ++ ": (f,c)" ++ "\n\tSubrutina '" ++
-            nombre ++ "' no es una funcion.\n"
+    (symtab, activeScope:_, scope) <- get
+    let sym = fromJust $ (lookupInScopes [1] nombre symtab)
+    return $ FuncCall subrutina (getType sym)
 -------------------------------------------------------------------------------
 
 
@@ -459,25 +588,27 @@ crearFuncCall subrutina@(SubrutinaCall nombre _) = do
 -------------------------------------------------------------------------------
 -- Definicion de union
 definirRegistro :: Nombre -> SecuenciaInstr -> Posicion -> MonadSymTab SecuenciaInstr
-definirRegistro n decls  p = do
+definirRegistro id decls  p = do
     (symTab@(SymTab table), activeScopes@(activeScope:_), scope) <- get
     file <- ask
-    let infos = lookupInScopes [1] n symTab
+    let infos = lookupInScopes [1] id symTab
     if isJust infos then
         error $ "\n\nError: " ++ file ++ ": " ++ show p ++ "\n\tInventory '" ++
                 n ++ "' ya esta definido.\n"
     else do
+        
         {- TODO: No se puede guardar en el estado el TIPO del scope en el que estoy?
-        Lo que haría que cuando las inserto en la tabla de simbolos, ya sea con 
-        su categoria y el campo extra adecuado -}
-        let modifySym (SymbolInfo t s _ _) = SymbolInfo t s Campos [FromReg n]
-            updtSym = 
-                map (\sym -> if getScope sym == activeScope then modifySym sym else sym)
+         Lo que haría que cuando las inserto en la tabla de simbolos, ya sea con 
+         su categoria y el campo extra adecuado -}
+        let modifySymbol (SymbolInfo typ scope cat ex) = SymbolInfo typ scope Campos [FromReg id]
+        let updateSymbol' = 
+                map (\sym -> if getScope sym == activeScope then modifySymbol sym else sym)
 
-            newSymTab = SymTab $ M.map updtSym table
-            info = [SymbolInfo TRegistro 1 Tipos []]
+        let newSymTab = SymTab $ M.map updateSymbol' table
+        
+        let info = [SymbolInfo TRegistro 1 Tipos [AST decls]]
 
-        addToSymTab [n] info newSymTab activeScopes scope
+        addToSymTab [id] info newSymTab activeScopes scope
         return decls
 -------------------------------------------------------------------------------
 
@@ -485,21 +616,22 @@ definirRegistro n decls  p = do
 -------------------------------------------------------------------------------
 -- Definicion de union
 definirUnion :: Nombre -> SecuenciaInstr -> Posicion -> MonadSymTab SecuenciaInstr
-definirUnion n decls p = do
+definirUnion id decls p = do
     (symTab@(SymTab table), activeScopes@(activeScope:_), scope) <- get
     file <- ask
-    let infos = lookupInScopes [1] n symTab
+    let infos = lookupInScopes [1] id symTab
     if isJust infos then
         error $ "\n\nError: " ++ file ++ ": " ++ show p ++ "\n\tItems '" ++
                 n ++ "' ya esta definido.\n"
     else do
-        let modifySym (SymbolInfo t s _ _) = SymbolInfo t s Campos [FromReg n]
-            updSym = 
-                map (\sym -> if getScope sym == activeScope then modifySym sym else sym)
+        let modifySymbol (SymbolInfo typ scope cat ex) = SymbolInfo typ scope Campos [FromReg id]
+        let updateSymbol' = 
+                map (\sym -> if getScope sym == activeScope then modifySymbol sym else sym)
 
-            newSymTab = SymTab $ M.map updSym table
-            info = [SymbolInfo TUnion 1 Tipos []]
-        addToSymTab [n] info newSymTab activeScopes scope
+        let newSymTab = SymTab $ M.map updateSymbol' table
+        
+        let info = [SymbolInfo TUnion 1 Tipos [AST decls]]
+        addToSymTab [id] info newSymTab activeScopes scope
         return decls
 -------------------------------------------------------------------------------
 
@@ -563,11 +695,4 @@ crearFree var p = do
     else
         error $ "Error: " ++ file ++ ": " ++ show p ++ "\n\tVariable '" ++
                 var ++ "' no definida.\n"
--------------------------------------------------------------------------------
-
-
--------------------------------------------------------------------------------
--------------------------------------------------------------------------------
---                           Funciones auxiliares
--------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
