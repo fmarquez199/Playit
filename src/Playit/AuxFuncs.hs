@@ -133,8 +133,8 @@ baseTypeVar (Var _ t)     = baseTypeT t
 baseTypeVar (Index _ _ t) = baseTypeT t
 baseTypeVar (Param _ t _) = baseTypeT t
 baseTypeVar (Field v _ t) = baseTypeT t  -- baseTypeVar v
-baseTypeVar (Desref v t)  = baseTypeT t
--- baseTypeVar (Desref v _)  = baseTypeVar v
+-- baseTypeVar (Desref v t)  = baseTypeT t
+baseTypeVar (Desref v _)  = baseTypeVar v
 -------------------------------------------------------------------------------
 
 

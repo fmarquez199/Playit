@@ -35,7 +35,8 @@ var id p = do
     let infos = lookupInScopes activeScopes id symTab
 
     if isJust infos then do
-        let isVar symInfo = getCategory symInfo == Variables
+        let vars = [Variables, Parameters Value, Parameters Reference]
+            isVar symInfo = getCategory symInfo `elem` vars
             v = filter isVar (fromJust infos)
 
         if null v then

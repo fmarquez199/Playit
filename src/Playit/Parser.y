@@ -477,15 +477,15 @@ Nombre :: { (Id, Category) }
 
 -------------------------------------------------------------------------------
 -- Subroutines parameters definitions
-Params ::{ [Id] }
+Params ::{ [(Type,Id)] }
   : "(" DefineParams ")" { $2 }
   | "(" ")"              { [] }
 
-DefineParams :: { [Id] }
+DefineParams :: { [(Type,Id)] }
   : DefineParams "," Param  { $3 : $1 }
   | Param                   { [$1] }
 
-Param :: { Id }
+Param :: { (Type,Id) }
   : Type id       { % defineParameter (Param (getTk $2) $1 Value) (getPos $2) }
   | Type "?" id   { % defineParameter (Param (getTk $3) $1 Reference) (getPos $3) }
 -------------------------------------------------------------------------------
@@ -596,15 +596,21 @@ Expression :: { Expr }
 
 -------------------------------------------------------------------------------
 DefineRegister :: { () }
-  : Register ":" PushScope EndLines Declarations EndLines ".~"  { }
-  | Register ":" PushScope EndLines ".~"                        { }
+  : register idType ":" PushScope EndLines Declarations EndLines ".~"
+  { %
+    defineRegUnion (getTk $2) TRegister (getPos $2)
+  }
+  | register idType ":" PushScope EndLines ".~"
+  { %
+    defineRegUnion (getTk $2) TRegister (getPos $2)
+  }
 
 -- Add register name first for recursives registers
-Register :: { () }
-  : register idType ":" PushScope EndLines ".~"                          
-    { %
-      defineRegUnion (getTk $2) TRegister (getPos $2)
-    }
+-- Register :: { () }
+--   : register idType
+--     { %
+--       defineRegUnion (getTk $2) TRegister (getPos $2)
+--     }
 -------------------------------------------------------------------------------
 
 

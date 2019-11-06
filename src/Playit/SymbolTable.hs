@@ -51,12 +51,12 @@ createInitSymTab st = (insertSymbols symbols info st, [1,0], 1)
         items     = SymbolInfo TUnion 0 TypeConstructors []
         bools     = SymbolInfo TBool 0 Constants []
         apt       = SymbolInfo (TPointer TDummy) 0 Pointers [] -- Tipo?
-        portalCS  = SymbolInfo TStr 0 Functions [Params ["rune"]]
-        portalIS  = SymbolInfo TStr 0 Functions [Params ["power"]]
-        portalFS  = SymbolInfo TStr 0 Functions [Params ["skill"]]
-        portalSI  = SymbolInfo TInt 0 Functions [Params ["runes"]]
-        portalSC  = SymbolInfo TChar 0 Functions [Params ["runes"]]
-        portalSF  = SymbolInfo TFloat 0 Functions [Params ["runes"]]
+        portalCS  = SymbolInfo TStr 0 Functions [Params [(TChar,"rune")]]
+        portalIS  = SymbolInfo TStr 0 Functions [Params [(TInt,"power")]]
+        portalFS  = SymbolInfo TStr 0 Functions [Params [(TFloat,"skill")]]
+        portalSI  = SymbolInfo TInt 0 Functions [Params [(TStr,"runes")]]
+        portalSC  = SymbolInfo TChar 0 Functions [Params [(TStr,"runes")]]
+        portalSF  = SymbolInfo TFloat 0 Functions [Params [(TStr,"runes")]]
 -------------------------------------------------------------------------------
 
 
@@ -160,7 +160,7 @@ defineSubroutine id category p = do
 
 -------------------------------------------------------------------------------
 -- | Inserts a subroutine's parameter into symbol table
-defineParameter :: Var -> Pos -> MonadSymTab Id
+defineParameter :: Var -> Pos -> MonadSymTab (Type,Id)
 defineParameter (Param name t ref) p = do
     (symTab, activeScopes@(activeScope:_), scope) <- get
     fileCode <- ask
@@ -171,7 +171,7 @@ defineParameter (Param name t ref) p = do
     else do
         let info = [SymbolInfo t activeScope (Parameters ref) []]
         addToSymTab [name] info symTab activeScopes scope
-        return name
+        return (t,name)
 -------------------------------------------------------------------------------
 
 
@@ -194,7 +194,7 @@ defineRegUnion reg regType p = do
                 map (\sym -> if getScope sym == activeScope then modifySym sym else sym)
 
             newSymTab = SymTab $ M.map updtSym table
-            info = [SymbolInfo regType 1 Types []]
+            info = [SymbolInfo regType 1 TypeConstructors []]
 
         in void $ addToSymTab [reg] info newSymTab activeScopes scope
 -------------------------------------------------------------------------------

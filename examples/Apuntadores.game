@@ -10,7 +10,7 @@ Inventory Contacto2:
 .~
 
 world %apts%:
-    Contacto puff puff c = summon Contacto @, c2, c3
+    Contacto puff puff c = summon Contacto puff @, c2, c3
     
     @ ( *( (**c).pointernombre)).flotante
     puff (puff (puff c) spawn pointernombre) spawn flotante = 2'2

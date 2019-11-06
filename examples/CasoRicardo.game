@@ -13,5 +13,5 @@ world %n%:
     Power n
     n = kill n(n)
     
-    @Power n = kill n(n) @ esto falla con el argumento porque la deracion de n no ha sido insertada todavia
+    @Power n = kill n(n) @falla con el arg porque la decl de 'n' no ha sido insertada todavia y toma la func
 .~

@@ -53,7 +53,7 @@ data Type =
 
 instance Show Type where
     show (TPointer t) = "*(" ++ show t ++ ")"
-    show (TArray e t) = show t ++ "|}" ++ show e ++ "{| "
+    show (TArray e t) = show t ++ "|}" ++ show e ++ "{|"
     show TBool        = "Battle"
     show TChar        = "Rune"
     show TDummy       = "Type unkown"
@@ -170,7 +170,7 @@ instance Show Expr where
     show (Binary op e1 e2 t)   = "("++show t++")(" ++ show e1 ++ show op ++ show e2 ++ ")"
     show (Unary op e1 t)       = "("++show t++")"++show op ++ show e1
     show (Read e)             = "joystick " ++ show e
-    show (Variable var t)      = "("++show t++")"++show var
+    show (Variable var t)      = {-"E("++show t++")"++-}show var
 
 data Literal =
     ArrLst [Literal] | -- >> Arrays and lists
@@ -293,9 +293,9 @@ instance Show Category where
 
 -- Symbol extra information
 data ExtraInfo =
-    AST InstrSeq    |
-    Params [Id{-,Type-}] | -- Para verif tipos [(Type,Id)]
-    FromReg Id       -- Register / union al que pertenece el campo/variable
+    AST InstrSeq       |
+    Params [(Type,Id)] |
+    FromReg Id         -- Register / union al que pertenece el campo/variable
     deriving (Eq, Ord)
 
 instance Show ExtraInfo where

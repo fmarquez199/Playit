@@ -1,4 +1,4 @@
-monster fibonnaci(Power primero, Power segundo, Power limite) Contacto:
+monster fibonnaci(Power primero, Power segundo, Power limite) Power:
   drop primero
   drop segundo
   Power n = primero
@@ -9,6 +9,7 @@ monster fibonnaci(Power primero, Power segundo, Power limite) Contacto:
     limite--
   lock limite > 0
   .~
+  unlock n
 .~
 world %Caso9%:
   drop ~Fibonnaci: ~, kill fibonnaci(1, 2, 5)

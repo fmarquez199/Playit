@@ -10,6 +10,7 @@
 module Playit.CheckAST where
 
 import Control.Monad.Trans.RWS
+import qualified Data.Map as M
 import Data.Maybe (isJust,fromJust)
 import Playit.AuxFuncs
 import Playit.Errors
@@ -56,16 +57,17 @@ checkDesref tVar p
 -- | Checks the new defined type 
 checkNewType :: Id -> Pos -> MonadSymTab Bool
 checkNewType tName p = do
-    (symTab, scopes, _) <- get
+    (symTab@(SymTab st), scopes, _) <- get
     fileCode <- ask
     let infos = lookupInScopes [1] tName symTab
     
     if isJust infos then do
-        let sym = head $ fromJust infos -- its already checked that's not redefined
+        let symIndex = M.findIndex tName st
+            sym = head . snd $ M.elemAt symIndex st -- its already checked that's not redefined
         
-        if getCategory sym == Types then return True
+        if getCategory sym == TypeConstructors then return True
         else
-            error $ errorMsg "This isn't a defined type" fileCode p
+            error $ errorMsg ("This isn't a defined type\n"++tName++"\n"++show sym) fileCode p
     else
         error $ errorMsg "Type not defined" fileCode p
 -------------------------------------------------------------------------------
@@ -78,7 +80,7 @@ checkAssigs assigs t p
     | eqAssigsTypes updatedAssigs t = return updatedAssigs
     | otherwise = do
         fileCode <- ask
-        error $ errorMsg ("Assignations expressions types isn't"++show t) fileCode p
+        error $ errorMsg ("Assignations expressions types isn't "++show t++"\n"++show assigs) fileCode p
 
     where
         updatedAssigs = map (changeTDummyAssigs t) assigs
@@ -234,11 +236,17 @@ changeTDummyList t newT               = t
 -------------------------------------------------------------------------------
 -- Cambia el TDummy de una variable en las declaraciones
 changeTDummyLvalAsigs :: Var -> Type -> Var
-changeTDummyLvalAsigs (Var n TDummy) t       = Var n t
-changeTDummyLvalAsigs var@(Var _ _) _        = var
+changeTDummyLvalAsigs (Var n TDummy) t    = Var n t
 changeTDummyLvalAsigs (Index var e t') t  =
     let newVar = changeTDummyLvalAsigs var t
     in Index newVar e t'
+changeTDummyLvalAsigs (Desref var t') t   =
+    let newVar = changeTDummyLvalAsigs var t
+    in Desref newVar t'
+changeTDummyLvalAsigs (Field var id t') t =
+    let newVar = changeTDummyLvalAsigs var t
+    in Field newVar id t'
+changeTDummyLvalAsigs var _               = var
 -------------------------------------------------------------------------------
 
 

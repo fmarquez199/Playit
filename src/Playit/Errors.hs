@@ -90,6 +90,6 @@ parseError (tk:tks) =  do
 -- | Message of the semmantic error
 semmErrorMsg :: String -> String -> FileCodeReader -> Pos -> String
 semmErrorMsg t1 t2 (file,code) (l,c) = "\n\n\x1b[1;36mMismatched types\x1b[94m:"
-    ++ file ++ ":\n" ++ "Type expexted: " ++ t1 ++ "\nType got:" ++ t2 ++
-    "\x1b[93m| " ++ show l ++ "\t\x1b[0;96m" ++ errorLine code l ++ errorRuler c
+    ++ file ++ ":\n" ++ "Type expexted: " ++ t1 ++ "\nType got: " ++ t2 ++
+    "\n\x1b[93m| " ++ show l ++ "\t\x1b[0;96m" ++ errorLine code l ++ errorRuler c
 
