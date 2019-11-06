@@ -26,7 +26,7 @@ printAST :: Int -> Instr -> IO()
 printAST n instr = 
     case instr of
         -- Asginacion de expresion
-        (Asing vars exp) -> do
+        (Assig vars exp) -> do
             putStrLn $ t ++ "Asignacion:"
             putStrLn (t ++ "  Destino: ") >> printVar (n + 2) vars
             putStrLn (t ++ "  Valor: ") >> printExpr (n + 2) exp
@@ -100,7 +100,7 @@ printAST n instr =
         (Print exp) -> putStrLn (t ++ "Impresion:") >> printExpr (n + 1) exp
         -----------------------------------------------------------------------
         -- Leer valor
-        (Asings seq symTab) ->
+        (Assigs seq symTab) ->
             --printSymTab symTab t >>
             if not $ isEmptySequence seq then
                 putStrLn (t ++ "  Declaraciones:") >> printSeq (n + 2) seq
@@ -222,7 +222,7 @@ printExpr n e =
             putStrLn (t ++ "Operando: ") >> printExpr (n + 1) exp
         -----------------------------------------------------------------------
         -- Expresion de arreglo explicito
-        (ArrLstExpr exps _) ->
+        (ArrayList exps _) ->
             putStrLn (t ++ "Arreglo:") >> mapM_ (printExpr $ n + 1) exps
         -----------------------------------------------------------------------
         -- Leer valor

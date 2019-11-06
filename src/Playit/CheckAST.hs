@@ -66,7 +66,7 @@ checkTypesAsigs asigs t (line,_)
 --------------------------------------------------------------------------------
 -- Verifica el el tipo de todas las asignaciones sea el mismo
 eqTypesAsigs :: InstrSeq -> Type -> Bool
-eqTypesAsigs asigs t = all (\(Asing _ expr) -> typeE expr == t) asigs  
+eqTypesAsigs asigs t = all (\(Assig _ expr) -> typeE expr == t) asigs  
 --------------------------------------------------------------------------------
 
 
@@ -77,7 +77,7 @@ typeE (Variable _ t)           = t
 typeE (Literal _ t)             = t
 typeE (Binary _ _ _ t)       = t
 typeE (Unary _ _ t)          = t
-typeE (ArrLstExpr _ t)           = t
+typeE (ArrayList _ t)           = t
 typeE (Read _)                  = TStr
 typeE (IfSimple _ _ _ t)        = t
 -- typeE (Call _  _ t)    = t
@@ -194,8 +194,8 @@ changeTDummyLvalAsigs (Index var e t') t  =
 --------------------------------------------------------------------------------
 -- Cambia el TDummy de las variables en las declaraciones
 changeTDummyAsigs :: Type -> Instr -> Instr
-changeTDummyAsigs t (Asing lval e) =
-    Asing (changeTDummyLvalAsigs lval t) e
+changeTDummyAsigs t (Assig lval e) =
+    Assig (changeTDummyLvalAsigs lval t) e
 --------------------------------------------------------------------------------
 
 
@@ -231,11 +231,11 @@ changeTDummyExpr t (Variable var TDummy) =
 --------------------------------------------------------------------------
 changeTDummyExpr _ vars@(Variable _ _) = vars
 --------------------------------------------------------------------------
-changeTDummyExpr t (ArrLstExpr exprs TDummy) =
+changeTDummyExpr t (ArrayList exprs TDummy) =
     let newExprs = map (changeTDummyExpr t) exprs
-    in ArrLstExpr newExprs t
+    in ArrayList newExprs t
 --------------------------------------------------------------------------
-changeTDummyExpr _ lst@(ArrLstExpr _ _) = lst
+changeTDummyExpr _ lst@(ArrayList _ _) = lst
 --------------------------------------------------------------------------
 changeTDummyExpr t (Unary op e TDummy) =
     let newE = changeTDummyExpr t e
@@ -255,14 +255,14 @@ changeTDummyExpr _ opBin@Binary{} = opBin
 --------------------------------------------------------------------------------
 -- Cambia el TDummy de la secuencia de instrucciones del 'for'
 changeTDummyFor :: Type -> SymTab -> Scope -> Instr -> Instr
-changeTDummyFor t symTab scope (Asing lval e)
+changeTDummyFor t symTab scope (Assig lval e)
     | isVarIter lval symTab scope =
         error ("\n\nError semantico, la variable de iteracion: '" ++
                show lval ++ "', no se puede modificar.\n")
     | otherwise =
         let newLval = changeTDummyLval lval t
             newE = changeTDummyExpr t e
-        in Asing newLval newE
+        in Assig newLval newE
 --------------------------------------------------------------------------
 -- changeTDummyFor t symTab scope (Program seqI) =
 --     let newSeqI = map (changeTDummyFor t symTab scope) seqI

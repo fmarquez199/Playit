@@ -93,7 +93,7 @@ data Ref =
 
 -- Instructions
 data Instr  = 
-    Asing Var Expr                      |
+    Assig Var Expr                      |
     Break                               |
     Continue                            |
     For Id Expr Expr InstrSeq           |
@@ -104,13 +104,13 @@ data Instr  =
     ProcCall Subroutine                 |
     Program InstrSeq                    |
     Return Expr                         |
-    Asings InstrSeq                     |
+    Assigs InstrSeq                     |
     IF [(Expr, InstrSeq)]               |
     While Expr InstrSeq
     deriving (Eq,Ord)
 
 instance Show Instr where
-    show (Asing v e)             = "  " ++ show v ++ " = " ++ show e ++ "\n"
+    show (Assig v e)             = "  " ++ show v ++ " = " ++ show e ++ "\n"
     show Break                   = "  GameOver\n"
     show Continue                = "  KeepPlaying\n"
     show (For n e1 e2 s)         = "  For " ++ n ++ " = " ++ show e1 ++ " -> "
@@ -128,7 +128,7 @@ instance Show Instr where
     show (ProcCall s)            = "  kill " ++ show s ++ "\n"
     show (Program s)             = "\nworld:\n" ++ concatMap show s ++ "\n"
     show (Return e)              = "  unlock " ++ show e
-    show (Asings s)              = intercalate "  " (map show s)
+    show (Assigs s)              = intercalate "  " (map show s)
     show (IF s)                  = "  IF:\n    " ++ concat guards
         where
             conds = map (show . fst) s
@@ -148,7 +148,7 @@ instance Show Subroutine where
 
 -- Expressions
 data Expr   = 
-    ArrLstExpr [Expr] Type       |
+    ArrayList [Expr] Type        |
     FuncCall Subroutine Type     |
     IdType Type                  |
     IfSimple Expr Expr Expr Type |
@@ -161,7 +161,7 @@ data Expr   =
     deriving (Eq, Ord)
 
 instance Show Expr where
-    show (ArrLstExpr lst _)    = "[" ++ intercalate "," (map show lst) ++ "]"
+    show (ArrayList lst _)     = "[" ++ intercalate "," (map show lst) ++ "]"
     show (FuncCall s _)        = "kill " ++ show s
     show (IdType t)            = show t
     show (IfSimple e1 e2 e3 _) = show e1 ++ " ? " ++ show e2 ++ " : " ++ show e3

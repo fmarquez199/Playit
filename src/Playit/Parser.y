@@ -54,8 +54,8 @@ import Playit.AST
   return            { TkUNLOCK _ _ }
   -- Iterations
   for               { TkCONTROLLER _ _ }
-  do                { TkPLAY _ $$ }
-  while             { TkLOCK _ _ }
+  do                { TkPLAY _ _ }
+  while             { TkLOCK _ $$ }
   break             { TkGameOver _ _ }
   continue          { TkKeepPlaying _ _ }
   -- I/O
@@ -222,7 +222,7 @@ Identifiers :: { ([(Id, Pos)], InstrSeq) }
 Identifier :: { ((Id, Pos), InstrSeq) }
   : id "=" Expression
     {
-      ( (getTk $1,getPos $1), [Asing (Var (getTk $1) TDummy) $3] )
+      ( (getTk $1,getPos $1), [Assig (Var (getTk $1) TDummy) $3] )
     }
   | id
     {
@@ -238,12 +238,12 @@ Identifier :: { ((Id, Pos), InstrSeq) }
 
 -- Lvalues
 Lvalue :: { Var }
-  : Lvalue "." id                { % crearCampo $1 (getTk $3) (getPos $3) }
-  | Lvalue "|)" Expression "(|"  { crearVarIndex $1 $3 }
-  | Lvalue "|>" Expression "<|"  { crearVarIndex $1 $3 }
+  : Lvalue "." id                { % field $1 (getTk $3) (getPos $3) }
+  | Lvalue "|)" Expression "(|"  { index $1 $3 }
+  | Lvalue "|>" Expression "<|"  { index $1 $3 }
   | pointer Lvalue               { Desref $2 (typeVar $2) }
   | pointer "(" Lvalue ")"       { Desref $3 (typeVar $3) }
-  | id                           { % crearIdvar (getTk $1) (getPos $1) }
+  | id                           { % var (getTk $1) (getPos $1) }
 
 
 -- Data types
@@ -274,7 +274,7 @@ Instructions :: { InstrSeq }
 
 Instruction :: { Instr }
   : Asignation                      { $1 }
-  | Declaration                     { Asings $1 }
+  | Declaration                     { Assigs $1 }
   | PushScope Controller PopScope   { $2 }
   | PushScope Play PopScope         { $2 }
   | Button                          { $1 }
@@ -289,16 +289,16 @@ Instruction :: { Instr }
 -------------------------------------------------------------------------------
 -- '='
 Asignation :: { Instr }
-  : Lvalue "=" Expression  { crearAsignacion $1 $3 $2 }
+  : Lvalue "=" Expression  { assig $1 $3 $2 }
   | Lvalue "++"
     {
       let expr = Binary Add (Variable $1 TInt) (Literal (Integer 1) TInt) TInt
-      in crearAsignacion $1 expr $2
+      in assig $1 expr $2
     }
   | Lvalue "--"
     {
       let expr = Binary Minus (Variable $1 TInt) (Literal (Integer 1) TInt) TInt
-      in crearAsignacion $1 expr $2
+      in assig $1 expr $2
     }
 -------------------------------------------------------------------------------
 
@@ -306,7 +306,7 @@ Asignation :: { Instr }
 -------------------------------------------------------------------------------
 -- Selection
 Button :: { Instr }
-  : if ":" EndLines Guards ".~" PopScope { crearIF (reverse $4) $1 }
+  : if ":" EndLines Guards ".~" PopScope { if' (reverse $4) $1 }
 
 Guards :: { [(Expr, InstrSeq)] }
   : Guards PopScope Guard  { $3 : $1 }
@@ -315,19 +315,19 @@ Guards :: { [(Expr, InstrSeq)] }
 Guard :: { (Expr, InstrSeq) }
   : "|" Expression "}" EndLines PushScope Instructions EndLines
     { 
-      crearGuardiaIF $2 $6 $1
+      guard $2 $6 $1
     }
   | "|" Expression "}" PushScope Instructions EndLines
     { 
-      crearGuardiaIF $2 $5 $1
+      guard $2 $5 $1
     }
   | "|" else "}" EndLines PushScope Instructions EndLines
     { 
-      crearGuardiaIF (Literal (Boolean True) TBool) $6 $1
+      guard (Literal (Boolean True) TBool) $6 $1
     }
   | "|" else "}" PushScope Instructions EndLines
     { 
-      crearGuardiaIF (Literal (Boolean True) TBool) $5 $1
+      guard (Literal (Boolean True) TBool) $5 $1
     }
 -------------------------------------------------------------------------------
 
@@ -365,31 +365,35 @@ Controller :: { Instr }
 InitVar1 :: { (Id, Expr) }
   : id "=" Expression
     { % do
-      var <- crearIdvar (getTk $1) (getPos $1)
-      return $ crearAsignacion var $3 $2
-      return ((getTk $1), $3)
+      let id = (getTk $1)
+      v <- var id (getPos $1)
+      return $ assig v $3 $2
+      return (id, $3)
     }
   | Type id "=" Expression
     { % do
-      let var = Var (getTk $2) $1
-      insertDeclarations [(getTk $2, getPos $2)] $1 []
-      return $ crearAsignacion var $4 $3
-      return ((getTk $2), $4)
+      let id = (getTk $2)
+          var = Var id $1
+      insertDeclarations [(id, getPos $2)] $1 []
+      return $ assig var $4 $3
+      return (id, $4)
     }
 
 InitVar2 :: { (Id, Expr) }
   : id "<-" Expression %prec "<-"
     { % do
-      var <- crearIdvar (getTk $1) (getPos $1)
-      return $ crearAsignacion var $3 $2
-      return ((getTk $1), $3)
+      let id = (getTk $1)
+      v <- var id (getPos $1)
+      return $ assig v $3 $2
+      return (id, $3)
     }
   | Type id "<-" Expression %prec "<-"
     { % do
-      let var = Var (getTk $2) $1
-      insertDeclarations [(getTk $2, getPos $2)] $1 []
-      return $ crearAsignacion var $4 $3
-      return ((getTk $2), $4)
+      let id = (getTk $2)
+          var = Var id $1
+      insertDeclarations [(id, getPos $2)] $1 []
+      return $ assig var $4 $3
+      return (id, $4)
     }
 -------------------------------------------------------------------------------
 
@@ -399,11 +403,11 @@ InitVar2 :: { (Id, Expr) }
 Play :: { Instr }
   : do ":" EndLines Instructions EndLines while Expression EndLines ".~"
     {
-      crearWhile $7 (reverse $4) $1
+      while $7 (reverse $4) $6
     }
   | do ":" EndLines while Expression EndLines ".~"
     {
-      crearWhile $5 [] $1
+      while $5 [] $4
     }
 -------------------------------------------------------------------------------
 
@@ -411,15 +415,15 @@ Play :: { Instr }
 -------------------------------------------------------------------------------
 -- 'drop'
 Out :: { Instr }
-  : print Expressions       { % crearPrint (crearArrLstExpr $ reverse $2) $1 }
+  : print Expressions       { % print (arrayList $ reverse $2) $1 }
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
 Free :: { Instr }
-  : free id             { % crearFree (getTk $2) (getPos $2) }
-  | free "|}" "{|" id   { % crearFree (getTk $4) (getPos $4) }
-  | free "<<" ">>" id   { % crearFree (getTk $4) (getPos $4) }
+  : free id             { % free (getTk $2) (getPos $2) }
+  | free "|}" "{|" id   { % free (getTk $4) (getPos $4) }
+  | free "<<" ">>" id   { % free (getTk $4) (getPos $4) }
 -------------------------------------------------------------------------------
 
 
@@ -432,8 +436,8 @@ Free :: { Instr }
 DefineSubroutine :: { () }
   : Firma ":" EndLines Instructions EndLines ".~"
     { %
-      let (id,categoria) = $1
-      in definirSubrutina' id (reverse $4) categoria
+      let (id,category) = $1
+      in updateExtraInfo id category [AST (reverse $4)]
     }
   | Firma ":" EndLines ".~"   { }
 
@@ -442,30 +446,30 @@ DefineSubroutine :: { () }
 Firma :: { (Id, Category) }
   : Nombre PushScope Params
   { % do
-    let (id,cat) = $1
-    updateExtraInfo id cat [Params (reverse $3)]
+    let (id,category) = $1
+    updateExtraInfo id category [Params (reverse $3)]
     updateType id 1 TVoid
     return $1
   }
   | Nombre PushScope Params Type 
     { % do
-      let (id,cat) = $1
-      updateExtraInfo id cat [Params (reverse $3)]
+      let (id,category) = $1
+      updateExtraInfo id category [Params (reverse $3)]
       updateType id 1 $4
       return $1
     }
 
 -------------------------------------------------------------------------------
--- Subroutine name, add first to symbol table because of recursiveness
+-- Subroutine name, insert first into symbol table because of recursiveness
 Nombre :: { (Id, Category) }
   : proc id
     { % do
-      definirSubrutina (getTk $2) Procedures (getPos $2)
+      defineSubroutine (getTk $2) Procedures (getPos $2)
       return ((getTk $2), Procedures)
     }
   | func id
     { % do
-      definirSubrutina (getTk $2) Functions (getPos $2)
+      defineSubroutine (getTk $2) Functions (getPos $2)
       return ((getTk $2), Functions)
     }
 
@@ -473,16 +477,15 @@ Nombre :: { (Id, Category) }
 -- Subroutines parameters definitions
 Params ::{ [Id] }
   : "(" DefineParams ")" { $2 }
-  | "(" ")"            { [] }
+  | "(" ")"              { [] }
 
 DefineParams :: { [Id] }
   : DefineParams "," Param  { $3 : $1 }
-  | Param                 { [$1] }
-
+  | Param                   { [$1] }
 
 Param :: { Id }
-  : Type id       { % definirParam (Param (getTk $2) $1 Value) }
-  | Type "?" id   { % definirParam (Param (getTk $3) $1 Reference) }
+  : Type id       { % defineParameter (Param (getTk $2) $1 Value) (getPos $2) }
+  | Type "?" id   { % defineParameter (Param (getTk $3) $1 Reference) (getPos $3) }
 -------------------------------------------------------------------------------
 
 
@@ -492,13 +495,13 @@ ProcCall :: { Instr }
   : SubroutineCall     { ProcCall (fst $1) }
 
 FuncCall :: { Expr }
-  : SubroutineCall     { % crearFuncCall (fst $1) (snd $1) }
+  : SubroutineCall     { % funcCall (fst $1) (snd $1) }
 
 SubroutineCall :: { (Subroutine, Pos) }
   : call id "(" Arguments ")"
-    { % crearSubrutinaCall (getTk $2) (reverse $4) (getPos $2) }
+    { % call (getTk $2) (reverse $4) (getPos $2) }
   | call id "(" ")"
-    { % crearSubrutinaCall (getTk $2) [] (getPos $2) }
+    { % call (getTk $2) [] (getPos $2) }
 -------------------------------------------------------------------------------
 
 
@@ -509,8 +512,8 @@ Arguments :: { Params }
   | Argument                 { [$1] }
 
 Argument :: { Expr }
-  : Expression       { $1 }
-  | "?" Expression   { $2 }
+  : Expression               { $1 }
+  | "?" Expression           { $2 }
 -------------------------------------------------------------------------------
 
 
@@ -525,50 +528,50 @@ Expressions::{ [Expr] }
   | Expression                   { [$1] }
 
 Expression :: { Expr }
-  : Expression "+" Expression            { crearOpBin Add $1 $3 TInt TInt TInt }
-  | Expression "-" Expression            { crearOpBin Minus $1 $3 TInt TInt TInt }
-  | Expression "*" Expression            { crearOpBin Mult $1 $3  TInt TInt TInt }
-  | Expression "%" Expression            { crearOpBin Module $1 $3 TInt TInt TInt }
-  | Expression "/" Expression            { crearOpBin Division $1 $3 TInt TInt TInt }
-  | Expression "//" Expression           { crearOpBin DivEntera $1 $3 TInt TInt TInt }
-  | Expression "&&" Expression           { crearOpBin And $1 $3 TBool TBool TBool }
-  | Expression "||" Expression           { crearOpBin Or $1 $3 TBool TBool TBool }
-  | Expression "==" Expression           { crearOpBin Eq $1 $3 TInt TInt TBool }
-  | Expression "!=" Expression           { crearOpBin NotEq $1 $3 TInt TInt TBool }
-  | Expression ">=" Expression           { crearOpBin GreaterEq $1 $3 TInt TInt TBool }
-  | Expression "<=" Expression           { crearOpBin LessEq $1 $3 TInt TInt TBool }
-  | Expression ">" Expression            { crearOpBin Greater $1 $3 TInt TInt TBool }
-  | Expression "<" Expression            { crearOpBin Less $1 $3 TInt TInt TBool }
-  | Expression ":" Expression %prec ":"  { crearOpAnexo Anexo $1 $3 }
-  | Expression "::" Expression           { crearOpConcat Concat $1 $3 }
+  : Expression "+" Expression            { binary Add $1 $3 TInt TInt TInt }
+  | Expression "-" Expression            { binary Minus $1 $3 TInt TInt TInt }
+  | Expression "*" Expression            { binary Mult $1 $3  TInt TInt TInt }
+  | Expression "%" Expression            { binary Module $1 $3 TInt TInt TInt }
+  | Expression "/" Expression            { binary Division $1 $3 TInt TInt TInt }
+  | Expression "//" Expression           { binary DivEntera $1 $3 TInt TInt TInt }
+  | Expression "&&" Expression           { binary And $1 $3 TBool TBool TBool }
+  | Expression "||" Expression           { binary Or $1 $3 TBool TBool TBool }
+  | Expression "==" Expression           { binary Eq $1 $3 TInt TInt TBool }
+  | Expression "!=" Expression           { binary NotEq $1 $3 TInt TInt TBool }
+  | Expression ">=" Expression           { binary GreaterEq $1 $3 TInt TInt TBool }
+  | Expression "<=" Expression           { binary LessEq $1 $3 TInt TInt TBool }
+  | Expression ">" Expression            { binary Greater $1 $3 TInt TInt TBool }
+  | Expression "<" Expression            { binary Less $1 $3 TInt TInt TBool }
+  | Expression ":" Expression %prec ":"  { anexo Anexo $1 $3 }
+  | Expression "::" Expression           { concatLists Concat $1 $3 }
   
   --
   | Expression "?" Expression ":" Expression %prec "?"
     {
-      crearIfSimple $1 $3 $5 TDummy $2
+      ifSimple $1 $3 $5 TDummy $2
     }
   | FuncCall               { $1 }
   | "(" Expression ")"     { $2 }
-  | "{" Expressions "}"    { crearArrLstExpr $ reverse $2 } -- Inic de Reg/Union
-  | "{" "}"                { crearArrLstExpr [] } -- Inic de Reg/Union por default
-  | "|)" Expressions "(|"  { crearArrLstExpr $ reverse $2 }
-  | "<<" Expressions ">>"  { crearArrLstExpr $ reverse $2 }
-  | "<<" ">>"              { crearArrLstExpr [] }
+  | "{" Expressions "}"    { arrayList $ reverse $2 } -- Inic de Reg/Union
+  | "{" "}"                { arrayList [] } -- Inic de Reg/Union por default
+  | "|)" Expressions "(|"  { arrayList $ reverse $2 }
+  | "<<" Expressions ">>"  { arrayList $ reverse $2 }
+  | "<<" ">>"              { arrayList [] }
   | new Type               { Unary New (IdType $2) (TPointer $2) }
 
   -- Falta la conversion automatica de string a tipo de regreso segun el rdm
-  | input Expression %prec input  { crearRead $2 $1 }
+  | input Expression %prec input  { read $2 $1 }
   | input
     {
-      crearRead (Literal EmptyVal TStr) $1
+      read (Literal EmptyVal TStr) $1
     }
 
   -- Unary operators
-  | "#" Expression                        { crearOpLen Length $2 }
-  | "-" Expression %prec negativo         { crearOpUn Negative $2 TInt TInt }
-  | "!" Expression                        { crearOpUn Not $2 TBool TBool }
-  | upperCase Expression %prec upperCase  { crearOpUn UpperCase $2 TChar TChar }
-  | lowerCase Expression %prec lowerCase  { crearOpUn LowerCase $2 TChar TChar }
+  | "#" Expression                        { len Length $2 }
+  | "-" Expression %prec negativo         { unary Negative $2 TInt TInt }
+  | "!" Expression                        { unary Not $2 TBool TBool }
+  | upperCase Expression %prec upperCase  { unary UpperCase $2 TChar TChar }
+  | lowerCase Expression %prec lowerCase  { unary LowerCase $2 TChar TChar }
   
   -- Literals
   | true      { Literal (Boolean True) TBool }
@@ -592,11 +595,11 @@ Expression :: { Expr }
 DefineRegister :: { () }
   : register idType ":" PushScope EndLines Declarations EndLines ".~"   
     { %
-      definirRegistro (getTk $2) (getPos $2)
+      defineRegUnion (getTk $2) TRegister (getPos $2)
     }
   | register idType ":" PushScope EndLines ".~"                          
     { %
-      definirRegistro (getTk $2) (getPos $2)
+      defineRegUnion (getTk $2) TRegister (getPos $2)
     }
 -------------------------------------------------------------------------------
 
@@ -605,11 +608,11 @@ DefineRegister :: { () }
 DefineUnion :: { () }
   : union idType ":" PushScope EndLines Declarations EndLines ".~"  
     { %
-      definirUnion (getTk $2) (getPos $2)
+      defineRegUnion (getTk $2) TUnion (getPos $2)
     }
   | union idType ":" PushScope EndLines ".~"                         
     { %
-      definirUnion (getTk $2) (getPos $2)
+      defineRegUnion (getTk $2) TUnion (getPos $2)
     }
 -------------------------------------------------------------------------------
 

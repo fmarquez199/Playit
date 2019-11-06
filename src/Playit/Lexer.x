@@ -153,7 +153,7 @@ tokens :-
   "?"                 { tok (\(AlexPn _ f c) tk -> TkREF tk (f,c)) }
   -- Guards
   "|"                 { tok (\(AlexPn _ f c) tk -> TkGUARD tk (f,c)) }
-  -- Asings
+  -- Assigs
   "="                 { tok (\(AlexPn _ f c) tk -> TkASING tk (f,c)) }
   -- Exprs
   "("                 { tok (\(AlexPn _ f c) tk -> TkOpenParenthesis tk (f,c)) }
