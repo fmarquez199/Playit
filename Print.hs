@@ -1,5 +1,5 @@
-{-
-Modulo para imprimir el AST y la Tabla de Simbolos
+{- |
+ * Modulo para imprimir el AST y la Tabla de Simbolos
 
  * Copyright : (c) 
  *  Manuel Gonzalez     11-10390

@@ -1,5 +1,5 @@
 {- |
- * Creates de abstract syntax tree with types check
+ * Creates de abstract syntax tree with type checks
  *
  * Copyright : (c) 
  *  Manuel Gonzalez     11-10390
@@ -422,9 +422,6 @@ funcCall function@(Call name _) p = do
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 
-
--------------------------------------------------------------------------------
--- Definicion de union
 defineRegUnion :: Id -> Type -> Pos -> MonadSymTab ()
 defineRegUnion reg regType p = do
     (symTab@(SymTab table), activeScopes@(activeScope:_), scope) <- get
@@ -432,7 +429,7 @@ defineRegUnion reg regType p = do
     let regInfo = lookupInScopes [1] reg symTab
 
     if isJust regInfo then
-        if t == TRegister then
+        if regType == TRegister then
             error $ errorMessage "Redefined Inventory" fileCode p
         else
             error $ errorMessage "Redefined Items" fileCode p
@@ -445,7 +442,6 @@ defineRegUnion reg regType p = do
             info = [SymbolInfo regType 1 Types []]
 
         in void $ addToSymTab [reg] info newSymTab activeScopes scope
--------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------

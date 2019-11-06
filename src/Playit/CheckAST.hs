@@ -1,10 +1,10 @@
-{-
-Modulo para la verificacion de tipos del AST y modificaciones pertinentes
-
-* Copyright : (c) 
-*  Manuel Gonzalez     11-10390
-*  Francisco Javier    12-11163
-*  Natascha Gamboa     12-11250
+{- |
+ * Checks the AST types
+ *
+ * Copyright : (c) 
+ *  Manuel Gonzalez     11-10390
+ *  Francisco Javier    12-11163
+ *  Natascha Gamboa     12-11250
 -}
 
 module Playit.CheckAST where
