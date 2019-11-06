@@ -1,4 +1,0 @@
-
-world:
-  drop [kill fibonnaci(1,2,5),"~Fibonnaci: ~"]
-

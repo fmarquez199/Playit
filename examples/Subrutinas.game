@@ -1,5 +1,5 @@
-boss b():
-    drop ~Nada~
+boss b("'Power i, Power i'"):
+    drop ~Nada~, *!*
 .~
 monster m() Power:
     Power i = 0
