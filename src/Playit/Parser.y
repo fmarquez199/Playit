@@ -241,8 +241,8 @@ Lvalue :: { Var }
   : Lvalue "." id                { % field $1 (getTk $3) (getPos $3) }
   | Lvalue "|)" Expression "(|"  { index $1 $3 }
   | Lvalue "|>" Expression "<|"  { index $1 $3 }
-  | pointer Lvalue               { Desref $2 (typeVar $2) }
-  | pointer "(" Lvalue ")"       { Desref $3 (typeVar $3) }
+  | pointer Lvalue               { % desref $2 (typeVar $2) }
+  | pointer "(" Lvalue ")"       { % desref $3 (typeVar $3) }
   | id                           { % var (getTk $1) (getPos $1) }
 
 

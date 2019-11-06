@@ -176,6 +176,31 @@ defineParameter (Param name t ref) p = do
 
 
 -------------------------------------------------------------------------------
+-- | Inserts a register / union into symbol table
+defineRegUnion :: Id -> Type -> Pos -> MonadSymTab ()
+defineRegUnion reg regType p = do
+    (symTab@(SymTab table), activeScopes@(activeScope:_), scope) <- get
+    fileCode <- ask
+    let regInfo = lookupInScopes [1] reg symTab
+
+    if isJust regInfo then
+        if regType == TRegister then
+            error $ errorMessage "Redefined Inventory" fileCode p
+        else
+            error $ errorMessage "Redefined Items" fileCode p
+    else
+        let modifySym (SymbolInfo t s _ _) = SymbolInfo t s Fields [FromReg reg]
+            updtSym = 
+                map (\sym -> if getScope sym == activeScope then modifySym sym else sym)
+
+            newSymTab = SymTab $ M.map updtSym table
+            info = [SymbolInfo regType 1 Types []]
+
+        in void $ addToSymTab [reg] info newSymTab activeScopes scope
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 --                               Look ups
 -------------------------------------------------------------------------------

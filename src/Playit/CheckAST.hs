@@ -21,6 +21,23 @@ import Playit.Types
 --------------------------------------------------------------------------------
 
 
+chequearTipo :: Nombre -> Posicion -> MonadSymTab ()
+chequearTipo name p = do
+    (symTab, scopes, _) <- get
+    file <- ask
+    let info = lookupInScopes [1] name symTab
+    if isJust info then do
+        let sym = fromJust info
+        if getCategory sym == Tipos then
+            return ()
+        else
+            error $ "\n\nError: " ++ file ++ ": " ++ show p ++
+                "\n\tIdentificador '" ++ show name ++ "' no es un tipo.\n"
+    else
+        error $ "\n\nError: " ++ file ++ ": " ++ show p ++ "\n\tTipo '" ++
+                show name ++ "' no definido.\n"
+
+
 --------------------------------------------------------------------------------
 -- Verifica que el tipo de las 2 expresiones sea el esperado
 checkBin :: Expr -> Expr -> Type -> Type -> Type -> Type
@@ -61,77 +78,6 @@ checkTypesAsigs asigs t (line,_)
     where
         updatedAsigs = map (changeTDummyAsigs t) asigs
 --------------------------------------------------------------------------------
-
-
---------------------------------------------------------------------------------
--- Verifica el el tipo de todas las asignaciones sea el mismo
-eqTypesAsigs :: InstrSeq -> Type -> Bool
-eqTypesAsigs asigs t = all (\(Assig _ expr) -> typeE expr == t) asigs  
---------------------------------------------------------------------------------
-
-
---------------------------------------------------------------------------------
--- Obtiene el tipo asociado a la expresion 
-typeE :: Expr -> Type
-typeE (Variable _ t)           = t
-typeE (Literal _ t)             = t
-typeE (Binary _ _ _ t)       = t
-typeE (Unary _ _ t)          = t
-typeE (ArrayList _ t)           = t
-typeE (Read _)                  = TStr
-typeE (IfSimple _ _ _ t)        = t
--- typeE (Call _  _ t)    = t
-
-
---------------------------------------------------------------------------------
-
-isArray (TArray _ _) = True
-isArray _ = False
-
-isList (TList _) = True
-isList _ = False
-
-
--------------------------------------------------------------------------------
--- Determina el tipo base de los elementos del arreglo
-typeArrLst (TArray _ t@(TArray _ _)) = typeArrLst t
-typeArrLst (TArray _ t)              = t
-typeArrLst (TList t@(TList _))     = typeArrLst t
-typeArrLst (TList t)                = t
--------------------------------------------------------------------------------
-
---------------------------------------------------------------------------------
--- Obtiene el tipo asociado a una variable
-typeVar :: Var -> Type
-typeVar (Var _ t)            = t
-typeVar (Index _ _ t)     = t
-typeVar (Param _ t _)        = t
-typeVar (Field _ _ t) = t
-typeVar (Desref v t)      = t
---------------------------------------------------------------------------------
-
-typeVar' :: Var -> Type
-typeVar' (Var _ t)            = typeTipo t
-typeVar' (Index _ _ t)     = typeTipo t
-typeVar' (Param _ t _)        = typeTipo t
-typeVar' (Field v _ t) = typeTipo t
-typeVar' (Desref v _)        = typeVar' v
---------------------------------------------------------------------------------
-
-typeTipo :: Type -> Type
-typeTipo (TList t)     = typeTipo t
-typeTipo (TArray _ t)   = typeTipo t
-typeTipo (TPointer t) = typeTipo t
-typeTipo TBool          = TBool
-typeTipo TChar          = TChar
-typeTipo TDummy         = TDummy
-typeTipo TError         = TError
-typeTipo TFloat         = TFloat
-typeTipo TInt           = TInt
-typeTipo TRegister      = TRegister
-typeTipo TStr           = TStr
-typeTipo TUnion         = TUnion
-typeTipo t              = t
 
 
 --------------------------------------------------------------------------------
@@ -178,6 +124,13 @@ checkStep e (line,_) symTab = return True
 --       Cambiar el tipo 'TDummy' cuando se lee el tipo de la declacion
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
+
+
+changeTDummyList :: Type -> Type-> Type
+changeTDummyList (TList TDummy) newT = TList newT
+changeTDummyList (TList t) newT      = TList (changeTDummyList t newT)
+changeTDummyList t newT               = t
+
 
 
 --------------------------------------------------------------------------------
