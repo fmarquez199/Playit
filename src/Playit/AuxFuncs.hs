@@ -12,168 +12,220 @@ import Playit.Types
 
 
 -------------------------------------------------------------------------------
--- Determina si el simbolo es de un registro o union
-getRegName :: [ExtraInfo] -> String
-getRegName [] = ""
-getRegName (FromReg rname:_) = rname
-getRegName (_:rs) = getRegName rs
+-------------------------------------------------------------------------------
+--                           AST creation related
+-------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
--- Obtiene la cantidad de parametros
+-- | Gets the field register / union name 
+getReg :: [ExtraInfo] -> String
+getReg []               = ""
+getReg (FromReg name:_) = name
+getReg (_:rs)           = getReg rs
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-- | Gets the amount of parameters
 getNParams :: [ExtraInfo] -> Maybe Int
-getNParams [] = Nothing
+getNParams []           = Nothing
 getNParams (Params p:_) = Just $ length p
-getNParams (_:rs) = getNParams rs
+getNParams (_:rs)       = getNParams rs
 -------------------------------------------------------------------------------
 
 
--- ST related
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+--                           Symbol table related
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+
 
 -------------------------------------------------------------------------------
--- Modify the symbol type
+-- | Modify the symbol type
 modifyType :: SymbolInfo -> Type -> SymbolInfo
 modifyType (SymbolInfo _ s c ei) newT = SymbolInfo newT s c ei
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
--- Actualiza la informacion extra del simbolo con la nueva
+-- | Modify the symbol extra info
 modifyExtraInfo :: SymbolInfo -> [ExtraInfo] -> SymbolInfo
-modifyExtraInfo (SymbolInfo t s c ei) extraInfo = SymbolInfo t s c (ei ++ extraInfo)
--------------------------------------------------------------------------------
-
-
--- Check types realed
-
-
---------------------------------------------------------------------------------
--- Verifica el el tipo de todas las asignaciones sea el mismo
-eqTypesAsigs :: InstrSeq -> Type -> Bool
-eqTypesAsigs asigs t = all (\(Assig _ expr) -> typeE expr == t) asigs  
---------------------------------------------------------------------------------
-
-
---------------------------------------------------------------------------------
--- Obtiene el tipo asociado a la expresion 
-typeE :: Expr -> Type
-typeE (Variable _ t)           = t
-typeE (Literal _ t)             = t
-typeE (Binary _ _ _ t)       = t
-typeE (Unary _ _ t)          = t
-typeE (ArrayList _ t)           = t
-typeE (Read _)                  = TStr
-typeE (IfSimple _ _ _ t)        = t
-typeE (Call _  _ t)    = t
+modifyExtraInfo (SymbolInfo t s c ei) newEi = SymbolInfo t s c (ei ++ newEi)
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
-isArray :: Type -> Bool
-isArray (TArray _ _) = True
-isArray _ = False
+-------------------------------------------------------------------------------
+--                           Check types related
+-------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
-isList :: Type -> Bool
-isList (TList _) = True
-isList _ = False
+-- | Checks the all's assignations types is the same 
+eqAssigsTypes :: InstrSeq -> Type -> Bool
+eqAssigsTypes assigs t = all (\(Assig _ expr) -> typeE expr == t) assigs  
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
-isPointer :: Type -> Bool
-isPointer (TApuntador _) = True
-isPointer _ = False
--------------------------------------------------------------------------------
-
-
--------------------------------------------------------------------------------
-isRegUnionType :: Type -> Bool
-isRegUnionType (TNuevo _) = True
-isRegUnionType _ = False
--------------------------------------------------------------------------------
-
-
--------------------------------------------------------------------------------
-isTEscalar:: Type -> Bool
-isTEscalar t
+isSimpleType:: Type -> Bool
+isSimpleType t
     | t `elem` [TBool,TChar,TInt,TFloat,TStr] = True
     | otherwise = False
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
--- Determina el tipo base de los elementos del arreglo
-typeArrLst (TArray _ t@(TArray _ _)) = typeArrLst t
-typeArrLst (TArray _ t)              = t
-typeArrLst (TList t@(TList _))     = typeArrLst t
-typeArrLst (TList t)                = t
+isArray :: Type -> Bool
+isArray (TArray _ _) = True
+isArray _            = False
 -------------------------------------------------------------------------------
 
 
---------------------------------------------------------------------------------
--- Obtiene el tipo asociado a una variable
+-------------------------------------------------------------------------------
+isList :: Type -> Bool
+isList (TList _) = True
+isList _         = False
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+isPointer :: Type -> Bool
+isPointer (TPointer _) = True
+isPointer _            = False
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+isRegUnion :: Type -> Bool
+isRegUnion (TNew _) = True
+isRegUnion _        = False
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-- Determina si la variable a cambiar su TDummy es la de iteracion
+--isVarIter :: Var -> SymTab -> Scope -> Bool
+--isVarIter (Var name _) symTab scope
+--    | (getScope $ fromJust info) < scope = False
+--    | otherwise = True
+    
+--    where info = lookupInSymTab name symTab
+--isVarIter (Index var _ _) symTab scope = isVarIter var symTab scope
+
+--isVarIter :: Var -> SymTab -> Scope -> Bool
+isVarIter (Var name _) symTab scope  = False
+--    | otherwise = True
+    
+--    where info = lookupInSymTab name symTab
+--isVarIter (Index var _ _) symTab scope = isVarIter var symTab scope
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+--- | Gets the base variable's type
+baseTypeVar :: Var -> Type
+baseTypeVar (Var _ t)     = baseTypeT t
+baseTypeVar (Index _ _ t) = baseTypeT t
+baseTypeVar (Param _ t _) = baseTypeT t
+baseTypeVar (Field v _ t) = baseTypeT t  -- baseTypeVar v
+baseTypeVar (Desref v t)  = baseTypeT t
+-- baseTypeVar (Desref v _)  = baseTypeVar v
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+--- | Gets the base expression's type
+baseTypeE :: Expr -> Type
+baseTypeE (Variable _ t)     = baseTypeT t
+baseTypeE (Literal _ t)      = baseTypeT t
+baseTypeE (Binary _ _ _ t)   = baseTypeT t
+baseTypeE (Unary _ _ t)      = baseTypeT t
+baseTypeE (ArrayList _ t)    = baseTypeT t
+baseTypeE (Read _)           = TStr
+baseTypeE (IfSimple _ _ _ t) = baseTypeT t
+baseTypeE (FuncCall _ t)     = baseTypeT t
+baseTypeE (IdType t)         = baseTypeT t
+-- baseTypeE (Null t)           = baseTypeT t
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+--- | Gets the base type's type
+baseTypeT :: Type -> Type
+baseTypeT (TList t)    = baseTypeT t
+baseTypeT (TArray _ t) = baseTypeT t
+baseTypeT (TPointer t) = baseTypeT t
+baseTypeT t            = t
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-- | Gets the variable type
 typeVar :: Var -> Type
-typeVar (Var _ t)            = t
-typeVar (Index _ _ t)     = t
-typeVar (Param _ t _)        = t
+typeVar (Var _ t)     = t
+typeVar (Index _ _ t) = t
+typeVar (Param _ t _) = t
 typeVar (Field _ _ t) = t
-typeVar (Desref v t)      = t
---------------------------------------------------------------------------------
+typeVar (Desref _ t)  = t
+-------------------------------------------------------------------------------
 
 
---------------------------------------------------------------------------------
---- Determine the root type
-typeVar' :: Var -> Type
-typeVar' (Var _ t)            = typeTipo t
-typeVar' (Index _ _ t)     = typeTipo t
-typeVar' (Param _ t _)        = typeTipo t
-typeVar' (Field v _ t) = typeTipo t
-typeVar' (Desref v _)        = typeVar' v
-
-typeTipo :: Type -> Type
-typeTipo (TList t)     = typeTipo t
-typeTipo (TArray _ t)   = typeTipo t
-typeTipo (TPointer t) = typeTipo t
-typeTipo TBool          = TBool
-typeTipo TChar          = TChar
-typeTipo TDummy         = TDummy
-typeTipo TError         = TError
-typeTipo TFloat         = TFloat
-typeTipo TInt           = TInt
-typeTipo TRegister      = TRegister
-typeTipo TStr           = TStr
-typeTipo TUnion         = TUnion
-typeTipo t              = t
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-- | Gets the expression type
+typeE :: Expr -> Type
+typeE (Variable _ t)     = t
+typeE (Literal _ t)      = t
+typeE (Binary _ _ _ t)   = t
+typeE (Unary _ _ t)      = t
+typeE (ArrayList _ t)    = t
+typeE (Read _)           = TStr
+typeE (IfSimple _ _ _ t) = t
+typeE (FuncCall _ t)     = t
+typeE (IdType t)         = t
+-- typeE (Null t)           = t
+-------------------------------------------------------------------------------
 
 
+-------------------------------------------------------------------------------
+-- Determina el tipo base de los elementos del arreglo
+-- typeArrLst :: Type -> Type
+-- typeArrLst (TArray _ t@(TArray _ _)) = typeArrLst t
+-- typeArrLst (TArray _ t)              = t
+-- typeArrLst (TList t@(TList _))       = typeArrLst t
+-- typeArrLst (TList t)                 = t
+-------------------------------------------------------------------------------
 
--- Dada una lista [(List t)] regresa el t(si t es una lista recursiona) , si no es de esa forma regresa Nothing
+
+-------------------------------------------------------------------------------
+-- Dada una lista [(List t)] regresa el t(si t es una lista recursiona), si no es de esa forma regresa Nothing
 -- Util para <<>> == <<>> y <<>>::<<>> y derivados
 getTLists:: [Type]-> Maybe Type
 getTLists ts 
     | all isList ts = Just (\l -> TList l) <*> getTLists (map (\(TList t) -> t) ts) -- [[[int]]] = recursivo [[int]]
-    | all (\t -> isTEscalar t || t ==TDummy) ts =  -- [[int]] = Just [int]
-        if any isTEscalar ts then  
+    | all (\t -> isSimpleType t || t ==TDummy) ts =  -- [[int]] = Just [int]
+        if any isSimpleType ts then  
             Just (head (filter (/=TDummy) ts))
         else 
             Just TDummy
     | otherwise = Nothing
+-------------------------------------------------------------------------------
 
 
+-------------------------------------------------------------------------------
 -- Dado un tipo y una lista (List t) regresa el t(si t es una lista recursiona) , si no es de esa forma regresa Nothing
 -- Util Para el problema de <<2>>:<< <<>> >> 
 getTListAnexo:: Type -> Type -> Maybe Type
 getTListAnexo t1 (TList t2) 
-    | isTEscalar t1 && isTEscalar t2 && t1 == t2 = Just (TList t1)-- int : [int] = Just int
-    | isTEscalar t1 && t2 == TDummy  = Just (TList t1)-- int : [TDummy] = Just int
-    | t1 == TDummy && isTEscalar t2  = Just (TList t2)-- TDummy : [int] = Just int
+    | isSimpleType t1 && isSimpleType t2 && t1 == t2 = Just (TList t1)-- int : [int] = Just int
+    | isSimpleType t1 && t2 == TDummy  = Just (TList t1)-- int : [TDummy] = Just int
+    | t1 == TDummy && isSimpleType t2  = Just (TList t2)-- TDummy : [int] = Just int
     | t1 == TDummy && t2 == TDummy  = Just (TList TDummy)-- TDummy : [TDummy] = Just int
-    | isList t1 && isList t2 = Just (\l -> TList l) <*> getTListAnexo (typeArrLst t1) t2 -- [t] :[[t]] = recursivo t [t]
+    | isList t1 && isList t2 = Just (\l -> TList l) <*> getTListAnexo (baseTypeT t1) t2 -- [t] :[[t]] = recursivo t [t]
     | otherwise = Nothing
 getTListAnexo _ _ = Nothing
-
+-------------------------------------------------------------------------------

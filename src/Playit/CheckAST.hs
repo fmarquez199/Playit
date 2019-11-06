@@ -9,85 +9,183 @@
 
 module Playit.CheckAST where
 
-import Data.Maybe (fromJust)
---import Playit.SymbolTable
+import Control.Monad.Trans.RWS
+import Data.Maybe (isJust,fromJust)
+import Playit.AuxFuncs
+import Playit.Errors
+import Playit.SymbolTable
 import Playit.Types
 
 
---------------------------------------------------------------------------------
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 --                        Verificar tipos del AST
---------------------------------------------------------------------------------
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 
-chequearTipo :: Nombre -> Posicion -> MonadSymTab ()
-chequearTipo name p = do
+-------------------------------------------------------------------------------
+-- | Checks the type of the idex expression.
+checkIndex :: Var -> Type -> Pos -> Pos -> MonadSymTab (Bool, Type)
+checkIndex var tExpr pVar pExpr 
+    | tVar == TError = do
+        fileCode <- ask
+        error $ semmErrorMsg "Array or List" "Type Error" fileCode pVar
+    | tExpr /= TInt = do
+        fileCode <- ask
+        error $ semmErrorMsg "Power" (show tExpr) fileCode pExpr
+    | otherwise = return (True, tVar)
+
+    where
+        tVar = typeVar var
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-- | Checks that desref is to a pointer
+checkDesref :: Type -> Pos -> MonadSymTab (Bool, Type)
+checkDesref tVar p
+    | isPointer tVar = let (TPointer t) = tVar in return (True, t)
+    | otherwise = do
+        fileCode <- ask
+        error $ errorMsg "This is not a pointer" fileCode p
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-- | Checks the new defined type 
+checkNewType :: Id -> Pos -> MonadSymTab Bool
+checkNewType tName p = do
     (symTab, scopes, _) <- get
-    file <- ask
-    let info = lookupInScopes [1] name symTab
-    if isJust info then do
-        let sym = fromJust info
-        if getCategory sym == Tipos then
-            return ()
+    fileCode <- ask
+    let infos = lookupInScopes [1] tName symTab
+    
+    if isJust infos then do
+        let sym = head $ fromJust infos -- its already checked that's not redefined
+        
+        if getCategory sym == Types then return True
         else
-            error $ "\n\nError: " ++ file ++ ": " ++ show p ++
-                "\n\tIdentificador '" ++ show name ++ "' no es un tipo.\n"
+            error $ errorMsg "This isn't a defined type" fileCode p
     else
-        error $ "\n\nError: " ++ file ++ ": " ++ show p ++ "\n\tTipo '" ++
-                show name ++ "' no definido.\n"
+        error $ errorMsg "Type not defined" fileCode p
+-------------------------------------------------------------------------------
 
 
---------------------------------------------------------------------------------
--- Verifica que el tipo de las 2 expresiones sea el esperado
-checkBin :: Expr -> Expr -> Type -> Type -> Type -> Type
-checkBin e1 e2 t1 t2 tr
-    | tE1 == t1 && tE2 == t2 = tr
-    | tE1 == TDummy || tE2 == TDummy = TDummy
-    | otherwise = TError
+-------------------------------------------------------------------------------
+-- | Cheacks the assginations type in declarations
+checkAssigs :: InstrSeq -> Type -> Pos -> MonadSymTab InstrSeq
+checkAssigs assigs t p
+    | eqAssigsTypes updatedAssigs t = return updatedAssigs
+    | otherwise = do
+        fileCode <- ask
+        error $ errorMsg ("Assignations expressions types isn't"++show t) fileCode p
 
+    where
+        updatedAssigs = map (changeTDummyAssigs t) assigs
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-- | Checks the assignation's types
+checkAssig :: Type -> Type -> Pos -> MonadSymTab Bool
+checkAssig tLval tExpr p
+    | tExpr == tLval || (isEmptyList && isListLval) = return True
+    | otherwise = do
+        fileCode <- ask
+        error $ semmErrorMsg (show tLval) (show tExpr) fileCode p
+
+    where
+        isEmptyList = isList tExpr && baseTypeT tExpr == TDummy
+        isListLval  = isList tLval && isSimpleType (baseTypeT tLval)
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-- | Checks the binary's expression's types
+checkBinary :: Expr -> Expr -> Pos -> MonadSymTab (Bool, Type)
+checkBinary e1 e2 p
+    | tE1 == tE2 && noTError = return (True, tE1)
+    | otherwise = do
+        fileCode <- ask
+        error $ semmErrorMsg (show tE1) (show tE2) fileCode p
+    
     where
         tE1 = typeE e1
         tE2 = typeE e2
---------------------------------------------------------------------------------
+        noTError = tE1 /= TError && tE2 /= TError
+-------------------------------------------------------------------------------
 
 
---------------------------------------------------------------------------------
--- Verifica que el tipo de la expresion sea el esperado
-checkUn :: Expr -> Type -> Type -> Type
-checkUn e t tr
-    | tE == t = tr
-    | tE == TDummy = TDummy
-    | otherwise = TError
+-------------------------------------------------------------------------------
+-- | Checks the unary's expression type is the spected
+checkUnary :: Type -> Type -> Pos -> MonadSymTab (Bool, Type)
+checkUnary tExpr tSpected p
+    | tExpr == TDummy = return (True, TDummy)
+    | tExpr == tSpected = return (True, tExpr)
+    | otherwise = do
+        fileCode <- ask
+        error $ semmErrorMsg (show tSpected) (show tExpr) fileCode p
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-- | Checks 
+checkAnexo :: Expr -> Expr -> Pos -> MonadSymTab (Bool, Type)
+checkAnexo e1 e2 p
+    | baseT1 == baseT1 && isList t2 = return (True, t2)
+    | otherwise = do
+        fileCode <- ask
+        error $ semmErrorMsg (show baseT1) (show baseT2) fileCode p
 
     where
-        tE = typeE e
---------------------------------------------------------------------------------
-
-
---------------------------------------------------------------------------------
--- Verifica el tipo de las asignaciones en las declaraciones de variables
-checkTypesAsigs :: InstrSeq -> Type -> Pos -> InstrSeq
-checkTypesAsigs asigs t (line,_)
-    | eqTypesAsigs updatedAsigs t = updatedAsigs
-    | otherwise = 
-        error ("\n\nError semantico en las asignaciones de las declaraciones"
-                ++ " de variables.\nTipo esperado: " ++ show t ++
-                ".En la linea: " ++ show line ++ "\n")
+        baseT1 = baseTypeE e1
+        baseT2 = baseTypeE e2
+        t2 = typeE e2
+-------------------------------------------------------------------------------
+{-
+crearOpAnexo ::  Expr -> Expr -> Posicion-> MonadSymTab Expr
+crearOpAnexo e1 e2 p
+    | isJust typeLR =
+        return $ OpBinario Anexo e1 e2 (fromJust typeLR)
+    
+    | not $ isList typee2  = do
+        file <- ask
+        error $ "\n\nError: " ++ file ++ ": " ++ show p ++ "\n\t" ++
+            "El segundo operando de : '" ++ show Anexo ++ "'," ++ 
+            "'" ++ show e2 ++ "' debe ser una lista."
+    | typee1 /= typeArrLst typee2  = do
+        file <- ask
+        error $ "\n\nError: " ++ file ++ ": " ++ show p ++ "\n\t" ++
+            "El emento a anexar '" ++ show e1 ++ "'," ++ "' debe ser de tipo '" 
+            ++ show (typeArrLst typee2) ++ "'."
 
     where
-        updatedAsigs = map (changeTDummyAsigs t) asigs
---------------------------------------------------------------------------------
+        typee1 = typeE e1
+        typee2 = typeE e2
+        typeLR = getTListAnexo typee1 typee2
+-}
+
+-------------------------------------------------------------------------------
+checkIfSimple :: Type -> Type -> Type -> Pos -> MonadSymTab (Bool, Type)
+checkIfSimple tCond tTrue tFalse p
+    | tCond == TBool && tFalse == tTrue = return (True, tTrue)
+    | otherwise = do
+        fileCode <- ask
+        if tCond /= TBool then
+            error $ semmErrorMsg "Battle" (show tCond) fileCode p
+        else
+            error $ semmErrorMsg (show tTrue) (show tFalse) fileCode p
+-------------------------------------------------------------------------------
 
 
---------------------------------------------------------------------------------
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 --           Verificar que los limites y paso de un 'for' son validos
---------------------------------------------------------------------------------
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 -- Verifica que el limite inferior sea menor que el superior en las
 -- instrucciones de un for
 --checkInfSup :: Expr -> Expr -> Pos -> SymTab -> MonadSymTab Bool
@@ -98,10 +196,10 @@ checkTypesAsigs asigs t (line,_)
 --                "' es mayor que el " ++ "limite superior: '" ++ showE e2 ++
 --                "' del for. En la linea: " ++ show line ++ "\n")
 checkInfSup e1 e2 (line,_) symTab =  return True
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 -- Verifica que el paso sea > 0
 --checkStep :: Expr -> Pos -> SymTab -> MonadSymTab Bool
 --checkStep e (line,_) symTab
@@ -116,14 +214,14 @@ checkStep e (line,_) symTab = return True
 --        error ("\n\nError semantico. El paso: '" ++ showE e ++
 --                "' es menor o igual que 0 en el for. En la linea: "
 --                ++ show line ++ "\n")
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 
---------------------------------------------------------------------------------
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 --       Cambiar el tipo 'TDummy' cuando se lee el tipo de la declacion
---------------------------------------------------------------------------------
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 
 changeTDummyList :: Type -> Type-> Type
@@ -133,7 +231,7 @@ changeTDummyList t newT               = t
 
 
 
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 -- Cambia el TDummy de una variable en las declaraciones
 changeTDummyLvalAsigs :: Var -> Type -> Var
 changeTDummyLvalAsigs (Var n TDummy) t       = Var n t
@@ -141,26 +239,26 @@ changeTDummyLvalAsigs var@(Var _ _) _        = var
 changeTDummyLvalAsigs (Index var e t') t  =
     let newVar = changeTDummyLvalAsigs var t
     in Index newVar e t'
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 -- Cambia el TDummy de las variables en las declaraciones
-changeTDummyAsigs :: Type -> Instr -> Instr
-changeTDummyAsigs t (Assig lval e) =
+changeTDummyAssigs :: Type -> Instr -> Instr
+changeTDummyAssigs t (Assig lval e) =
     Assig (changeTDummyLvalAsigs lval t) e
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 
 
---------------------------------------------------------------------------------
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 --          Cambiar el tipo 'TDummy' en las instrucciones del 'for'
---------------------------------------------------------------------------------
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 -- Cambia el TDummy de la variable de iteracion en el 'for'
 changeTDummyLval :: Var -> Type -> Var
 changeTDummyLval (Var n TDummy) t       = Var n t
@@ -168,10 +266,10 @@ changeTDummyLval var@(Var _ _) _       = var
 changeTDummyLval (Index var e t') t  =
     let newE = changeTDummyExpr t e
     in Index var newE t'
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 -- Cambia el TDummy de las expresiones en el 'for'
 changeTDummyExpr :: Type -> Expr -> Expr
 changeTDummyExpr t (Literal lit TDummy) = Literal lit t
@@ -202,10 +300,10 @@ changeTDummyExpr t (Binary op e1 e2 TDummy) =
     in Binary op newE1 newE2 t
 --------------------------------------------------------------------------
 changeTDummyExpr _ opBin@Binary{} = opBin
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 -- Cambia el TDummy de la secuencia de instrucciones del 'for'
 changeTDummyFor :: Type -> SymTab -> Scope -> Instr -> Instr
 changeTDummyFor t symTab scope (Assig lval e)
@@ -254,23 +352,4 @@ changeTDummyFor t symTab scope (Print e) =
     let newE = changeTDummyExpr t e
     in Print newE
 
---------------------------------------------------------------------------------
-
-
---------------------------------------------------------------------------------
--- Determina si la variable a cambiar su TDummy es la de iteracion
---isVarIter :: Var -> SymTab -> Scope -> Bool
---isVarIter (Var name _) symTab scope
---    | (getScope $ fromJust info) < scope = False
---    | otherwise = True
-    
---    where info = lookupInSymTab name symTab
---isVarIter (Index var _ _) symTab scope = isVarIter var symTab scope
-
---isVarIter :: Var -> SymTab -> Scope -> Bool
-isVarIter (Var name _) symTab scope  = False
---    | otherwise = True
-    
---    where info = lookupInSymTab name symTab
---isVarIter (Index var _ _) symTab scope = isVarIter var symTab scope
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------

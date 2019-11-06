@@ -10,7 +10,7 @@
 module Playit.SymbolTable where
 
 import Control.Monad.Trans.RWS
-import Control.Monad (when)
+import Control.Monad (void,when)
 import qualified Data.Map as M
 import Data.List (findIndices)
 import Data.Maybe (fromJust, isJust, isNothing)
@@ -130,7 +130,7 @@ insertDeclarations ids t asigs = do
         in
         if isInActualScope then
             let p = snd $ ids !! head redefsIndexs
-            in error $ errorMessage "Redefined variable" fileCode p
+            in error $ errorMsg "Redefined variable" fileCode p
         else
             let idsInScope = [i | i<-ids',index<-redefsIndexs,i== ids' !! index]
                 idInfo = SymbolInfo t activeScope Variables []
@@ -153,7 +153,7 @@ defineSubroutine id category p = do
         let info = [SymbolInfo TDummy 1 category []]
         in addToSymTab [id] info symTab activeScopes scope
     else
-        error $ errorMessage "Redefined subroutine" fileCode p
+        error $ errorMsg "Redefined subroutine" fileCode p
     return ()
 -------------------------------------------------------------------------------
 
@@ -167,7 +167,7 @@ defineParameter (Param name t ref) p = do
     let infos = lookupInScopes [activeScope] name symTab
 
     if isJust infos then
-        error $ errorMessage "Redefined parameter" fileCode p
+        error $ errorMsg "Redefined parameter" fileCode p
     else do
         let info = [SymbolInfo t activeScope (Parameters ref) []]
         addToSymTab [name] info symTab activeScopes scope
@@ -185,9 +185,9 @@ defineRegUnion reg regType p = do
 
     if isJust regInfo then
         if regType == TRegister then
-            error $ errorMessage "Redefined Inventory" fileCode p
+            error $ errorMsg "Redefined Inventory" fileCode p
         else
-            error $ errorMessage "Redefined Items" fileCode p
+            error $ errorMsg "Redefined Items" fileCode p
     else
         let modifySym (SymbolInfo t s _ _) = SymbolInfo t s Fields [FromReg reg]
             updtSym = 

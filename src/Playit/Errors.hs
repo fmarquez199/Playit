@@ -27,8 +27,8 @@ errorRuler c = "\t\x1b[1;93m" ++ replicate (c-1) '.' ++ "\x1b[5;31m^\x1b[0m\n"
     
 
 -- | Message of the error
-errorMessage :: String -> FileCodeReader -> Pos -> String
-errorMessage msj (file,code) (l,c) = "\n\n\x1b[1;36m" ++ msj ++ "\x1b[94m:" ++
+errorMsg :: String -> FileCodeReader -> Pos -> String
+errorMsg msj (file,code) (l,c) = "\n\n\x1b[1;36m" ++ msj ++ "\x1b[94m:" ++
     file ++ ":\n" ++ "\x1b[93m| " ++ show l ++ "\t\x1b[0;96m" ++
     errorLine code l ++ errorRuler c
 
@@ -55,7 +55,7 @@ isError _ = (-1::Int, -1::Int)
 
 -- | Show the one's token error message
 tkError :: FileCodeReader -> Pos -> String
-tkError = errorMessage "\x1b[1;94m¡¡¡PLAYIT FATALITY!!!\n"
+tkError = errorMsg "\x1b[1;94m¡¡¡PLAYIT FATALITY!!!\n"
 
 
 -- | Show all lexical errors
@@ -77,11 +77,19 @@ parseError :: [Token] -> MonadSymTab a
 parseError [] =  error "\n\n\x1b[1;91mInvalid Program\n\n"
 parseError (tk:tks) =  do
     fileCode <- ask
-    error $ errorMessage "Parse error" fileCode (getPos tk)
+    error $ errorMsg "Parse error" fileCode (getPos tk)
 
 
--- |
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+--                           Semmantic Errors
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 
-
+-- | Message of the semmantic error
+semmErrorMsg :: String -> String -> FileCodeReader -> Pos -> String
+semmErrorMsg t1 t2 (file,code) (l,c) = "\n\n\x1b[1;36mMismatched types\x1b[94m:"
+    ++ file ++ ":\n" ++ "Type expexted: " ++ t1 ++ "\nType got:" ++ t2 ++
+    "\x1b[93m| " ++ show l ++ "\t\x1b[0;96m" ++ errorLine code l ++ errorRuler c
 

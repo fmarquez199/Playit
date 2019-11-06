@@ -27,7 +27,7 @@ import Playit.Types
 
 
 -------------------------------------------------------------------------------
--- | Creates variables ids node, verify ids declared
+-- | Creates variables ids node
 var :: Id -> Pos -> MonadSymTab Var
 var id p = do
     (symTab, activeScopes, _) <- get
@@ -39,24 +39,25 @@ var id p = do
             v = filter isVar (fromJust infos)
 
         if null v then
-            error $ errorMessage "This is not a variable" fileCode p
+            error $ errorMsg "This is not a variable" fileCode p
         else
             return $ Var id (getType $ head v)
 
-    else error $ errorMessage "Variable not declared in active scopes" fileCode p
+    else error $ errorMsg "Variable not declared in active scopes" fileCode p
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
 -- | Creates idexed variables node
-index :: Var -> Expr -> Var
-index v e = 
-    let t = case typeVar v of 
-                tipo@(TArray _ _) -> typeArrLst tipo
-                tipo@(TList _) -> typeArrLst tipo
-                tipo@(TPointer t) -> t
-                _ -> TError
-    in Index v e t
+index :: Var -> Expr -> Pos -> Pos -> MonadSymTab Var
+index var expr (lV,cV) (lE,cE) = do
+    let pVar  = (lV-1, cV-1)
+        pExpr = (lE-1, cE-1)
+
+    (ok,tVar) <- checkIndex var (typeE expr) pVar pExpr
+    
+    if ok then return $ Index var expr tVar
+    else return $ Index var expr TError -- change when no exit with first error encounter
 -------------------------------------------------------------------------------
 
 
@@ -68,12 +69,12 @@ field var field p = do
     fileCode@(file,code) <- ask
     
     -- Verify type 'var' is register / union
-    let reg = case typeVar' var of 
-            (TNew name) -> name
-            _ -> ""
+    let reg = case baseTypeVar var of 
+                (TNew name) -> name
+                _           -> ""
     
     if reg == "" then -- Type error
-        error $ errorMessage "Type of field isn't a register or union" fileCode p
+        error $ errorMsg "Type of field isn't a register or union" fileCode p
     else do
         
         --chequearTipo reg p
@@ -81,149 +82,121 @@ field var field p = do
         let info = lookupInSymTab field symTab
 
         if isJust info then do
-            let isInRegUnion (SymbolInfo _ _ c e) = c == Fields && getRegName e == reg
+            let isInRegUnion (SymbolInfo _ _ c e) = c == Fields && getReg e == reg
                 symbols = filter isInRegUnion (fromJust info )
                         
             if null symbols then
-                error $ errorMessage ("Field not in '"++reg++"'") fileCode p
+                error $ errorMsg ("Field not in '"++reg++"'") fileCode p
             else 
                 return $ Field var field (getType $ head symbols) 
         else
-            error $ errorMessage "Field not declared" fileCode p
+            error $ errorMsg "Field not declared" fileCode p
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
 -- | Creates the desreferentiation variable node
 desref :: Var -> Pos -> MonadSymTab Var
-desref var p
-    | isPointer tVar = let (TPointer t) = tVar in return $ Desref var t
-    | otherwise = do
-        fileCode <- ask
-        error $ errorMessage "This is not a pointer" fileCode p
-    where
-        tVar = typeVar var
+desref var p = do
+    (ok,tVar) <- checkDesref (typeVar var) p
+    
+    if ok then return $ Desref var tVar
+    else return $ Desref var TError -- change when no exit with first error encounter
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-- | Creates the TNew type
+newType :: Id -> Pos -> MonadSymTab Type
+newType tName p = do
+    ok <- checkNewType tName p
+    
+    if ok then return $ TNew tName
+    else return TError -- change when no exit with first error encounter
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+--                  Create assignations instructions nodes
+-------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
 -- | Creates an assignation node
--- TODO: Modificar para que asigne el primer elemento de un arreglo/lista a la variable
-assig :: Var -> Expr -> Pos -> Instr
--- assig lval (ArrayList [] _)
-assig lval e (_,_) = Assig lval e
--- | tE == tV = Assig lval e
-    -- | otherwise =
-    --     error ("\n\nError semantico en la asignacion: '" ++ var ++
-    --             " <- " ++ expr ++ "'.\nEl tipo de la variable: " ++
-    --             showType tV' ++ ",\n\tno es igual al de la expresion: " ++
-    --             showType tE' ++ ".\nEn la linea: " ++ show line ++ "\n")
-
-    -- where
-    --     expr   = showE e
-    --     var    = showVar lval
-    --     tE'    = typeE e
-    --     tE     =
-    --         case tE' of
-    --             t@(TArray _ _) -> typeArray t
-    --             _ -> tE'
-    --     tV'    = typeVar lval
-    --     tV     = 
-    --         case tV' of
-    --             t@(TArray _ _) -> typeArray t
-    --             _ -> tV'
+assig :: Var -> Expr -> Pos -> MonadSymTab Instr
+assig lval expr p = do
+    ok <- checkAssig (typeVar lval) (typeE expr) p
+    
+    if ok then return $ Assig lval expr
+    else return $ Assig lval (Literal EmptyVal TError) -- change when no exit with first error encounter
 -------------------------------------------------------------------------------
 
 
-
-{-
-
-crearAsignacion :: Vars -> Expr -> Posicion -> MonadSymTab Instr
-crearAsignacion lval e p
-    | isList tE && typeArrLst tE == TDummy && isList tV && isTEscalar (typeArrLst tV) = -- List Tipo = <<<>>
-        return $ Asignacion lval e  
-    | tE == tV = return $ Asignacion lval e
-    | otherwise = do
-        file <- ask
-        error ("\n\nError: " ++ file ++ ": " ++ show p ++ "\n\tNo se puede asignar '"++
-            show e ++ "' a la variable '" ++ show lval ++ "' , los tipos no concuerdan.")
-
-    where
-        tE = typeE e
-        tV = typeVar lval
 -------------------------------------------------------------------------------
-
--}
-
-
-
--------------------------------------------------------------------------------
--- TODO: Ver si es realmente necesario
 -- crearIncremento :: Var -> Pos -> Instr
 -- crearIncremento lval (line, _) = Assig lval (crearSuma (Variable lval TInt) (Literal (Integer 1) TInt))
--- {-    | typeVar lval == TInt =
+--     | typeVar lval == TInt =
 --         Assig lval (crearSuma (Variable lval TInt) (Literal (Integer 1) TInt))
---     | otherwise = error("Error semantico en el incremento, variable no es de tipo Integer, en la linea " ++ show line)
--- -}
+--     | otherwise = error("Error semantico en el incremento, variable no es de tipo Integer")
+--
 
 -- crearDecremento :: Var -> Pos -> Instr
 -- crearDecremento lval (line, _) = Assig lval (crearResta (Variable lval TInt) (Literal (Integer 1) TInt))
--- {-    | typeVar lval == TInt =
+--     | typeVar lval == TInt =
 --         Assig lval (crearResta (Variable lval TInt) (Literal (Integer 1) TInt))
---     | otherwise = error("Error semantico en el decremento, variable no es de tipo Integer, en la linea " ++ show line)
--- -}
+--     | otherwise = error("Error semantico en el decremento, variable no es de tipo Integer")
+--
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+--                  Create operators instructions nodes
+-------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
 -- | Creates the binary operator node
-binary :: BinOp -> Expr -> Expr -> Type -> Type -> Type -> Expr
-binary op e1 e2 t1 t2 tOp = Binary op e1 e2 tOp
-    -- Binary op e1 e2 (checkBin e1 e2 t1 t2 tOp)
+binary :: BinOp -> Expr -> Expr -> Pos -> MonadSymTab Expr
+binary op e1 e2 p = do
+    (ok,tOp) <- checkBinary e1 e2 p
+    
+    if ok then return $ Binary op e1 e2 tOp
+    else return $ Binary op e1 e2 TError -- change when no exit with first error encounter
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
 -- | Creates the unary operator node
-unary :: UnOp -> Expr -> Type -> Type -> Expr
-unary op e t tOp = Unary op e tOp
-    -- Unary op e (checkUn e t tOp)
+unary :: UnOp -> Expr -> Type -> Pos -> MonadSymTab Expr
+unary op expr tSpected p = do
+    (ok,tOp) <- checkUnary (typeE expr) tSpected p
+    
+    if ok then return $ Unary op expr tOp
+    else return $ Unary op expr TError -- change when no exit with first error encounter
 -------------------------------------------------------------------------------
-
-
-
 {-
--------------------------------------------------------------------------------
--- Crea el nodo para un operador binario
-crearOpBin :: BinOp -> Expr -> Expr -> Tipo -> Tipo -> Tipo -> Posicion 
-                        -> MonadSymTab Expr
-crearOpBin op e1 e2 t1 t2 tOp p
-    -- | tE1 == TDummy || tE2 == TDummy = TDummy
-    | tE1 == t1 && tE2 == t2  = return $ OpBinario op e1 e2 tOp
-    | tE1 == TFloat && tE2 == TFloat && tOp == TInt = return $ OpBinario op e1 e2 TFloat
-    | otherwise = do
-        file <- ask
-        error $ "\n\nError: " ++ file ++ ": " ++ show p ++ "\n\tOperacion: '" ++
-                show op ++ "', tipo de '" ++ show e1 ++ "': '" ++ show t1 ++ 
-                "' y de '" ++  show e2 ++ "': '" ++ show t2 ++ "' no concuerdan.\n"
-    where
-        tE1 = typeE e1
-        tE2 = typeE e2
-
--------------------------------------------------------------------------------
--- Crea el nodo para un operador binario
 crearOpBinComparable :: BinOp -> Expr -> Expr -> [Tipo] -> Tipo -> Posicion 
                         -> MonadSymTab Expr
 crearOpBinComparable op e1 e2 tcomp tOp p
     -- | tE1 == TDummy || tE2 == TDummy = TDummy
+    
     | tE1 `elem` allComps && tE2 == tE1  = return $ OpBinario op e1 e2 tOp
+    
     | isOpComparable && isArray tE1 && isArray tE2 && tE1 == tE2 = 
         return $ OpBinario op e1 e2 tOp
+    
     | isOpComparable && sonlistas && isJust (getTLists [tE1,tE2])  =  -- <<>> == <<2>>
         return $ OpBinario op e1 e2 tOp
+    
     | isOpComparable && isPointer tE1 && isPointer tE2 && tE1 == tE2 = 
         return $ OpBinario op e1 e2 tOp
+    
     --  TODO: | TRegistro,TUnion
+    
     | otherwise = do
         file <- ask
         error $ "\n\nError: " ++ file ++ ": " ++ show p ++ "\n\tOperacion: '" ++
@@ -236,45 +209,25 @@ crearOpBinComparable op e1 e2 tcomp tOp p
         isOpComparable = op == Igual || op == Desigual
         allComps = [TChar,TFloat,TInt,TStr] ++ tcomp
 -------------------------------------------------------------------------------
-
--------------------------------------------------------------------------------
--- Crea el nodo para un operador unario
-crearOpUn :: UnOp -> Expr -> Tipo -> Tipo -> Posicion -> MonadSymTab Expr
-crearOpUn op e t tOp p
-    | tE == t = return $ OpUnario op e tOp
-    | otherwise =     
-        if tE == TFloat && tOp == TInt then
-          {- Conversión automática que se encarga el compilador, ejemplo: -2.0 = -2.0 -}
-            return $ OpUnario op e TFloat
-        else do
-            file <- ask
-            error $ "\n\nError: " ++ file ++ ": " ++ show p ++
-                "\n\tOperacion: '" ++ show op ++ "', tipo de '" ++ show e ++
-                "' no es el esperado: '" ++ show tOp ++ "'.\n"
-    where
-        tE = typeE e
--------------------------------------------------------------------------------
-
 -}
 
 
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
---                 Create arrays / lists instructions nodes
+--                  Create arrays / lists instructions nodes
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
 -- | Creates instert in list first index operator node
-anexo :: BinOp -> Expr -> Expr -> Expr
-anexo op e1 e2 =
-    Binary op e1 e2 t
-
-    where
-        t2 = typeE e2
-        t = if isList t2 then t2 else TError 
+anexo :: BinOp -> Expr -> Expr -> Pos -> MonadSymTab Expr
+anexo op e1 e2 p = do
+    (ok,tOp) <- checkAnexo e1 e2 p
+    
+    if ok then return $ Binary op e1 e2 tOp
+    else return $ Binary op e1 e2 TError -- change when no exit with first error encounter
 -------------------------------------------------------------------------------
 
 
@@ -292,16 +245,15 @@ concatLists op e1 e2 =
                                 _ -> TError
              else TError
 -------------------------------------------------------------------------------
-
-
 {-
-
 -------------------------------------------------------------------------------
 -- Crea el nodo para el operador concatenar 2 listas
 crearOpConcat ::Expr -> Expr -> Posicion -> MonadSymTab Expr
 crearOpConcat e1 e2 p  
+    
     | isList te1 && isList te2 && isJust mbtypeList = -- <<2>>:: <<>>
         return $ OpBinario Concatenacion e1 e2 (fromJust mbtypeList)
+    
     | otherwise = do
         file <- ask
         error $ "\n\nError: " ++ file ++ ": " ++ show p ++ "\n\t" ++
@@ -311,30 +263,6 @@ crearOpConcat e1 e2 p
         te1 = typeE e1
         te2 = typeE e2
         mbtypeList = getTLists [te1,te2]
--------------------------------------------------------------------------------
-
-
--------------------------------------------------------------------------------
--- Crea el nodo para el operador agregar un elemento al inicio de la lista
-crearOpAnexo ::  Expr -> Expr -> Posicion-> MonadSymTab Expr
-crearOpAnexo e1 e2 p
-    | isJust typeLR =
-        return $ OpBinario Anexo e1 e2 (fromJust typeLR)
-    | not $ isList typee2  = do
-        file <- ask
-        error $ "\n\nError: " ++ file ++ ": " ++ show p ++ "\n\t" ++
-            "El segundo operando de : '" ++ show Anexo ++ "'," ++ 
-            "'" ++ show e2 ++ "' debe ser una lista."
-    | typee1 /= typeArrLst typee2  = do
-        file <- ask
-        error $ "\n\nError: " ++ file ++ ": " ++ show p ++ "\n\t" ++
-            "El emento a anexar '" ++ show e1 ++ "'," ++ "' debe ser de tipo '" 
-            ++ show (typeArrLst typee2) ++ "'."
-
-    where
-        typee1 = typeE e1
-        typee2 = typeE e2
-        typeLR = getTListAnexo typee1 typee2
 -------------------------------------------------------------------------------
 -}
 
@@ -348,7 +276,19 @@ len op e =
         t = typeE e
         tr = if isArray t || isList t then t else TError
 -------------------------------------------------------------------------------
-
+{-
+crearOpLen :: Expr -> Posicion -> MonadSymTab Expr
+crearOpLen e p
+    | isArray t || isList t = return $ OpUnario Longitud e TInt
+    | otherwise = do     
+        file <- ask
+        error $ "\n\nError: " ++ file ++ ": " ++ show p ++ "\n\tOperacion: '"
+            ++ show Longitud ++ "', espera que tipo de '" ++ show e ++ 
+            "' sea arreglo o lista.\n"
+    where
+        t = typeE e
+-------------------------------------------------------------------------------
+-}
 
 -------------------------------------------------------------------------------
 -- TODO
@@ -362,23 +302,7 @@ arrayList e =
         tipoPrimero = head mapaTipos
         tipo = if all (== tipoPrimero) mapaTipos then tipoPrimero else TError
 -------------------------------------------------------------------------------
-
-
 {-
--------------------------------------------------------------------------------
--- Crea el nodo para el operador tamaño de array o lista
-crearOpLen :: Expr -> Posicion -> MonadSymTab Expr
-crearOpLen e p
-    | isArray t || isList t = return $ OpUnario Longitud e TInt
-    | otherwise = do     
-        file <- ask
-        error $ "\n\nError: " ++ file ++ ": " ++ show p ++ "\n\tOperacion: '"
-            ++ show Longitud ++ "', espera que tipo de '" ++ show e ++ 
-            "' sea arreglo o lista.\n"
-    where
-        t = typeE e
--------------------------------------------------------------------------------
-
 crearLista :: [Expr] -> Posicion -> MonadSymTab Expr
 crearLista [] p = return $ ArrLstExpr [] (TLista TDummy) -- TODO : Recordar quitar el TDummy
 crearLista e  p
@@ -392,7 +316,6 @@ crearLista e  p
         mapaTipos   = map typeE e
         tipo = getTLists mapaTipos
 -}
-
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
@@ -410,54 +333,24 @@ if' cases p = IF cases
 
 -------------------------------------------------------------------------------
 -- | Creates the guards of the selection instruction node
-guard :: Expr -> InstrSeq -> Pos -> (Expr, InstrSeq)
-guard cond i p = (cond, i)
-{-guard exprCond seqInstrs (line,_)
-    | tExpreCondicional == TBool = IF [(exprCond, seqInstrs)]
-    | otherwise = 
-        error ("\n\nError semantico en la expresion del if: '" ++ showE exprCond
-                ++ "', de tipo: " ++ showType tExpreCondicional ++ ". En la linea: "
-                ++ show line ++ "\n")
+guard :: Expr -> InstrSeq -> Pos -> MonadSymTab (Expr, InstrSeq)
+guard cond i p = do
+    fileCode <- ask
+    let tCond = typeE cond
 
-    where
-        tExpreCondicional = typeE exprCond-}
+    if tCond == TBool then return (cond, i)
+    else
+        error $ semmErrorMsg "Battle" (show tCond) fileCode p
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
 -- | Creates the simple if instruction node
-ifSimple :: Expr -> Expr -> Expr -> Type -> Pos -> Expr
-ifSimple cond true false t p = IfSimple cond true false t
+ifSimple :: Expr -> Expr -> Expr -> Pos -> MonadSymTab Expr
+ifSimple cond true false p = do
+    (ok,t) <- checkIfSimple (typeE cond) (typeE true) (typeE false) p
+    return $ IfSimple cond true false t
 -------------------------------------------------------------------------------
-
-{-
-
--------------------------------------------------------------------------------
-crearIfSimple :: Expr -> Expr -> Expr -> Tipo ->  Posicion -> MonadSymTab Expr
-crearIfSimple cond v f t p
-    | tCond == TBool &&  tFalse== tTrue = return $ IfSimple cond v f tTrue
-    | otherwise =
-        if (tFalse == TFloat && tTrue == TInt) || 
-            (tTrue == TFloat && tFalse == TInt) then
-          {- Conversión automática que se encarga el compilador, (1 > 0) ? 1.3 : 5 -}
-            return $ IfSimple cond v f TFloat
-        else do        
-            file <- ask
-            if tCond /= TBool then
-                error $ "\n\nError: " ++ file ++ ": " ++ show p ++ 
-                    "\n\tCondicion '" ++ show cond ++ 
-                    "' del operador ternario '? :' no es booleana.\n"
-            else
-                error $ "\n\nError: " ++ file ++ ": " ++ show p ++ 
-                    "\n\tEl operador ternario '? :' espera que tipo de '" ++ 
-                    show v ++ "' y de '" ++  show f ++ "' sean iguales.\n"
-    where
-        tCond = typeE cond
-        tFalse = typeE f
-        tTrue = typeE v
--------------------------------------------------------------------------------
-
--}
 
 
 -------------------------------------------------------------------------------
@@ -584,12 +477,12 @@ call subroutine args p = do
     
     if isJust symInfos then do
         let isSubroutine si = getCategory si `elem` [Procedures, Functions]
-            subroutine = filter isSubroutine (fromJust symInfos)
+            subroutine' = filter isSubroutine (fromJust symInfos)
 
-        if null subroutine then
-            error $ errorMessage "This is not a subroutine" fileCode p
+        if null subroutine' then
+            error $ errorMsg "This is not a subroutine" fileCode p
         else do
-            let nParams = fromJust $ getNParams $ getExtraInfo $ head subroutine
+            let nParams = fromJust $ getNParams $ getExtraInfo $ head subroutine'
                 nArgs = length args
             
             if nArgs == nParams then
@@ -597,9 +490,9 @@ call subroutine args p = do
             else
                 let msj = "Amount of arguments: " ++ show nArgs ++
                         " not equal to spected:" ++ show nParams
-                in error $ errorMessage msj fileCode p
+                in error $ errorMsg msj fileCode p
     else
-        error $ errorMessage "Not defined subroutine" fileCode p
+        error $ errorMsg "Not defined subroutine" fileCode p
 -------------------------------------------------------------------------------
 
 
@@ -616,7 +509,7 @@ funcCall function@(Call name _) p = do
         func = filter isFunc infos
     
     if null func then
-        error $ errorMessage "This is not a function" fileCode p
+        error $ errorMsg "This is not a function" fileCode p
     else
         return $ FuncCall function (getType $ head func)
 -------------------------------------------------------------------------------
@@ -631,12 +524,12 @@ funcCall function@(Call name _) p = do
 
 -------------------------------------------------------------------------------
 -- | Creates the print instruction node
-print :: Expr -> Pos -> MonadSymTab Instr
-print e p
+print' :: Expr -> Pos -> MonadSymTab Instr
+print' e p
     | tE /= TError = return $ Print e
     | otherwise = do
         fileCode <- ask
-        error $ errorMessage "Invalid type of expression" fileCode p
+        error $ errorMsg "Invalid type of expression" fileCode p
     where
         tE = typeE e
 -------------------------------------------------------------------------------
@@ -644,8 +537,8 @@ print e p
 
 -------------------------------------------------------------------------------
 -- | Creates the read instruction node
-read :: Expr -> Pos -> Expr
-read e _ = Read e
+read' :: Expr -> Pos -> Expr
+read' e _ = Read e
 -------------------------------------------------------------------------------
 
 
@@ -665,5 +558,5 @@ free var p = do
     let infos = lookupInScopes activeScopes var symTab
     
     if isJust infos then return $ Free var
-    else error $ errorMessage "Variable not declared in active scopes" fileCode p
+    else error $ errorMsg "Variable not declared in active scopes" fileCode p
 -------------------------------------------------------------------------------

@@ -12,6 +12,7 @@ module Playit.Parser (parse, error) where
 
 import Control.Monad.Trans.RWS
 import Playit.SymbolTable
+import Playit.AuxFuncs
 import Playit.CheckAST
 import Playit.Errors
 import Playit.Lexer
@@ -64,7 +65,7 @@ import Playit.AST
   -- Pointers
   null              { TkDeathZone _ _ }
   free              { TkFREE _ _ }
-  pointer           { TkPUFF _ _ }
+  pointer           { TkPUFF _ $$ }
 
   -- Boolean literals
   true              { TkWIN _ _ }
@@ -85,41 +86,41 @@ import Playit.AST
 
   -- Symbols
   ".~"              { TkFIN _ _ }
-  "+"               { TkADD _ _ }
-  "-"               { TkMIN _ _ }
-  "*"               { TkMULT _ _ }
-  "/"               { TkDIV _ _ }
-  "//"              { TkDivEntera _ _ }
-  "%"               { TkMOD _ _ }
+  "+"               { TkADD _ $$ }
+  "-"               { TkMIN _ $$ }
+  "*"               { TkMULT _ $$ }
+  "/"               { TkDIV _ $$ }
+  "//"              { TkDivEntera _ $$ }
+  "%"               { TkMOD _ $$ }
   "++"              { TkINCREMENT _ $$ }
   "--"              { TkDECREMENT _ $$ }
   "#"               { TkLEN _ _ }
-  "||"              { TkOR _ _ }
-  "&&"              { TkAND _ _ }
-  "<="              { TkLessEqual _ _ }
-  "<"               { TkLessThan _ _ }
-  ">="              { TkGreaterEqual _ _ }
-  ">"               { TkGreaterThan _ _ }
-  "=="              { TkEQUAL _ _ }
-  "!="              { TkNotEqual _ _ }
-  "!"               { TkNOT _ _ }
-  upperCase         { TkUPPER _ _ }
-  lowerCase         { TkLOWER _ _ }
+  "||"              { TkOR _ $$ }
+  "&&"              { TkAND _ $$ }
+  "<="              { TkLessEqual _ $$ }
+  "<"               { TkLessThan _ $$ }
+  ">="              { TkGreaterEqual _ $$ }
+  ">"               { TkGreaterThan _ $$ }
+  "=="              { TkEQUAL _ $$ }
+  "!="              { TkNotEqual _ $$ }
+  "!"               { TkNOT _ $$ }
+  upperCase         { TkUPPER _ $$ }
+  lowerCase         { TkLOWER _ $$ }
   "<<"              { TkOpenList _ _ }
   ">>"              { TkCloseList _ _ }
-  "|>"              { TkOpenListIndex _ _ }
-  "<|"              { TkCloseListIndex _ _ }
-  ":"               { TkANEXO _ _ }
+  "|>"              { TkOpenListIndex _ $$ }
+  "<|"              { TkCloseListIndex _ $$ }
+  ":"               { TkANEXO _ $$ }
   "::"              { TkCONCAT _ _}
   "|}"              { TkOpenArray _ _ }
   "{|"              { TkCloseArray _ _ }
-  "|)"              { TkOpenArrayIndex _ _ }
-  "(|"              { TkCloseArrayIndex _ _ }
+  "|)"              { TkOpenArrayIndex _ $$ }
+  "(|"              { TkCloseArrayIndex _ $$ }
   "{"               { TkOpenBrackets _ _ }
   "}"               { TkCloseBrackets _ _ }
   "<-"              { TkIN  _ $$ }
   "->"              { TkTO  _ _ }
-  "?"               { TkREF _ $$ }
+  "?"               { TkREF _ _ }
   "|"               { TkGUARD _ $$ }
   "="               { TkASING _ $$ }
   "("               { TkOpenParenthesis _ _ }
@@ -201,7 +202,12 @@ Declarations :: { () }
 
 Declaration :: { InstrSeq }
   : Type Identifiers
-    { % let (ids,asigs) = $2 in insertDeclarations (reverse ids) $1 asigs }
+    { % do
+      let (ids,assigs) = $2
+          pos = snd $ head ids
+      insertDeclarations (reverse ids) $1 assigs
+      checkAssigs assigs $1 pos
+    }
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
@@ -212,11 +218,11 @@ Declaration :: { InstrSeq }
 Identifiers :: { ([(Id, Pos)], InstrSeq) }
   : Identifiers "," Identifier
   { 
-    let ((ids,asigs), (id,asig)) = ($1,$3) in (id:ids, asig ++ asigs)
+    let ((ids,assigs), (id,asig)) = ($1,$3) in (id:ids, asig ++ assigs)
   }
   | Identifier
   { 
-    let (id, asigs) = $1 in ([id], asigs)
+    let (id, assigs) = $1 in ([id], assigs)
   }
 
 Identifier :: { ((Id, Pos), InstrSeq) }
@@ -238,29 +244,26 @@ Identifier :: { ((Id, Pos), InstrSeq) }
 
 -- Lvalues
 Lvalue :: { Var }
-  : Lvalue "." id                { % field $1 (getTk $3) (getPos $3) }
-  | Lvalue "|)" Expression "(|"  { index $1 $3 }
-  | Lvalue "|>" Expression "<|"  { index $1 $3 }
-  | pointer Lvalue               { % desref $2 (typeVar $2) }
-  | pointer "(" Lvalue ")"       { % desref $3 (typeVar $3) }
-  | id                           { % var (getTk $1) (getPos $1) }
+  : Lvalue "." id                         { % field $1 (getTk $3) (getPos $3) }
+  | Lvalue "|)" Expression "(|"           { % index $1 $3 $2 $4 }
+  | Lvalue "|>" Expression "<|"           { % index $1 $3 $2 $4 }
+  | pointer Lvalue                        { % desref $2 $1 }
+  | pointer "(" Lvalue ")"                { % desref $3 $1 }
+  | id                                    { % var (getTk $1) (getPos $1) }
 
 
 -- Data types
 Type :: { Type }
-  : Type "|}" Expression "{|"  %prec "|}"  { TArray $3 $1 }
-  | list of Type  %prec "?"                { TList $3 }
-  | Type pointer                           { TPointer $1 }
-  | "(" Type ")"                           { $2 }
-  | int                                    { TInt }
-  | float                                  { TFloat }
-  | bool                                   { TBool }
-  | char                                   { TChar }
-  | str                                    { TStr }
-  | idType
-    { % do
-      return $ TNew (getTk $1) 
-    }
+  : Type "|}" Expression "{|" %prec "|}"  { TArray $3 $1 }
+  | list of Type  %prec "?"               { TList $3 }
+  | Type pointer                          { TPointer $1 }
+  | "(" Type ")"                          { $2 }
+  | int                                   { TInt }
+  | float                                 { TFloat }
+  | bool                                  { TBool }
+  | char                                  { TChar }
+  | str                                   { TStr }
+  | idType                                { % newType (getTk $1) (getPos $1) }
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
@@ -287,16 +290,15 @@ Instruction :: { Instr }
 
 
 -------------------------------------------------------------------------------
--- '='
 Asignation :: { Instr }
-  : Lvalue "=" Expression  { assig $1 $3 $2 }
+  : Lvalue "=" Expression  { % assig $1 $3 $2 }
   | Lvalue "++"
-    {
+    { %
       let expr = Binary Add (Variable $1 TInt) (Literal (Integer 1) TInt) TInt
       in assig $1 expr $2
     }
   | Lvalue "--"
-    {
+    { %
       let expr = Binary Minus (Variable $1 TInt) (Literal (Integer 1) TInt) TInt
       in assig $1 expr $2
     }
@@ -314,19 +316,19 @@ Guards :: { [(Expr, InstrSeq)] }
 
 Guard :: { (Expr, InstrSeq) }
   : "|" Expression "}" EndLines PushScope Instructions EndLines
-    { 
+    { %
       guard $2 $6 $1
     }
   | "|" Expression "}" PushScope Instructions EndLines
-    { 
+    { %
       guard $2 $5 $1
     }
   | "|" else "}" EndLines PushScope Instructions EndLines
-    { 
+    { %
       guard (Literal (Boolean True) TBool) $6 $1
     }
   | "|" else "}" PushScope Instructions EndLines
-    { 
+    { %
       guard (Literal (Boolean True) TBool) $5 $1
     }
 -------------------------------------------------------------------------------
@@ -415,7 +417,7 @@ Play :: { Instr }
 -------------------------------------------------------------------------------
 -- 'drop'
 Out :: { Instr }
-  : print Expressions       { % print (arrayList $ reverse $2) $1 }
+  : print Expressions       { % print' (arrayList $ reverse $2) $1 }
 -------------------------------------------------------------------------------
 
 
@@ -524,31 +526,32 @@ Argument :: { Expr }
 -------------------------------------------------------------------------------
 
 Expressions::{ [Expr] }
-  : Expressions "," Expression   { $3 : $1 }
-  | Expression                   { [$1] }
+  : Expressions "," Expression           { $3 : $1 }
+  | Expression                           { [$1] }
 
 Expression :: { Expr }
-  : Expression "+" Expression            { binary Add $1 $3 TInt TInt TInt }
-  | Expression "-" Expression            { binary Minus $1 $3 TInt TInt TInt }
-  | Expression "*" Expression            { binary Mult $1 $3  TInt TInt TInt }
-  | Expression "%" Expression            { binary Module $1 $3 TInt TInt TInt }
-  | Expression "/" Expression            { binary Division $1 $3 TInt TInt TInt }
-  | Expression "//" Expression           { binary DivEntera $1 $3 TInt TInt TInt }
-  | Expression "&&" Expression           { binary And $1 $3 TBool TBool TBool }
-  | Expression "||" Expression           { binary Or $1 $3 TBool TBool TBool }
-  | Expression "==" Expression           { binary Eq $1 $3 TInt TInt TBool }
-  | Expression "!=" Expression           { binary NotEq $1 $3 TInt TInt TBool }
-  | Expression ">=" Expression           { binary GreaterEq $1 $3 TInt TInt TBool }
-  | Expression "<=" Expression           { binary LessEq $1 $3 TInt TInt TBool }
-  | Expression ">" Expression            { binary Greater $1 $3 TInt TInt TBool }
-  | Expression "<" Expression            { binary Less $1 $3 TInt TInt TBool }
-  | Expression ":" Expression %prec ":"  { anexo Anexo $1 $3 }
+  : Expression "+" Expression            { % binary Add $1 $3 $2 }
+  | Expression "-" Expression            { % binary Minus $1 $3 $2 }
+  | Expression "*" Expression            { % binary Mult $1 $3 $2 }
+  | Expression "/" Expression            { % binary Division $1 $3 $2 }
+  | Expression "//" Expression           { % binary DivEntera $1 $3 $2 }
+  | Expression "%" Expression            { % binary Module $1 $3 $2 }
+  | Expression "&&" Expression           { % binary And $1 $3 $2 }
+  | Expression "||" Expression           { % binary Or $1 $3 $2 }
+  | Expression "==" Expression           { % binary Eq $1 $3 $2 }
+  | Expression "!=" Expression           { % binary NotEq $1 $3 $2 }
+  | Expression ">=" Expression           { % binary GreaterEq $1 $3 $2 }
+  | Expression "<=" Expression           { % binary LessEq $1 $3 $2 }
+  | Expression ">" Expression            { % binary Greater $1 $3 $2 }
+  | Expression "<" Expression            { % binary Less $1 $3 $2 }
+  | Expression ":" Expression %prec ":"  { % anexo Anexo $1 $3 $2 }
+  -- e1 && e2 TArray o excluve TList
   | Expression "::" Expression           { concatLists Concat $1 $3 }
   
   --
   | Expression "?" Expression ":" Expression %prec "?"
-    {
-      ifSimple $1 $3 $5 TDummy $2
+    { %
+      ifSimple $1 $3 $5 $4
     }
   | FuncCall               { $1 }
   | "(" Expression ")"     { $2 }
@@ -560,18 +563,18 @@ Expression :: { Expr }
   | new Type               { Unary New (IdType $2) (TPointer $2) }
 
   -- Falta la conversion automatica de string a tipo de regreso segun el rdm
-  | input Expression %prec input  { read $2 $1 }
+  | input Expression %prec input  { read' $2 $1 }
   | input
     {
-      read (Literal EmptyVal TStr) $1
+      read' (Literal EmptyVal TStr) $1
     }
 
   -- Unary operators
   | "#" Expression                        { len Length $2 }
-  | "-" Expression %prec negativo         { unary Negative $2 TInt TInt }
-  | "!" Expression                        { unary Not $2 TBool TBool }
-  | upperCase Expression %prec upperCase  { unary UpperCase $2 TChar TChar }
-  | lowerCase Expression %prec lowerCase  { unary LowerCase $2 TChar TChar }
+  | "-" Expression %prec negativo         { % unary Negative $2 TInt $1{- or TFloat-} }
+  | "!" Expression                        { % unary Not $2 TBool $1 }
+  | upperCase Expression %prec upperCase  { % unary UpperCase $2 TChar $1 }
+  | lowerCase Expression %prec lowerCase  { % unary LowerCase $2 TChar $1 }
   
   -- Literals
   | true      { Literal (Boolean True) TBool }
@@ -593,11 +596,12 @@ Expression :: { Expr }
 
 -------------------------------------------------------------------------------
 DefineRegister :: { () }
-  : register idType ":" PushScope EndLines Declarations EndLines ".~"   
-    { %
-      defineRegUnion (getTk $2) TRegister (getPos $2)
-    }
-  | register idType ":" PushScope EndLines ".~"                          
+  : Register ":" PushScope EndLines Declarations EndLines ".~"  { }
+  | Register ":" PushScope EndLines ".~"                        { }
+
+-- Add register name first for recursives registers
+Register :: { () }
+  : register idType ":" PushScope EndLines ".~"                          
     { %
       defineRegUnion (getTk $2) TRegister (getPos $2)
     }

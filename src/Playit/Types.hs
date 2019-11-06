@@ -78,12 +78,12 @@ data Var =
     deriving (Eq, Ord)
 
 instance Show Var where
-    show (Param n t Value) = "Parameter: " ++ {-"("++show t++")"++-}n
-    show (Param n t _)     = "Parameter: ?" ++ {-"("++show t ++")?"++-}n
-    show (Desref v t)      = {-"("++show t++")"++-}"puff (" ++ show v ++ ")"
-    show (Var n t)         = {-"("++show t++")"++-}n
-    show (Index v e t)     = {-"("++show t++")"++-}show v ++ " index: " ++ show e
-    show (Field v n t)     = {-"("++show t++") ("++-}show v ++ " spawn " ++ n
+    show (Param n t Value) = "Parameter: " ++ "("++show t++")"++n
+    show (Param n t _)     = "Parameter: ?" ++ "("++show t ++")?"++n
+    show (Desref v t)      = "("++show t++")"++"puff (" ++ show v ++ ")"
+    show (Var n t)         = "("++show t++")"++n
+    show (Index v e t)     = "("++show t++")"++show v ++ " index: " ++ show e
+    show (Field v n t)     = "("++show t++") ("++show v ++ " spawn " ++ n
 
 -- Specify if a parameter is by value or reference
 data Ref =
@@ -161,16 +161,16 @@ data Expr   =
     deriving (Eq, Ord)
 
 instance Show Expr where
-    show (ArrayList lst _)     = "[" ++ intercalate "," (map show lst) ++ "]"
-    show (FuncCall s _)        = "kill " ++ show s
+    show (ArrayList lst t)     = "("++show t++")[" ++ intercalate "," (map show lst) ++ "]"
+    show (FuncCall s t)        = "("++show t++")kill " ++ show s
     show (IdType t)            = show t
-    show (IfSimple e1 e2 e3 _) = show e1 ++ " ? " ++ show e2 ++ " : " ++ show e3
-    show (Literal lit _)       = show lit
+    show (IfSimple e1 e2 e3 t) = "("++show t++")"++show e1 ++ " ? " ++ show e2 ++ " : " ++ show e3
+    show (Literal lit t)       = "("++show t++")"++show lit
     show Null                  = "DeathZone"
-    show (Binary op e1 e2 _)   = "(" ++ show e1 ++ show op ++ show e2 ++ ")"
-    show (Unary op e1 _)       = show op ++ show e1
-    show (Read e1)             = "joystick " ++ show e1
-    show (Variable var _)      = show var
+    show (Binary op e1 e2 t)   = "("++show t++")(" ++ show e1 ++ show op ++ show e2 ++ ")"
+    show (Unary op e1 t)       = "("++show t++")"++show op ++ show e1
+    show (Read e)             = "joystick " ++ show e
+    show (Variable var t)      = "("++show t++")"++show var
 
 data Literal =
     ArrLst [Literal] | -- >> Arrays and lists
