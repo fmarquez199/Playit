@@ -6,5 +6,5 @@ world %VolumenCubo%:
   
   volumen = arista * arista * arista
   
-  drop ~el volumen del cubo es: ~, volumen
+  drop ~el volumen del cubo es: ~, kill portalPowerToRunes(volumen)
 .~

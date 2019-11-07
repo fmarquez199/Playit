@@ -1,10 +1,15 @@
 world %iterations%:
     
     Power i
-
     controller Power i=0->10:
         Skill x
-        i=9 @ Poder hacer esto? -> No
+        i=9 @ No
+    .~
+
+    Power|}5{| powers = |)1,2,3,4,5(|
+    controller Power i <- powers:
+        Skill x
+        i=9 @No
     .~
 .~
     

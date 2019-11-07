@@ -1,7 +1,9 @@
 monster fibonnaci(Power primero, Power segundo, Power limite) Power:
   drop primero
   drop segundo
+  
   Power n = primero
+  
   play:
     drop primero + segundo
     primero = segundo
@@ -9,8 +11,10 @@ monster fibonnaci(Power primero, Power segundo, Power limite) Power:
     limite--
   lock limite > 0
   .~
+  
   unlock n
 .~
+
 world %Caso9%:
-  drop ~Fibonnaci: ~, kill fibonnaci(1, 2, 5)
+  drop ~Fibonnaci: ~, kill portalPowerToRunes(kill fibonnaci(1, 2, 5)) -- Jajaja cool. What?
 .~ 

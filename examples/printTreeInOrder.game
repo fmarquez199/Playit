@@ -54,21 +54,21 @@ boss insert(Nodo? nodo, Power dato):
             Button:
             | nodo spawn izqui == DeathZone } 
                 nodo spawn izqui = summon Nodo
-                kill iniciar(puff nodo spawn izqui,dato)
+                kill iniciar(nodo spawn izqui,dato)
             | notPressed }
-                kill insert(puff nodo spawn izqui,dato)
+                kill insert(nodo spawn izqui,dato)
             .~
         | dato > dato_n }  @ Si el valor a insertar es MAYOR al valor de este nodo
             Button:
             | nodo spawn dere == DeathZone } 
                 nodo spawn dere = summon Nodo
-                kill iniciar(puff nodo spawn dere,dato)
+                kill iniciar(nodo spawn dere,dato)
             | notPressed }
-                kill insert(puff nodo spawn dere,dato)
+                kill insert(nodo spawn dere,dato)
             .~
         .~
     | notPressed }  @ Si el nodo no tiene un valor
-        kill iniciar(puff nodo,dato)
+        kill iniciar(nodo,dato)
     .~
 
 .~
@@ -77,7 +77,7 @@ world %tree%:
 
     Nodo root 
     Nodo puff root1
-    root = {}
+    @root = {}
     @root = summon Nodo @Da error con ckecktypes
     root1 = summon Nodo
 

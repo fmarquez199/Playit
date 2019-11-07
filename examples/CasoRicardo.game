@@ -9,7 +9,7 @@ monster n(Power n) Power:
 .~
 
 world %n%:
-    @Falla con verificacion de tipos
+    @Falla con verificacion de tipos, no falla porque son categorias diferentes
     Power n
     n = kill n(n)
     

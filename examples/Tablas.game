@@ -5,12 +5,12 @@ world %Tablas%:
   play:
     numero = joystick ~Introduzca un numero entero: ~
   
-    drop ~La tabla de multiplicar del ~,numero,~ es:~
+    drop ~La tabla de multiplicar del ~,kill portalPowerToRunes(numero),~ es:~
   
     @ Inicio del anidamiento
     i = 1 
     play:
-      drop numero, ~ \* ~, i, ~ = ~, i * numero
+      drop kill portalPowerToRunes(numero), ~ \* ~, kill portalPowerToRunes(i), ~ = ~, kill portalPowerToRunes(i * numero)
       i++
     lock i <= 10
     .~

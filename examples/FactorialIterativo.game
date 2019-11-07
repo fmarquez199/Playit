@@ -6,9 +6,12 @@ world %Caso2%:
     numero--
   lock numero > 1
   .~
+
+  @Runes fact = kill portalPowerToRunes(factorial)
+  
   Button:
     | numero > 0 }
-      drop ~El factorial del numero indicado es ~, factorial
+      drop ~El factorial del numero indicado es ~, kill portalPowerToRunes(factorial)
     | numero < 0 }
       drop ~El factorial de un numero negativo no esta definido, saludos.~
   .~

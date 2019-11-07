@@ -4,7 +4,7 @@ Inventory PotionsHealth:
 .~
 Inventory PotionsHealth2:
     Power p
-    @PotionsHealth2 puff ph2
+    PotionsHealth2 puff ph2
 .~
 Inventory PotionsMana:
     Skill p
