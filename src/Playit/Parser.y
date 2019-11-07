@@ -107,7 +107,7 @@ import Playit.AST
   upperCase         { TkUPPER _ $$ }
   lowerCase         { TkLOWER _ $$ }
   "<<"              { TkOpenList _ _ }
-  ">>"              { TkCloseList _ _ }
+  ">>"              { TkCloseList _ $$ }
   "|>"              { TkOpenListIndex _ $$ }
   "<|"              { TkCloseListIndex _ $$ }
   ":"               { TkANEXO _ $$ }
@@ -336,6 +336,7 @@ Guard :: { (Expr, InstrSeq) }
 
 -------------------------------------------------------------------------------
 -- Determined iteration
+-- TODO: Verificar que no se modifique la variable de iteracion
 Controller :: { Instr }
  : for InitVar1 "->" Expression ":" EndLines Instructions EndLines ".~"
     {
@@ -416,6 +417,7 @@ Play :: { Instr }
 
 -------------------------------------------------------------------------------
 -- 'drop'
+-- TODO: Cambiar arrayList por una que haga un type cast auto a runes??? o que el programador lo hags???
 Out :: { Instr }
   : print Expressions       { % print' (arrayList $ reverse $2) $1 }
 -------------------------------------------------------------------------------
@@ -446,24 +448,24 @@ DefineSubroutine :: { () }
 
 -------------------------------------------------------------------------------
 Firma :: { (Id, Category) }
-  : Nombre PushScope Params
+  : Name PushScope Params
   { % do
-    let (id,category) = $1
-    updateExtraInfo id category [Params (reverse $3)]
-    updateType id 1 TVoid
+    let (name,category) = $1
+    updateExtraInfo name category [Params (reverse $3)]
+    updateType name 1 TVoid
     return $1
   }
-  | Nombre PushScope Params Type 
+  | Name PushScope Params Type 
     { % do
-      let (id,category) = $1
-      updateExtraInfo id category [Params (reverse $3)]
-      updateType id 1 $4
+      let (name,category) = $1
+      updateExtraInfo name category [Params (reverse $3)]
+      updateType name 1 $4
       return $1
     }
 
 -------------------------------------------------------------------------------
 -- Subroutine name, insert first into symbol table because of recursiveness
-Nombre :: { (Id, Category) }
+Name :: { (Id, Category) }
   : proc id
     { % do
       defineSubroutine (getTk $2) Procedures (getPos $2)
@@ -555,14 +557,17 @@ Expression :: { Expr }
     }
   | FuncCall               { $1 }
   | "(" Expression ")"     { $2 }
-  | "{" Expressions "}"    { arrayList $ reverse $2 } -- Inic de Reg/Union
-  | "{" "}"                { arrayList [] } -- Inic de Reg/Union por default
+ 
+  -- Registers / Unions initialization
+  -- TODO: cambiar arrayList por una que inicialice los registros / uniones
+  | "{" Expressions "}"    { arrayList $ reverse $2 }
+  | "{" "}"                { arrayList [] } -- By default
+  
   | "|)" Expressions "(|"  { arrayList $ reverse $2 }
-  | "<<" Expressions ">>"  { arrayList $ reverse $2 }
-  | "<<" ">>"              { arrayList [] }
+  | "<<" Expressions ">>"  { % list (reverse $2) $3 }
+  | "<<" ">>"              { % list [] $2 }
   | new Type               { Unary New (IdType $2) (TPointer $2) }
 
-  -- Falta la conversion automatica de string a tipo de regreso segun el rdm
   | input Expression %prec input  { read' $2 $1 }
   | input
     {
@@ -596,26 +601,21 @@ Expression :: { Expr }
 
 -------------------------------------------------------------------------------
 DefineRegister :: { () }
-  : register idType ":" PushScope EndLines Declarations EndLines ".~"
-  { %
-    defineRegUnion (getTk $2) TRegister (getPos $2)
-  }
-  | register idType ":" PushScope EndLines ".~"
-  { %
-    defineRegUnion (getTk $2) TRegister (getPos $2)
-  }
+  : Register ":" PushScope EndLines Declarations EndLines ".~"
+    { % updatesDeclarationsCategory $1 }
+  | Register ":" PushScope EndLines ".~" { }
 
 -- Add register name first for recursives registers
--- Register :: { () }
---   : register idType
---     { %
---       defineRegUnion (getTk $2) TRegister (getPos $2)
---     }
+Register :: { Id }
+  : register idType
+    { %
+      defineRegUnion (getTk $2) TRegister (getPos $2)
+    }
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
-DefineUnion :: { () }
+DefineUnion :: { Id }
   : union idType ":" PushScope EndLines Declarations EndLines ".~"  
     { %
       defineRegUnion (getTk $2) TUnion (getPos $2)

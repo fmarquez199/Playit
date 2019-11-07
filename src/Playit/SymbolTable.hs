@@ -39,7 +39,7 @@ createInitSymTab st = (insertSymbols symbols info st, [1,0], 1)
             "portalRuneToRunes", "portalPowerToRunes", "portalSkillToRunes",
             "portalRunesToPower", "portalRunesToSkill"]
         info = [power, skill, rune, runes, battle, inventory, items, listOf,
-            bools, bools, apt, portalSC, portalCS, portalIS, portalFS,
+            win, lose, apt, portalSC, portalCS, portalIS, portalFS,
             portalSI, portalSF]
         power     = SymbolInfo TInt 0 Types []
         skill     = SymbolInfo TFloat 0 Types []
@@ -49,7 +49,8 @@ createInitSymTab st = (insertSymbols symbols info st, [1,0], 1)
         listOf    = SymbolInfo (TList TDummy) 0 TypeConstructors [] -- Tipo?
         inventory = SymbolInfo TRegister 0 TypeConstructors []
         items     = SymbolInfo TUnion 0 TypeConstructors []
-        bools     = SymbolInfo TBool 0 Constants []
+        win       = SymbolInfo TBool 0 Constants []
+        lose      = SymbolInfo TBool 0 Constants []
         apt       = SymbolInfo (TPointer TDummy) 0 Pointers [] -- Tipo?
         portalCS  = SymbolInfo TStr 0 Functions [Params [(TChar,"rune")]]
         portalIS  = SymbolInfo TStr 0 Functions [Params [(TInt,"power")]]
@@ -122,7 +123,8 @@ insertDeclarations ids t asigs = do
     else
     -- Get the first id from all declared vars in active scope
         let redefs = concatMap fromJust $ filter isJust idsInfo
-            isVar si = getCategory si == Variables
+            vars = [Variables, Parameters Value, Parameters Reference]
+            isVar redef = getCategory redef `elem` vars
             redefs' = filter isVar redefs
             redefsScopes = map getScope redefs'
             redefsIndexs = findIndices isJust idsInfo
@@ -177,9 +179,9 @@ defineParameter (Param name t ref) p = do
 
 -------------------------------------------------------------------------------
 -- | Inserts a register / union into symbol table
-defineRegUnion :: Id -> Type -> Pos -> MonadSymTab ()
+defineRegUnion :: Id -> Type -> Pos -> MonadSymTab Id
 defineRegUnion reg regType p = do
-    (symTab@(SymTab table), activeScopes@(activeScope:_), scope) <- get
+    (symTab@(SymTab table), activeScopes, scope) <- get
     fileCode <- ask
     let regInfo = lookupInScopes [1] reg symTab
 
@@ -189,16 +191,18 @@ defineRegUnion reg regType p = do
         else
             error $ errorMsg "Redefined Items" fileCode p
     else
-        let modifySym (SymbolInfo t s _ _) = SymbolInfo t s Fields [FromReg reg]
-            updtSym = 
-                map (\sym -> if getScope sym == activeScope then modifySym sym else sym)
-
-            newSymTab = SymTab $ M.map updtSym table
-            info = [SymbolInfo regType 1 TypeConstructors []]
-
-        in void $ addToSymTab [reg] info newSymTab activeScopes scope
+        let info = [SymbolInfo regType 1 TypeConstructors []]
+        in addToSymTab [reg] info symTab activeScopes scope >> return reg
 -------------------------------------------------------------------------------
 
+updatesDeclarationsCategory :: Id -> MonadSymTab ()
+updatesDeclarationsCategory reg = do
+    (symTab@(SymTab table), activeScopes@(activeScope:_), scope) <- get
+    let modifySym (SymbolInfo t s _ _) = SymbolInfo t s Fields [FromReg reg]
+        updtSym = 
+            map (\sym -> if getScope sym == activeScope then modifySym sym else sym)
+
+    put(SymTab $ M.map updtSym table, activeScopes, scope)
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
@@ -248,16 +252,17 @@ lookupInScopes scopes sym symTab
 -------------------------------------------------------------------------------
 -- | Updates the symbol type
 updateType :: Id -> Scope -> Type -> MonadSymTab ()
-updateType sym scope t = do
-    (symTab@(SymTab table), scopes, scope) <- get
-    let infos = lookupInSymTab sym symTab
-    
+updateType symbol scope t = do
+    (symTab@(SymTab table), activeScopes, scopes) <- get
+    fileCode <- ask
+    let infos = lookupInSymTab symbol symTab
     when (isJust infos) $ do
-        let isTarget sym = getScope sym == scope
+        let isTarget symbol' = getScope symbol' == scope
             updateType' = 
                 fmap (\sym -> if isTarget sym then modifyType sym t else sym)
-        
-        put(SymTab $ M.adjust updateType' sym table, scopes, scope)
+            updatedSymTab = SymTab $ M.adjust updateType' symbol table
+
+        put(updatedSymTab, activeScopes, scopes)
 -------------------------------------------------------------------------------
 
 
