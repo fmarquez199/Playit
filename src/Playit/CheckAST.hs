@@ -26,19 +26,16 @@ import Playit.Types
 
 
 -------------------------------------------------------------------------------
--- | Checks the type of the idex expression.
+-- | Checks the type of the index(ed) expression / variable.
 checkIndex :: Var -> Type -> Pos -> Pos -> MonadSymTab (Bool, Type)
 checkIndex var tExpr pVar pExpr 
-    | tVar == TError = do
+    | typeVar var == TError = do
         fileCode <- ask
         error $ semmErrorMsg "Array or List" "Type Error" fileCode pVar
     | tExpr /= TInt = do
         fileCode <- ask
         error $ semmErrorMsg "Power" (show tExpr) fileCode pExpr
-    | otherwise = return (True, tVar)
-
-    where
-        tVar = typeVar var
+    | otherwise = return (True, baseTypeVar var)
 -------------------------------------------------------------------------------
 
 
@@ -54,7 +51,8 @@ checkDesref tVar p
 
 
 -------------------------------------------------------------------------------
--- | Checks the new defined type 
+-- | Checks the new defined type
+-- Still no 100% but ITS OK
 checkNewType :: Id -> Pos -> MonadSymTab Bool
 checkNewType tName p = do
     (symTab@(SymTab st), scopes, _) <- get
@@ -91,7 +89,7 @@ checkAssigs assigs t p
 -- | Checks the assignation's types
 checkAssig :: Type -> Type -> Pos -> MonadSymTab Bool
 checkAssig tLval tExpr p
-    | tExpr == tLval || (isEmptyList && isListLval) = return True
+    | isRead || isNull || tExpr == tLval || isLists = return True
     | otherwise = do
         fileCode <- ask
         error $ semmErrorMsg (show tLval) (show tExpr) fileCode p
@@ -99,6 +97,9 @@ checkAssig tLval tExpr p
     where
         isEmptyList = isList tExpr && baseTypeT tExpr == TDummy
         isListLval  = isList tLval && isSimpleType (baseTypeT tLval)
+        isLists = isEmptyList && isListLval
+        isRead = tExpr == TRead
+        isNull = tExpr == TNull
 -------------------------------------------------------------------------------
 
 
@@ -106,15 +107,16 @@ checkAssig tLval tExpr p
 -- | Checks the binary's expression's types
 checkBinary :: Expr -> Expr -> Pos -> MonadSymTab (Bool, Type)
 checkBinary e1 e2 p
-    | tE1 == tE2 && noTError = return (True, tE1)
+    | isNull || (tE1 == tE2 && noTError) = return (True, tE1)
     | otherwise = do
         fileCode <- ask
-        error $ semmErrorMsg (show tE1) (show tE2) fileCode p
+        error $ semmErrorMsg (show tE1) (show e2) fileCode p
     
     where
         tE1 = typeE e1
         tE2 = typeE e2
         noTError = tE1 /= TError && tE2 /= TError
+        isNull = tE1 == TNull || tE2 == TNull
 -------------------------------------------------------------------------------
 
 
@@ -254,9 +256,13 @@ changeTDummyLvalAsigs var _               = var
 -- Cambia el TDummy de las variables en las declaraciones
 changeTDummyAssigs :: Type -> Instr -> Instr
 changeTDummyAssigs t (Assig lval e) =
-    Assig (changeTDummyLvalAsigs lval t) e
+    Assig (changeTDummyLvalAsigs lval t) (changeTRead e t)
 -------------------------------------------------------------------------------
 
+-- Cableado para que el input corra
+changeTRead :: Expr -> Type -> Expr
+changeTRead (Read e _) t = Read e t
+changeTRead e _ = e
 
 
 -------------------------------------------------------------------------------

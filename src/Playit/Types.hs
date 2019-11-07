@@ -45,6 +45,8 @@ data Type =
     TInt             |
     TList Type       |
     TNew Id          |
+    TNull            |
+    TRead            | -- Cableado para que el input corra
     TRegister        |
     TStr             |
     TUnion           |
@@ -62,6 +64,7 @@ instance Show Type where
     show TInt         = "Power"
     show (TList t)    = "Kit of(" ++ show t ++ ")"
     show (TNew str)   = str
+    show TNull        = "*DeathZone"
     show TRegister    = "Inventory"
     show TStr         = "Runes"
     show TUnion       = "Items"
@@ -129,7 +132,7 @@ instance Show Instr where
     show (Program s)             = "\nworld:\n" ++ concatMap show s ++ "\n"
     show (Return e)              = "  unlock " ++ show e
     show (Assigs s)              = intercalate "  " (map show s)
-    show (IF s)                  = "  IF:\n    " ++ concat guards
+    show (IF s)                  = "  IF:\n    " ++ concatMap (++"\n    ") guards ++ "\n"
         where
             conds = map (show . fst) s
             instrs =  map (concatMap show . snd) s
@@ -139,8 +142,7 @@ instance Show Instr where
         intercalate "    " (map show s) ++ "\n"
 
 
-data Subroutine = Call Id Params
-                deriving (Eq, Ord)
+data Subroutine = Call Id Params    deriving (Eq, Ord)
 
 instance Show Subroutine where
     show (Call n p) = n ++ "(" ++ intercalate "," (map show p) ++ ")"
@@ -156,7 +158,7 @@ data Expr   =
     Null                         | -- tipo: compatible con apt de lo que sea o que el contexto lo diga
     Binary BinOp Expr Expr Type  |
     Unary UnOp Expr Type         |
-    Read Expr                    |
+    Read Expr Type               |
     Variable Var Type
     deriving (Eq, Ord)
 
@@ -169,7 +171,7 @@ instance Show Expr where
     show Null                  = "DeathZone"
     show (Binary op e1 e2 t)   = "("++show t++")(" ++ show e1 ++ show op ++ show e2 ++ ")"
     show (Unary op e1 t)       = "("++show t++")"++show op ++ show e1
-    show (Read e)             = "joystick " ++ show e
+    show (Read e t)            = "joystick " ++ show e
     show (Variable var t)      = {-"E("++show t++")"++-}show var
 
 data Literal =

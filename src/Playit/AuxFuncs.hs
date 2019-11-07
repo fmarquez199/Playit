@@ -146,11 +146,11 @@ baseTypeE (Literal _ t)      = baseTypeT t
 baseTypeE (Binary _ _ _ t)   = baseTypeT t
 baseTypeE (Unary _ _ t)      = baseTypeT t
 baseTypeE (ArrayList _ t)    = baseTypeT t
-baseTypeE (Read _)           = TStr
+baseTypeE (Read _ t)         = baseTypeT t
 baseTypeE (IfSimple _ _ _ t) = baseTypeT t
 baseTypeE (FuncCall _ t)     = baseTypeT t
 baseTypeE (IdType t)         = baseTypeT t
--- baseTypeE (Null t)           = baseTypeT t
+baseTypeE Null               = TNull
 -------------------------------------------------------------------------------
 
 
@@ -183,11 +183,11 @@ typeE (Literal _ t)      = t
 typeE (Binary _ _ _ t)   = t
 typeE (Unary _ _ t)      = t
 typeE (ArrayList _ t)    = t
-typeE (Read _)           = TStr
+typeE (Read _ t)           = t
 typeE (IfSimple _ _ _ t) = t
 typeE (FuncCall _ t)     = t
 typeE (IdType t)         = t
--- typeE (Null t)           = t
+typeE Null               = TNull
 -------------------------------------------------------------------------------
 
 
