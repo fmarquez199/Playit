@@ -303,20 +303,20 @@ arrayList e =
         tipoPrimero = head mapaTipos
         tipo = if all (== tipoPrimero) mapaTipos then tipoPrimero else TError
 -------------------------------------------------------------------------------
-{-
-crearLista :: [Expr] -> Posicion -> MonadSymTab Expr
-crearLista [] p = return $ ArrLstExpr [] (TLista TDummy) -- TODO : Recordar quitar el TDummy
-crearLista e  p
+
+
+list :: [Expr] -> Pos -> MonadSymTab Expr
+list [] p = return $ ArrayList [] (TList TDummy) -- TODO : Recordar quitar el TDummy
+list e  p
     | isJust tipo =
-        return $ ArrLstExpr e (TLista (fromJust tipo))
+        return $ ArrayList e (TList (fromJust tipo))
     | otherwise = do
-        file <- ask
-        error $ "\n\nError: " ++ file ++ ": " ++ show p ++ "\n\t" ++
-            "Las expresiones de la lista deben ser del mismo tipo.\n"
+        fileCode <- ask
+        error $ semmErrorMsg (show tipo) (show mapaTipos) fileCode p
     where
-        mapaTipos   = map typeE e
+        mapaTipos = map typeE e
         tipo = getTLists mapaTipos
--}
+
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
@@ -339,7 +339,7 @@ guard cond i p = do
     fileCode <- ask
     let tCond = typeE cond
 
-    if tCond == TBool then return (cond, i)
+    if tCond /= TError then return (cond, i)    -- its this really ok???
     else
         error $ semmErrorMsg "Battle" (show tCond) fileCode p
 -------------------------------------------------------------------------------
@@ -527,19 +527,19 @@ funcCall function@(Call name _) p = do
 -- | Creates the print instruction node
 print' :: Expr -> Pos -> MonadSymTab Instr
 print' e p
-    | tE /= TError = return $ Print e
+    | typeE e /= TError && baseTE /= TError = return $ Print e
     | otherwise = do
         fileCode <- ask
-        error $ errorMsg "Invalid type of expression" fileCode p
+        error $ semmErrorMsg "Runes" (show baseTE) fileCode p
     where
-        tE = typeE e
+        baseTE = baseTypeE e  
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
 -- | Creates the read instruction node
 read' :: Expr -> Pos -> Expr
-read' e _ = Read e
+read' e _ = Read e TRead
 -------------------------------------------------------------------------------
 
 
