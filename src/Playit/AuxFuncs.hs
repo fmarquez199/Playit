@@ -193,11 +193,11 @@ typeE Null               = TNull
 
 -------------------------------------------------------------------------------
 -- Determina el tipo base de los elementos del arreglo
--- typeArrLst :: Type -> Type
--- typeArrLst (TArray _ t@(TArray _ _)) = typeArrLst t
--- typeArrLst (TArray _ t)              = t
--- typeArrLst (TList t@(TList _))       = typeArrLst t
--- typeArrLst (TList t)                 = t
+typeArrLst :: Type -> Type
+typeArrLst (TArray _ t@(TArray _ _)) = typeArrLst t
+typeArrLst (TArray _ t)              = t
+typeArrLst (TList t@(TList _))       = typeArrLst t
+typeArrLst (TList t)                 = t
 -------------------------------------------------------------------------------
 
 
@@ -225,7 +225,7 @@ getTListAnexo t1 (TList t2)
     | isSimpleType t1 && t2 == TDummy  = Just (TList t1)-- int : [TDummy] = Just int
     | t1 == TDummy && isSimpleType t2  = Just (TList t2)-- TDummy : [int] = Just int
     | t1 == TDummy && t2 == TDummy  = Just (TList TDummy)-- TDummy : [TDummy] = Just int
-    | isList t1 && isList t2 = Just (\l -> TList l) <*> getTListAnexo (baseTypeT t1) t2 -- [t] :[[t]] = recursivo t [t]
+    | isList t1 && isList t2 = Just (\l -> TList l) <*> getTListAnexo (typeArrLst t1) t2 -- [t] :[[t]] = recursivo t [t]
     | otherwise = Nothing
 getTListAnexo _ _ = Nothing
 -------------------------------------------------------------------------------
