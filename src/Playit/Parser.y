@@ -73,7 +73,7 @@ import Playit.AST
   -- Ids
   program           { TkProgramName _ _ }
   id                { TkID _ _ }
-  idType            { TkIDTipo _ _ }
+  idType            { TkIDType _ _ }
 
   -- Characters
   character         { TkCHARACTER _ _ $$ }

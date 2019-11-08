@@ -95,7 +95,7 @@ tokens :-
   -- Ids
   @programs           { tok (\(AlexPn _ f c) tk -> TkProgramName tk (f,c)) }
   @id                 { tok (\(AlexPn _ f c) tk -> TkID tk (f,c)) }
-  @id_type            { tok (\(AlexPn _ f c) tk -> TkIDTipo tk (f,c)) }
+  @id_type            { tok (\(AlexPn _ f c) tk -> TkIDType tk (f,c)) }
 
   -- Characters
   @char               { createTkCHARACTER }
@@ -154,7 +154,7 @@ tokens :-
   "->"                { tok (\(AlexPn _ f c) tk -> TkTO tk (f,c)) }
   -- Guards
   "|"                 { tok (\(AlexPn _ f c) tk -> TkGUARD tk (f,c)) }
-  -- Assigs
+  -- Assig
   "="                 { tok (\(AlexPn _ f c) tk -> TkASSIG tk (f,c)) }
   -- Exprs
   "("                 { tok (\(AlexPn _ f c) tk -> TkOpenParenthesis tk (f,c)) }
@@ -229,7 +229,7 @@ data Token =
   TkLOSE             { getTk :: Id, getPos :: Pos }                  |
   TkProgramName      { getTk :: Id, getPos :: Pos }                  |
   TkID               { getTk :: Id, getPos :: Pos }                  |
-  TkIDTipo           { getTk :: Id, getPos :: Pos }                  |
+  TkIDType           { getTk :: Id, getPos :: Pos }                  |
   TkCHARACTER         { getTk :: Id, getPos :: Pos, getChar :: Char } |
   TkSTRINGS          { getTk :: Id, getPos :: Pos }                  |
   TkINT              { getTk :: Id, getPos :: Pos, getInt :: Int }   |
@@ -318,7 +318,7 @@ instance Show Token where
   show (TkLOSE tk p)             = showTk tk p
   show (TkProgramName tk p)      = showTk tk p
   show (TkID tk p)               = "Identifier \"" ++ tk ++ "\", pos " ++ show p
-  show (TkIDTipo tk p)           = "Type identifier \"" ++ tk ++ "\", pos " ++ show p
+  show (TkIDType tk p)           = "Type identifier \"" ++ tk ++ "\", pos " ++ show p
   show (TkCHARACTER tk p _)       = "Character '" ++ tk ++ "', pos " ++ show p
   show (TkSTRINGS tk p)          = "String \"" ++ tk ++ "\", pos " ++ show p
   show (TkINT tk p _)            = "Integer " ++ tk ++ ", pos " ++ show p
@@ -364,8 +364,8 @@ instance Show Token where
   show (TkOpenParenthesis tk p)  = showTk tk p
   show (TkCloseParenthesis tk p) = showTk tk p
   show (TkCOMA tk p)             = showTk tk p
-  show (TkOpenComments _ _)      = ""
-  show (TkCloseComments _ _)     = ""
-  show (TkCOMMENT _ _)           = ""
+  show (TkOpenComments tk p)     = showTk tk p
+  show (TkCloseComments tk p)    = showTk tk p
+  show (TkCOMMENT tk p)          = showTk tk p
   show (TkError tk p)            = tk
 }
