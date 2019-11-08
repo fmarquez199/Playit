@@ -13,6 +13,8 @@ module Playit.Lexer (
     -- AlexPosn(..), 
     alexScanTokens,
 ) where
+
+import Playit.Types
 }
 
 %wrapper "posn"
@@ -118,7 +120,7 @@ tokens :-
   "++"                { tok (\(AlexPn _ f c) tk -> TkINCREMENT tk (f,c)) }
   "--"                { tok (\(AlexPn _ f c) tk -> TkDECREMENT tk (f,c)) }
   "#"                 { tok (\(AlexPn _ f c) tk -> TkLEN tk (f,c)) }
-  -- Booleans operators
+  -- Comparison operators
   "||"                { tok (\(AlexPn _ f c) tk -> TkOR tk (f,c)) }
   "&&"                { tok (\(AlexPn _ f c) tk -> TkAND tk (f,c)) }
   "<="                { tok (\(AlexPn _ f c) tk -> TkLessEqual tk (f,c)) }
@@ -175,7 +177,7 @@ tokens :-
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 
-tok :: (AlexPosn -> String -> Token) -> AlexPosn -> String -> Token
+tok :: (AlexPosn -> Id -> Token) -> AlexPosn -> Id -> Token
 tok f p tk = f p tk
 
 createTkINT (AlexPn _ f c) tk = TkINT tk (f, c) (read tk :: Int)
@@ -194,93 +196,93 @@ createTkFLOAT (AlexPn _ f c) tk = TkFLOAT tk (f, c) (toFloat tk)
 -------------------------------------------------------------------------------
 
 data Token = 
-  TkEndLine          { getTk :: String, getPos :: (Int, Int) }                  |
-  TkWORLD            { getTk :: String, getPos :: (Int, Int) }                  |
-  TkBATLE            { getTk :: String, getPos :: (Int, Int) }                  |
-  TkPOWER            { getTk :: String, getPos :: (Int, Int) }                  |
-  TkSKILL            { getTk :: String, getPos :: (Int, Int) }                  |
-  TkRUNE             { getTk :: String, getPos :: (Int, Int) }                  |
-  TkRUNES            { getTk :: String, getPos :: (Int, Int) }                  |
-  TkKIT              { getTk :: String, getPos :: (Int, Int) }                  |
-  TkOF               { getTk :: String, getPos :: (Int, Int) }                  |
-  TkINVENTORY        { getTk :: String, getPos :: (Int, Int) }                  |
-  TkITEMS            { getTk :: String, getPos :: (Int, Int) }                  |
-  TkSPAWN            { getTk :: String, getPos :: (Int, Int) }                  |
-  TkSUMMON           { getTk :: String, getPos :: (Int, Int) }                  |
-  TkBUTTON           { getTk :: String, getPos :: (Int, Int) }                  |
-  TkNotPressed       { getTk :: String, getPos :: (Int, Int) }                  |
-  TkKILL             { getTk :: String, getPos :: (Int, Int) }                  |
-  TkBOSS             { getTk :: String, getPos :: (Int, Int) }                  |
-  TkMONSTER          { getTk :: String, getPos :: (Int, Int) }                  |
-  TkUNLOCK           { getTk :: String, getPos :: (Int, Int) }                  |
-  TkCONTROLLER       { getTk :: String, getPos :: (Int, Int) }                  |
-  TkPLAY             { getTk :: String, getPos :: (Int, Int) }                  |
-  TkLOCK             { getTk :: String, getPos :: (Int, Int) }                  |
-  TkGameOver         { getTk :: String, getPos :: (Int, Int) }                  |
-  TkKeepPlaying      { getTk :: String, getPos :: (Int, Int) }                  |
-  TkJOYSTICK         { getTk :: String, getPos :: (Int, Int) }                  |
-  TkDROP             { getTk :: String, getPos :: (Int, Int) }                  |
-  TkDeathZone        { getTk :: String, getPos :: (Int, Int) }                  |
-  TkFREE             { getTk :: String, getPos :: (Int, Int) }                  |
-  TkPUFF             { getTk :: String, getPos :: (Int, Int) }                  |
-  TkWIN              { getTk :: String, getPos :: (Int, Int) }                  |
-  TkLOSE             { getTk :: String, getPos :: (Int, Int) }                  |
-  TkProgramName      { getTk :: String, getPos :: (Int, Int) }                  |
-  TkID               { getTk :: String, getPos :: (Int, Int) }                  |
-  TkIDTipo           { getTk :: String, getPos :: (Int, Int) }                  |
-  TkCARACTER         { getTk :: String, getPos :: (Int, Int), getChar :: Char } |
-  TkSTRINGS          { getTk :: String, getPos :: (Int, Int) }                  |
-  TkINT              { getTk :: String, getPos :: (Int, Int), getInt :: Int }   |
-  TkFLOAT            { getTk :: String, getPos :: (Int, Int), getFloat::Float } |
-  TkFIN              { getTk :: String, getPos :: (Int, Int) }                  |
-  TkADD              { getTk :: String, getPos :: (Int, Int) }                  |
-  TkMIN              { getTk :: String, getPos :: (Int, Int) }                  |
-  TkMULT             { getTk :: String, getPos :: (Int, Int) }                  |
-  TkDIV              { getTk :: String, getPos :: (Int, Int) }                  |
-  TkDivEntera        { getTk :: String, getPos :: (Int, Int) }                  |
-  TkMOD              { getTk :: String, getPos :: (Int, Int) }                  |
-  TkINCREMENT        { getTk :: String, getPos :: (Int, Int) }                  |
-  TkDECREMENT        { getTk :: String, getPos :: (Int, Int) }                  |
-  TkLEN              { getTk :: String, getPos :: (Int, Int) }                  |
-  TkOR               { getTk :: String, getPos :: (Int, Int) }                  |
-  TkAND              { getTk :: String, getPos :: (Int, Int) }                  |
-  TkLessEqual        { getTk :: String, getPos :: (Int, Int) }                  |
-  TkLessThan         { getTk :: String, getPos :: (Int, Int) }                  |
-  TkGreaterEqual     { getTk :: String, getPos :: (Int, Int) }                  |
-  TkGreaterThan      { getTk :: String, getPos :: (Int, Int) }                  |
-  TkEQUAL            { getTk :: String, getPos :: (Int, Int) }                  |
-  TkNotEqual         { getTk :: String, getPos :: (Int, Int) }                  |
-  TkNOT              { getTk :: String, getPos :: (Int, Int) }                  |
-  TkUPPER            { getTk :: String, getPos :: (Int, Int) }                  |
-  TkLOWER            { getTk :: String, getPos :: (Int, Int) }                  |
-  TkOpenList         { getTk :: String, getPos :: (Int, Int) }                  |
-  TkCloseList        { getTk :: String, getPos :: (Int, Int) }                  |
-  TkOpenListIndex    { getTk :: String, getPos :: (Int, Int) }                  |
-  TkCloseListIndex   { getTk :: String, getPos :: (Int, Int) }                  |
-  TkANEXO            { getTk :: String, getPos :: (Int, Int) }                  |
-  TkCONCAT           { getTk :: String, getPos :: (Int, Int) }                  |
-  TkOpenArray        { getTk :: String, getPos :: (Int, Int) }                  |
-  TkCloseArray       { getTk :: String, getPos :: (Int, Int) }                  |
-  TkOpenArrayIndex   { getTk :: String, getPos :: (Int, Int) }                  |
-  TkCloseArrayIndex  { getTk :: String, getPos :: (Int, Int) }                  |
-  TkOpenBrackets     { getTk :: String, getPos :: (Int, Int) }                  |
-  TkCloseBrackets    { getTk :: String, getPos :: (Int, Int) }                  |
-  TkIN               { getTk :: String, getPos :: (Int, Int) }                  |
-  TkTO               { getTk :: String, getPos :: (Int, Int) }                  |
-  TkREF              { getTk :: String, getPos :: (Int, Int) }                  |
-  TkGUARD            { getTk :: String, getPos :: (Int, Int) }                  |
-  TkASING            { getTk :: String, getPos :: (Int, Int) }                  |
-  TkOpenParenthesis  { getTk :: String, getPos :: (Int, Int) }                  |
-  TkCloseParenthesis { getTk :: String, getPos :: (Int, Int) }                  |
-  TkCOMA             { getTk :: String, getPos :: (Int, Int) }                  |
-  TkOpenComments     { getTk :: String, getPos :: (Int, Int) }                  |
-  TkCloseComments    { getTk :: String, getPos :: (Int, Int) }                  |
-  TkCOMMENT          { getTk :: String, getPos :: (Int, Int) }                  |
-  TkError            { getTk :: String, getPos :: (Int, Int) }
+  TkEndLine          { getTk :: Id, getPos :: Pos }                  |
+  TkWORLD            { getTk :: Id, getPos :: Pos }                  |
+  TkBATLE            { getTk :: Id, getPos :: Pos }                  |
+  TkPOWER            { getTk :: Id, getPos :: Pos }                  |
+  TkSKILL            { getTk :: Id, getPos :: Pos }                  |
+  TkRUNE             { getTk :: Id, getPos :: Pos }                  |
+  TkRUNES            { getTk :: Id, getPos :: Pos }                  |
+  TkKIT              { getTk :: Id, getPos :: Pos }                  |
+  TkOF               { getTk :: Id, getPos :: Pos }                  |
+  TkINVENTORY        { getTk :: Id, getPos :: Pos }                  |
+  TkITEMS            { getTk :: Id, getPos :: Pos }                  |
+  TkSPAWN            { getTk :: Id, getPos :: Pos }                  |
+  TkSUMMON           { getTk :: Id, getPos :: Pos }                  |
+  TkBUTTON           { getTk :: Id, getPos :: Pos }                  |
+  TkNotPressed       { getTk :: Id, getPos :: Pos }                  |
+  TkKILL             { getTk :: Id, getPos :: Pos }                  |
+  TkBOSS             { getTk :: Id, getPos :: Pos }                  |
+  TkMONSTER          { getTk :: Id, getPos :: Pos }                  |
+  TkUNLOCK           { getTk :: Id, getPos :: Pos }                  |
+  TkCONTROLLER       { getTk :: Id, getPos :: Pos }                  |
+  TkPLAY             { getTk :: Id, getPos :: Pos }                  |
+  TkLOCK             { getTk :: Id, getPos :: Pos }                  |
+  TkGameOver         { getTk :: Id, getPos :: Pos }                  |
+  TkKeepPlaying      { getTk :: Id, getPos :: Pos }                  |
+  TkJOYSTICK         { getTk :: Id, getPos :: Pos }                  |
+  TkDROP             { getTk :: Id, getPos :: Pos }                  |
+  TkDeathZone        { getTk :: Id, getPos :: Pos }                  |
+  TkFREE             { getTk :: Id, getPos :: Pos }                  |
+  TkPUFF             { getTk :: Id, getPos :: Pos }                  |
+  TkWIN              { getTk :: Id, getPos :: Pos }                  |
+  TkLOSE             { getTk :: Id, getPos :: Pos }                  |
+  TkProgramName      { getTk :: Id, getPos :: Pos }                  |
+  TkID               { getTk :: Id, getPos :: Pos }                  |
+  TkIDTipo           { getTk :: Id, getPos :: Pos }                  |
+  TkCARACTER         { getTk :: Id, getPos :: Pos, getChar :: Char } |
+  TkSTRINGS          { getTk :: Id, getPos :: Pos }                  |
+  TkINT              { getTk :: Id, getPos :: Pos, getInt :: Int }   |
+  TkFLOAT            { getTk :: Id, getPos :: Pos, getFloat::Float } |
+  TkFIN              { getTk :: Id, getPos :: Pos }                  |
+  TkADD              { getTk :: Id, getPos :: Pos }                  |
+  TkMIN              { getTk :: Id, getPos :: Pos }                  |
+  TkMULT             { getTk :: Id, getPos :: Pos }                  |
+  TkDIV              { getTk :: Id, getPos :: Pos }                  |
+  TkDivEntera        { getTk :: Id, getPos :: Pos }                  |
+  TkMOD              { getTk :: Id, getPos :: Pos }                  |
+  TkINCREMENT        { getTk :: Id, getPos :: Pos }                  |
+  TkDECREMENT        { getTk :: Id, getPos :: Pos }                  |
+  TkLEN              { getTk :: Id, getPos :: Pos }                  |
+  TkOR               { getTk :: Id, getPos :: Pos }                  |
+  TkAND              { getTk :: Id, getPos :: Pos }                  |
+  TkLessEqual        { getTk :: Id, getPos :: Pos }                  |
+  TkLessThan         { getTk :: Id, getPos :: Pos }                  |
+  TkGreaterEqual     { getTk :: Id, getPos :: Pos }                  |
+  TkGreaterThan      { getTk :: Id, getPos :: Pos }                  |
+  TkEQUAL            { getTk :: Id, getPos :: Pos }                  |
+  TkNotEqual         { getTk :: Id, getPos :: Pos }                  |
+  TkNOT              { getTk :: Id, getPos :: Pos }                  |
+  TkUPPER            { getTk :: Id, getPos :: Pos }                  |
+  TkLOWER            { getTk :: Id, getPos :: Pos }                  |
+  TkOpenList         { getTk :: Id, getPos :: Pos }                  |
+  TkCloseList        { getTk :: Id, getPos :: Pos }                  |
+  TkOpenListIndex    { getTk :: Id, getPos :: Pos }                  |
+  TkCloseListIndex   { getTk :: Id, getPos :: Pos }                  |
+  TkANEXO            { getTk :: Id, getPos :: Pos }                  |
+  TkCONCAT           { getTk :: Id, getPos :: Pos }                  |
+  TkOpenArray        { getTk :: Id, getPos :: Pos }                  |
+  TkCloseArray       { getTk :: Id, getPos :: Pos }                  |
+  TkOpenArrayIndex   { getTk :: Id, getPos :: Pos }                  |
+  TkCloseArrayIndex  { getTk :: Id, getPos :: Pos }                  |
+  TkOpenBrackets     { getTk :: Id, getPos :: Pos }                  |
+  TkCloseBrackets    { getTk :: Id, getPos :: Pos }                  |
+  TkIN               { getTk :: Id, getPos :: Pos }                  |
+  TkTO               { getTk :: Id, getPos :: Pos }                  |
+  TkREF              { getTk :: Id, getPos :: Pos }                  |
+  TkGUARD            { getTk :: Id, getPos :: Pos }                  |
+  TkASING            { getTk :: Id, getPos :: Pos }                  |
+  TkOpenParenthesis  { getTk :: Id, getPos :: Pos }                  |
+  TkCloseParenthesis { getTk :: Id, getPos :: Pos }                  |
+  TkCOMA             { getTk :: Id, getPos :: Pos }                  |
+  TkOpenComments     { getTk :: Id, getPos :: Pos }                  |
+  TkCloseComments    { getTk :: Id, getPos :: Pos }                  |
+  TkCOMMENT          { getTk :: Id, getPos :: Pos }                  |
+  TkError            { getTk :: Id, getPos :: Pos }
   
   deriving (Eq)
 
-showTk :: String -> (Int, Int) -> String
+showTk :: Id -> Pos -> String
 showTk tk p = "(" ++ tk ++ "), pos " ++ show p
 
 instance Show Token where
