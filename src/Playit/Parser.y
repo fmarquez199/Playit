@@ -39,8 +39,7 @@ import Playit.AST
   char              { TkRUNE _ _ }
   str               { TkRUNES _ _ }
   -- Compund types
-  list              { TkKIT _ _ }
-  of                { TkOF _ _ }
+  listOf            { TkKitOf _ _ }
   register          { TkINVENTORY _ _ }
   union             { TkITEMS _ _ }
   "."               { TkSPAWN _ _ }
@@ -134,7 +133,7 @@ import Playit.AST
 -------------------------------------------------------------------------------
 
 
-%nonassoc id of
+%nonassoc id
 %left "=" ":" "<-" ")"
 %right "."
 %left "||"
@@ -255,7 +254,7 @@ Lvalue :: { Var }
 -- Data types
 Type :: { Type }
   : Type "|}" Expression "{|" %prec "|}"  { TArray $3 $1 }
-  | list of Type  %prec "?"               { TList $3 }
+  | listOf Type  %prec "?"                { TList $2 }
   | Type pointer                          { TPointer $1 }
   | "(" Type ")"                          { $2 }
   | int                                   { TInt }

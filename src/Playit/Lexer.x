@@ -61,8 +61,7 @@ tokens :-
   Rune                { tok (\(AlexPn _ f c) tk -> TkRUNE tk (f,c)) }
   Runes               { tok (\(AlexPn _ f c) tk -> TkRUNES tk (f,c)) }
   -- Compund types
-  Kit                 { tok (\(AlexPn _ f c) tk -> TkKIT tk (f,c)) }
-  of                  { tok (\(AlexPn _ f c) tk -> TkOF tk (f,c)) }
+  "Kit of"            { tok (\(AlexPn _ f c) tk -> TkKitOf tk (f,c)) }
   Inventory           { tok (\(AlexPn _ f c) tk -> TkINVENTORY tk (f,c)) }
   Items               { tok (\(AlexPn _ f c) tk -> TkITEMS tk (f,c)) }
   spawn               { tok (\(AlexPn _ f c) tk -> TkSPAWN tk (f,c)) }
@@ -200,13 +199,12 @@ createTkFLOAT (AlexPn _ f c) tk = TkFLOAT tk (f,c) (toFloat tk)
 data Token = 
   TkEndLine          { getTk :: Id, getPos :: Pos }                  |
   TkWORLD            { getTk :: Id, getPos :: Pos }                  |
-  TkBATTLE            { getTk :: Id, getPos :: Pos }                  |
+  TkBATTLE           { getTk :: Id, getPos :: Pos }                  |
   TkPOWER            { getTk :: Id, getPos :: Pos }                  |
   TkSKILL            { getTk :: Id, getPos :: Pos }                  |
   TkRUNE             { getTk :: Id, getPos :: Pos }                  |
   TkRUNES            { getTk :: Id, getPos :: Pos }                  |
-  TkKIT              { getTk :: Id, getPos :: Pos }                  |
-  TkOF               { getTk :: Id, getPos :: Pos }                  |
+  TkKitOf            { getTk :: Id, getPos :: Pos }                  |
   TkINVENTORY        { getTk :: Id, getPos :: Pos }                  |
   TkITEMS            { getTk :: Id, getPos :: Pos }                  |
   TkSPAWN            { getTk :: Id, getPos :: Pos }                  |
@@ -295,8 +293,7 @@ instance Show Token where
   show (TkSKILL tk p)            = showTk tk p
   show (TkRUNE tk p)             = showTk tk p
   show (TkRUNES tk p)            = showTk tk p
-  show (TkKIT tk p)              = showTk tk p
-  show (TkOF tk p)               = showTk tk p
+  show (TkKitOf tk p)            = showTk tk p
   show (TkINVENTORY tk p)        = showTk tk p
   show (TkITEMS tk p)            = showTk tk p
   show (TkSPAWN tk p)            = showTk tk p
