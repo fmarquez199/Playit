@@ -77,7 +77,7 @@ spec = describe "Lexer.literals" $ do
       -- case tokens of
       --   [TkSTRINGS str _] -> str `shouldBe` "~Un str1ng b!3n c0mple7@ \"#$%&/()=?'*+<>^{}[]`_.,;~"
       --   _ -> error $ show tokens ++ "rejected as a string literal"
-      pendingWith "Fix symtax to get accepted. Order??"
+      pendingWith "Fix syntax to get accepted. Order??"
 
     it "rejects `~*~\\~` as a valid string literal" $ do
       -- let tokens = alexScanTokens "~*~\\~"
@@ -85,7 +85,7 @@ spec = describe "Lexer.literals" $ do
       -- case tokens of
       --   [TkError err _] -> err `shouldBe` "~*~\\~"
       --   _ -> error $ show tokens ++ "this string should not pass"
-      pendingWith "Fix symtax to get accepted"
+      pendingWith "Fix syntax to get accepted"
 
   describe "numbers" $ do
     it "accepts `0000004` as a valid integer literal" $ do
