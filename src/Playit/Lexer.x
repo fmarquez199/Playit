@@ -55,7 +55,7 @@ tokens :-
   -- Definition of the program begin
   world               { tok (\(AlexPn _ f c) tk -> TkWORLD tk (f,c)) }
   -- Simple types
-  Battle              { tok (\(AlexPn _ f c) tk -> TkBATLE tk (f,c)) }
+  Battle              { tok (\(AlexPn _ f c) tk -> TkBATTLE tk (f,c)) }
   Power               { tok (\(AlexPn _ f c) tk -> TkPOWER tk (f,c)) }
   Skill               { tok (\(AlexPn _ f c) tk -> TkSKILL tk (f,c)) }
   Rune                { tok (\(AlexPn _ f c) tk -> TkRUNE tk (f,c)) }
@@ -99,7 +99,7 @@ tokens :-
   @id_type            { tok (\(AlexPn _ f c) tk -> TkIDTipo tk (f,c)) }
 
   -- Characters
-  @char               { createTkCARACTER }
+  @char               { createTkCHARACTER }
   @strings            { tok (\(AlexPn _ f c) tk -> TkSTRINGS tk (f,c)) }
   
   -- Numeric literals
@@ -133,6 +133,8 @@ tokens :-
   -- Chars operators
   "^"                 { tok (\(AlexPn _ f c) tk -> TkUPPER tk (f,c)) }
   "."                 { tok (\(AlexPn _ f c) tk -> TkLOWER tk (f,c)) }
+  -- Pointers
+  "?"                 { tok (\(AlexPn _ f c) tk -> TkREF tk (f,c)) }
   -- Lists
   "<<"                { tok (\(AlexPn _ f c) tk -> TkOpenList tk (f,c)) }
   ">>"                { tok (\(AlexPn _ f c) tk -> TkCloseList tk (f,c)) }
@@ -151,12 +153,10 @@ tokens :-
   -- Determined iterations
   "<-"                { tok (\(AlexPn _ f c) tk -> TkIN tk (f,c)) }
   "->"                { tok (\(AlexPn _ f c) tk -> TkTO tk (f,c)) }
-  -- Pointers
-  "?"                 { tok (\(AlexPn _ f c) tk -> TkREF tk (f,c)) }
   -- Guards
   "|"                 { tok (\(AlexPn _ f c) tk -> TkGUARD tk (f,c)) }
   -- Assigs
-  "="                 { tok (\(AlexPn _ f c) tk -> TkASING tk (f,c)) }
+  "="                 { tok (\(AlexPn _ f c) tk -> TkASSIG tk (f,c)) }
   -- Exprs
   "("                 { tok (\(AlexPn _ f c) tk -> TkOpenParenthesis tk (f,c)) }
   ")"                 { tok (\(AlexPn _ f c) tk -> TkCloseParenthesis tk (f,c)) }
@@ -180,13 +180,15 @@ tokens :-
 tok :: (AlexPosn -> Id -> Token) -> AlexPosn -> Id -> Token
 tok f p tk = f p tk
 
-createTkINT (AlexPn _ f c) tk = TkINT tk (f, c) (read tk :: Int)
+createTkINT (AlexPn _ f c) tk = TkINT tk (f,c) (read tk :: Int)
 
-createTkCARACTER (AlexPn _ f c) tk = TkCARACTER tk (f,c) (toChar tk)
-    where toChar c = (read (map (\x-> if x == '*' then '\'' else x) c)::Char)
+createTkCHARACTER (AlexPn _ f c) tk = TkCHARACTER tk (f,c) (toChar tk)
+    where
+      toChar c = (read (map (\x-> if x == '*' then '\'' else x) c)::Char)
 
-createTkFLOAT (AlexPn _ f c) tk = TkFLOAT tk (f, c) (toFloat tk)
-    where toFloat f = (read (map (\x-> if x == '\'' then '.' else x) f)::Float)
+createTkFLOAT (AlexPn _ f c) tk = TkFLOAT tk (f,c) (toFloat tk)
+    where
+      toFloat f = (read (map (\x-> if x == '\'' then '.' else x) f)::Float)
 
 
 -------------------------------------------------------------------------------
@@ -198,7 +200,7 @@ createTkFLOAT (AlexPn _ f c) tk = TkFLOAT tk (f, c) (toFloat tk)
 data Token = 
   TkEndLine          { getTk :: Id, getPos :: Pos }                  |
   TkWORLD            { getTk :: Id, getPos :: Pos }                  |
-  TkBATLE            { getTk :: Id, getPos :: Pos }                  |
+  TkBATTLE            { getTk :: Id, getPos :: Pos }                  |
   TkPOWER            { getTk :: Id, getPos :: Pos }                  |
   TkSKILL            { getTk :: Id, getPos :: Pos }                  |
   TkRUNE             { getTk :: Id, getPos :: Pos }                  |
@@ -230,7 +232,7 @@ data Token =
   TkProgramName      { getTk :: Id, getPos :: Pos }                  |
   TkID               { getTk :: Id, getPos :: Pos }                  |
   TkIDTipo           { getTk :: Id, getPos :: Pos }                  |
-  TkCARACTER         { getTk :: Id, getPos :: Pos, getChar :: Char } |
+  TkCHARACTER         { getTk :: Id, getPos :: Pos, getChar :: Char } |
   TkSTRINGS          { getTk :: Id, getPos :: Pos }                  |
   TkINT              { getTk :: Id, getPos :: Pos, getInt :: Int }   |
   TkFLOAT            { getTk :: Id, getPos :: Pos, getFloat::Float } |
@@ -271,7 +273,7 @@ data Token =
   TkTO               { getTk :: Id, getPos :: Pos }                  |
   TkREF              { getTk :: Id, getPos :: Pos }                  |
   TkGUARD            { getTk :: Id, getPos :: Pos }                  |
-  TkASING            { getTk :: Id, getPos :: Pos }                  |
+  TkASSIG            { getTk :: Id, getPos :: Pos }                  |
   TkOpenParenthesis  { getTk :: Id, getPos :: Pos }                  |
   TkCloseParenthesis { getTk :: Id, getPos :: Pos }                  |
   TkCOMA             { getTk :: Id, getPos :: Pos }                  |
@@ -288,7 +290,7 @@ showTk tk p = "(" ++ tk ++ "), pos " ++ show p
 instance Show Token where
   show (TkEndLine tk p)          = "(\\n), pos " ++ show p
   show (TkWORLD tk p)            = showTk tk p
-  show (TkBATLE tk p)            = showTk tk p
+  show (TkBATTLE tk p)            = showTk tk p
   show (TkPOWER tk p)            = showTk tk p
   show (TkSKILL tk p)            = showTk tk p
   show (TkRUNE tk p)             = showTk tk p
@@ -320,7 +322,7 @@ instance Show Token where
   show (TkProgramName tk p)      = showTk tk p
   show (TkID tk p)               = "Identifier \"" ++ tk ++ "\", pos " ++ show p
   show (TkIDTipo tk p)           = "Type identifier \"" ++ tk ++ "\", pos " ++ show p
-  show (TkCARACTER tk p _)       = "Character '" ++ tk ++ "', pos " ++ show p
+  show (TkCHARACTER tk p _)       = "Character '" ++ tk ++ "', pos " ++ show p
   show (TkSTRINGS tk p)          = "String \"" ++ tk ++ "\", pos " ++ show p
   show (TkINT tk p _)            = "Integer " ++ tk ++ ", pos " ++ show p
   show (TkFLOAT tk p _)          = "Float " ++ tk ++ ", pos " ++ show p
@@ -361,7 +363,7 @@ instance Show Token where
   show (TkTO tk p)               = showTk tk p
   show (TkREF tk p)              = showTk tk p
   show (TkGUARD tk p)            = showTk tk p
-  show (TkASING tk p)            = showTk tk p
+  show (TkASSIG tk p)            = showTk tk p
   show (TkOpenParenthesis tk p)  = showTk tk p
   show (TkCloseParenthesis tk p) = showTk tk p
   show (TkCOMA tk p)             = showTk tk p

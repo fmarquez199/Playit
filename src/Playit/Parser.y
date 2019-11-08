@@ -33,7 +33,7 @@ import Playit.AST
   -- Reserved words
   world             { TkWORLD _ _ }
   -- Simple types
-  bool              { TkBATLE _ _ }
+  bool              { TkBATTLE _ _ }
   int               { TkPOWER _ _ }
   float             { TkSKILL _ _ }
   char              { TkRUNE _ _ }
@@ -77,7 +77,7 @@ import Playit.AST
   idType            { TkIDTipo _ _ }
 
   -- Characters
-  character         { TkCARACTER _ _ $$ }
+  character         { TkCHARACTER _ _ $$ }
   string            { TkSTRINGS $$ _ }
   
   -- Numeric literals
@@ -122,7 +122,7 @@ import Playit.AST
   "->"              { TkTO  _ _ }
   "?"               { TkREF _ _ }
   "|"               { TkGUARD _ $$ }
-  "="               { TkASING _ $$ }
+  "="               { TkASSIG _ $$ }
   "("               { TkOpenParenthesis _ _ }
   ")"               { TkCloseParenthesis _ _ }
   ","               { TkCOMA _ _ }
