@@ -35,7 +35,7 @@ checkIndex var tExpr pVar pExpr
     | tExpr /= TInt = do
         fileCode <- ask
         error $ semmErrorMsg "Power" (show tExpr) fileCode pExpr
-    | otherwise = return (True, baseTypeVar var)
+    | otherwise = return (True, baseTypeArrLst (typeVar var))
 -------------------------------------------------------------------------------
 
 
