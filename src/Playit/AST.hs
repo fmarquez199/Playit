@@ -163,10 +163,13 @@ assig lval expr p = do
 -- | Creates the binary operator node
 binary :: BinOp -> Expr -> Expr -> Pos -> MonadSymTab Expr
 binary op e1 e2 p = do
-    (ok,tOp) <- checkBinary e1 e2 p
+    (ok,tOp) <- checkBinary op e1 e2 p
     
     if ok then return $ Binary op e1 e2 tOp
-    else return $ Binary op e1 e2 TError -- change when no exit with first error encounter
+    else return $ Binary op e1 e2 TError -- Cambiar cuando no se salga del parser en checkBinary con el error
+
+-------------------------------------------------------------------------------
+
 -------------------------------------------------------------------------------
 
 
@@ -179,38 +182,6 @@ unary op expr tSpected p = do
     if ok then return $ Unary op expr tOp
     else return $ Unary op expr TError -- change when no exit with first error encounter
 -------------------------------------------------------------------------------
-{-
-crearOpBinComparable :: BinOp -> Expr -> Expr -> [Tipo] -> Tipo -> Posicion 
-                        -> MonadSymTab Expr
-crearOpBinComparable op e1 e2 tcomp tOp p
-    -- | tE1 == TDummy || tE2 == TDummy = TDummy
-    
-    | tE1 `elem` allComps && tE2 == tE1  = return $ OpBinario op e1 e2 tOp
-    
-    | isOpComparable && isArray tE1 && isArray tE2 && tE1 == tE2 = 
-        return $ OpBinario op e1 e2 tOp
-    
-    | isOpComparable && sonlistas && isJust (getTLists [tE1,tE2])  =  -- <<>> == <<2>>
-        return $ OpBinario op e1 e2 tOp
-    
-    | isOpComparable && isPointer tE1 && isPointer tE2 && tE1 == tE2 = 
-        return $ OpBinario op e1 e2 tOp
-    
-    --  TODO: | TRegistro,TUnion
-    
-    | otherwise = do
-        file <- ask
-        error $ "\n\nError: " ++ file ++ ": " ++ show p ++ "\n\tOperacion: '" ++
-                show op ++ "', tipo de '" ++ show e1 ++ "' y de '" ++  show e2
-                ++ "' no son comparables.\n"
-    where
-        tE1 = typeE e1
-        tE2 = typeE e2
-        sonlistas = isList tE1 && isList tE2
-        isOpComparable = op == Igual || op == Desigual
-        allComps = [TChar,TFloat,TInt,TStr] ++ tcomp
--------------------------------------------------------------------------------
--}
 
 
 

@@ -200,21 +200,33 @@ typeArrLst (TList t@(TList _))       = typeArrLst t
 typeArrLst (TList t)                 = t
 -------------------------------------------------------------------------------
 
-
 -------------------------------------------------------------------------------
 -- Dada una lista [(List t)] regresa el t(si t es una lista recursiona), si no es de esa forma regresa Nothing
 -- Util para <<>> == <<>> y <<>>::<<>> y derivados
 getTLists:: [Type]-> Maybe Type
 getTLists ts 
     | all isList ts = Just (\l -> TList l) <*> getTLists (map (\(TList t) -> t) ts) -- [[[int]]] = recursivo [[int]]
-    | all (\t -> isSimpleType t || t ==TDummy) ts =  -- [[int]] = Just [int]
-        if any isSimpleType ts then  
-            Just (head (filter (/=TDummy) ts))
+    | all (\t -> not (isList t)) ts =  -- [[int]] = Just [int]
+
+        if any (\t -> t /= TDummy) ts then
+            let 
+                listWithNoTDummy = filter (/=TDummy) ts
+                listWithNoTNull = filter (/=TNull) listWithNoTDummy
+            in
+                if null listWithNoTNull then  -- Si la lista tiene todos TNull
+                    Just TNull 
+                else
+                    let 
+                        tFirst = head listWithNoTNull
+                        isTypeTFirst = (\t -> t == tFirst || (t == TNull && isPointer tFirst ))
+                    in
+                        if all  isTypeTFirst listWithNoTDummy then Just tFirst else Nothing
         else 
             Just TDummy
+            
     | otherwise = Nothing
 -------------------------------------------------------------------------------
-
+-- << <<>>, <<DeathZone>> >>
 
 -------------------------------------------------------------------------------
 -- Dado un tipo y una lista (List t) regresa el t(si t es una lista recursiona) , si no es de esa forma regresa Nothing

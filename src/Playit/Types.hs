@@ -51,8 +51,8 @@ data Type =
     TStr             |
     TUnion           |
     TVoid              -- Procedures type by default
-    deriving(Eq, Ord)
-
+    deriving(Eq, Ord,Show)
+{-
 instance Show Type where
     show (TPointer t) = "*(" ++ show t ++ ")"
     show (TArray e t) = show t ++ "|}" ++ show e ++ "{|"
@@ -69,7 +69,7 @@ instance Show Type where
     show TStr         = "Runes"
     show TUnion       = "Items"
     show TVoid        = "Void"
-
+-}
 
 -- Kinds of variables
 data Var =
@@ -78,8 +78,8 @@ data Var =
     Var Id Type         |
     Index Var Expr Type | -- Indexed variable
     Field Var Id Type     -- Registers / unions field
-    deriving (Eq, Ord)
-
+    deriving (Eq, Ord,Show)
+{-
 instance Show Var where
     show (Param n t Value) = "Parameter: " ++ "("++show t++")"++n
     show (Param n t _)     = "Parameter: ?" ++ "("++show t ++")?"++n
@@ -87,7 +87,7 @@ instance Show Var where
     show (Var n t)         = "("++show t++")"++n
     show (Index v e t)     = "("++show t++")"++show v ++ " index: " ++ show e
     show (Field v n t)     = "("++show t++") ("++show v ++ " spawn " ++ n
-
+-}
 -- Specify if a parameter is by value or reference
 data Ref =
     Reference |
@@ -160,9 +160,9 @@ data Expr   =
     Unary UnOp Expr Type         |
     Read Expr Type               |
     Variable Var Type
-    deriving (Eq, Ord)
+    deriving (Eq, Ord,Show)
 
-instance Show Expr where
+{-instance Show Expr where
     show (ArrayList lst t)     = "("++show t++")[" ++ intercalate "," (map show lst) ++ "]"
     show (FuncCall s t)        = "("++show t++")kill " ++ show s
     show (IdType t)            = show t
@@ -173,7 +173,7 @@ instance Show Expr where
     show (Unary op e1 t)       = "("++show t++")"++show op ++ show e1
     show (Read e t)            = "joystick " ++ show e
     show (Variable var t)      = {-"E("++show t++")"++-}show var
-
+-}
 data Literal =
     ArrLst [Literal] | -- >> Arrays and lists
     Boolean Bool     |
@@ -182,9 +182,9 @@ data Literal =
     Floatt Float     |
     Str String       |
     EmptyVal
-    deriving (Eq, Ord)
+    deriving (Eq, Ord,Show)
 
-instance Show Literal where
+{-instance Show Literal where
     show (ArrLst l@(ArrLst _:_))    = show $ map show l 
     show (ArrLst l@(Boolean _:_))   = show $ map ((\x->read x::Bool) . show) l
     show (ArrLst l@(Character _:_)) = show $ map ((\x->read x::Char) . show) l
@@ -198,7 +198,7 @@ instance Show Literal where
     show (Str val)                  = show val
     show EmptyVal                   = "Empty Value"
 
-
+-}
 -- Binary operators
 data BinOp =
     And         |
