@@ -93,7 +93,7 @@ import Playit.AST
   "%"               { TkMOD _ $$ }
   "++"              { TkINCREMENT _ $$ }
   "--"              { TkDECREMENT _ $$ }
-  "#"               { TkLEN _ _ }
+  "#"               { TkLEN _ $$ }
   "||"              { TkOR _ $$ }
   "&&"              { TkAND _ $$ }
   "<="              { TkLessEqual _ $$ }
@@ -110,7 +110,7 @@ import Playit.AST
   "|>"              { TkOpenListIndex _ $$ }
   "<|"              { TkCloseListIndex _ $$ }
   ":"               { TkANEXO _ $$ }
-  "::"              { TkCONCAT _ _}
+  "::"              { TkCONCAT _ $$}
   "|}"              { TkOpenArray _ _ }
   "{|"              { TkCloseArray _ _ }
   "|)"              { TkOpenArrayIndex _ $$ }
@@ -547,7 +547,7 @@ Expression :: { Expr }
   | Expression "<" Expression            { % binary Less $1 $3 $2 }
   | Expression ":" Expression %prec ":"  { % anexo Anexo $1 $3 $2 }
   -- e1 && e2 TArray o excluve TList
-  | Expression "::" Expression           { concatLists Concat $1 $3 }
+  | Expression "::" Expression           {% concatLists Concat $1 $3 $2 }
   
   --
   | Expression "?" Expression ":" Expression %prec "?"
@@ -574,7 +574,7 @@ Expression :: { Expr }
     }
 
   -- Unary operators
-  | "#" Expression                        { len Length $2 }
+  | "#" Expression                        { % len $2 $1 }
   | "-" Expression %prec negativo         { % unary Negative $2 TInt $1{- or TFloat-} }
   | "!" Expression                        { % unary Not $2 TBool $1 }
   | upperCase Expression %prec upperCase  { % unary UpperCase $2 TChar $1 }

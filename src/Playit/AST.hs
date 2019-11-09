@@ -205,17 +205,20 @@ anexo op e1 e2 p = do
 
 -------------------------------------------------------------------------------
 -- | Create concat 2 lists operator node
-concatLists :: BinOp -> Expr -> Expr -> Expr
-concatLists op e1 e2 = 
-    Binary op e1 e2 tr
-
+concatLists :: BinOp -> Expr -> Expr -> Pos -> MonadSymTab Expr
+concatLists op e1 e2 p
+    | isList t1 && isList t2 && isJust mbtypeList  = do -- <<2>>:: <<>>
+        return $ Binary Concat e1 e2 (fromJust mbtypeList)
+    | otherwise = do
+        (fileName,code) <- ask
+        -- TODO: Cambiar a algo más bonito
+        error $ "\n\nError: " ++ (show fileName) ++ ": " ++ (show p) ++ "\n\t" ++
+            "La operación " ++ (show Concat)  ++ " requiere que expresion '" 
+            ++ (show e1) ++ "' y expresion '" ++ show e2 ++ "' sean listas del mismo tipo."
     where
         t1 = typeE e1
         t2 = typeE e2
-        tr = if t1 == t2 then case t1 of
-                                (TList _) -> t1
-                                _ -> TError
-             else TError
+        mbtypeList = getTLists [t1,t2]
 -------------------------------------------------------------------------------
 {-
 -------------------------------------------------------------------------------
@@ -240,13 +243,16 @@ crearOpConcat e1 e2 p
 
 -------------------------------------------------------------------------------
 -- | Creates the length operator node
-len :: UnOp -> Expr -> Expr
-len op e =
-    Unary op e tr
-    
+len :: Expr -> Pos -> MonadSymTab Expr
+len e p
+    | isArray t || isList t = return $ Unary Length e TInt
+    | otherwise = do     
+        (fileName,_) <- ask
+        error $ "\n\nError: " ++ fileName ++ ": " ++ show p ++ "\n\t" ++
+            "La operacion de longitud: '" ++ (show Length) ++ "'," ++ 
+            " requiere que el tipo de '" ++ (show e) ++ "' sea un arreglo o lista."    
     where
         t = typeE e
-        tr = if isArray t || isList t then t else TError
 -------------------------------------------------------------------------------
 {-
 crearOpLen :: Expr -> Posicion -> MonadSymTab Expr
