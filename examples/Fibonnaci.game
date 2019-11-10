@@ -16,5 +16,5 @@ monster fibonnaci(Power primero, Power segundo, Power limite) Power:
 .~
 
 world %Caso9%:
-  drop ~Fibonnaci: ~, kill portalPowerToRunes(kill fibonnaci(1, 2, 5)) -- Jajaja cool. What?
+  drop ~Fibonnaci: ~, kill portalPowerToRunes(kill fibonnaci(1, 2, 5)) @ Jajaja cool. What?
 .~ 

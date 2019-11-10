@@ -201,30 +201,49 @@ typeArrLst (TList t)                 = t
 -------------------------------------------------------------------------------
 
 
+baseTypeArrLst :: Type -> Type
+baseTypeArrLst (TArray _ t)              = t
+baseTypeArrLst (TList t)                 = t
+-- en cualquiero otro caso, error, eso no deberia pasar
+
 -------------------------------------------------------------------------------
--- Dada una lista [(List t)] regresa el t(si t es una lista recursiona), si no es de esa forma regresa Nothing
--- Util para <<>> == <<>> y <<>>::<<>> y derivados
+-- Dada una lista de tipos lista, [(List t)], determina si todos los tipos 't'
+-- concuerdan y retorna ese tipo 't'. recursiona de ser necesario
+-- Util para << >> == << >>, << >>::<< >> y derivados
 getTLists:: [Type]-> Maybe Type
 getTLists ts 
     | all isList ts = Just (\l -> TList l) <*> getTLists (map (\(TList t) -> t) ts) -- [[[int]]] = recursivo [[int]]
-    | all (\t -> isSimpleType t || t ==TDummy) ts =  -- [[int]] = Just [int]
-        if any isSimpleType ts then  
-            Just (head (filter (/=TDummy) ts))
+    | all (not . isList) ts =  -- [[int]] = Just [int]
+
+        if any (/= TDummy) ts then
+            let 
+                listWithNoTDummy = filter (/=TDummy) ts
+                listWithNoTNull = filter (/=TNull) listWithNoTDummy
+            in
+                if null listWithNoTNull then  -- Si la lista tiene todos TNull
+                    Just TNull 
+                else
+                    let 
+                        tFirst = head listWithNoTNull
+                        isTypeTFirst t = t == tFirst || (t == TNull && isPointer tFirst )
+                    in
+                        if all isTypeTFirst listWithNoTDummy then Just tFirst
+                        else Nothing
         else 
             Just TDummy
     | otherwise = Nothing
 -------------------------------------------------------------------------------
-
+-- << <<>>, <<DeathZone>> >>
 
 -------------------------------------------------------------------------------
 -- Dado un tipo y una lista (List t) regresa el t(si t es una lista recursiona) , si no es de esa forma regresa Nothing
 -- Util Para el problema de <<2>>:<< <<>> >> 
 getTListAnexo:: Type -> Type -> Maybe Type
 getTListAnexo t1 (TList t2) 
-    | isSimpleType t1 && isSimpleType t2 && t1 == t2 = Just (TList t1)-- int : [int] = Just int
-    | isSimpleType t1 && t2 == TDummy  = Just (TList t1)-- int : [TDummy] = Just int
-    | t1 == TDummy && isSimpleType t2  = Just (TList t2)-- TDummy : [int] = Just int
-    | t1 == TDummy && t2 == TDummy  = Just (TList TDummy)-- TDummy : [TDummy] = Just int
+    | isSimpleType t1 && isSimpleType t2 && t1 == t2 = Just (TList t1) -- int : [int] = Just int
+    | isSimpleType t1 && t2 == TDummy  = Just (TList t1) -- int : [TDummy] = Just int
+    | t1 == TDummy && isSimpleType t2  = Just (TList t2) -- TDummy : [int] = Just int
+    | t1 == TDummy && t2 == TDummy  = Just (TList TDummy) -- TDummy : [TDummy] = Just int
     | isList t1 && isList t2 = Just (\l -> TList l) <*> getTListAnexo (typeArrLst t1) t2 -- [t] :[[t]] = recursivo t [t]
     | otherwise = Nothing
 getTListAnexo _ _ = Nothing

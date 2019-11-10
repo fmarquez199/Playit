@@ -35,7 +35,7 @@ checkIndex var tExpr pVar pExpr
     | tExpr /= TInt = do
         fileCode <- ask
         error $ semmErrorMsg "Power" (show tExpr) fileCode pExpr
-    | otherwise = return (True, baseTypeVar var)
+    | otherwise = return (True, baseTypeArrLst (typeVar var))
 -------------------------------------------------------------------------------
 
 
@@ -105,18 +105,23 @@ checkAssig tLval tExpr p
 
 -------------------------------------------------------------------------------
 -- | Checks the binary's expression's types
-checkBinary :: Expr -> Expr -> Pos -> MonadSymTab (Bool, Type)
-checkBinary e1 e2 p
-    | isNull || (tE1 == tE2 && noTError) = return (True, tE1)
+checkBinary :: BinOp -> Expr -> Expr -> Pos -> MonadSymTab (Bool, Type)
+checkBinary op e1 e2 p
+    | op `elem` compOps && tE1 == tE2 = return (True, TBool)    
+    | op `elem` compEqs && isNull = return (True, TBool)
+    | op `elem` compEqs && isLists && isJust (getTLists [tE1,tE2]) = return (True, TBool)
+    | tE1 == tE2 = return (True, tE1)
     | otherwise = do
         fileCode <- ask
-        error $ semmErrorMsg (show tE1) (show e2) fileCode p
-    
+        error $ semmErrorMsg (show tE1) (show e2) fileCode p        
     where
         tE1 = typeE e1
         tE2 = typeE e2
-        noTError = tE1 /= TError && tE2 /= TError
-        isNull = tE1 == TNull || tE2 == TNull
+        isLists = isList tE1 && isList tE2
+        noTError = tE1 /= TError && tE2 /= TError -- TODO : Agregar a las comparaciones cuando no salga en el primer error
+        isNull = ((isPointer tE1 && tE2 == TNull) || (tE1 == TNull && isPointer tE2 ))  || (tE1 == TNull && tE2 == TNull)
+        compEqs = [Eq,NotEq]
+        compOps = [Eq,NotEq,Greater,GreaterEq,Less,LessEq]
 -------------------------------------------------------------------------------
 
 

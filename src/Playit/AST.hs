@@ -126,6 +126,7 @@ newType tName p = do
 
 -------------------------------------------------------------------------------
 -- | Creates an assignation node
+-- TODO: revisar que el lval no sea una variable de iteracion
 assig :: Var -> Expr -> Pos -> MonadSymTab Instr
 assig lval expr p = do
     ok <- checkAssig (typeVar lval) (typeE expr) p
@@ -163,10 +164,10 @@ assig lval expr p = do
 -- | Creates the binary operator node
 binary :: BinOp -> Expr -> Expr -> Pos -> MonadSymTab Expr
 binary op e1 e2 p = do
-    (ok,tOp) <- checkBinary e1 e2 p
+    (ok,tOp) <- checkBinary op e1 e2 p
     
     if ok then return $ Binary op e1 e2 tOp
-    else return $ Binary op e1 e2 TError -- change when no exit with first error encounter
+    else return $ Binary op e1 e2 TError -- Cambiar cuando no se salga del parser en checkBinary con el error
 -------------------------------------------------------------------------------
 
 
@@ -179,39 +180,6 @@ unary op expr tSpected p = do
     if ok then return $ Unary op expr tOp
     else return $ Unary op expr TError -- change when no exit with first error encounter
 -------------------------------------------------------------------------------
-{-
-crearOpBinComparable :: BinOp -> Expr -> Expr -> [Tipo] -> Tipo -> Posicion 
-                        -> MonadSymTab Expr
-crearOpBinComparable op e1 e2 tcomp tOp p
-    -- | tE1 == TDummy || tE2 == TDummy = TDummy
-    
-    | tE1 `elem` allComps && tE2 == tE1  = return $ OpBinario op e1 e2 tOp
-    
-    | isOpComparable && isArray tE1 && isArray tE2 && tE1 == tE2 = 
-        return $ OpBinario op e1 e2 tOp
-    
-    | isOpComparable && sonlistas && isJust (getTLists [tE1,tE2])  =  -- <<>> == <<2>>
-        return $ OpBinario op e1 e2 tOp
-    
-    | isOpComparable && isPointer tE1 && isPointer tE2 && tE1 == tE2 = 
-        return $ OpBinario op e1 e2 tOp
-    
-    --  TODO: | TRegistro,TUnion
-    
-    | otherwise = do
-        file <- ask
-        error $ "\n\nError: " ++ file ++ ": " ++ show p ++ "\n\tOperacion: '" ++
-                show op ++ "', tipo de '" ++ show e1 ++ "' y de '" ++  show e2
-                ++ "' no son comparables.\n"
-    where
-        tE1 = typeE e1
-        tE2 = typeE e2
-        sonlistas = isList tE1 && isList tE2
-        isOpComparable = op == Igual || op == Desigual
-        allComps = [TChar,TFloat,TInt,TStr] ++ tcomp
--------------------------------------------------------------------------------
--}
-
 
 
 -------------------------------------------------------------------------------
@@ -234,62 +202,38 @@ anexo op e1 e2 p = do
 
 -------------------------------------------------------------------------------
 -- | Create concat 2 lists operator node
-concatLists :: BinOp -> Expr -> Expr -> Expr
-concatLists op e1 e2 = 
-    Binary op e1 e2 tr
-
+concatLists :: BinOp -> Expr -> Expr -> Pos -> MonadSymTab Expr
+concatLists op e1 e2 p
+    | isList t1 && isList t2 && isJust mbtypeList  = -- <<2>>:: <<>>
+        return $ Binary Concat e1 e2 (fromJust mbtypeList)
+    | otherwise = do
+        fileCode <- ask
+        error $ semmErrorMsg (show t1) (show t2) fileCode p
+        -- error $ "\n\nError: " ++ (show fileName) ++ ": " ++ (show p) ++ "\n\t" ++
+        --     "La operación " ++ (show Concat)  ++ " requiere que expresion '" 
+        --     ++ (show e1) ++ "' y expresion '" ++ show e2 ++ "' sean listas del mismo tipo."
     where
         t1 = typeE e1
         t2 = typeE e2
-        tr = if t1 == t2 then case t1 of
-                                (TList _) -> t1
-                                _ -> TError
-             else TError
+        mbtypeList = getTLists [t1,t2]
 -------------------------------------------------------------------------------
-{-
--------------------------------------------------------------------------------
--- Crea el nodo para el operador concatenar 2 listas
-crearOpConcat ::Expr -> Expr -> Posicion -> MonadSymTab Expr
-crearOpConcat e1 e2 p  
-    
-    | isList te1 && isList te2 && isJust mbtypeList = -- <<2>>:: <<>>
-        return $ OpBinario Concatenacion e1 e2 (fromJust mbtypeList)
-    
-    | otherwise = do
-        file <- ask
-        error $ "\n\nError: " ++ file ++ ": " ++ show p ++ "\n\t" ++
-            "La operación " ++ show Concatenacion  ++ " requiere que expresion '" 
-            ++ show e1 ++ "' y expresion '" ++ show e2 ++ "' sean listas del mismo tipo."
-    where
-        te1 = typeE e1
-        te2 = typeE e2
-        mbtypeList = getTLists [te1,te2]
--------------------------------------------------------------------------------
--}
+
 
 -------------------------------------------------------------------------------
 -- | Creates the length operator node
-len :: UnOp -> Expr -> Expr
-len op e =
-    Unary op e tr
-    
-    where
-        t = typeE e
-        tr = if isArray t || isList t then t else TError
--------------------------------------------------------------------------------
-{-
-crearOpLen :: Expr -> Posicion -> MonadSymTab Expr
-crearOpLen e p
-    | isArray t || isList t = return $ OpUnario Longitud e TInt
+len :: Expr -> Pos -> MonadSymTab Expr
+len e p
+    | isArray t || isList t = return $ Unary Length e TInt
     | otherwise = do     
-        file <- ask
-        error $ "\n\nError: " ++ file ++ ": " ++ show p ++ "\n\tOperacion: '"
-            ++ show Longitud ++ "', espera que tipo de '" ++ show e ++ 
-            "' sea arreglo o lista.\n"
+        fileCode <- ask
+        error $ semmErrorMsg "Array or List" (show t) fileCode p
+        -- error $ "\n\nError: " ++ fileName ++ ": " ++ show p ++ "\n\t" ++
+        --     "La operacion de longitud: '" ++ (show Length) ++ "'," ++ 
+        --     " requiere que el tipo de '" ++ (show e) ++ "' sea un arreglo o lista."    
     where
         t = typeE e
 -------------------------------------------------------------------------------
--}
+
 
 -------------------------------------------------------------------------------
 -- TODO

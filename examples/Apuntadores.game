@@ -23,8 +23,15 @@ world %apts%:
     Kit of Power puff apt2
     Kit of Power puff puff apt3
     Kit of Power puff puff puff apt4
+    Kit of (Power puff) apt5
     
-    Power p
+    Battle p
+    p = puff apt == puff apt2|>12<|
+   
+    Power|}2{||}2{| a 
+    p = a|)0(| == a|)2(|
+   
+    p = apt == apt5|>12<|
     p = puff apt == puff apt2|>12<|
     p = puff apt == puff puff apt3|>12<|
     p = puff apt == puff puff puff apt4|>12<|
