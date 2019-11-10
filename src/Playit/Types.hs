@@ -196,7 +196,7 @@ instance Show Literal where
     show (Character val)            = show val
     show (Integer val)              = show val
     show (Floatt val)               = show val
-    show (Str val)                  = show val
+    show (Str val)                  = val
     show EmptyVal                   = "Empty Value"
 
 

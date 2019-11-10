@@ -65,7 +65,10 @@ modifyExtraInfo (SymbolInfo t s c ei) newEi = SymbolInfo t s c (ei ++ newEi)
 
 
 -------------------------------------------------------------------------------
--- | Checks the all's assignations types is the same 
+-- | Checks the all's assignations types is the same
+-- TODO: modificar para que se pueda hacer:
+--      Kit of Power l = << >>, l2
+--      Power puff x = DeathZone
 eqAssigsTypes :: InstrSeq -> Type -> Bool
 eqAssigsTypes assigs t = all (\(Assig _ expr) -> typeE expr == t) assigs  
 -------------------------------------------------------------------------------
@@ -208,7 +211,7 @@ baseTypeArrLst (TList t)                 = t
 
 -------------------------------------------------------------------------------
 -- Dada una lista de tipos lista, [(List t)], determina si todos los tipos 't'
--- concuerdan y retorna ese tipo 't'. recursiona de ser necesario
+-- concuerdan y retorna ese tipo 't'. Recursiona de ser necesario
 -- Util para << >> == << >>, << >>::<< >> y derivados
 getTLists:: [Type]-> Maybe Type
 getTLists ts 
