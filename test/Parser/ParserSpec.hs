@@ -1,4 +1,4 @@
-module InstructionsSpec where
+module ParserSpec where
 
 import Test.Hspec
 import Utils
@@ -13,7 +13,7 @@ spec = describe "Instructions" $ do
     
     it "accepts program with only 1 instruction" $
         runTestForValidProgram helloWorld (\"\nworld:\n\
-            \  drop [\"~HELLO WORLD!~\"]\n\
+            \  drop [~HELLO WORLD!~]\n\
             \.~\n" -> True)
     
     it "rejects definitions inside instructions block" $
@@ -22,7 +22,7 @@ spec = describe "Instructions" $ do
     it "accepts ranged loop program structure" $
         runTestForValidProgram rangedController (\"\nworld:\n\
             \  controller i = 0 -> 10 lock ((i % 2) == 0):\n\
-            \      n = joystick \"~Insert any number~\"\n\
+            \      n = joystick ~Insert any number~\n\
             \    winner = (i == n)\n\n\
             \  .~\n\
             \.~\n" -> True)
