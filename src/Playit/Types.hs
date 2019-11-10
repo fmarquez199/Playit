@@ -54,7 +54,7 @@ data Type =
     deriving(Eq, Ord)
 
 instance Show Type where
-    show (TPointer t) = "*(" ++ show t ++ ")"
+    show (TPointer t) = "(" ++ show t ++ "*)"
     show (TArray e t) = show t ++ "|}" ++ show e ++ "{|"
     show TBool        = "Battle"
     show TChar        = "Rune"
@@ -64,8 +64,9 @@ instance Show Type where
     show TInt         = "Power"
     show (TList t)    = "Kit of(" ++ show t ++ ")"
     show (TNew str)   = str
-    show TNull        = "*DeathZone"
+    show TNull        = "DeathZone*"
     show TRegister    = "Inventory"
+    show TRead        = ""
     show TStr         = "Runes"
     show TUnion       = "Items"
     show TVoid        = "Void"
@@ -81,12 +82,12 @@ data Var =
     deriving (Eq, Ord)
 
 instance Show Var where
-    show (Param n t Value) = "Parameter: " ++ "("++show t++")"++n
-    show (Param n t _)     = "Parameter: ?" ++ "("++show t ++")?"++n
-    show (Desref v t)      = "("++show t++")"++"puff (" ++ show v ++ ")"
-    show (Var n t)         = "("++show t++")"++n
-    show (Index v e t)     = "("++show t++")"++show v ++ " index: " ++ show e
-    show (Field v n t)     = "("++show t++") ("++show v ++ " spawn " ++ n
+    show (Param n t Value) = "Parameter: " ++ {-"("++show t++")"++-}n
+    show (Param n t _)     = "Parameter: ?" ++ {-"("++show t++")"++-}n
+    show (Desref v t)      = {-"("++show t++")"++-}"puff (" ++ show v ++ ")"
+    show (Var n t)         = {-"("++show t++")"++-}n
+    show (Index v e t)     = {-"("++show t++")"++-}show v ++ " index: " ++ show e
+    show (Field v n t)     = {-"("++show t++") "++-}"("++show v ++ " spawn " ++ n
 
 -- Specify if a parameter is by value or reference
 data Ref =
@@ -116,30 +117,30 @@ instance Show Instr where
     show (Assig v e)             = "  " ++ show v ++ " = " ++ show e ++ "\n"
     show Break                   = "  GameOver\n"
     show Continue                = "  KeepPlaying\n"
-    show (For n e1 e2 s)         = "  For " ++ n ++ " = " ++ show e1 ++ " -> "
-        ++ show e2 ++ ":\n    " ++ intercalate "    " (map show s) ++ "\n"
+    show (For n e1 e2 s)         = "  controller " ++ n ++ " = " ++ show e1 ++ " -> "
+        ++ show e2 ++ ":\n  " ++ intercalate "  " (map show s) ++ "\n  .~\n"
 
-    show (ForEach n e s)         = "  ForEach " ++ n ++ " <- " ++ show e ++
-        ":\n    " ++ intercalate "    " (map show s) ++ "\n"
+    show (ForEach n e s)         = "  controller " ++ n ++ " <- " ++ show e ++
+        ":\n  " ++ intercalate "  " (map show s) ++ "\n  .~\n"
 
-    show (ForWhile n e1 e2 e3 s) = "  For " ++ n ++ " = " ++ show e1 ++ " -> " ++
-        show e2 ++ " while: " ++ show e3 ++ ":\n    " ++ 
-        intercalate "    " (map show s) ++ "\n"
+    show (ForWhile n e1 e2 e3 s) = "  controller " ++ n ++ " = " ++ show e1 ++ " -> " ++
+        show e2 ++ " lock " ++ show e3 ++ ":\n  " ++ 
+        intercalate "  " (map show s) ++ "\n  .~\n"
 
     show (Free n)                = "  free " ++ n ++ "\n"
-    show (Print e)               = "  drop " ++ show e
+    show (Print e)               = "  drop " ++ show e ++ "\n"
     show (ProcCall s)            = "  kill " ++ show s ++ "\n"
-    show (Program s)             = "\nworld:\n" ++ concatMap show s ++ "\n"
+    show (Program s)             = "\nworld:\n" ++ concatMap show s ++ ".~\n"
     show (Return e)              = "  unlock " ++ show e
     show (Assigs s)              = intercalate "  " (map show s)
-    show (IF s)                  = "  IF:\n    " ++ concatMap (++"\n    ") guards ++ "\n"
+    show (IF s)                  = "  Button:\n  " ++ concatMap (++"\n  ") guards ++ ".~\n"
         where
             conds = map (show . fst) s
             instrs =  map (concatMap show . snd) s
-            guards = [c++" }\n    "++i | c<-conds,i<-instrs,elemIndex c conds==elemIndex i instrs]
+            guards = ["| "++c++" }\n    "++i | c<-conds,i<-instrs,elemIndex c conds==elemIndex i instrs]
 
-    show (While e s)             = "  While " ++ show e ++ ":\n    " ++
-        intercalate "    " (map show s) ++ "\n"
+    show (While e s)             = "  play:\n    " ++
+        intercalate "    " (map show s) ++ "  lock " ++ show e ++ "\n  .~\n"
 
 
 data Subroutine = Call Id Params    deriving (Eq, Ord)
@@ -163,14 +164,14 @@ data Expr   =
     deriving (Eq, Ord)
 
 instance Show Expr where
-    show (ArrayList lst t)     = "("++show t++")[" ++ intercalate "," (map show lst) ++ "]"
-    show (FuncCall s t)        = "("++show t++")kill " ++ show s
+    show (ArrayList lst t)     = {-"("++show t++")"++-}"[" ++ intercalate "," (map show lst) ++ "]"
+    show (FuncCall s t)        = {-"("++show t++")"++-}"kill " ++ show s
     show (IdType t)            = show t
-    show (IfSimple e1 e2 e3 t) = "("++show t++")"++show e1 ++ " ? " ++ show e2 ++ " : " ++ show e3
-    show (Literal lit t)       = "("++show t++")"++show lit
+    show (IfSimple e1 e2 e3 t) = {-"("++show t++")"++-}show e1 ++ " ? " ++ show e2 ++ " : " ++ show e3
+    show (Literal lit t)       = {-"("++show t++")"++-}show lit
     show Null                  = "DeathZone"
-    show (Binary op e1 e2 t)   = "("++show t++")(" ++ show e1 ++ show op ++ show e2 ++ ")"
-    show (Unary op e1 t)       = "("++show t++")"++show op ++ show e1
+    show (Binary op e1 e2 t)   = {-"("++show t++")"++-}"(" ++ show e1 ++ show op ++ show e2 ++ ")"
+    show (Unary op e1 t)       = {-"("++show t++")"++-}show op ++ show e1
     show (Read e t)            = "joystick " ++ show e
     show (Variable var t)      = {-"E("++show t++")"++-}show var
 
