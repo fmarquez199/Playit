@@ -61,18 +61,18 @@ tests:
     - Playit
     - hspec
     - hspec-discover
-  # parser-tests:
-  #   main:                Spec.hs
-  #   source-dirs:         test/Parser
-  #   ghc-options:
-  #   - -Wall
-  #   - -threaded
-  #   - -rtsopts
-  #   - -with-rtsopts=-N
-  #   dependencies:
-  #   - Playit
-  #   - hspec
-  #   - hspec-discover
+  parser-tests:
+    main:                Spec.hs
+    source-dirs:         test/Parser
+    ghc-options:
+    - -Wall
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - Playit
+    - hspec
+    - hspec-discover
   # semantic-tests:
   #   main:                Spec.hs
   #   source-dirs:         test/Semantic
