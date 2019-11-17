@@ -49,18 +49,39 @@ executables:
     - Playit
 
 tests:
-  playit-test:
-    main:                Pruebas.hs
-    # main:                Spec.hs
-    source-dirs:         test
+  lexer-tests:
+    main:                Spec.hs
+    source-dirs:         test/Lexer
     ghc-options:
+    - -Wall
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
     - Playit
-    - test-framework
-    - test-framework-hunit
-    - HUnit
-    # - hspec
-    # - hspec-discover
+    - hspec
+    - hspec-discover
+  # parser-tests:
+  #   main:                Spec.hs
+  #   source-dirs:         test/Parser
+  #   ghc-options:
+  #   - -Wall
+  #   - -threaded
+  #   - -rtsopts
+  #   - -with-rtsopts=-N
+  #   dependencies:
+  #   - Playit
+  #   - hspec
+  #   - hspec-discover
+  # semantic-tests:
+  #   main:                Spec.hs
+  #   source-dirs:         test/Semantic
+  #   ghc-options:
+  #   - -Wall
+  #   - -threaded
+  #   - -rtsopts
+  #   - -with-rtsopts=-N
+  #   dependencies:
+  #   - Playit
+  #   - hspec
+  #   - hspec-discover

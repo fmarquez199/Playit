@@ -157,8 +157,6 @@ Para acceder a los elementos de un arreglo se utiliza el operador de indexación
 **`|) indice (|`** y su inicialización por defecto se hace inicializando cada 
 posición del arreglo en el valor por defecto del tipo dado.
 
-Para acceder a los elementos de un arreglo se utiliza `|) indice (|`
-
 ---
 ## **Listas.**
 
@@ -169,6 +167,7 @@ admiten listas multidimensionales.
 Se declaran de la siguiente manera:
 
 **`Kit of <tipo>`**, donde `<tipo>` puede ser otra lista.
+
 Para acceder a un elemento de la lista se utiliza el operador de indexación
 **`|> índice <|`** y su inicialización por defecto es la lista vacía **`<<>>`**.
 
@@ -252,7 +251,7 @@ Shape sh
 sh spawn c spawn centerX = 2'1
 sh spawn c spawn centerY = 5'0
 sh spawn c spawn centerY = 5'0
-sh spawn c spawn radius = 15'0
+sh spawn c spawn radius  = 15'0
 ```
 
 ---
@@ -787,7 +786,7 @@ free p
 ```
 **Ejemplo puntero a array de enteros**
 ```sh
-Power puff p = summon Power|}20{|
+Power|}20{| puff p = summon Power
 puff p|)1(| = 15
 free|}{| p
 ```
@@ -809,15 +808,15 @@ Kit of Runes edades = <<~12~, ~23~, ~15~, ~40~, ~15~>>
 Runes|}5{| nombres = |}~Natascha~, ~Francisco~, ~Manuel~, ~Ricardo~, ~Haskell~{| 
 
 controller Power i = 0 -> 4:
-  drop ~Hola ~, nombres|)i(|, ~ tienes ~, edades|)i(|, ~ anyos!~
+  drop ~Hola ~, nombres|)i(|, ~ tienes ~, edad|>i<|, ~ años!~
 .~
 
 Kit of Kit of Power dobles = << <<10,5>>, <<3,6>>, <<4,2>> >>
 
 controller Kit of Power kpd <- dobles:
-    controller Power d <- dobles:
-      drop ~Dobles: ~, d
-    .~
+  controller Power d <- kpd:
+    drop ~Dobles: ~, d
+  .~
 .~
 ```
 

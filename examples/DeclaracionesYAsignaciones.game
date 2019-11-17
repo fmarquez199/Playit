@@ -1,0 +1,31 @@
+Inventory Trimestre:
+  Battle inscripcion_ok
+  Power uc
+  Skill indice
+  Runes estudiante
+.~
+
+Items Estudiante:
+  Battle f
+  Power v
+.~
+
+world %Caso6%:
+  Power int = 2
+  Skill float = 1'5
+
+  Rune char = .(^*c*)
+  Runes string = ~Hola Mundo!~
+  
+  Battle b = (Win && Lose) == Lose
+  
+  Rune|}2{| r = |)*H*,*i*(|
+  Kit of Skill l = <<2'7999, 2'8000, 2'9999, 3'0000, 4'2500, 4'2501, 4'7499>>
+  
+  @Trimestre abril_Julio_2019 = { Lose, 0, 4'1416, ~12-11163~ }
+  
+  Estudiante estudiante'
+  estudiante' spawn f = Win
+  
+  Trimestre puff p = summon Trimestre
+.~
