@@ -8,7 +8,7 @@
 -}
 module Playit.AST where
 
-import Control.Monad (void)
+import Control.Monad (void,forM,forM_)
 import Control.Monad.Trans.RWS
 import qualified Data.Map as M
 import Data.Maybe (fromJust, isJust, isNothing)
@@ -30,7 +30,7 @@ import Playit.Types
 -- | Creates variables ids node
 var :: Id -> Pos -> MonadSymTab Var
 var id p = do
-    (symTab, activeScopes, _) <- get
+    (symTab, activeScopes, _,_) <- get
     fileCode <- ask
     let infos = lookupInScopes activeScopes id symTab
 
@@ -66,7 +66,7 @@ index var expr (lV,cV) (lE,cE) = do
 -- | Creates the registers / unions fields
 field :: Var -> Id -> Pos -> MonadSymTab Var
 field var field p = do
-    (symTab, _, _) <- get
+    (symTab, _, _,_) <- get
     fileCode@(file,code) <- ask
     
     -- Verify type 'var' is register / union
@@ -129,7 +129,7 @@ newType tName p = do
 -- TODO: revisar que el lval no sea una variable de iteracion
 assig :: Var -> Expr -> Pos -> MonadSymTab Instr
 assig lval expr p = do
-    ok <- checkAssig (typeVar lval) (typeE expr) p
+    ok <- checkAssig lval expr p
     
     if ok then return $ Assig lval expr
     else return $ Assig lval (Literal EmptyVal TError) -- change when no exit with first error encounter
@@ -411,12 +411,58 @@ while cond i p = While cond i
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 
+checkPromises ::  MonadSymTab ()
+checkPromises = do
+    (symTab, activeScopes, scopes ,promises) <- get
+    fileCode <- ask
 
+    forM promises $ \(PromiseSubrutine name args t p ) -> do
+        if t /= TPDummy then
+            error $ errorMsg ("Function '" ++ name ++ "' is not defined") fileCode p
+        else 
+            error $ errorMsg ("Procedure '" ++ name ++ "' is not defined") fileCode p
+        return ()
+    
+    return ()
+
+updateInfoSubrutine:: Id -> Category -> [(Type,Id)] -> Type -> MonadSymTab ()
+updateInfoSubrutine name cat p t = do
+    (symTab, activeScopes, scopes ,promises) <- get
+    fileCode <- ask
+    let paramsF = reverse p
+    let promise = getPromiseSubrutine name promises
+
+    if isJust promise then do
+        let promise' = fromJust promise
+        let paramsP = getParamsPromise promise'
+        let typeP = getTypePromise promise'
+
+        if  any (/=True) [t1 == t2 | (t1,(t2,id2)) <- zip paramsP paramsF ] then
+            error $ errorMsg (" Wrong type of arguments") fileCode (getPosPromise promise')
+        else if  length(paramsP) /= length(paramsF) then
+            let msj = "Amount of arguments: " ++ show (length(paramsP)) ++
+                    " not equal to expected:" ++ show (length(paramsF))
+            in error $ errorMsg msj fileCode (getPosPromise promise')
+        else if typeP /= TPDummy && typeP /= t then
+            error $ semmErrorMsg (show typeP) (show t) fileCode (getPosPromise promise')
+        else  do
+            put(symTab, activeScopes, scopes ,filter (/= promise') promises)
+            return () 
+    else return()
+
+    updateExtraInfo name cat [Params paramsF]
+    updateType name 1 t
+
+
+    return ()
+  
 -------------------------------------------------------------------------------
+
 -- | Creates subroutine call instruction node
+-- Considerar quitar esta función
 call :: Id -> Params -> Pos -> MonadSymTab (Subroutine,Pos)
 call subroutine args p = do
-    (symTab, _, _) <- get
+    (symTab, activeScopes, scopes ,promises) <- get
     fileCode <- ask
     let symInfos = lookupInScopes [1,0] subroutine symTab
     
@@ -434,29 +480,69 @@ call subroutine args p = do
                 return (Call subroutine args,p)
             else
                 let msj = "Amount of arguments: " ++ show nArgs ++
-                        " not equal to spected:" ++ show nParams
+                        " not equal to expected:" ++ show nParams
                 in error $ errorMsg msj fileCode p
-    else
-        error $ errorMsg "Not defined subroutine" fileCode p
+    else do
+        -- Add a promise to create subroutine
+        put(symTab, activeScopes, scopes , promises ++ [PromiseSubrutine subroutine (map (typeE) args) TPDummy p] )
+
+        return (Call subroutine args,p)
 -------------------------------------------------------------------------------
 
 
--------------------------------------------------------------------------------
+procCall:: Subroutine -> Pos -> MonadSymTab Instr
+procCall procedure@(Call name args) p = do
+    (symTab, activeScopes, scope,promises) <- get
+
+    fileCode <- ask
+    let symInfos = lookupInScopes [1,0] name symTab
+    if isJust symInfos then do
+        let isProcedure symInfo = getCategory symInfo == Procedures
+            procedure' = filter isProcedure (fromJust symInfos)
+
+        if null procedure' then
+            error $ errorMsg ("'" ++ name  ++ "' is not a procedure") fileCode p
+        else do
+            return $ ProcCall procedure
+    else do
+        -- If no is declared but maybe(It has to be a promise) is a promise
+        let promise = getPromiseSubrutine name promises
+        if isJust promise then do
+            let info = [SymbolInfo TVoid 1 Procedures [Params [(typeE e,show i)| (e,i) <- zip args [1..]]]]
+            put (insertSymbols [name] info symTab, activeScopes, scope,promises)
+            return $ ProcCall procedure
+        else do
+            error $ "Error interno:  Procedure '" ++ name ++ "' doesn't have a promise,"
+
+        -------------------------------------------------------------------------------
 -- | Creates function call expresion node
 -- NOTE: Its already verified that subroutine's defined with 'call', because
 --      its excuted first
 funcCall :: Subroutine -> Pos -> MonadSymTab Expr
-funcCall function@(Call name _) p = do
-    (symTab, _, _) <- get
+funcCall function@(Call name args) p = do
+
+    (symTab, activeScopes, scope,promises) <- get
+
     fileCode <- ask
-    let infos = fromJust $ lookupInScopes [1] name symTab
-        isFunc symInfo = getCategory symInfo == Functions
-        func = filter isFunc infos
-    
-    if null func then
-        error $ errorMsg "This is not a function" fileCode p
-    else
-        return $ FuncCall function (getType $ head func)
+    let symInfos = lookupInScopes [1,0] name symTab
+    if isJust symInfos then do
+        let isFunction symInfo = getCategory symInfo == Functions
+            function' = filter isFunction (fromJust symInfos)
+
+        if null function' then
+            error $ errorMsg ("'" ++ name  ++ "' is not a function") fileCode p
+        else do
+            return $ FuncCall function (getType $ head function')
+    else do
+        -- If no is declared but maybe(It has to be a promise) is a promise
+        let promise = getPromiseSubrutine name promises
+        if isJust promise then do
+            let info = [SymbolInfo TDummy 1 Functions [Params [(typeE e,show i)| (e,i) <- zip args [1..]]]]
+            put (insertSymbols [name] info symTab, activeScopes, scope,promises)
+            return $ FuncCall function TPDummy
+        else do
+            error $ "Error interno:  Function '" ++ name ++ "' doesn't have a promise,"
+
 -------------------------------------------------------------------------------
 
 
@@ -498,7 +584,7 @@ read' e _ = Read e TRead
 -- | Creates the free memory instruction node
 free :: Id -> Pos -> MonadSymTab Instr
 free var p = do
-    (symTab, activeScopes, _) <- get
+    (symTab, activeScopes, _,_) <- get
     fileCode <- ask
     let infos = lookupInScopes activeScopes var symTab
     

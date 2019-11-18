@@ -53,8 +53,18 @@ modifyType (SymbolInfo _ s c ei) newT = SymbolInfo newT s c ei
 -------------------------------------------------------------------------------
 -- | Modify the symbol extra info
 modifyExtraInfo :: SymbolInfo -> [ExtraInfo] -> SymbolInfo
-modifyExtraInfo (SymbolInfo t s c ei) newEi = SymbolInfo t s c (ei ++ newEi)
+modifyExtraInfo (SymbolInfo t s c []) ei =  SymbolInfo t s c ei
+modifyExtraInfo (SymbolInfo t s c ei) (ex:r)  = 
+    SymbolInfo t s c (map (\einf -> if areSameTExtInf einf ex then ex else einf ) ei)
+    
+areSameTExtInf :: ExtraInfo -> ExtraInfo -> Bool
+areSameTExtInf (Params _ ) (Params _) = True
+areSameTExtInf (FromReg _ ) (FromReg _) = True
+areSameTExtInf (AST _ ) (AST _) = True
+areSameTExtInf _ _ = False
+
 -------------------------------------------------------------------------------
+
 
 
 -------------------------------------------------------------------------------
@@ -70,7 +80,7 @@ modifyExtraInfo (SymbolInfo t s c ei) newEi = SymbolInfo t s c (ei ++ newEi)
 --      Kit of Power l = << >>, l2
 --      Power puff x = DeathZone
 eqAssigsTypes :: InstrSeq -> Type -> Bool
-eqAssigsTypes assigs t = all (\(Assig _ expr) -> typeE expr == t) assigs  
+eqAssigsTypes assigs t = all (\(Assig _ expr) -> typeE expr == t) assigs
 -------------------------------------------------------------------------------
 
 
@@ -156,6 +166,10 @@ baseTypeE (IdType t)         = baseTypeT t
 baseTypeE Null               = TNull
 -------------------------------------------------------------------------------
 
+isFunctionCall:: Expr -> Bool
+isFunctionCall (FuncCall _ _)     = True
+isFunctionCall _     = False
+
 
 -------------------------------------------------------------------------------
 --- | Gets the base type's type
@@ -201,7 +215,10 @@ typeArrLst (TArray _ t@(TArray _ _)) = typeArrLst t
 typeArrLst (TArray _ t)              = t
 typeArrLst (TList t@(TList _))       = typeArrLst t
 typeArrLst (TList t)                 = t
--------------------------------------------------------------------------------
+
+baseTypeArrLst :: Type -> Type
+baseTypeArrLst (TArray _ t)              = t
+baseTypeArrLst (TList t)                 = t
 
 
 baseTypeArrLst :: Type -> Type
@@ -234,6 +251,7 @@ getTLists ts
                         else Nothing
         else 
             Just TDummy
+            
     | otherwise = Nothing
 -------------------------------------------------------------------------------
 -- << <<>>, <<DeathZone>> >>
@@ -251,3 +269,10 @@ getTListAnexo t1 (TList t2)
     | otherwise = Nothing
 getTListAnexo _ _ = Nothing
 -------------------------------------------------------------------------------
+
+
+getPromiseSubrutine:: String -> Promises -> Maybe Promise
+getPromiseSubrutine name []  = Nothing
+getPromiseSubrutine name ((promise@(PromiseSubrutine id _ _ _)):r)  = 
+    if  name == id then Just promise else getPromiseSubrutine name r
+

@@ -40,6 +40,7 @@ data Type =
     TBool            |
     TChar            |
     TDummy           | -- Temp for when the type its still unknown
+    TPDummy          | -- Temp for when the type is promised to define later
     TError           | -- Error type, type checks fail
     TFloat           |
     TInt             |
@@ -71,7 +72,7 @@ instance Show Type where
     show TUnion       = "Items"
     show TVoid        = "Void"
 
-
+    
 -- Kinds of variables
 data Var =
     Param Id Type Ref   |
@@ -80,6 +81,7 @@ data Var =
     Index Var Expr Type | -- Indexed variable
     Field Var Id Type     -- Registers / unions field
     deriving (Eq, Ord)
+
 
 instance Show Var where
     show (Param n t Value) = "Parameter: " ++ {-"("++show t++")"++-}n
@@ -347,8 +349,18 @@ instance Show SymTab where
                 else ""
             symbols = concatMap showTable table
 
+
+data Promise = PromiseSubrutine {
+    getIdPromise::Id,
+    getParamsPromise::[Type],
+    getTypePromise::Type,
+    getPosPromise::Pos
+    }
+    deriving (Eq, Ord)
+
+type Promises = [Promise]
 -- State that stores the symbol table, active scopes and total scopes
-type SymTabState = (SymTab, ActiveScopes, Scope)
+type SymTabState = (SymTab, ActiveScopes, Scope,Promises)
 
 -- Reader that stores the file name and the code for better show of errors
 type FileCodeReader = (String,String)

@@ -164,13 +164,22 @@ ProgramWrapper :: { Instr }
 
   
 Program :: { Instr }
-  : Definitions EndLines world program ":" EndLines Instructions EndLines ".~"  PopScope
-    { Program $ reverse $7 }
+  : Definitions EndLines world program ":" EndLines Instructions  EndLines ".~"  PopScope
+    {% do
+      checkPromises
+      return $ Program $ reverse $7 
+    }
   | Definitions EndLines world program ":" EndLines ".~" PopScope
-    { Program [] }
-  | world program ":" EndLines Instructions EndLines ".~"  PopScope
-    { Program $ reverse $5 }
-  | world program ":" EndLines ".~" PopScope
+  {% do
+    checkPromises
+    return $ Program []
+  }
+| world program ":" EndLines Instructions EndLines ".~"  PopScope
+  {% do
+    checkPromises
+    return $ Program $ reverse $5
+  }
+| world program ":" EndLines ".~" PopScope
     { Program [] }
 
 
@@ -283,7 +292,7 @@ Instruction :: { Instr }
   | ProcCall                        { $1 }
   | Out                             { $1 }
   | Free                            { $1 }
-  | return Expression               { Return $2 }
+  | return Expression               { Return $2 } -- TODO: Verificacion de tipo para regreso de funcion
   | break                           { Break }
   | continue                        { Continue }
 
@@ -450,15 +459,13 @@ Firma :: { (Id, Category) }
   : Name PushScope Params
   { % do
     let (name,category) = $1
-    updateExtraInfo name category [Params (reverse $3)]
-    updateType name 1 TVoid
+    updateInfoSubrutine name category $3 TVoid
     return $1
   }
   | Name PushScope Params Type 
     { % do
       let (name,category) = $1
-      updateExtraInfo name category [Params (reverse $3)]
-      updateType name 1 $4
+      updateInfoSubrutine name category $3 $4
       return $1
     }
 
@@ -495,7 +502,7 @@ Param :: { (Type,Id) }
 -------------------------------------------------------------------------------
 -- Subroutines calls
 ProcCall :: { Instr }
-  : SubroutineCall     { ProcCall (fst $1) }
+  : SubroutineCall     { % procCall (fst $1) (snd $1) }
 
 FuncCall :: { Expr }
   : SubroutineCall     { % funcCall (fst $1) (snd $1) }
