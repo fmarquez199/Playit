@@ -35,7 +35,6 @@ type InstrSeq = [Instr]
 
 -- Tipo de dato que pueden ser las expresiones
 data Type = 
-    TPointer Type    |
     TArray Expr Type |
     TBool            |
     TChar            |
@@ -46,6 +45,7 @@ data Type =
     TList Type       |
     TNew Id          |
     TNull            |
+    TPointer Type    |
     TRead            | -- Cableado para que el input corra
     TRegister        |
     TStr             |
@@ -103,7 +103,7 @@ data Instr  =
     ForEach Id Expr InstrSeq            |
     ForWhile Id Expr Expr Expr InstrSeq |
     Free Id                             |
-    Print Expr                          |
+    Print [Expr]                        |
     ProcCall Subroutine                 |
     Program InstrSeq                    |
     Return Expr                         |
@@ -151,12 +151,12 @@ instance Show Subroutine where
 -- Expressions
 data Expr   = 
     ArrayList [Expr] Type        |
+    Binary BinOp Expr Expr Type  |
     FuncCall Subroutine Type     |
     IdType Type                  |
     IfSimple Expr Expr Expr Type |
     Literal Literal Type         |
     Null                         | -- tipo: compatible con apt de lo que sea o que el contexto lo diga
-    Binary BinOp Expr Expr Type  |
     Unary UnOp Expr Type         |
     Read Expr Type               |
     Variable Var Type
@@ -178,10 +178,11 @@ data Literal =
     ArrLst [Literal] | -- >> Arrays and lists
     Boolean Bool     |
     Character Char   |
-    Integer Int      |
+    EmptyVal         |
     Floatt Float     |
-    Str String       |
-    EmptyVal
+    Integer Int      |
+    Register [Expr]  |
+    Str String
     deriving (Eq, Ord,Show)
 
 {-instance Show Literal where
@@ -270,27 +271,29 @@ type ActiveScopes = [Scope]
 
 -- Symbols categories
 data Category  = 
-    Pointers         |
-    Fields           |
-    Constants        |
-    TypeConstructors |
-    Functions        |
-    Parameters Ref   |
-    Procedures       |
-    Types            |
+    Constants         |
+    Fields            |
+    Functions         |
+    IterationVariable |
+    Parameters Ref    |
+    Pointers          |
+    Procedures        |
+    TypeConstructors  |
+    Types             |
     Variables
     deriving (Eq, Ord)
 
 instance Show Category where
-    show Pointers         = "Pointers"
-    show Fields           = "Fields"
-    show Constants        = "Constants"
-    show TypeConstructors = "Type Constructors"
-    show Functions        = "Functions"
-    show (Parameters r)   = "Parameters by " ++ show r
-    show Procedures       = "Procedures"
-    show Types            = "Types"
-    show Variables        = "Variables"
+    show Constants         = "Constants"
+    show Fields            = "Fields"
+    show Functions         = "Functions"
+    show IterationVariable = "Iteration's Variable"
+    show (Parameters r)    = "Parameters by " ++ show r
+    show Pointers          = "Pointers"
+    show Procedures        = "Procedures"
+    show TypeConstructors  = "Type Constructors"
+    show Types             = "Types"
+    show Variables         = "Variables"
 
 -- Symbol extra information
 data ExtraInfo =

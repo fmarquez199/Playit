@@ -128,12 +128,16 @@ newType tName p = do
 -- | Creates an assignation node
 assig :: Var -> Expr -> Pos -> MonadSymTab Instr
 assig lval expr p = do
-    ok <- checkAssig (typeVar lval) (typeE expr) p
-    
-    if ok then return $ Assig lval expr
+    iter <- checkIterVar lval
+    asig <- checkAssig (typeVar lval) (typeE expr) p    
+    if (not iter) && asig then return $ Assig lval expr
     else return $ Assig lval (Literal EmptyVal TError) -- change when no exit with first error encounter
 -------------------------------------------------------------------------------
 
+register :: [Expr] -> Expr
+register e
+    | all (/= TError) (map typeE e) = Literal (Register e) TRegister
+    | otherwise = Literal (Register e) TError
 
 -------------------------------------------------------------------------------
 -- crearIncremento :: Var -> Pos -> Instr
@@ -501,14 +505,12 @@ funcCall function@(Call name _) p = do
 
 -------------------------------------------------------------------------------
 -- | Creates the print instruction node
-print' :: Expr -> Pos -> MonadSymTab Instr
+print' :: [Expr] -> Pos -> MonadSymTab Instr
 print' e p
-    | typeE e /= TError && baseTE /= TError = return $ Print e
+    | all (/= TError) (map typeE e) = return $ Print e
     | otherwise = do
         fileCode <- ask
-        error $ semmErrorMsg "Runes" (show baseTE) fileCode p
-    where
-        baseTE = baseTypeE e  
+        error $ semmErrorMsg "Good-typed expression" "Error" fileCode p 
 -------------------------------------------------------------------------------
 
 

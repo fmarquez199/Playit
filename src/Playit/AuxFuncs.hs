@@ -183,7 +183,7 @@ typeE (Literal _ t)      = t
 typeE (Binary _ _ _ t)   = t
 typeE (Unary _ _ t)      = t
 typeE (ArrayList _ t)    = t
-typeE (Read _ t)           = t
+typeE (Read _ t)         = t
 typeE (IfSimple _ _ _ t) = t
 typeE (FuncCall _ t)     = t
 typeE (IdType t)         = t
@@ -247,3 +247,10 @@ getTListAnexo t1 (TList t2)
     | otherwise = Nothing
 getTListAnexo _ _ = Nothing
 -------------------------------------------------------------------------------
+
+getName :: Var -> Id
+getName (Desref v t)  = getName v
+getName (Field v n t) = getName v
+getName (Index v e t) = getName v
+getName (Param n _ _) = n
+getName (Var n t)     = n

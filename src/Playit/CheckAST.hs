@@ -89,7 +89,7 @@ checkAssigs assigs t p
 -- | Checks the assignation's types
 checkAssig :: Type -> Type -> Pos -> MonadSymTab Bool
 checkAssig tLval tExpr p
-    | isRead || isNull || tExpr == tLval || isLists = return True
+    | isRead || isNull || (tExpr == tLval) || isLists = return True
     | otherwise = do
         fileCode <- ask
         error $ semmErrorMsg (show tLval) (show tExpr) fileCode p
@@ -102,6 +102,17 @@ checkAssig tLval tExpr p
         isNull = tExpr == TNull
 -------------------------------------------------------------------------------
 
+-------------------------------------------------------------------------------
+-- | Checks if var is an Iteration's Variable.
+checkIterVar :: Var -> MonadSymTab Bool
+checkIterVar var = do
+    (symtab, _, scope) <- get
+    let
+        cc = (\s -> getCategory s == IterationVariable && getScope s == scope)
+        name = getName var
+        cat = filter cc $ fromJust (lookupInSymTab name symtab)
+    return $ not $ null cat
+-------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
 -- | Checks the binary's expression's types
@@ -363,8 +374,8 @@ changeTDummyFor t symTab scope (IfElse e seqI1 seqI2) =
         newSeqI2 = map (changeTDummyFor t symTab scope) seqI2
     in IfElse newE newSeqI1 newSeqI2 -}
 --------------------------------------------------------------------------
-changeTDummyFor t symTab scope (Print e) =
+changeTDummyFor t symTab scope (Print [e]) =
     let newE = changeTDummyExpr t e
-    in Print newE
+    in Print [newE]
 
 -------------------------------------------------------------------------------

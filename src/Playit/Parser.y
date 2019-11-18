@@ -335,7 +335,6 @@ Guard :: { (Expr, InstrSeq) }
 
 -------------------------------------------------------------------------------
 -- Determined iteration
--- TODO: Verificar que no se modifique la variable de iteracion
 Controller :: { Instr }
  : for InitVar1 "->" Expression ":" EndLines Instructions EndLines ".~"
     {
@@ -367,8 +366,11 @@ Controller :: { Instr }
 InitVar1 :: { (Id, Expr) }
   : id "=" Expression
     { % do
+      (symtab, a, scope) <- get
       let id = (getTk $1)
+          t = (\s -> if s == TInt then TInt else TError) $ typeE $3
       v <- var id (getPos $1)
+      put (insertSymbols [id] [SymbolInfo t scope IterationVariable []] symtab, a, scope)
       return $ assig v $3 $2
       return (id, $3)
     }
@@ -384,8 +386,11 @@ InitVar1 :: { (Id, Expr) }
 InitVar2 :: { (Id, Expr) }
   : id "<-" Expression %prec "<-"
     { % do
+      (symtab, a, scope) <- get
       let id = (getTk $1)
+          t = (\s -> if s == TInt then TInt else TError) $ typeE $3
       v <- var id (getPos $1)
+      put (insertSymbols [id] [SymbolInfo t scope IterationVariable []] symtab, a, scope)
       return $ assig v $3 $2
       return (id, $3)
     }
@@ -416,9 +421,8 @@ Play :: { Instr }
 
 -------------------------------------------------------------------------------
 -- 'drop'
--- TODO: Cambiar arrayList por una que haga un type cast auto a runes??? o que el programador lo hags???
 Out :: { Instr }
-  : print Expressions       { % print' (arrayList $ reverse $2) $1 }
+  : print Expressions       { % print' (reverse $2) $1 }
 -------------------------------------------------------------------------------
 
 
@@ -558,9 +562,8 @@ Expression :: { Expr }
   | "(" Expression ")"     { $2 }
  
   -- Registers / Unions initialization
-  -- TODO: cambiar arrayList por una que inicialice los registros / uniones
-  | "{" Expressions "}"    { arrayList $ reverse $2 }
-  | "{" "}"                { arrayList [] } -- By default
+  | "{" Expressions "}"    { register $ reverse $2 }
+  | "{" "}"                { register [] } -- By default
   
   | "|)" Expressions "(|"  { arrayList $ reverse $2 }
   | "<<" Expressions ">>"  { % list (reverse $2) $3 }
