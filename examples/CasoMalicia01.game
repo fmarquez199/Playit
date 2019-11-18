@@ -25,19 +25,23 @@ Inventory Contacto3:
 
 
 Inventory PrimerNombre:
-    Runes nombre
+  Runes nombre
 .~
+
 Inventory Nombre:
     PrimerNombre n
 .~
+
 Inventory Contacto:
-    Nombre n
-    Kit of Kit of Power lista1 = << <<2,3>> , <<1,2>>  >>
-    Power|}2{| enteros1,enteros2 = |)2,3(|
-    Rune ast1 = *\** , m1 , a1=*a*,n1=*n*,u1=*u*,ast2 = *\**, tip
+  Nombre n
+  Kit of Kit of Power lista1 = << <<2,3>> , <<1,2>>  >>
+  Power|}2{| enteros1,enteros2 = |)2,3(|
+  Rune ast1 = *\** , m1 , a1=*a*,n1=*n*,u1=*u*,ast2 = *\**, tip
 .~
+
 boss f2():
 .~
+
 monster f3() Contacto:
 .~
 monster f(Power p11,Contacto? c11,Contacto c221,Runes c3) Contacto:
@@ -226,6 +230,4 @@ world %caso_malicia'M'%:
     .~ 
     controller Contacto i <- abc:
     .~ 
-    
-    Power a222 = kill f(1,2,3,4)
 .~

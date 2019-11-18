@@ -107,7 +107,7 @@ updatePromiseTypeFunction exprF t = do
 -- | Checks the assignation's types
 checkAssig :: Var -> Expr -> Pos -> MonadSymTab Bool
 checkAssig lval expr p
-    | isRead || isNull || tExpr == tLval || isLists = return True
+    | isRead || isNull || (tExpr == tLval) || isLists = return True
     | tExpr == TPDummy && isFunctionCall expr= do
         updatePromiseTypeFunction expr tLval
         return True
@@ -126,6 +126,17 @@ checkAssig lval expr p
         isNull = tExpr == TNull
 -------------------------------------------------------------------------------
 
+-------------------------------------------------------------------------------
+-- | Checks if var is an Iteration's Variable.
+checkIterVar :: Var -> MonadSymTab Bool
+checkIterVar var = do
+    (symtab, _, scope) <- get
+    let
+        cc = (\s -> getCategory s == IterationVariable && getScope s == scope)
+        name = getName var
+        cat = filter cc $ fromJust (lookupInSymTab name symtab)
+    return $ not $ null cat
+-------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
 -- | Checks the binary's expression's types
@@ -200,7 +211,6 @@ crearOpAnexo e1 e2 p
         error $ "\n\nError: " ++ file ++ ": " ++ show p ++ "\n\t" ++
             "El emento a anexar '" ++ show e1 ++ "'," ++ "' debe ser de tipo '" 
             ++ show (typeArrLst typee2) ++ "'."
-
     where
         typee1 = typeE e1
         typee2 = typeE e2

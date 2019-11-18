@@ -1,6 +1,5 @@
 {- |
  * Modulo para imprimir el AST y la Tabla de Simbolos
-
  * Copyright : (c) 
  *  Manuel Gonzalez     11-10390
  *  Francisco Javier    12-11163
@@ -273,4 +272,3 @@ printSymTab (SymTab (table, father)) tab = do
 printSymbol :: String -> (Id, IdInfo) -> IO()
 printSymbol tab (n, IdInfo t val _) = 
     putStrLn $ tab ++ "Simbolo: " ++ n ++ "  | Tipo: " ++ showType t
-

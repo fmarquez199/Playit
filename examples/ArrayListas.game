@@ -1,6 +1,7 @@
 Inventory Contacto:
-    Runes id
+  Runes id
 .~
+
 world %test%:
     Kit of Contacto lista
     Contacto c1, c2, c3    
@@ -11,5 +12,5 @@ world %test%:
 
     Power a2, a3
 
-    Kit of Kit of Kit of Power asd
+  Kit of Kit of Kit of Power asd
 .~

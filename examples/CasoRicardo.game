@@ -1,11 +1,11 @@
 monster n(Power n) Power:
-    @Skill n @Comentando esto deberia compilar
-    play:
-        Battle n
-        drop n
-    lock Win
-    .~
-    unlock n
+  @Skill n @Comentando esto deberia compilar
+  play:
+    Battle n
+    drop n  @ verificar si esta inicializada?
+  lock Win
+  .~
+  unlock n
 .~
 
 world %n%:

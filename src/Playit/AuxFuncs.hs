@@ -200,7 +200,7 @@ typeE (Literal _ t)      = t
 typeE (Binary _ _ _ t)   = t
 typeE (Unary _ _ t)      = t
 typeE (ArrayList _ t)    = t
-typeE (Read _ t)           = t
+typeE (Read _ t)         = t
 typeE (IfSimple _ _ _ t) = t
 typeE (FuncCall _ t)     = t
 typeE (IdType t)         = t
@@ -276,3 +276,9 @@ getPromiseSubrutine name []  = Nothing
 getPromiseSubrutine name ((promise@(PromiseSubrutine id _ _ _)):r)  = 
     if  name == id then Just promise else getPromiseSubrutine name r
 
+getName :: Var -> Id
+getName (Desref v t)  = getName v
+getName (Field v n t) = getName v
+getName (Index v e t) = getName v
+getName (Param n _ _) = n
+getName (Var n t)     = n

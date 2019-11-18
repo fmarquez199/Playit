@@ -4,12 +4,14 @@ Inventory Trimestre:
   Skill indice
   Runes estudiante
 .~
+
 Items Estudiante:
   Battle f
   Power v
 .~
+
 world %Caso6%:
-  Power int = 1
+  Power int = 2
   Skill float = 1'5
 
   Rune char = .(^*c*)
