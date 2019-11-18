@@ -216,10 +216,6 @@ typeArrLst (TArray _ t)              = t
 typeArrLst (TList t@(TList _))       = typeArrLst t
 typeArrLst (TList t)                 = t
 
-baseTypeArrLst :: Type -> Type
-baseTypeArrLst (TArray _ t)              = t
-baseTypeArrLst (TList t)                 = t
-
 
 baseTypeArrLst :: Type -> Type
 baseTypeArrLst (TArray _ t)              = t

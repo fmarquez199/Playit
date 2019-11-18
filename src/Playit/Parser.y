@@ -375,11 +375,11 @@ Controller :: { Instr }
 InitVar1 :: { (Id, Expr) }
   : id "=" Expression
     { % do
-      (symtab, a, scope) <- get
+      (symtab, a, scope,p) <- get
       let id = (getTk $1)
           t = (\s -> if s == TInt then TInt else TError) $ typeE $3
       v <- var id (getPos $1)
-      put (insertSymbols [id] [SymbolInfo t scope IterationVariable []] symtab, a, scope)
+      put (insertSymbols [id] [SymbolInfo t scope IterationVariable []] symtab, a, scope,p)
       return $ assig v $3 $2
       return (id, $3)
     }
@@ -395,11 +395,11 @@ InitVar1 :: { (Id, Expr) }
 InitVar2 :: { (Id, Expr) }
   : id "<-" Expression %prec "<-"
     { % do
-      (symtab, a, scope) <- get
+      (symtab, a, scope,p) <- get
       let id = (getTk $1)
           t = (\s -> if s == TInt then TInt else TError) $ typeE $3
       v <- var id (getPos $1)
-      put (insertSymbols [id] [SymbolInfo t scope IterationVariable []] symtab, a, scope)
+      put (insertSymbols [id] [SymbolInfo t scope IterationVariable []] symtab, a, scope,p)
       return $ assig v $3 $2
       return (id, $3)
     }

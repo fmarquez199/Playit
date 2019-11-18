@@ -105,8 +105,8 @@ updatePromiseTypeFunction exprF t = do
 
 -------------------------------------------------------------------------------
 -- | Checks the assignation's types
-checkAssig :: Var -> Expr -> Pos -> MonadSymTab Bool
-checkAssig lval expr p
+checkAssig :: Type -> Expr -> Pos -> MonadSymTab Bool
+checkAssig tLval expr p
     | isRead || isNull || (tExpr == tLval) || isLists = return True
     | tExpr == TPDummy && isFunctionCall expr= do
         updatePromiseTypeFunction expr tLval
@@ -117,7 +117,6 @@ checkAssig lval expr p
         error $ semmErrorMsg (show tLval) (show tExpr) fileCode p
 
     where
-        tLval = typeVar lval
         tExpr = typeE expr
         isEmptyList = isList tExpr && baseTypeT tExpr == TDummy
         isListLval  = isList tLval && isSimpleType (baseTypeT tLval)
@@ -130,7 +129,7 @@ checkAssig lval expr p
 -- | Checks if var is an Iteration's Variable.
 checkIterVar :: Var -> MonadSymTab Bool
 checkIterVar var = do
-    (symtab, _, scope) <- get
+    (symtab, _, scope,_) <- get
     let
         cc = (\s -> getCategory s == IterationVariable && getScope s == scope)
         name = getName var
