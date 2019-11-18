@@ -32,7 +32,7 @@ initState :: SymTabState
 initState = createInitSymTab (SymTab M.empty)
 
 createInitSymTab :: SymTab -> SymTabState
-createInitSymTab st = (insertSymbols symbols info st, [1,0], 1)
+createInitSymTab st = (insertSymbols symbols info st, [1,0], 1,[])
     where
         symbols = ["Power", "Skill", "Rune", "Runes", "Battle", "Inventory",
             "Items", "Kit of", "Win", "Lose", "DeathZone", "portalRunesToRune",
@@ -64,17 +64,17 @@ createInitSymTab st = (insertSymbols symbols info st, [1,0], 1)
 -------------------------------------------------------------------------------
 pushNewScope :: MonadSymTab ()
 pushNewScope = do
-    (actualSymTab, activeScopes, scope) <- get
+    (actualSymTab, activeScopes, scope,promises) <- get
     let newScope = scope + 1
-    put (actualSymTab, newScope:activeScopes, newScope)
+    put (actualSymTab, newScope:activeScopes, newScope,promises)
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
 popScope :: MonadSymTab ()
 popScope = do
-    (actualSymTab, _:prevScopes, scope) <- get
-    put (actualSymTab, prevScopes, scope)
+    (actualSymTab, _:prevScopes, scope,promises) <- get
+    put (actualSymTab, prevScopes, scope,promises)
 -------------------------------------------------------------------------------
 
 
@@ -87,9 +87,9 @@ popScope = do
 
 -------------------------------------------------------------------------------
 -- | Inserts the ids into symbol table with its symbol info
-addToSymTab :: [Id] -> [SymbolInfo] -> SymTab -> ActiveScopes -> Scope -> MonadSymTab ()
-addToSymTab ns info actualSymTab activeScopes scope = 
-    put (insertSymbols ns info actualSymTab, activeScopes, scope)
+addToSymTab :: [Id] -> [SymbolInfo] -> SymTab -> ActiveScopes -> Scope -> Promises -> MonadSymTab ()
+addToSymTab ns info actualSymTab activeScopes scope promises = 
+    put (insertSymbols ns info actualSymTab, activeScopes, scope,promises)
 
 insertSymbols :: [Id] -> [SymbolInfo] -> SymTab -> SymTab
 insertSymbols [] _ symTab = symTab
@@ -108,7 +108,7 @@ insertSymbols (n:ns) (info:infos) (SymTab table)
 -- | Insert the declared variables into symbol table
 insertDeclarations :: [(Id, Pos)] -> Type -> InstrSeq -> MonadSymTab InstrSeq
 insertDeclarations ids t asigs = do
-    (symTab, activeScopes@(activeScope:_), scope) <- get
+    (symTab, activeScopes@(activeScope:_), scope,promises) <- get
     fileCode <- ask
     let ids' = (map fst ids)
         idsInfo = lookupInSymTab' ids' symTab
@@ -119,7 +119,7 @@ insertDeclarations ids t asigs = do
             idInfo = SymbolInfo t activeScope Variables []
             idsInfo' = replicate (length ids) idInfo
 
-        in addToSymTab ids' idsInfo' symTab activeScopes scope
+        in addToSymTab ids' idsInfo' symTab activeScopes scope promises
     else
     -- Get the first id from all declared vars in active scope
         let redefs = concatMap fromJust $ filter isJust idsInfo
@@ -137,7 +137,7 @@ insertDeclarations ids t asigs = do
             let idsInScope = [i | i<-ids',index<-redefsIndexs,i== ids' !! index]
                 idInfo = SymbolInfo t activeScope Variables []
                 idsInfo' = replicate (length ids) idInfo
-            in addToSymTab idsInScope idsInfo' symTab activeScopes scope
+            in addToSymTab idsInScope idsInfo' symTab activeScopes scope promises
 
     return asigs
 -------------------------------------------------------------------------------
@@ -147,15 +147,25 @@ insertDeclarations ids t asigs = do
 -- | Inserts the subroutine's name into symbol table
 defineSubroutine :: Id -> Category -> Pos -> MonadSymTab ()
 defineSubroutine id category p = do
-    (symTab, activeScopes, scope) <- get
+    (symTab, activeScopes, scope, promises) <- get
     fileCode <- ask
     let infos = lookupInSymTab id symTab
 
     if isNothing infos then 
         let info = [SymbolInfo TDummy 1 category []]
-        in addToSymTab [id] info symTab activeScopes scope
-    else
-        error $ errorMsg "Redefined subroutine" fileCode p
+        in addToSymTab [id] info symTab activeScopes scope promises
+    else do
+        let promise = getPromiseSubrutine id promises
+        if isJust promise then do
+            let promise' = fromJust promise
+            if getTypePromise promise' /= TVoid && category == Procedures then
+                error $ errorMsg ("'" ++ id  ++ "' is not a function") fileCode (getPosPromise promise')
+            else if getTypePromise promise' == TVoid && category == Functions then
+                error $ errorMsg ("'" ++ id  ++ "' is not a procedure") fileCode (getPosPromise  promise')
+            else return()
+        else do
+            error $ errorMsg "Redefined subroutine" fileCode p
+
     return ()
 -------------------------------------------------------------------------------
 
@@ -164,7 +174,7 @@ defineSubroutine id category p = do
 -- | Inserts a subroutine's parameter into symbol table
 defineParameter :: Var -> Pos -> MonadSymTab (Type,Id)
 defineParameter (Param name t ref) p = do
-    (symTab, activeScopes@(activeScope:_), scope) <- get
+    (symTab, activeScopes@(activeScope:_), scope,promises) <- get
     fileCode <- ask
     let infos = lookupInScopes [activeScope] name symTab
 
@@ -172,7 +182,7 @@ defineParameter (Param name t ref) p = do
         error $ errorMsg "Redefined parameter" fileCode p
     else do
         let info = [SymbolInfo t activeScope (Parameters ref) []]
-        addToSymTab [name] info symTab activeScopes scope
+        addToSymTab [name] info symTab activeScopes scope promises
         return (t,name)
 -------------------------------------------------------------------------------
 
@@ -181,7 +191,7 @@ defineParameter (Param name t ref) p = do
 -- | Inserts a register / union into symbol table
 defineRegUnion :: Id -> Type -> Pos -> MonadSymTab Id
 defineRegUnion reg regType p = do
-    (symTab@(SymTab table), activeScopes, scope) <- get
+    (symTab@(SymTab table), activeScopes, scope,promises) <- get
     fileCode <- ask
     let regInfo = lookupInScopes [1] reg symTab
 
@@ -192,17 +202,17 @@ defineRegUnion reg regType p = do
             error $ errorMsg "Redefined Items" fileCode p
     else
         let info = [SymbolInfo regType 1 TypeConstructors []]
-        in addToSymTab [reg] info symTab activeScopes scope >> return reg
+        in addToSymTab [reg] info symTab activeScopes scope promises >> return reg
 -------------------------------------------------------------------------------
 
 updatesDeclarationsCategory :: Id -> MonadSymTab ()
 updatesDeclarationsCategory reg = do
-    (symTab@(SymTab table), activeScopes@(activeScope:_), scope) <- get
+    (symTab@(SymTab table), activeScopes@(activeScope:_), scope,promises) <- get
     let modifySym (SymbolInfo t s _ _) = SymbolInfo t s Fields [FromReg reg]
         updtSym = 
             map (\sym -> if getScope sym == activeScope then modifySym sym else sym)
 
-    put(SymTab $ M.map updtSym table, activeScopes, scope)
+    put(SymTab $ M.map updtSym table, activeScopes, scope,promises)
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
@@ -253,7 +263,7 @@ lookupInScopes scopes sym symTab
 -- | Updates the symbol type
 updateType :: Id -> Scope -> Type -> MonadSymTab ()
 updateType symbol scope t = do
-    (symTab@(SymTab table), activeScopes, scopes) <- get
+    (symTab@(SymTab table), activeScopes, scopes,promises) <- get
     fileCode <- ask
     let infos = lookupInSymTab symbol symTab
     when (isJust infos) $ do
@@ -262,7 +272,7 @@ updateType symbol scope t = do
                 fmap (\sym -> if isTarget sym then modifyType sym t else sym)
             updatedSymTab = SymTab $ M.adjust updateType' symbol table
 
-        put(updatedSymTab, activeScopes, scopes)
+        put(updatedSymTab, activeScopes, scopes,promises)
 -------------------------------------------------------------------------------
 
 
@@ -270,7 +280,7 @@ updateType symbol scope t = do
 -- | Updates the symbol extra info, depends of its category
 updateExtraInfo :: Id -> Category -> [ExtraInfo] -> MonadSymTab ()
 updateExtraInfo sym category extraInfo = do
-    (symTab@(SymTab table), scopes, scope) <- get
+    (symTab@(SymTab table), scopes, scope,promises) <- get
     let infos = lookupInSymTab sym symTab
 
     when (isJust infos) $ do
@@ -278,5 +288,5 @@ updateExtraInfo sym category extraInfo = do
             updateExtraInfo' = 
                 fmap (\sym -> if isTarget sym then modifyExtraInfo sym extraInfo else sym)
                 
-        put(SymTab $ M.adjust updateExtraInfo' sym table, scopes, scope)
+        put(SymTab $ M.adjust updateExtraInfo' sym table, scopes, scope,promises)
 -------------------------------------------------------------------------------

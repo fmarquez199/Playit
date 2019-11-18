@@ -54,6 +54,6 @@ main = do
                 if hasErr then putStrLn $ showLexerErrors (checkedFile,code) pos
                 else do
                     -- mapM_ print tokens
-                    (ast,(st,_,_),errors) <- runRWST (parse tokens) (checkedFile,code) initState
+                    (ast,(st,_,_,_),errors) <- runRWST (parse tokens) (checkedFile,code) initState
                     
                     if null errors then print ast >> print st else print errors                    

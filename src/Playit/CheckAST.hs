@@ -55,7 +55,7 @@ checkDesref tVar p
 -- Still no 100% but ITS OK
 checkNewType :: Id -> Pos -> MonadSymTab Bool
 checkNewType tName p = do
-    (symTab@(SymTab st), scopes, _) <- get
+    (symTab@(SymTab st), scopes, _,_) <- get
     fileCode <- ask
     let infos = lookupInScopes [1] tName symTab
     
@@ -84,17 +84,41 @@ checkAssigs assigs t p
         updatedAssigs = map (changeTDummyAssigs t) assigs
 -------------------------------------------------------------------------------
 
+updatePromiseTypeFunction exprF t = do
+    (symTab, activeScopes, scope,promises) <- get
+        
+    let name = case exprF of 
+                (FuncCall (Call name _) _) -> name
+                _ -> error $ "Internal error : FunctionCall doesn't have a name"
+
+    let promise = getPromiseSubrutine name promises
+    if isJust promise then do
+        let 
+            modifyTypePromise prom@(PromiseSubrutine id p typ pos) = 
+                if id == name then PromiseSubrutine id p t pos else prom
+
+        put(symTab, activeScopes, scope , map modifyTypePromise promises)
+
+        updateType name 1 t
+    else do
+        error $ "Internal error : Promise for '"  ++ name ++ "' not defined!"
 
 -------------------------------------------------------------------------------
 -- | Checks the assignation's types
-checkAssig :: Type -> Type -> Pos -> MonadSymTab Bool
-checkAssig tLval tExpr p
+checkAssig :: Var -> Expr -> Pos -> MonadSymTab Bool
+checkAssig lval expr p
     | isRead || isNull || tExpr == tLval || isLists = return True
+    | tExpr == TPDummy && isFunctionCall expr= do
+        updatePromiseTypeFunction expr tLval
+        return True
+        
     | otherwise = do
         fileCode <- ask
         error $ semmErrorMsg (show tLval) (show tExpr) fileCode p
 
     where
+        tLval = typeVar lval
+        tExpr = typeE expr
         isEmptyList = isList tExpr && baseTypeT tExpr == TDummy
         isListLval  = isList tLval && isSimpleType (baseTypeT tLval)
         isLists = isEmptyList && isListLval
@@ -110,14 +134,27 @@ checkBinary op e1 e2 p
     | op `elem` compOps && tE1 == tE2 = return (True, TBool)    
     | op `elem` compEqs && isNull = return (True, TBool)
     | op `elem` compEqs && isList tE1 && isList tE2 && isJust (getTLists [tE1,tE2]) = return (True, TBool)
+
     | tE1 == tE2 = return (True, tE1)
+    | tE1 == TPDummy && tE2 /= TPDummy = do
+        if isFunctionCall e1 then
+            updatePromiseTypeFunction e1 tE2 
+        else return ()
+        return (True, tE1)
+    | tE1 /= TPDummy && tE2 == TPDummy = do
+        if isFunctionCall e1 then
+            updatePromiseTypeFunction e2 tE1 
+        else return ()
+        return (True, tE2)
+
     | otherwise = do
         fileCode <- ask
         error $ semmErrorMsg (show tE1) (show e2) fileCode p        
+    
     where
         tE1 = typeE e1
         tE2 = typeE e2
-        noTError = tE1 /= TError && tE2 /= TError -- TODO : Agregar a las comparaciones cuando no salga en el primer error
+        -- noTError = tE1 /= TError && tE2 /= TError -- TODO : Agregar a las comparaciones cuando no salga en el primer error
         isNull = (((isPointer tE1 && tE2 == TNull) || (tE1 == TNull && isPointer tE2 ))  || (tE1 == TNull && tE2 == TNull))
         compEqs = [Eq,NotEq]
         compOps = [Eq,NotEq,Greater,GreaterEq,Less,LessEq]
