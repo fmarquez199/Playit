@@ -126,7 +126,6 @@ newType tName p = do
 
 -------------------------------------------------------------------------------
 -- | Creates an assignation node
--- TODO: revisar que el lval no sea una variable de iteracion
 assig :: Var -> Expr -> Pos -> MonadSymTab Instr
 assig lval expr p = do
     iter <- checkIterVar lval
@@ -141,23 +140,6 @@ register :: [Expr] -> Expr
 register e
     | TError `notElem` map typeE e = Literal (Register e) TRegister
     | otherwise = Literal (Register e) TError
--------------------------------------------------------------------------------
-
-
--------------------------------------------------------------------------------
--- crearIncremento :: Var -> Pos -> Instr
--- crearIncremento lval (line, _) = Assig lval (crearSuma (Variable lval TInt) (Literal (Integer 1) TInt))
---     | typeVar lval == TInt =
---         Assig lval (crearSuma (Variable lval TInt) (Literal (Integer 1) TInt))
---     | otherwise = error("Error semantico en el incremento, variable no es de tipo Integer")
---
-
--- crearDecremento :: Var -> Pos -> Instr
--- crearDecremento lval (line, _) = Assig lval (crearResta (Variable lval TInt) (Literal (Integer 1) TInt))
---     | typeVar lval == TInt =
---         Assig lval (crearResta (Variable lval TInt) (Literal (Integer 1) TInt))
---     | otherwise = error("Error semantico en el decremento, variable no es de tipo Integer")
---
 -------------------------------------------------------------------------------
 
 
@@ -244,30 +226,30 @@ len e p
 
 
 -------------------------------------------------------------------------------
--- TODO
--- | Creates the same type array / list node  <---(*)
-arrayList :: [Expr] -> Expr
-arrayList [] = ArrayList [] (TArray (Literal (Integer 0) TInt) TDummy)
-arrayList e =
-    ArrayList e (TArray (Literal (Integer $ length e) TInt) tipo)
+-- | Creates the same type array node
+array :: [Expr] -> Expr
+array e =
+    ArrayList e (TArray (Literal (Integer $ length e) TInt) t)
     where
-        mapaTipos = map typeE e
-        tipoPrimero = head mapaTipos
-        tipo = if all (== tipoPrimero) mapaTipos then tipoPrimero else TError
+        arrayTypes = map typeE e
+        fstType = head arrayTypes
+        t = if all (== fstType) arrayTypes then fstType else TError
 -------------------------------------------------------------------------------
 
 
+-------------------------------------------------------------------------------
+-- | Creates the same type list node
 list :: [Expr] -> Pos -> MonadSymTab Expr
 list [] p = return $ ArrayList [] (TList TDummy) -- TODO : Recordar quitar el TDummy
 list e  p
-    | isJust tipo =
-        return $ ArrayList e (TList (fromJust tipo))
+    | isJust t = return $ ArrayList e (TList (fromJust t))
     | otherwise = do
         fileCode <- ask
-        error $ semmErrorMsg (show tipo) (show mapaTipos) fileCode p
+        error $ semmErrorMsg (show t) (show listTypes) fileCode p
     where
-        mapaTipos = map typeE e
-        tipo = getTLists mapaTipos
+        listTypes = map typeE e
+        t = getTLists listTypes
+-------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------

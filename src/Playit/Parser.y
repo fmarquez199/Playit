@@ -572,7 +572,7 @@ Expression :: { Expr }
   | "{" Expressions "}"    { register $ reverse $2 }
   | "{" "}"                { register [] } -- By default
   
-  | "|)" Expressions "(|"  { arrayList $ reverse $2 }
+  | "|)" Expressions "(|"  { array $ reverse $2 }
   | "<<" Expressions ">>"  { % list (reverse $2) $3 }
   | "<<" ">>"              { % list [] $2 }
   | new Type               { Unary New (IdType $2) (TPointer $2) }
