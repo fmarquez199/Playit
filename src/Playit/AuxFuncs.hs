@@ -148,11 +148,11 @@ isVarIter (Var name _) symTab scope  = False
 
 -------------------------------------------------------------------------------
 getName :: Var -> Id
-getName (Desref v t)  = getName v
-getName (Field v n t) = getName v
-getName (Index v e t) = getName v
+getName (Desref v _)  = getName v
+getName (Field v _ _) = getName v
+getName (Index v _ _) = getName v
 getName (Param n _ _) = n
-getName (Var n t)     = n
+getName (Var n _)     = n
 -------------------------------------------------------------------------------
 
 
@@ -173,7 +173,7 @@ baseTypeVar :: Var -> Type
 baseTypeVar (Var _ t)     = baseTypeT t
 baseTypeVar (Index _ _ t) = baseTypeT t
 baseTypeVar (Param _ t _) = baseTypeT t
-baseTypeVar (Field v _ t) = baseTypeT t  -- baseTypeVar v
+baseTypeVar (Field _ _ t) = baseTypeT t
 -- baseTypeVar (Desref v t)  = baseTypeT t
 baseTypeVar (Desref v _)  = baseTypeVar v
 -------------------------------------------------------------------------------
@@ -285,8 +285,8 @@ getTListAnexo _ _ = Nothing
 
 
 -------------------------------------------------------------------------------
-getPromiseSubrutine:: String -> Promises -> Maybe Promise
-getPromiseSubrutine name []  = Nothing
+getPromiseSubrutine:: Id -> Promises -> Maybe Promise
+getPromiseSubrutine _ []  = Nothing
 getPromiseSubrutine name (promise@(PromiseSubrutine id _ _ _):r)  = 
     if  name == id then Just promise else getPromiseSubrutine name r
 -------------------------------------------------------------------------------
