@@ -297,3 +297,23 @@ updateExtraInfo sym category extraInfo = do
                 
         put(SymTab $ M.adjust updateExtraInfo' sym table, scopes, scope, promises)
 -------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+updatePromiseTypeFunction :: Expr -> Type -> MonadSymTab ()
+updatePromiseTypeFunction exprF t = do
+    (symTab, activeScopes, scope,promises) <- get
+    let name = case exprF of 
+                (FuncCall (Call name _) _) -> name
+                _ -> error "Internal error : FunctionCall doesn't have a name"
+        promise = getPromiseSubrutine name promises
+    
+    if isJust promise then do
+        let modifyTypePromise prom@(PromiseSubrutine id p _ pos) = 
+                if id == name then PromiseSubrutine id p t pos else prom
+
+        put(symTab, activeScopes, scope , map modifyTypePromise promises)
+        updateType name 1 t
+    else
+        error $ "Internal error : Promise for '"  ++ name ++ "' not defined!"
+-------------------------------------------------------------------------------
