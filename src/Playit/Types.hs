@@ -39,7 +39,7 @@ data Type =
     TBool            |
     TChar            |
     TDummy           | -- Temp for when the type its still unknown
-    TPDummy          | -- Temp for when the type is promised to define later
+    TPDummy          | -- Temp for when the subroutine is promised to be defined later
     TError           | -- Error type, type checks fail
     TFloat           |
     TInt             |
@@ -194,6 +194,7 @@ instance Show Literal where
     show (ArrLst l@(Character _:_)) = show $ map ((\x->read x::Char) . show) l
     show (ArrLst l@(Integer _:_))   = show $ map ((\x->read x::Int) . show) l
     show (ArrLst l@(Floatt _:_))    = show $ map ((\x->read x::Float) . show) l
+    show (Register inits)           = "{" ++ intercalate "," (map show inits) ++ "}"
     show (ArrLst l)                 = concatMap show l
     show (Boolean val)              = show val
     show (Character val)            = show val
@@ -329,6 +330,18 @@ instance Show SymbolInfo where
         else ""
 
 
+-- Subroutine promise for co-recursive subroutines
+data Promise = PromiseSubrutine {
+    getIdPromise :: Id,
+    getParamsPromise :: [Type],
+    getTypePromise :: Type,
+    getPosPromise :: Pos
+    }
+    deriving (Eq, Ord)
+
+type Promises = [Promise]
+
+
 {- | New type that represents the symbol table
  * Hash table:
  *   Key: Id
@@ -353,17 +366,8 @@ instance Show SymTab where
             symbols = concatMap showTable table
 
 
-data Promise = PromiseSubrutine {
-    getIdPromise::Id,
-    getParamsPromise::[Type],
-    getTypePromise::Type,
-    getPosPromise::Pos
-    }
-    deriving (Eq, Ord)
-
-type Promises = [Promise]
--- State that stores the symbol table, active scopes and total scopes
-type SymTabState = (SymTab, ActiveScopes, Scope,Promises)
+-- State that stores the symbol table, active scopes, total scopes and subroutines promises
+type SymTabState = (SymTab, ActiveScopes, Scope, Promises)
 
 -- Reader that stores the file name and the code for better show of errors
 type FileCodeReader = (String,String)

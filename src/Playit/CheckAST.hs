@@ -10,6 +10,7 @@
 module Playit.CheckAST where
 
 import Control.Monad.Trans.RWS
+import Control.Monad (when)
 import qualified Data.Map as M
 import Data.Maybe (isJust,fromJust)
 import Playit.AuxFuncs
@@ -55,7 +56,7 @@ checkDesref tVar p
 -- Still no 100% but ITS OK
 checkNewType :: Id -> Pos -> MonadSymTab Bool
 checkNewType tName p = do
-    (symTab@(SymTab st), scopes, _,_) <- get
+    (symTab@(SymTab st), scopes, _, _) <- get
     fileCode <- ask
     let infos = lookupInScopes [1] tName symTab
     
@@ -84,34 +85,34 @@ checkAssigs assigs t p
         updatedAssigs = map (changeTDummyAssigs t) assigs
 -------------------------------------------------------------------------------
 
+
+-------------------------------------------------------------------------------
+updatePromiseTypeFunction :: Expr -> Type -> MonadSymTab ()
 updatePromiseTypeFunction exprF t = do
     (symTab, activeScopes, scope,promises) <- get
-        
     let name = case exprF of 
                 (FuncCall (Call name _) _) -> name
-                _ -> error $ "Internal error : FunctionCall doesn't have a name"
-
-    let promise = getPromiseSubrutine name promises
+                _ -> error "Internal error : FunctionCall doesn't have a name"
+        promise = getPromiseSubrutine name promises
+    
     if isJust promise then do
-        let 
-            modifyTypePromise prom@(PromiseSubrutine id p typ pos) = 
+        let modifyTypePromise prom@(PromiseSubrutine id p _ pos) = 
                 if id == name then PromiseSubrutine id p t pos else prom
 
         put(symTab, activeScopes, scope , map modifyTypePromise promises)
-
         updateType name 1 t
-    else do
+    else
         error $ "Internal error : Promise for '"  ++ name ++ "' not defined!"
+-------------------------------------------------------------------------------
+
 
 -------------------------------------------------------------------------------
 -- | Checks the assignation's types
 checkAssig :: Type -> Expr -> Pos -> MonadSymTab Bool
 checkAssig tLval expr p
     | isRead || isNull || (tExpr == tLval) || isLists = return True
-    | tExpr == TPDummy && isFunctionCall expr= do
-        updatePromiseTypeFunction expr tLval
-        return True
-        
+    | tExpr == TPDummy && isFunctionCall expr =
+        updatePromiseTypeFunction expr tLval >> return True
     | otherwise = do
         fileCode <- ask
         error $ semmErrorMsg (show tLval) (show tExpr) fileCode p
@@ -129,11 +130,11 @@ checkAssig tLval expr p
 -- | Checks if var is an Iteration's Variable.
 checkIterVar :: Var -> MonadSymTab Bool
 checkIterVar var = do
-    (symtab, _, scope,_) <- get
-    let
-        cc = (\s -> getCategory s == IterationVariable && getScope s == scope)
+    (symtab, _, scope, _) <- get
+    let cc = (\s -> getCategory s == IterationVariable && getScope s == scope)
         name = getName var
         cat = filter cc $ fromJust (lookupInSymTab name symtab)
+    
     return $ not $ null cat
 -------------------------------------------------------------------------------
 
@@ -146,14 +147,12 @@ checkBinary op e1 e2 p
     | op `elem` compEqs && isLists && isJust (getTLists [tE1,tE2]) = return (True, TBool)
     | tE1 == tE2 = return (True, tE1)
     | tE1 == TPDummy && tE2 /= TPDummy = do
-        if isFunctionCall e1 then
-            updatePromiseTypeFunction e1 tE2 
-        else return ()
+        when (isFunctionCall e1) $
+            updatePromiseTypeFunction e1 tE2
         return (True, tE1)
     | tE1 /= TPDummy && tE2 == TPDummy = do
-        if isFunctionCall e1 then
-            updatePromiseTypeFunction e2 tE1 
-        else return ()
+        when (isFunctionCall e1) $
+            updatePromiseTypeFunction e2 tE1
         return (True, tE2)
     | otherwise = do
         fileCode <- ask

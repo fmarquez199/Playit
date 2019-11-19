@@ -8,8 +8,8 @@
 -}
 module Playit.AST where
 
-import Control.Monad (void,forM,forM_)
 import Control.Monad.Trans.RWS
+import Control.Monad (void,when,forM,forM_)
 import qualified Data.Map as M
 import Data.Maybe (fromJust, isJust, isNothing)
 import Playit.CheckAST
@@ -30,7 +30,7 @@ import Playit.Types
 -- | Creates variables ids node
 var :: Id -> Pos -> MonadSymTab Var
 var id p = do
-    (symTab, activeScopes, _,_) <- get
+    (symTab, activeScopes, _, _) <- get
     fileCode <- ask
     let infos = lookupInScopes activeScopes id symTab
 
@@ -66,7 +66,7 @@ index var expr (lV,cV) (lE,cE) = do
 -- | Creates the registers / unions fields
 field :: Var -> Id -> Pos -> MonadSymTab Var
 field var field p = do
-    (symTab, _, _,_) <- get
+    (symTab, _, _, _) <- get
     fileCode@(file,code) <- ask
     
     -- Verify type 'var' is register / union
@@ -131,14 +131,18 @@ assig :: Var -> Expr -> Pos -> MonadSymTab Instr
 assig lval expr p = do
     iter <- checkIterVar lval
     asig <- checkAssig (typeVar lval) expr p    
-    if (not iter) && asig then return $ Assig lval expr
+    if not iter && asig then return $ Assig lval expr
     else return $ Assig lval (Literal EmptyVal TError) -- change when no exit with first error encounter
 -------------------------------------------------------------------------------
 
+
+-------------------------------------------------------------------------------
 register :: [Expr] -> Expr
 register e
-    | all (/= TError) (map typeE e) = Literal (Register e) TRegister
+    | TError `notElem` map typeE e = Literal (Register e) TRegister
     | otherwise = Literal (Register e) TError
+-------------------------------------------------------------------------------
+
 
 -------------------------------------------------------------------------------
 -- crearIncremento :: Var -> Pos -> Instr
@@ -313,7 +317,7 @@ ifSimple cond true false p = do
 -- | Creates the determined iteration instruction node
 for :: Id -> Expr -> Expr -> InstrSeq -> SymTab -> Scope -> Pos 
             -> MonadSymTab Instr
-for var e1 e2 i st scope pos@(line,_) = return $ For var e1 e2 i
+for var e1 e2 i st scope pos@(line, _) = return $ For var e1 e2 i
 -- | tE1 == TInt && tE2 == TInt =
     --     do
     --         let newI = map (changeTDummyFor TInt st scope) i
@@ -347,8 +351,8 @@ for var e1 e2 i st scope pos@(line,_) = return $ For var e1 e2 i
 -- | Creates the determined conditional iteration instruction node
 forWhile :: Id -> Expr -> Expr -> Expr -> InstrSeq -> SymTab -> Scope
                 -> Pos -> MonadSymTab Instr
-forWhile var e1 e2 e3 i st scope pos@(line,_) = return $ ForWhile var e1 e2 e3 i
-{-forWhile var e1 e2 e3 i st scope pos@(line,_)
+forWhile var e1 e2 e3 i st scope pos@(line, _) = return $ ForWhile var e1 e2 e3 i
+{-forWhile var e1 e2 e3 i st scope pos@(line, _)
     | tE1 == TInt && tE2 == TInt && tE3 == TBool =
         do
             let newI = map (changeTDummyFor TInt st scope) i
@@ -414,9 +418,10 @@ while cond i p = While cond i
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 
+-------------------------------------------------------------------------------
 checkPromises ::  MonadSymTab ()
 checkPromises = do
-    (symTab, activeScopes, scopes ,promises) <- get
+    (symTab, activeScopes, scopes , promises) <- get
     fileCode <- ask
 
     forM promises $ \(PromiseSubrutine name args t p ) -> do
@@ -427,45 +432,48 @@ checkPromises = do
         return ()
     
     return ()
+-------------------------------------------------------------------------------
 
+-------------------------------------------------------------------------------
 updateInfoSubrutine:: Id -> Category -> [(Type,Id)] -> Type -> MonadSymTab ()
 updateInfoSubrutine name cat p t = do
-    (symTab, activeScopes, scopes ,promises) <- get
+    (symTab, activeScopes, scopes, promises) <- get
     fileCode <- ask
     let paramsF = reverse p
-    let promise = getPromiseSubrutine name promises
+        promise = getPromiseSubrutine name promises
 
-    if isJust promise then do
+    when (isJust promise) $ do
         let promise' = fromJust promise
-        let paramsP = getParamsPromise promise'
-        let typeP = getTypePromise promise'
+            paramsP = getParamsPromise promise'
+            typeP = getTypePromise promise'
 
         if  any (/=True) [t1 == t2 | (t1,(t2,id2)) <- zip paramsP paramsF ] then
-            error $ errorMsg (" Wrong type of arguments") fileCode (getPosPromise promise')
-        else if  length(paramsP) /= length(paramsF) then
-            let msj = "Amount of arguments: " ++ show (length(paramsP)) ++
-                    " not equal to expected:" ++ show (length(paramsF))
-            in error $ errorMsg msj fileCode (getPosPromise promise')
-        else if typeP /= TPDummy && typeP /= t then
-            error $ semmErrorMsg (show typeP) (show t) fileCode (getPosPromise promise')
-        else  do
-            put(symTab, activeScopes, scopes ,filter (/= promise') promises)
-            return () 
-    else return()
+            error $ errorMsg "Wrong type of arguments" fileCode (getPosPromise promise')
+        else
+            if length paramsP /= length paramsF then
+                let msj = "Amount of arguments: " ++ show (length paramsP) ++
+                        " not equal to expected:" ++ show (length paramsF)
+                in error $ errorMsg msj fileCode (getPosPromise promise')
+            else
+                if typeP /= TPDummy && typeP /= t then
+                    error $ semmErrorMsg (show typeP) (show t) fileCode (getPosPromise promise')
+                else do
+                    put(symTab, activeScopes, scopes, filter (/= promise') promises)
+                    return () 
 
     updateExtraInfo name cat [Params paramsF]
     updateType name 1 t
-
-
     return ()
-  
+-------------------------------------------------------------------------------
+
+
 -------------------------------------------------------------------------------
 
 -- | Creates subroutine call instruction node
 -- Considerar quitar esta función
 call :: Id -> Params -> Pos -> MonadSymTab (Subroutine,Pos)
 call subroutine args p = do
-    (symTab, activeScopes, scopes ,promises) <- get
+    (symTab, activeScopes, scopes, promises) <- get
     fileCode <- ask
     let symInfos = lookupInScopes [1,0] subroutine symTab
     
@@ -487,35 +495,36 @@ call subroutine args p = do
                 in error $ errorMsg msj fileCode p
     else do
         -- Add a promise to create subroutine
-        put(symTab, activeScopes, scopes , promises ++ [PromiseSubrutine subroutine (map (typeE) args) TPDummy p] )
-
-        return (Call subroutine args,p)
+        put(symTab, activeScopes, scopes, promises ++ [PromiseSubrutine subroutine (map typeE args) TPDummy p] )
+        return (Call subroutine args, p)
 -------------------------------------------------------------------------------
 
 
 procCall:: Subroutine -> Pos -> MonadSymTab Instr
 procCall procedure@(Call name args) p = do
-    (symTab, activeScopes, scope,promises) <- get
-
+    (symTab, activeScopes, scope, promises) <- get
     fileCode <- ask
     let symInfos = lookupInScopes [1,0] name symTab
+    
     if isJust symInfos then do
         let isProcedure symInfo = getCategory symInfo == Procedures
             procedure' = filter isProcedure (fromJust symInfos)
 
         if null procedure' then
             error $ errorMsg ("'" ++ name  ++ "' is not a procedure") fileCode p
-        else do
+        else
             return $ ProcCall procedure
     else do
         -- If no is declared but maybe(It has to be a promise) is a promise
         let promise = getPromiseSubrutine name promises
+        
         if isJust promise then do
             let info = [SymbolInfo TVoid 1 Procedures [Params [(typeE e,show i)| (e,i) <- zip args [1..]]]]
-            put (insertSymbols [name] info symTab, activeScopes, scope,promises)
+        
+            put (insertSymbols [name] info symTab, activeScopes, scope, promises)
             return $ ProcCall procedure
-        else do
-            error $ "Error interno:  Procedure '" ++ name ++ "' doesn't have a promise,"
+        else
+            error $ "Error interno:  Procedure '" ++ name ++ "' doesn't have a promise."
 
         -------------------------------------------------------------------------------
 -- | Creates function call expresion node
@@ -523,27 +532,27 @@ procCall procedure@(Call name args) p = do
 --      its excuted first
 funcCall :: Subroutine -> Pos -> MonadSymTab Expr
 funcCall function@(Call name args) p = do
-
-    (symTab, activeScopes, scope,promises) <- get
-
+    (symTab, activeScopes, scope, promises) <- get
     fileCode <- ask
     let symInfos = lookupInScopes [1,0] name symTab
+    
     if isJust symInfos then do
         let isFunction symInfo = getCategory symInfo == Functions
             function' = filter isFunction (fromJust symInfos)
 
         if null function' then
             error $ errorMsg ("'" ++ name  ++ "' is not a function") fileCode p
-        else do
+        else
             return $ FuncCall function (getType $ head function')
     else do
         -- If no is declared but maybe(It has to be a promise) is a promise
         let promise = getPromiseSubrutine name promises
+        
         if isJust promise then do
             let info = [SymbolInfo TDummy 1 Functions [Params [(typeE e,show i)| (e,i) <- zip args [1..]]]]
-            put (insertSymbols [name] info symTab, activeScopes, scope,promises)
+            put (insertSymbols [name] info symTab, activeScopes, scope, promises)
             return $ FuncCall function TPDummy
-        else do
+        else
             error $ "Error interno:  Function '" ++ name ++ "' doesn't have a promise,"
 
 -------------------------------------------------------------------------------
@@ -560,7 +569,7 @@ funcCall function@(Call name args) p = do
 -- | Creates the print instruction node
 print' :: [Expr] -> Pos -> MonadSymTab Instr
 print' e p
-    | all (/= TError) (map typeE e) = return $ Print e
+    | TError `notElem` map typeE e = return $ Print e
     | otherwise = do
         fileCode <- ask
         error $ semmErrorMsg "Good-typed expression" "Error" fileCode p 
@@ -585,7 +594,7 @@ read' e _ = Read e TRead
 -- | Creates the free memory instruction node
 free :: Id -> Pos -> MonadSymTab Instr
 free var p = do
-    (symTab, activeScopes, _,_) <- get
+    (symTab, activeScopes, _, _) <- get
     fileCode <- ask
     let infos = lookupInScopes activeScopes var symTab
     

@@ -165,22 +165,22 @@ ProgramWrapper :: { Instr }
   
 Program :: { Instr }
   : Definitions EndLines world program ":" EndLines Instructions  EndLines ".~"  PopScope
-    {% do
+    { % do
       checkPromises
       return $ Program $ reverse $7 
     }
   | Definitions EndLines world program ":" EndLines ".~" PopScope
-  {% do
-    checkPromises
-    return $ Program []
-  }
-| world program ":" EndLines Instructions EndLines ".~"  PopScope
-  {% do
-    checkPromises
-    return $ Program $ reverse $5
-  }
-| world program ":" EndLines ".~" PopScope
-    { Program [] }
+    { % do
+      checkPromises
+      return $ Program []
+    }
+  | world program ":" EndLines Instructions EndLines ".~"  PopScope
+    { % do
+      checkPromises
+      return $ Program $ reverse $5
+    }
+  | world program ":" EndLines ".~" PopScope
+      { Program [] }
 
 
 Definitions :: { () }
