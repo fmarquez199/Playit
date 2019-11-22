@@ -454,7 +454,7 @@ DefineSubroutine :: { () }
     { %
       let (id,category) = $1
       in updateExtraInfo id category [AST (reverse $4)]
-    }
+    } -- TODO: check existe al menos un return
   | Firma ":" EndLines ".~"   { }
 
 
