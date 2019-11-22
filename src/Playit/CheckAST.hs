@@ -53,7 +53,7 @@ checkDesref tVar p
 
 -------------------------------------------------------------------------------
 -- | Checks the new defined type
--- Still no 100% but ITS OK
+-- TODO: Faltaba algo, pero no recuerdo que
 checkNewType :: Id -> Pos -> MonadSymTab Bool
 checkNewType tName p = do
     (symTab@(SymTab st), scopes, _, _) <- get
@@ -90,7 +90,7 @@ checkAssigs assigs t p
 -- | Checks the assignation's types
 checkAssig :: Type -> Expr -> Pos -> MonadSymTab Bool
 checkAssig tLval expr p
-    | isRead || isNull || (tExpr == tLval) || isLists = return True
+    | isRead || isNull || isInitReg || (tExpr == tLval) || isLists = return True
     | tExpr == TPDummy && isFunctionCall expr =
         updatePromiseTypeFunction expr tLval >> return True
     | otherwise = do
@@ -104,6 +104,7 @@ checkAssig tLval expr p
         isLists = isEmptyList && isListLval
         isRead = tExpr == TRead
         isNull = tExpr == TNull
+        isInitReg = tExpr == TRegister
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -122,10 +123,9 @@ checkIterVar var = do
 -- | Checks the binary's expression's types
 checkBinary :: BinOp -> Expr -> Expr -> Pos -> MonadSymTab (Bool, Type)
 checkBinary op e1 e2 p
+    | op `elem` compEqs && (isNull || isLists) = return (True, TBool)
     | op `elem` compOps && tE1 == tE2 = return (True, TBool)    
-    | op `elem` compEqs && isNull = return (True, TBool)
-    | op `elem` compEqs && isLists && isJust (getTLists [tE1,tE2]) = return (True, TBool)
-    | tE1 == tE2 = return (True, tE1)
+    | tE1 == tE2 && noTError = return (True, tE1)
     | tE1 == TPDummy && tE2 /= TPDummy = do
         when (isFunctionCall e1) $
             updatePromiseTypeFunction e1 tE2
@@ -140,11 +140,11 @@ checkBinary op e1 e2 p
     where
         tE1 = typeE e1
         tE2 = typeE e2
-        isLists = isList tE1 && isList tE2
-        -- noTError = tE1 /= TError && tE2 /= TError -- TODO : Agregar a las comparaciones cuando no salga en el primer error
-        isNull = ((isPointer tE1 && tE2 == TNull) || (tE1 == TNull && isPointer tE2 ))  || (tE1 == TNull && tE2 == TNull)
         compEqs = [Eq,NotEq]
         compOps = [Eq,NotEq,Greater,GreaterEq,Less,LessEq]
+        noTError = tE1 /= TError && tE2 /= TError -- TODO : Agregar a las comparaciones cuando no salga en el primer error
+        isLists = isList tE1 && isList tE2 && isJust (getTLists [tE1,tE2])
+        isNull = ((isPointer tE1 && tE2 == TNull) || (tE1 == TNull && isPointer tE2 ))  || (tE1 == TNull && tE2 == TNull)
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -251,3 +251,107 @@ changeTRead :: Expr -> Type -> Expr
 changeTRead (Read e _) t = Read e t
 changeTRead e _ = e
 
+
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+--          Cambiar el tipo 'TDummy' en las instrucciones del 'for'
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+
+
+{--------------------------------------------------------------------------------
+-- Cambia el TDummy de la variable de iteracion en el 'for'
+changeTDummyLval :: Var -> Type -> Var
+changeTDummyLval (Var n TDummy) t       = Var n t
+changeTDummyLval var@(Var _ _) _       = var
+changeTDummyLval (Index var e t') t  =
+    let newE = changeTDummyExpr t e
+    in Index var newE t'
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-- Cambia el TDummy de las expresiones en el 'for'
+changeTDummyExpr :: Type -> Expr -> Expr
+changeTDummyExpr t (Literal lit TDummy) = Literal lit t
+--------------------------------------------------------------------------
+changeTDummyExpr _ lit@(Literal _ _) = lit
+--------------------------------------------------------------------------
+changeTDummyExpr t (Variable var TDummy) =
+    let newVar = changeTDummyLval var t
+    in Variable newVar t
+--------------------------------------------------------------------------
+changeTDummyExpr _ vars@(Variable _ _) = vars
+--------------------------------------------------------------------------
+changeTDummyExpr t (ArrayList exprs TDummy) =
+    let newExprs = map (changeTDummyExpr t) exprs
+    in ArrayList newExprs t
+--------------------------------------------------------------------------
+changeTDummyExpr _ lst@(ArrayList _ _) = lst
+--------------------------------------------------------------------------
+changeTDummyExpr t (Unary op e TDummy) =
+    let newE = changeTDummyExpr t e
+    in Unary op newE t
+--------------------------------------------------------------------------
+changeTDummyExpr _ opUn@Unary{} = opUn
+--------------------------------------------------------------------------
+changeTDummyExpr t (Binary op e1 e2 TDummy) =
+    let newE1 = changeTDummyExpr t e1
+        newE2 = changeTDummyExpr t e2
+    in Binary op newE1 newE2 t
+--------------------------------------------------------------------------
+changeTDummyExpr _ opBin@Binary{} = opBin
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-- Cambia el TDummy de la secuencia de instrucciones del 'for'
+changeTDummyFor :: Type -> SymTab -> Scope -> Instr -> Instr
+changeTDummyFor t symTab scope (Assig lval e)
+    | isVarIter lval symTab scope =
+        error ("\n\nError semantico, la variable de iteracion: '" ++
+               show lval ++ "', no se puede modificar.\n")
+    | otherwise =
+        let newLval = changeTDummyLval lval t
+            newE = changeTDummyExpr t e
+        in Assig newLval newE
+--------------------------------------------------------------------------
+-- changeTDummyFor t symTab scope (Program seqI) =
+--     let newSeqI = map (changeTDummyFor t symTab scope) seqI
+--     in Program newSeqI
+--------------------------------------------------------------------------
+changeTDummyFor t symTab scope (For name e1 e2 seqI) =
+    let newE1 = changeTDummyExpr t e1
+        newE2 = changeTDummyExpr t e2
+        newSeqI = map (changeTDummyFor t symTab scope) seqI
+    in For name newE1 newE2 newSeqI
+--------------------------------------------------------------------------
+--changeTDummyFor t symTab scope (ForEach name e1 e2 e3 --seqI st) =
+    --let newE1 = changeTDummyExpr t e1
+--        newE2 = changeTDummyExpr t e2
+--        newE3 = changeTDummyExpr t e3
+--        newSeqI = map (changeTDummyFor t symTab scope) seqI
+--    in ForEach name newE1 newE2 newE3 newSeqI st
+--------------------------------------------------------------------------
+changeTDummyFor t symTab scope (While e seqI) =
+    let newE = changeTDummyExpr t e
+        newSeqI = map (changeTDummyFor t symTab scope) seqI
+    in While newE newSeqI
+--------------------------------------------------------------------------
+{-changeTDummyFor t symTab scope (If e seqI) =
+    let newE = changeTDummyExpr t e
+        newSeqI = map (changeTDummyFor t symTab scope) seqI
+    in If newE newSeqI
+--------------------------------------------------------------------------
+changeTDummyFor t symTab scope (IfElse e seqI1 seqI2) =
+    let newE = changeTDummyExpr t e
+        newSeqI1 = map (changeTDummyFor t symTab scope) seqI1
+        newSeqI2 = map (changeTDummyFor t symTab scope) seqI2
+    in IfElse newE newSeqI1 newSeqI2 -}
+--------------------------------------------------------------------------
+changeTDummyFor t symTab scope (Print e) =
+    let newE = changeTDummyExpr t e
+    in Print newE
+
+-------------------------------------------------------------------------------
+-}
