@@ -49,7 +49,7 @@ var id p = do
 
 
 -------------------------------------------------------------------------------
--- | Creates idexed variables node
+-- | Creates indexed variables node
 index :: Var -> Expr -> Pos -> Pos -> MonadSymTab Var
 index var expr (lV,cV) (lE,cE) = do
     let pVar  = (lV-1, cV-1)
@@ -482,6 +482,7 @@ call subroutine args p = do
 -------------------------------------------------------------------------------
 
 
+-------------------------------------------------------------------------------
 procCall:: Subroutine -> Pos -> MonadSymTab Instr
 procCall procedure@(Call name args) p = do
     (symTab, activeScopes, scope, promises) <- get
@@ -507,8 +508,10 @@ procCall procedure@(Call name args) p = do
             return $ ProcCall procedure
         else
             error $ "Error interno:  Procedure '" ++ name ++ "' doesn't have a promise."
+-------------------------------------------------------------------------------
 
-        -------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
 -- | Creates function call expresion node
 -- NOTE: Its already verified that subroutine's defined with 'call', because
 --      its excuted first
@@ -536,7 +539,6 @@ funcCall function@(Call name args) p = do
             return $ FuncCall function TPDummy
         else
             error $ "Error interno:  Function '" ++ name ++ "' doesn't have a promise,"
-
 -------------------------------------------------------------------------------
 
 
@@ -554,7 +556,7 @@ print' e p
     | TError `notElem` map typeE e = return $ Print e
     | otherwise = do
         fileCode <- ask
-        error $ semmErrorMsg "Good-typed expression" "Error" fileCode p 
+        error $ semmErrorMsg "Good-typed expression" "Type error" fileCode p 
 -------------------------------------------------------------------------------
 
 
