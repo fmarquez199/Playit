@@ -79,6 +79,7 @@ areSameTExtInf _ _ = False
 -- TODO: modificar para que se pueda hacer:
 --      Kit of Power l = << >>, l2
 --      Power puff x = DeathZone
+--      RegUnion r = {3,*r*}
 eqAssigsTypes :: InstrSeq -> Type -> Bool
 eqAssigsTypes assigs t = all (\(Assig _ expr) -> typeE expr == t) assigs
 -------------------------------------------------------------------------------
