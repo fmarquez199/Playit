@@ -1,0 +1,31 @@
+boss f():
+    @kill g() @ No se puede tener correcursion de procedimientos?
+.~
+boss g():
+    kill f()
+.~
+monster f2() Power:
+    @Skill r = kill g2() @ El tipo de g2 es una promesa (TPDummy)
+    Skill r
+    r = 2'6 + kill g2()
+    unlock 1
+.~
+monster g2() Skill:
+    Power r = kill f2()
+    unlock 1'0
+.~
+monster suma(Power a,Power b) Power:
+  Power t = (kill entero1()  > kill entero2()) ? 2:3
+  unlock t
+.~
+
+monster entero1() Power:
+.~
+monster entero2() Rune:
+.~
+
+world %Correcursion%:
+    kill f()
+    Power f2' = kill f2()
+    Skill g2' = kill g2()
+.~
