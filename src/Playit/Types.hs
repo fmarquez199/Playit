@@ -39,13 +39,13 @@ data Type =
     TBool            |
     TChar            |
     TDummy           | -- Temp for when the type its still unknown
-    TPDummy          | -- Temp for when the subroutine is promised to be defined later
     TError           | -- Error type, type checks fail
     TFloat           |
     TInt             |
     TList Type       |
     TNew Id          |
     TNull            |
+    TPDummy          | -- Temp for when the subroutine is promised to be defined later
     TPointer Type    |
     TRead            | -- Cableado para que el input corra
     TRegister        |
@@ -55,18 +55,18 @@ data Type =
     deriving(Eq, Ord)
 
 instance Show Type where
-    show (TPointer t) = "(" ++ show t ++ "*)"
     show (TArray e t) = show t ++ "|}" ++ show e ++ "{|"
     show TBool        = "Battle"
     show TChar        = "Rune"
-    show TError       = "Type error"   
     show TDummy       = "Type unkown"
-    show TPDummy      = "Subroutine promise"
+    show TError       = "Type error"   
     show TFloat       = "Skill"
     show TInt         = "Power"
     show (TList t)    = "Kit of(" ++ show t ++ ")"
     show (TNew str)   = str
     show TNull        = "DeathZone*"
+    show TPDummy      = "Subroutine promise"
+    show (TPointer t) = "(" ++ show t ++ "*)"
     show TRegister    = "Inventory"
     show TRead        = ""
     show TStr         = "Runes"
@@ -100,49 +100,49 @@ data Ref =
 
 -- Instructions
 data Instr  = 
-    Assig Var Expr                      |
-    Break                               |
-    Continue                            |
-    For Id Expr Expr InstrSeq           |
-    ForEach Id Expr InstrSeq            |
-    ForWhile Id Expr Expr Expr InstrSeq |
-    Free Id                             |
-    Print [Expr]                        |
-    ProcCall Subroutine                 |
-    Program InstrSeq                    |
-    Return Expr                         |
-    Assigs InstrSeq                     |
-    IF [(Expr, InstrSeq)]               |
-    While Expr InstrSeq
+    Assig Var Expr Type                      |
+    Assigs InstrSeq Type                     |
+    Break Type                               |
+    Continue Type                            |
+    For Id Expr Expr InstrSeq Type           |
+    ForEach Id Expr InstrSeq Type            |
+    ForWhile Id Expr Expr Expr InstrSeq Type |
+    Free Id Type                             |
+    IF [(Expr, InstrSeq)] Type               |
+    Print [Expr] Type                        |
+    ProcCall Subroutine Type                 |
+    Program InstrSeq Type                    |
+    Return Expr Type                         |
+    While Expr InstrSeq Type
     deriving (Eq,Ord)
 
 instance Show Instr where
-    show (Assig v e)             = "  " ++ show v ++ " = " ++ show e ++ "\n"
-    show Break                   = "  GameOver\n"
-    show Continue                = "  KeepPlaying\n"
-    show (For n e1 e2 s)         = "  controller " ++ n ++ " = " ++ show e1 ++ " -> "
+    show (Assig v e _)             = "  " ++ show v ++ " = " ++ show e ++ "\n"
+    show (Assigs s _)              = intercalate "  " (map show s)
+    show (Break _)                 = "  GameOver\n"
+    show (Continue _)              = "  KeepPlaying\n"
+    show (For n e1 e2 s _)         = "  controller " ++ n ++ " = " ++ show e1 ++ " -> "
         ++ show e2 ++ ":\n  " ++ intercalate "  " (map show s) ++ "\n  .~\n"
 
-    show (ForEach n e s)         = "  controller " ++ n ++ " <- " ++ show e ++
+    show (ForEach n e s _)         = "  controller " ++ n ++ " <- " ++ show e ++
         ":\n  " ++ intercalate "  " (map show s) ++ "\n  .~\n"
 
-    show (ForWhile n e1 e2 e3 s) = "  controller " ++ n ++ " = " ++ show e1 ++ " -> " ++
+    show (ForWhile n e1 e2 e3 s _) = "  controller " ++ n ++ " = " ++ show e1 ++ " -> " ++
         show e2 ++ " lock " ++ show e3 ++ ":\n  " ++ 
         intercalate "  " (map show s) ++ "\n  .~\n"
 
-    show (Free n)                = "  free " ++ n ++ "\n"
-    show (Print e)               = "  drop " ++ show e ++ "\n"
-    show (ProcCall s)            = "  kill " ++ show s ++ "\n"
-    show (Program s)             = "\nworld:\n" ++ concatMap show s ++ ".~\n"
-    show (Return e)              = "  unlock " ++ show e
-    show (Assigs s)              = intercalate "  " (map show s)
-    show (IF s)                  = "  Button:\n  " ++ concatMap (++"\n  ") guards ++ ".~\n"
+    show (Free n _)                = "  free " ++ n ++ "\n"
+    show (IF s _)                  = "  Button:\n  " ++ concatMap (++"\n  ") guards ++ ".~\n"
         where
             conds = map (show . fst) s
             instrs =  map (concatMap show . snd) s
             guards = ["| "++c++" }\n    "++i | c<-conds,i<-instrs,elemIndex c conds==elemIndex i instrs]
 
-    show (While e s)             = "  play:\n    " ++
+    show (Print e _)               = "  drop " ++ show e ++ "\n"
+    show (ProcCall s _)            = "  kill " ++ show s ++ "\n"
+    show (Program s _)             = "\nworld:\n" ++ concatMap show s ++ ".~\n"
+    show (Return e _)              = "  unlock " ++ show e
+    show (While e s _)             = "  play:\n    " ++
         intercalate "    " (map show s) ++ "  lock " ++ show e ++ "\n  .~\n"
 
 
