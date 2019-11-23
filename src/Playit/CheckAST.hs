@@ -123,9 +123,21 @@ checkIterVar var = do
 -- | Checks the binary's expression's types
 checkBinary :: BinOp -> Expr -> Expr -> Pos -> MonadSymTab (Bool, Type)
 checkBinary op e1 e2 p
-  | op `elem` compEqs && (isNull || isLists) = return (True, TBool)
-  | op `elem` compOps && tE1 == tE2 = return (True, TBool)
-  | tE1 == tE2 && noTError = return (True, tE1)
+  | op `elem` eqOps && (isNull || isLists || isRegUnions) = return (True, TBool)
+  -- Just compare register with eq operators
+  | isRegUnion tE1 || isRegUnion tE2 = do
+    fileCode <- ask
+    error $ semmErrorMsg notRegUnion regUnion fileCode p
+  
+  | op `elem` compOps && tE1 == tE2 && noTError = return (True, TBool)
+  | op `elem` boolOps && tE1 == tE2 && tE1 == TBool = return (True, TBool)
+  | op `elem` aritInt && tE1 == tE2 && tE1 == TInt = return (True, TInt)
+  | op == Concat && tE1 == tE2 && isList tE1 && isJust mbtypeList =
+    return (True, fromJust mbtypeList)
+  
+  -- Add this isSubtype tE1 tE2 ??
+  | op == Anexo && baseT1 == baseT1 && isList tE2 = return (True, tE2)
+  | tE1 == tE2 && (tE1 == TInt || tE1 == TFloat) = return (True, tE1)
   -- | tE1 == TPDummy && tE2 /= TPDummy = do
   --   when (isFunctionCall e1) $
   --     updatePromiseTypeFunction e1 tE2
@@ -136,17 +148,27 @@ checkBinary op e1 e2 p
   --   return (True, tE2)
   | otherwise = do
     fileCode <- ask
-    error $ semmErrorMsg (show tE1) (show e2) fileCode p
+    error $ semmErrorMsg (show tE1) (show tE2) fileCode p
 
   where
     tE1 = typeE e1
     tE2 = typeE e2
-    compEqs = [Eq,NotEq]
+    tE2' = baseTypeT tE2
+    baseT1 = baseTypeE e1
+    baseT2 = baseTypeE e2
+    mbtypeList = getTLists [t1,t2]
+    eqOps = [Eq,NotEq]
     compOps = [Eq,NotEq,Greater,GreaterEq,Less,LessEq]
+    aritInt = [DivEntera, Module]
+    boolOps = [And, Or]
     noTError = tE1 /= TError && tE2 /= TError -- TODO : Agregar a las comparaciones cuando no salga en el primer error
+    isRegUnios = isRegUnion tE1 || isRegUnion tE2
     isLists = isList tE1 && isList tE2 && isJust (getTLists [tE1,tE2])
-    isNull = ((isPointer tE1 && tE2 == TNull) || (tE1 == TNull && isPointer tE2 ))  || (tE1 == TNull && tE2 == TNull)
+    isNull = ((isPointer tE1 && tE2 == TNull) || (tE1 == TNull && isPointer tE2 )) || (tE1 == TNull && tE2 == TNull)
+    notRegUnion = "Neither Register nor Union"
+    regUnion = "Register or Union"
 -------------------------------------------------------------------------------
+
 
 -------------------------------------------------------------------------------
 -- | Checks the unary's expression type is the spected
@@ -158,22 +180,42 @@ checkUnary tExpr tSpected p
         fileCode <- ask
         error $ semmErrorMsg (show tSpected) (show tExpr) fileCode p
 -------------------------------------------------------------------------------
+{-
+  case op of
+    Length ->
+      if isArray tE || isList tE then
+        return $ Unary op expr TInt
+      else do
+        (error $ semmErrorMsg "Array or Kit" (show tE) fileCode p)
+        return $ Unary op expr TError
+    Negative ->
+      if tE `elem` [TInt, TFloat] then
+        return $ Unary op expr tE
+      else do
+        (error $ semmErrorMsg "Power or Skill" (show tE) fileCode p)
+        return $ Unary op expr TError
+    Not ->
+      if tE == TBool then
+        return $ Unary op expr tE
+      else do
+        (error $ semmErrorMsg "Battle" (show tE) fileCode p)
+        return $ Unary op expr TError
+    UpperCase ->
+      if tE == TChar then
+        return $ Unary op expr tE
+      else do
+        (error $ semmErrorMsg "Rune" (show tE) fileCode p)
+        return $ Unary op expr TError
+    LowerCase -> 
+      if tE == TChar then
+        return $ Unary op expr tE
+      else do
+        (error $ semmErrorMsg "Rune" (show tE) fileCode p)
+        return $ Unary op expr TError
+  where
+    tE = typeE expr
+-}
 
-
--------------------------------------------------------------------------------
--- | Checks
-checkAnexo :: Expr -> Expr -> Pos -> MonadSymTab (Bool, Type)
-checkAnexo e1 e2 p
-    | baseT1 == baseT1 && isList t2 = return (True, t2)
-    | otherwise = do
-        fileCode <- ask
-        error $ semmErrorMsg (show baseT1) (show baseT2) fileCode p
-
-    where
-        baseT1 = baseTypeE e1
-        baseT2 = baseTypeE e2
-        t2 = typeE e2
--------------------------------------------------------------------------------
 {-
 crearOpAnexo ::  Expr -> Expr -> Posicion-> MonadSymTab Expr
 crearOpAnexo e1 e2 p
@@ -207,7 +249,20 @@ checkIfSimple tCond tTrue tFalse p
         else
             error $ semmErrorMsg (show tTrue) (show tFalse) fileCode p
 -------------------------------------------------------------------------------
-
+{-
+  if tC == TBool && tT == tF then
+    return $ IfSimple cond true false tT
+  else do
+    if tC /= TBool then
+      error $ semmErrorMsg "Battle" (show tC) fileCode p
+    else
+      error $ semmErrorMsg (show tT) (show tF) fileCode p
+    return $ IfSimple cond true false TError
+  where
+    tC = typeE cond
+    tT = typeE true
+    tF = typeE false
+-}
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------

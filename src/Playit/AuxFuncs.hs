@@ -62,16 +62,15 @@ modifyType (SymbolInfo _ s c ei) newT = SymbolInfo newT s c ei
 -------------------------------------------------------------------------------
 -- | Modify the symbol extra info
 modifyExtraInfo :: SymbolInfo -> [ExtraInfo] -> SymbolInfo
-modifyExtraInfo (SymbolInfo t s c []) ei =  SymbolInfo t s c ei
+modifyExtraInfo (SymbolInfo t s c []) ei      =  SymbolInfo t s c ei
 modifyExtraInfo (SymbolInfo t s c ei) (ex:r)  = 
     SymbolInfo t s c (map (\einf -> if areSameTExtInf einf ex then ex else einf ) ei)
     
 areSameTExtInf :: ExtraInfo -> ExtraInfo -> Bool
-areSameTExtInf (Params _ ) (Params _) = True
+areSameTExtInf (Params _ ) (Params _)   = True
 areSameTExtInf (FromReg _ ) (FromReg _) = True
-areSameTExtInf (AST _ ) (AST _) = True
-areSameTExtInf _ _ = False
-
+areSameTExtInf (AST _ ) (AST _)         = True
+areSameTExtInf _ _                      = False
 -------------------------------------------------------------------------------
 
 
@@ -146,8 +145,8 @@ isVoid = (== TVoid) . getTypeInstr
 -------------------------------------------------------------------------------
 isSubtype :: Type -> Type -> Bool
 isSubtype t1 (TArray _ t2) = t1 == t2
-isSubtype t1 (TList t2) = t1 == t2
-isSubtype t1 _ = False
+isSubtype t1 (TList t2)    = t1 == t2
+isSubtype t1 _             = False
 -------------------------------------------------------------------------------
 
 
@@ -329,7 +328,7 @@ getTypeInstr (While _ _ t)          = t
 
 -------------------------------------------------------------------------------
 getPromiseSubroutine:: Id -> Promises -> Maybe Promise
-getPromiseSubroutine _ []  = Nothing
-getPromiseSubroutine name (promise@(Promise id _ _ _):r)  = 
+getPromiseSubroutine _ []                                = Nothing
+getPromiseSubroutine name (promise@(Promise id _ _ _):r) = 
     if  name == id then Just promise else getPromiseSubroutine name r
 -------------------------------------------------------------------------------
