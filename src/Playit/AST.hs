@@ -28,8 +28,8 @@ import Playit.Types
 
 -------------------------------------------------------------------------------
 -- | Creates whole statements block
-progr :: InstrSeq -> MonadSymTab Instr
-progr i =
+program :: InstrSeq -> MonadSymTab Instr
+program i =
   if all isVoid i then
     return $ Program i TVoid
   else
@@ -142,7 +142,7 @@ assig lval expr p = do
   iter <- checkIterVar lval
   asig <- checkAssig (typeVar lval) (typeE expr) p    
   if not iter && asig then return $ Assig lval expr TVoid
-  else return $ Assig lval (Literal EmptyVal TError) TVoid -- change when no exit with first error encounter
+  else return $ Assig lval (Literal EmptyVal TError) TError -- change when no exit with first error encounter
 -------------------------------------------------------------------------------
 
 
@@ -458,8 +458,8 @@ checkPromises = do
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
-updateInfoSubrutine:: Id -> Category -> [(Type,Id)] -> Type -> MonadSymTab ()
-updateInfoSubrutine name cat p t = do
+updateInfoSubroutine:: Id -> Category -> [(Type,Id)] -> Type -> MonadSymTab ()
+updateInfoSubroutine name cat p t = do
   (symTab, activeScopes, scopes, promises) <- get
   fileCode <- ask
   let paramsF = reverse p
