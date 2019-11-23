@@ -43,7 +43,7 @@ import Playit.AST
   register          { TkINVENTORY _ _ }
   union             { TkITEMS _ _ }
   "."               { TkSPAWN _ _ }
-  new               { TkSUMMON _ _ }
+  new               { TkSUMMON _ $$ }
   -- If statement
   if                { TkBUTTON _ $$ }
   else              { TkNotPressed _ _ }
@@ -76,12 +76,12 @@ import Playit.AST
   idType            { TkIDType _ _ }
 
   -- Characters
-  character         { TkCHARACTER _ _ $$ }
-  string            { TkSTRINGS $$ _ }
+  character         { TkCHARACTER _ _ _ }
+  string            { TkSTRINGS _ _ }
   
   -- Numeric literals
-  integer           { TkINT _ _ $$ }
-  floats            { TkFLOAT _ _ $$ }
+  integer           { TkINT _ _ _ }
+  floats            { TkFLOAT _ _ _ }
 
   -- Symbols
   ".~"              { TkFIN _ _ }
@@ -105,7 +105,7 @@ import Playit.AST
   "!"               { TkNOT _ $$ }
   upperCase         { TkUPPER _ $$ }
   lowerCase         { TkLOWER _ $$ }
-  "<<"              { TkOpenList _ _ }
+  "<<"              { TkOpenList _ $$ }
   ">>"              { TkCloseList _ $$ }
   "|>"              { TkOpenListIndex _ $$ }
   "<|"              { TkCloseListIndex _ $$ }
@@ -115,12 +115,12 @@ import Playit.AST
   "{|"              { TkCloseArray _ _ }
   "|)"              { TkOpenArrayIndex _ $$ }
   "(|"              { TkCloseArrayIndex _ $$ }
-  "{"               { TkOpenBrackets _ _ }
+  "{"               { TkOpenBrackets _ $$ }
   "}"               { TkCloseBrackets _ _ }
   "<-"              { TkIN  _ $$ }
   "->"              { TkTO  _ _ }
   "?"               { TkREF _ _ }
-  "|"               { TkGUARD _ $$ }
+  "|"               { TkGUARD _ _ }
   "="               { TkASSIG _ $$ }
   "("               { TkOpenParenthesis _ _ }
   ")"               { TkCloseParenthesis _ _ }
@@ -233,7 +233,8 @@ Identifiers :: { ([(Id, Pos)], InstrSeq) }
 Identifier :: { ((Id, Pos), InstrSeq) }
   : id "=" Expression
     {
-      ( (getTk $1,getPos $1), [Assig (Var (getTk $1) TDummy) $3 TVoid] )
+      let (e, _) = $3
+      in ( (getTk $1,getPos $1), [Assig (Var (getTk $1) TDummy) e TVoid] )
     }
   | id
     {
@@ -248,18 +249,42 @@ Identifier :: { ((Id, Pos), InstrSeq) }
 
 
 -- Lvalues
-Lvalue :: { Var }
-  : Lvalue "." id                         { % field $1 (getTk $3) (getPos $3) }
-  | Lvalue "|)" Expression "(|"           { % index $1 $3 $2 $4 }
-  | Lvalue "|>" Expression "<|"           { % index $1 $3 $2 $4 }
-  | pointer Lvalue                        { % desref $2 $1 }
-  | pointer "(" Lvalue ")"                { % desref $3 $1 }
-  | id                                    { % var (getTk $1) (getPos $1) }
+Lvalue :: { (Var, Pos) }
+  : Lvalue "." id
+    { % do
+      v <- field $1 (getTk $3) (getPos $3)
+      return (v, snd $1)
+    }
+  | Lvalue "|)" Expression "(|"
+    { % do
+      v <- index $1 $3 $2 $4
+      return (v, snd $1)
+    }
+  | Lvalue "|>" Expression "<|"
+    { % do
+      v <- index $1 $3 $2 $4
+      return (v, snd $1)
+    }
+  | pointer Lvalue
+    { % do
+      v <- desref $2 $1
+      return (v, snd $1)
+    }
+  | pointer "(" Lvalue ")"
+    { % do
+      v <- desref $3 $1
+      return (v, snd $1)
+    }
+  | id
+    { % do
+      v <- var (getTk $1) (getPos $1)
+      return (v, getPos $1)
+    }
 
 
 -- Data types
 Type :: { Type }
-  : Type "|}" Expression "{|" %prec "|}"  { TArray $3 $1 }
+  : Type "|}" Expression "{|" %prec "|}"  { TArray (fst $3) $1 }
   | listOf Type  %prec "?"                { TList $2 }
   | Type pointer                          { TPointer $1 }
   | "(" Type ")"                          { $2 }
@@ -289,23 +314,23 @@ Instruction :: { Instr }
   | ProcCall                        { $1 }
   | Out                             { $1 }
   | Free                            { $1 }
-  | return Expression               { Return $2 TVoid } -- TODO: Verificacion de tipo para regreso de funcion
+  | return Expression               { Return (fst $2) TVoid } -- TODO: Verificacion de tipo para regreso de funcion
   | break                           { Break TVoid }
   | continue                        { Continue TVoid }
 
 
 -------------------------------------------------------------------------------
 Asignation :: { Instr }
-  : Lvalue "=" Expression  { % assig $1 $3 $2 }
+  : Lvalue "=" Expression  { % assig $1 $3 }
   | Lvalue "++"
     { %
-      let expr = Binary Add (Variable $1 TInt) (Literal (Integer 1) TInt) TInt
-      in assig $1 expr $2
+      let expr = Binary Add (Variable (fst $1) TInt) (Literal (Integer 1) TInt) TInt
+      in assig $1 (expr, $2)
     }
   | Lvalue "--"
     { %
-      let expr = Binary Minus (Variable $1 TInt) (Literal (Integer 1) TInt) TInt
-      in assig $1 expr $2
+      let expr = Binary Minus (Variable (fst $1) TInt) (Literal (Integer 1) TInt) TInt
+      in assig $1 (expr, $2)
     }
 -------------------------------------------------------------------------------
 
@@ -322,11 +347,11 @@ Guards :: { [(Expr, InstrSeq)] }
 Guard :: { (Expr, InstrSeq) }
   : "|" Expression "}" EndLines PushScope Instructions EndLines
     { %
-      guard $2 $6 $1
+      guard $2 $6
     }
   | "|" Expression "}" PushScope Instructions EndLines
     { %
-      guard $2 $5 $1
+      guard $2 $5
     }
   | "|" else "}" EndLines PushScope Instructions EndLines
     { %
@@ -344,43 +369,44 @@ Guard :: { (Expr, InstrSeq) }
 Controller :: { Instr }
  : for InitVar1 "->" Expression ":" EndLines Instructions EndLines ".~"
     { %
-      let (varIter, e1) = $2 in for varIter e1 $4 (reverse $7) (getPos $1)
+      let (varIter, e1) = $2 in for varIter e1 $4 (reverse $7)
     }
  | for InitVar1 "->" Expression while Expression ":" EndLines Instructions EndLines ".~"
     { %
-      let (varIter, e1) = $2 in forWhile varIter e1 $4 $6 (reverse $9) (getPos $1)
+      let (varIter, e1) = $2 in forWhile varIter e1 $4 $6 (reverse $9)
     }
  | for InitVar1 "->" Expression ":" EndLines ".~"
     { %
-      let (varIter, e1) = $2 in for varIter e1 $4 [] (getPos $1)
+      let (varIter, e1) = $2 in for varIter e1 $4 []
     }
  | for InitVar1 "->" Expression while Expression ":" EndLines ".~"
     { %
-      let (varIter, e1) = $2 in forWhile varIter e1 $4 $6 [] (getPos $1)
+      let (varIter, e1) = $2 in forWhile varIter e1 $4 $6 []
     }
  | for InitVar2 ":" EndLines Instructions EndLines ".~"
     { %
-      let (varIter, e1) = $2 in forEach varIter e1 (reverse $5) (getPos $1)
+      let (varIter, e1) = $2 in forEach varIter e1 (reverse $5)
     }
  | for InitVar2 ":" EndLines ".~"
     { %
-      let (varIter, e1) = $2 in forEach varIter e1 [] (getPos $1)
+      let (varIter, e1) = $2 in forEach varIter e1 []
     }
 
 -- Add to symbol table the iteration variable with its initial value, before
 -- build the instruction tree
-InitVar1 :: { (Id, Expr) }
+InitVar1 :: { (Id, (Expr,Pos) ) }
   : id "=" Expression
     { % do
       (symtab, activeScopes, scope, promises) <- get
-      let id = getTk $1
-          t = (\s -> if s == TInt then TInt else TError) $ typeE $3
+      let (e, _) = $3
+          id = getTk $1
+          t = (\s -> if s == TInt then TInt else TError) $ typeE e
           varInfo = [SymbolInfo t scope IterationVariable []]
           newSymTab = insertSymbols [id] varInfo symtab
 
       v <- var id (getPos $1)
       put (newSymTab, activeScopes, scope, promises)
-      return $ assig v $3 $2
+      -- return $ assig (v, getPos $1) $3
       return (id, $3)
     }
   | Type id "=" Expression
@@ -394,23 +420,24 @@ InitVar1 :: { (Id, Expr) }
       
       -- insertDeclarations [(id, getPos $2)] $1 []
       put (newSymTab, activeScopes, scope, promises)
-      return $ assig var $4 $3
+      -- return $ assig (var, getPos $2) $4
       return (id, $4)
     }
 
-InitVar2 :: { (Id, Expr) }
+InitVar2 :: { (Id, (Expr,Pos) ) }
   : id "<-" Expression %prec "<-"
     { % do
       (symtab, activeScopes, scope, promises) <- get
-      let id = getTk $1
-          tID = typeE $3
+      let (e, _) = $3
+          id = getTk $1
+          tID = typeE e
           t = if isArray tID || isList tID then tID else TError
           varInfo = [SymbolInfo t scope IterationVariable []]
           newSymTab = insertSymbols [id] varInfo symtab
       
       v <- var id (getPos $1)
       put (newSymTab, activeScopes, scope, promises)
-      return $ assig v $3 $2
+      -- return $ assig (v, getPos $1) $3
       return (id, $3)
     }
   | Type id "<-" Expression %prec "<-"
@@ -437,11 +464,11 @@ InitVar2 :: { (Id, Expr) }
 Play :: { Instr }
   : do ":" EndLines Instructions EndLines while Expression EndLines ".~"
     { %
-      while $7 (reverse $4) $6
+      while $7 (reverse $4)
     }
   | do ":" EndLines while Expression EndLines ".~"
     { %
-      while $5 [] $4
+      while $5 []
     }
 -------------------------------------------------------------------------------
 
@@ -526,7 +553,7 @@ Param :: { (Type,Id) }
 ProcCall :: { Instr }
   : SubroutineCall     { % procCall (fst $1) (snd $1) }
 
-FuncCall :: { Expr }
+FuncCall :: { (Expr,Pos) }
   : SubroutineCall     { % funcCall (fst $1) (snd $1) }
 
 SubroutineCall :: { (Subroutine, Pos) }
@@ -543,7 +570,7 @@ Arguments :: { Params }
   : Arguments "," Argument   { $3 : $1 }
   | Argument                 { [$1] }
 
-Argument :: { Expr }
+Argument :: { (Expr,Pos) }
   : Expression               { $1 }
   | "?" Expression           { $2 }
 -------------------------------------------------------------------------------
@@ -555,65 +582,62 @@ Argument :: { Expr }
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 
-Expressions::{ [Expr] }
+Expressions::{ [(Expr,Pos)] }
   : Expressions "," Expression           { $3 : $1 }
   | Expression                           { [$1] }
 
-Expression :: { Expr }
-  : Expression "+" Expression            { % binary Add $1 $3 $2 }
-  | Expression "-" Expression            { % binary Minus $1 $3 $2 }
-  | Expression "*" Expression            { % binary Mult $1 $3 $2 }
-  | Expression "/" Expression            { % binary Division $1 $3 $2 }
-  | Expression "//" Expression           { % binary DivEntera $1 $3 $2 }
-  | Expression "%" Expression            { % binary Module $1 $3 $2 }
-  | Expression "&&" Expression           { % binary And $1 $3 $2 }
-  | Expression "||" Expression           { % binary Or $1 $3 $2 }
-  | Expression "==" Expression           { % binary Eq $1 $3 $2 }
-  | Expression "!=" Expression           { % binary NotEq $1 $3 $2 }
-  | Expression ">=" Expression           { % binary GreaterEq $1 $3 $2 }
-  | Expression "<=" Expression           { % binary LessEq $1 $3 $2 }
-  | Expression ">" Expression            { % binary Greater $1 $3 $2 }
-  | Expression "<" Expression            { % binary Less $1 $3 $2 }
-  | Expression ":" Expression %prec ":"  { % binary Anexo $1 $3 $2 }
+Expression :: { (Expr,Pos) }
+  : Expression "+" Expression            { % binary Add $1 $3 }
+  | Expression "-" Expression            { % binary Minus $1 $3 }
+  | Expression "*" Expression            { % binary Mult $1 $3 }
+  | Expression "/" Expression            { % binary Division $1 $3 }
+  | Expression "//" Expression           { % binary DivEntera $1 $3 }
+  | Expression "%" Expression            { % binary Module $1 $3 }
+  | Expression "&&" Expression           { % binary And $1 $3 }
+  | Expression "||" Expression           { % binary Or $1 $3 }
+  | Expression "==" Expression           { % binary Eq $1 $3 }
+  | Expression "!=" Expression           { % binary NotEq $1 $3 }
+  | Expression ">=" Expression           { % binary GreaterEq $1 $3 }
+  | Expression "<=" Expression           { % binary LessEq $1 $3 }
+  | Expression ">" Expression            { % binary Greater $1 $3 }
+  | Expression "<" Expression            { % binary Less $1 $3 }
+  | Expression ":" Expression %prec ":"  { % binary Anexo $1 $3 }
   -- e1 && e2 TArray o excluve TList
-  | Expression "::" Expression           { % binary Concat $1 $3 $2 }
+  | Expression "::" Expression           { % binary Concat $1 $3 }
   
   --
-  | Expression "?" Expression ":" Expression %prec "?"
-    { %
-      ifSimple $1 $3 $5 $4
-    }
-  | FuncCall               { $1 }
-  | "(" Expression ")"     { $2 }
+  | Expression "?" Expression ":" Expression %prec "?"  { % ifSimple $1 $3 $5 }
+  | FuncCall                                            { $1 }
+  | "(" Expression ")"                                  { $2 }
  
   -- Registers / Unions initialization
   | "{" Expressions "}"    { register $ reverse $2 }
   | "{" "}"                { register [] } -- By default
   
   | "|)" Expressions "(|"  { array $ reverse $2 }
-  | "<<" Expressions ">>"  { % list (reverse $2) $3 }
-  | "<<" ">>"              { % list [] $2 }
-  | new Type               { Unary New (IdType $2) (TPointer $2) }
+  | "<<" Expressions ">>"  { % list (reverse $2) }
+  | "<<" ">>"              { % list [] }
+  | new Type               { (Unary New (IdType $2) (TPointer $2), $1) }
 
-  | input Expression %prec input  { % read' $2 $1 }
-  | input                         { % read' (Literal EmptyVal TStr) $1 }
+  | input Expression %prec input  { % read' $2 }
+  | input                         { % read' (Literal EmptyVal TStr, $1) }
 
   -- Unary operators
-  | "#" Expression                        { % unary Length $2 $1 }
-  | "-" Expression %prec negativo         { % unary Negative $2 $1 }
-  | "!" Expression                        { % unary Not $2 $1 }
-  | upperCase Expression %prec upperCase  { % unary UpperCase $2 $1 }
-  | lowerCase Expression %prec lowerCase  { % unary LowerCase $2 $1 }
+  | "#" Expression                        { % unary Length $2 }
+  | "-" Expression %prec negativo         { % unary Negative $2 }
+  | "!" Expression                        { % unary Not $2 }
+  | upperCase Expression %prec upperCase  { % unary UpperCase $2 }
+  | lowerCase Expression %prec lowerCase  { % unary LowerCase $2 }
   
   -- Literals
-  | true      { Literal (Boolean True) TBool }
-  | false     { Literal (Boolean False) TBool }
-  | integer   { Literal (Integer $1) TInt }
-  | floats    { Literal (Floatt $1) TFloat }
-  | character { Literal (Character $1) TChar }
-  | string    { Literal (Str $1) TStr }
-  | null      { Null }
-  | Lvalue    { Variable $1 (typeVar $1) }
+  | true      { (Literal (Boolean True) TBool, getPos $1) }
+  | false     { (Literal (Boolean False) TBool, getPos $1) }
+  | integer   { (Literal (Integer $ getInt $1) TInt, getPos $1) }
+  | floats    { (Literal (Floatt $ getFloat $1) TFloat, getPos $1) }
+  | character { (Literal (Character $ getChar $1) TChar, getPos $1) }
+  | string    { (Literal (Str $ getTk $1) TStr, getPos $1) }
+  | null      { (Null, getPos $1) }
+  | Lvalue    { let (v,p) = $1 in (Variable v (typeVar v), p) }
 
 
 -------------------------------------------------------------------------------
