@@ -143,10 +143,10 @@ isVoid = (== TVoid) . getTypeInstr
 
 
 -------------------------------------------------------------------------------
-isSubtype :: Type -> Type -> Bool
-isSubtype t1 (TArray _ t2) = t1 == t2
-isSubtype t1 (TList t2)    = t1 == t2
-isSubtype t1 _             = False
+isSubType :: Type -> Type -> Bool
+isSubType t1 (TArray _ t2) = t1 == t2
+isSubType t1 (TList t2)    = t1 == t2
+isSubType t1 _             = False
 -------------------------------------------------------------------------------
 
 

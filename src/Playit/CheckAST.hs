@@ -135,7 +135,7 @@ checkBinary op e1 e2 p
   | op == Concat && tE1 == tE2 && isList tE1 && isJust mbtypeList =
     return (True, fromJust mbtypeList)
   
-  -- Add this isSubtype tE1 tE2 ??
+  -- Add this isSubType tE1 tE2 ??
   | op == Anexo && baseT1 == baseT1 && isList tE2 = return (True, tE2)
   | tE1 == tE2 && (tE1 == TInt || tE1 == TFloat) = return (True, tE1)
   -- | tE1 == TPDummy && tE2 /= TPDummy = do
