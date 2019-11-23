@@ -165,22 +165,19 @@ ProgramWrapper :: { Instr }
   
 Program :: { Instr }
   : Definitions EndLines world program ":" EndLines Instructions  EndLines ".~"  PopScope
-    { % do
-      checkPromises
-      return $ Program $ reverse $7 
+    { %
+      checkPromises >> program $ reverse $7 
     }
   | Definitions EndLines world program ":" EndLines ".~" PopScope
-    { % do
-      checkPromises
-      return $ Program []
+    { %
+      checkPromises >> return $ Program [] TVoid
     }
   | world program ":" EndLines Instructions EndLines ".~"  PopScope
-    { % do
-      checkPromises
-      return $ Program $ reverse $5
+    { %
+      checkPromises >> program $ reverse $5
     }
   | world program ":" EndLines ".~" PopScope
-      { Program [] }
+      { Program [] TVoid }
 
 
 Definitions :: { () }
@@ -236,7 +233,7 @@ Identifiers :: { ([(Id, Pos)], InstrSeq) }
 Identifier :: { ((Id, Pos), InstrSeq) }
   : id "=" Expression
     {
-      ( (getTk $1,getPos $1), [Assig (Var (getTk $1) TDummy) $3] )
+      ( (getTk $1,getPos $1), [Assig (Var (getTk $1) TDummy) $3 TVoid] )
     }
   | id
     {
@@ -285,16 +282,16 @@ Instructions :: { InstrSeq }
 
 Instruction :: { Instr }
   : Asignation                      { $1 }
-  | Declaration                     { Assigs $1 }
+  | Declaration                     { Assigs $1 TVoid }
   | PushScope Controller PopScope   { $2 }
   | PushScope Play PopScope         { $2 }
   | Button                          { $1 }
   | ProcCall                        { $1 }
   | Out                             { $1 }
   | Free                            { $1 }
-  | return Expression               { Return $2 } -- TODO: Verificacion de tipo para regreso de funcion
-  | break                           { Break }
-  | continue                        { Continue }
+  | return Expression               { Return $2 TVoid } -- TODO: Verificacion de tipo para regreso de funcion
+  | break                           { Break TVoid }
+  | continue                        { Continue TVoid }
 
 
 -------------------------------------------------------------------------------
@@ -333,11 +330,11 @@ Guard :: { (Expr, InstrSeq) }
     }
   | "|" else "}" EndLines PushScope Instructions EndLines
     { %
-      guard (Literal (Boolean True) TBool) $6 $1
+      return ((Literal (Boolean True) TBool), $6)
     }
   | "|" else "}" PushScope Instructions EndLines
     { %
-      guard (Literal (Boolean True) TBool) $5 $1
+      return ((Literal (Boolean True) TBool), $5)
     }
 -------------------------------------------------------------------------------
 
@@ -346,28 +343,28 @@ Guard :: { (Expr, InstrSeq) }
 -- Determined iteration
 Controller :: { Instr }
  : for InitVar1 "->" Expression ":" EndLines Instructions EndLines ".~"
-    {
-      let (varIter, e1) = $2 in For varIter e1 $4 (reverse $7)
+    { %
+      let (varIter, e1) = $2 in for varIter e1 $4 (reverse $7) (getPos $1)
     }
  | for InitVar1 "->" Expression while Expression ":" EndLines Instructions EndLines ".~"
-    {
-      let (varIter, e1) = $2 in ForWhile varIter e1 $4 $6 (reverse $9)
+    { %
+      let (varIter, e1) = $2 in forWhile varIter e1 $4 $6 (reverse $9) (getPos $1)
     }
  | for InitVar1 "->" Expression ":" EndLines ".~"
-    {
-      let (varIter, e1) = $2 in For varIter e1 $4 []
+    { %
+      let (varIter, e1) = $2 in for varIter e1 $4 [] (getPos $1)
     }
  | for InitVar1 "->" Expression while Expression ":" EndLines ".~"
-    {
-      let (varIter, e1) = $2 in ForWhile varIter e1 $4 $6 []
+    { %
+      let (varIter, e1) = $2 in forWhile varIter e1 $4 $6 [] (getPos $1)
     }
  | for InitVar2 ":" EndLines Instructions EndLines ".~"
-    {
-      let (varIter, e1) = $2 in ForEach varIter e1 (reverse $5)
+    { %
+      let (varIter, e1) = $2 in forEach varIter e1 (reverse $5) (getPos $1)
     }
  | for InitVar2 ":" EndLines ".~"
-    {
-      let (varIter, e1) = $2 in ForEach varIter e1 []
+    { %
+      let (varIter, e1) = $2 in forEach varIter e1 [] (getPos $1)
     }
 
 -- Add to symbol table the iteration variable with its initial value, before
@@ -375,19 +372,28 @@ Controller :: { Instr }
 InitVar1 :: { (Id, Expr) }
   : id "=" Expression
     { % do
-      (symtab, a, scope,p) <- get
-      let id = (getTk $1)
+      (symtab, activeScopes, scope, promises) <- get
+      let id = getTk $1
           t = (\s -> if s == TInt then TInt else TError) $ typeE $3
+          varInfo = [SymbolInfo t scope IterationVariable []]
+          newSymTab = insertSymbols [id] varInfo symtab
+
       v <- var id (getPos $1)
-      put (insertSymbols [id] [SymbolInfo t scope IterationVariable []] symtab, a, scope,p)
+      put (newSymTab, activeScopes, scope, promises)
       return $ assig v $3 $2
       return (id, $3)
     }
   | Type id "=" Expression
     { % do
-      let id = (getTk $2)
-          var = Var id $1
-      insertDeclarations [(id, getPos $2)] $1 []
+      (symtab, activeScopes, scope, promises) <- get
+      let id = getTk $2
+          t = if $1 == TInt then TInt else TError
+          var = Var id t
+          varInfo = [SymbolInfo t scope IterationVariable []]
+          newSymTab = insertSymbols [id] varInfo symtab
+      
+      -- insertDeclarations [(id, getPos $2)] $1 []
+      put (newSymTab, activeScopes, scope, promises)
       return $ assig var $4 $3
       return (id, $4)
     }
@@ -395,20 +401,32 @@ InitVar1 :: { (Id, Expr) }
 InitVar2 :: { (Id, Expr) }
   : id "<-" Expression %prec "<-"
     { % do
-      (symtab, a, scope,p) <- get
-      let id = (getTk $1)
-          t = (\s -> if s == TInt then TInt else TError) $ typeE $3
+      (symtab, activeScopes, scope, promises) <- get
+      let id = getTk $1
+          tID = typeE $3
+          t = if isArray tID || isList tID then tID else TError
+          varInfo = [SymbolInfo t scope IterationVariable []]
+          newSymTab = insertSymbols [id] varInfo symtab
+      
       v <- var id (getPos $1)
-      put (insertSymbols [id] [SymbolInfo t scope IterationVariable []] symtab, a, scope,p)
+      put (newSymTab, activeScopes, scope, promises)
       return $ assig v $3 $2
       return (id, $3)
     }
   | Type id "<-" Expression %prec "<-"
     { % do
-      let id = (getTk $2)
+      (symtab, activeScopes, scope, promises) <- get
+      let id = getTk $2
+          tE = typeE $4
+          baseTE = baseTypeT tE
+          isArryList
+          t = if isArray tE || isList tE then $1 else TError -- Check tipo base de Expr == Type, y Expr es Array/List
           var = Var id $1
-      insertDeclarations [(id, getPos $2)] $1 []
-      return $ assig var $4 $3
+          varInfo = [SymbolInfo $1 scope IterationVariable []]
+          newSymTab = insertSymbols [id] varInfo symtab
+
+      -- insertDeclarations [(id, getPos $2)] $1 []
+      put (newSymTab, activeScopes, scope, promises)
       return (id, $4)
     }
 -------------------------------------------------------------------------------
@@ -418,11 +436,11 @@ InitVar2 :: { (Id, Expr) }
 -- Indetermined iteration
 Play :: { Instr }
   : do ":" EndLines Instructions EndLines while Expression EndLines ".~"
-    {
+    { %
       while $7 (reverse $4) $6
     }
   | do ":" EndLines while Expression EndLines ".~"
-    {
+    { %
       while $5 [] $4
     }
 -------------------------------------------------------------------------------
@@ -463,13 +481,13 @@ Firma :: { (Id, Category) }
   : Name PushScope Params
   { % do
     let (name,category) = $1
-    updateInfoSubrutine name category $3 TVoid
+    updateInfoSubroutine name category $3 TVoid
     return $1
   }
   | Name PushScope Params Type 
     { % do
       let (name,category) = $1
-      updateInfoSubrutine name category $3 $4
+      updateInfoSubroutine name category $3 $4
       return $1
     }
 
@@ -556,9 +574,9 @@ Expression :: { Expr }
   | Expression "<=" Expression           { % binary LessEq $1 $3 $2 }
   | Expression ">" Expression            { % binary Greater $1 $3 $2 }
   | Expression "<" Expression            { % binary Less $1 $3 $2 }
-  | Expression ":" Expression %prec ":"  { % anexo Anexo $1 $3 $2 }
+  | Expression ":" Expression %prec ":"  { % binary Anexo $1 $3 $2 }
   -- e1 && e2 TArray o excluve TList
-  | Expression "::" Expression           { % concatLists Concat $1 $3 $2 }
+  | Expression "::" Expression           { % binary Concat $1 $3 $2 }
   
   --
   | Expression "?" Expression ":" Expression %prec "?"
@@ -577,18 +595,15 @@ Expression :: { Expr }
   | "<<" ">>"              { % list [] $2 }
   | new Type               { Unary New (IdType $2) (TPointer $2) }
 
-  | input Expression %prec input  { read' $2 $1 }
-  | input
-    {
-      read' (Literal EmptyVal TStr) $1
-    }
+  | input Expression %prec input  { % read' $2 $1 }
+  | input                         { % read' (Literal EmptyVal TStr) $1 }
 
   -- Unary operators
-  | "#" Expression                        { % len $2 $1 }
-  | "-" Expression %prec negativo         { % unary Negative $2 TInt $1{- or TFloat-} }
-  | "!" Expression                        { % unary Not $2 TBool $1 }
-  | upperCase Expression %prec upperCase  { % unary UpperCase $2 TChar $1 }
-  | lowerCase Expression %prec lowerCase  { % unary LowerCase $2 TChar $1 }
+  | "#" Expression                        { % unary Length $2 $1 }
+  | "-" Expression %prec negativo         { % unary Negative $2 $1 }
+  | "!" Expression                        { % unary Not $2 $1 }
+  | upperCase Expression %prec upperCase  { % unary UpperCase $2 $1 }
+  | lowerCase Expression %prec lowerCase  { % unary LowerCase $2 $1 }
   
   -- Literals
   | true      { Literal (Boolean True) TBool }
