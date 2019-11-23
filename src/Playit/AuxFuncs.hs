@@ -151,6 +151,18 @@ isSubType t1 _             = False
 
 
 -------------------------------------------------------------------------------
+isTypeNumber :: Type -> Bool
+isTypeNumber t = (t == TInt) || (t == TFloat)
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+isTypeComparableEq :: Type -> Bool
+isTypeComparableEq t = isTypeNumber t || isList t || isPointer t || (t == TBool)
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
 -- Determina si la variable a cambiar su TDummy es la de iteracion
 --isVarIter :: Var -> SymTab -> Scope -> Bool
 --isVarIter (Var name _) symTab scope
@@ -262,36 +274,136 @@ baseTypeArrLst (TList t)                 = t
 -------------------------------------------------------------------------------
 
 
+{-
+  Concatena las listas de expresiones que forman un ArrayList 
+  en una lista de expresiones que contiene solo ArrayList o una llamada a funcion 
+  que regresa una lista
+-}
+concatArrayLE :: [Expr] -> [Expr]
+concatArrayLE []                = []
+concatArrayLE (ArrayList l _:r) = l ++ concatArrayLE r
+--concatArrayLE (f@(FuncCall _ _):r) = [f] ++ (concatArrayLE r)
+
+
 -------------------------------------------------------------------------------
 -- Dada una lista de tipos lista, [(List t)], determina si todos los tipos 't'
 -- concuerdan y retorna ese tipo 't'. Recursiona de ser necesario
 -- Util para << >> == << >>, << >>::<< >> y derivados
 getTLists:: [Type]-> Maybe Type
 getTLists ts 
-    | all isList ts = Just (\l -> TList l) <*> getTLists (map (\(TList t) -> t) ts) -- [[[int]]] = recursivo [[int]]
-    | all (not . isList) ts =  -- [[int]] = Just [int]
+  | all (==TPDummy) ts = do
+    -- TODO: Agregar a la cola de expresiones a evaluar
+    return TPDummy
 
-        if any (/= TDummy) ts then
-            let 
-                listWithNoTDummy = filter (/=TDummy) ts
-                listWithNoTNull = filter (/=TNull) listWithNoTDummy
-            in
-                if null listWithNoTNull then  -- Si la lista tiene todos TNull
-                    Just TNull 
-                else
-                    let 
-                        tFirst = head listWithNoTNull
-                        isTypeTFirst t = t == tFirst || (t == TNull && isPointer tFirst )
-                    in
-                        if all isTypeTFirst listWithNoTDummy then Just tFirst
-                        else Nothing
-        else 
-            Just TDummy
-            
-    | otherwise = Nothing
+  | all (\t -> isList t || (t == TPDummy)) ts = do -- [[[int]]] = recursivo [[int]]
+    let listNoTPDummy = filter (/= TPDummy) ts
+    t <- getTLists $ map (\(TList t) -> t) listNoTPDummy
+  
+    return (TList t)
+  
+  | all (\t -> not (isList t) || (t == TPDummy) ) ts =  -- [[int]] = Just [int]
+
+    if any (/= TDummy) ts then
+      
+      let listWithNoTDummy = filter (/=TDummy) ts
+          listWithNoTNull = filter (/=TNull) listWithNoTDummy
+          listWithNoTPDummy = filter (/=TPDummy) listWithNoTDummy
+      in
+        if not $ null listWithNoTPDummy then 
+
+          let tExpected = head listWithNoTPDummy
+              isTExpected t = t == tExpected || (t == TNull && isPointer tExpected) || t == TPDummy
+              typesR = dropWhile isTExpected listNoTDummy
+          in 
+              if null typesR then return tExpected
+              else Nothing
+
+        else return TPDummy
+        -- if null listWithNoTNull then  -- Si la lista tiene todos TNull
+        --   Just TNull 
+        -- else
+        --   let tFirst = head listWithNoTNull
+        --       isTypeTFirst t = t == tFirst || (t == TNull && isPointer tFirst )
+        --   in
+        --     if all isTypeTFirst listWithNoTDummy then Just tFirst
+        --     else Nothing
+    else 
+      return TDummy
+          
+  | otherwise = Nothing
 -------------------------------------------------------------------------------
 -- << <<>>, <<DeathZone>> >>
+{-
+getTLists:: [(Type,[Expr])]-> Either Type Type
+getTLists ts 
+    | all (\(t,e) -> isList(t) || (t == TPDummy)) ts = do
+        if 
+        
+        return $ Right (\l -> TList l) <*> getTLists(map (\((TList t),concatArrayLE lst) -> (t,ArrayList )) ts) -- [[[int]]] = recursivo [[int]]
+    | all (\(t,e) -> (not isList(t)) || (t == TPDummy) ) ts =  -- [[int]] = Just [int]
 
+        if any (\(t,e) -> t /= TDummy) ts then
+
+            if any (\(t,e) -> t /= TDummy && t /= TPDummy) ts then do
+
+                let 
+                    tFirst = head (filter (\(t,e) -> t /= TDummy && t /= TPDummy) ts)
+                    isTypeTFirst = (\t -> t == tFirst || (t == TNull && isPointer tFirst ) || t == TPDummy))
+                
+                if all isTypeTFirst (filter (\(t,e) -> t /= TDummy) ts) then do
+
+                    map (\(t,e) -> if t == TPDummy ) ts
+                    if any (\(t,e) -> t == TPDummy) (filter (\(t,e) -> t /= TDummy) ts) then do
+                        if all (\(t,e) -> t == TPDummy) listWithNoTDummy then do
+                            -- TODO : Agregar a condiciones para observar
+                        else
+                    else 
+                in
+                    if all  isTypeTFirst listWithNoTDummy then Just tFirst else Left tFirst
+            let 
+                listWithNoTDummy = filter (\(t,e) -> t /= TDummy) ts
+                listWithNoTPDummy = filter (/=TPDummy) listWithNoTDummy
+                listWithNoTNull = filter (/=TNull) listWithNoTPDummy
+            in
+                let 
+                    listWithNoTPDummy = filter (/=TPDummy) listWithNoTPDummy
+                    tFirst = head listWithNoTPDummy
+                    isTypeTFirst = (\t -> t == tFirst || (t == TNull && isPointer tFirst ))
+                in
+                    if all  isTypeTFirst listWithNoTDummy then Just tFirst else Left tFirst
+        else 
+            Right TDummy
+            
+    | otherwise = do
+        Left  (head (filter (/=TDummy) ts))
+
+-------------------------------------------------------------------------------
+        if any (\(t,e) -> t /= TDummy) ts then
+            let 
+                listWithNoTDummy = filter (\(t,e) -> t /= TDummy) ts
+                listWithNoTPDummy = filter (/=TPDummy) listWithNoTDummy
+                listWithNoTNull = filter (/=TNull) listWithNoTPDummy
+            in
+                if any (\(t,e) -> t == TPDummy) listWithNoTDummy then do
+                    if all (\(t,e) -> t == TPDummy) listWithNoTDummy then do
+                        -- TODO : Agregar a condiciones para observar
+                    else
+                -- Si la lista tiene todos TNull (y tal vez TPDummy)
+                if any (==TNull) (filter (t -> t/=TDummy && t /= TPDummy) ts) &&  null (filter (t -> t/=TDummy && t /= TPDummy && t/= TNull) ts) then  
+                    Right TNull 
+                else
+                    let 
+                        listWithNoTPDummy = filter (/=TPDummy) listWithNoTNull
+                        tFirst = head listWithNoTPDummy
+                        isTypeTFirst = (\t -> t == tFirst || (t == TNull && isPointer tFirst ))
+                    in
+                        if all  isTypeTFirst listWithNoTDummy then Just tFirst else Left tFirst
+        else 
+            Right TDummy
+            
+    | otherwise = do
+        Left  (head (filter (/=TDummy) ts))
+-}
 -------------------------------------------------------------------------------
 -- Dado un tipo y una lista (List t) regresa el t(si t es una lista recursiona) , si no es de esa forma regresa Nothing
 -- Util Para el problema de <<2>>:<< <<>> >> 
@@ -301,7 +413,7 @@ getTListAnexo t1 (TList t2)
     | isSimpleType t1 && t2 == TDummy  = Just (TList t1) -- int : [TDummy] = Just int
     | t1 == TDummy && isSimpleType t2  = Just (TList t2) -- TDummy : [int] = Just int
     | t1 == TDummy && t2 == TDummy  = Just (TList TDummy) -- TDummy : [TDummy] = Just int
-    | isList t1 && isList t2 = Just (\l -> TList l) <*> getTListAnexo (typeArrLst t1) t2 -- [t] :[[t]] = recursivo t [t]
+    | isList t1 && isList t2 = Just TList <*> getTListAnexo (typeArrLst t1) t2 -- [t] :[[t]] = recursivo t [t]
     | otherwise = Nothing
 getTListAnexo _ _ = Nothing
 -------------------------------------------------------------------------------

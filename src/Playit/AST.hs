@@ -137,7 +137,7 @@ newType tName p = do
 assig :: (Var,Pos) -> (Expr,Pos) -> MonadSymTab Instr
 assig (lval,pLval) (expr,pE) = do
   iter <- checkIterVar lval
-  asig <- checkAssig lval expr pE
+  asig <- checkAssig (typeVar lval) expr pE
 
   if not iter && asig then return $ Assig lval expr TVoid
   else return $ Assig lval (Literal EmptyVal TError) TError -- change when no exit with first error encounter

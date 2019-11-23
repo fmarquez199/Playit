@@ -89,16 +89,17 @@ checkAssigs assigs t p
 
 -------------------------------------------------------------------------------
 -- | Checks the assignation's types
-checkAssig :: Type -> Type -> Pos -> MonadSymTab Bool
-checkAssig tLval tExpr p
+checkAssig :: Type -> Expr -> Pos -> MonadSymTab Bool
+checkAssig tLval expr p
   | isRead || isNull || isInitReg || (tExpr == tLval) || isLists = return True
-  -- | tExpr == TPDummy && isFunctionCall expr =
-  --   updatePromiseTypeFunction expr tLval >> return True
+  | tExpr == TPDummy =
+    updateExprPromiseType expr tLval >> return True
   | otherwise = do
     fileCode <- ask
     error $ semmErrorMsg (show tLval) (show tExpr) fileCode p
 
   where
+    tExpr = typeE expr
     isEmptyList = isList tExpr && baseTypeT tExpr == TDummy
     isListLval  = isList tLval && isSimpleType (baseTypeT tLval)
     isLists = isEmptyList && isListLval
@@ -130,22 +131,28 @@ checkBinary op e1 e2 p
     error $ semmErrorMsg notRegUnion regUnion fileCode p
   
   | op `elem` compOps && tE1 == tE2 && noTError = return (True, TBool)
+
+  | op `elem` compOps && tE1 == TPDummy && tE2 /= TPDummy =
+    updateExprPromiseType e1 tE2 >> return (True, TBool)
+
+  | op `elem` compOps && tE1 /= TPDummy && tE2 == TPDummy =
+    updateExprPromiseType e2 tE1 >> return (True, TBool)
+
   | op `elem` boolOps && tE1 == tE2 && tE1 == TBool = return (True, TBool)
   | op `elem` aritInt && tE1 == tE2 && tE1 == TInt = return (True, TInt)
-  | op == Concat && tE1 == tE2 && isList tE1 && isJust mbtypeList =
-    return (True, fromJust mbtypeList)
+  | op == Concat && tE1 == tE2 && isList tE1 && isJust tList =
+    return (True, fromJust tList)
   
   -- Add this isSubType tE1 tE2 ??
   | op == Anexo && baseT1 == baseT1 && isList tE2 = return (True, tE2)
   | tE1 == tE2 && (tE1 == TInt || tE1 == TFloat) = return (True, tE1)
-  -- | tE1 == TPDummy && tE2 /= TPDummy = do
-  --   when (isFunctionCall e1) $
-  --     updatePromiseTypeFunction e1 tE2
-  --   return (True, tE1)
-  -- | tE1 /= TPDummy && tE2 == TPDummy = do
-  --   when (isFunctionCall e1) $
-  --     updatePromiseTypeFunction e2 tE1
-  --   return (True, tE2)
+
+  | tE1 == TPDummy && tE2 /= TPDummy =
+    updateExprPromiseType e1 tE2 >> return (True, tE1)
+
+  | tE1 /= TPDummy && tE2 == TPDummy =
+    updateExprPromiseType e2 tE1 >> return (True, tE2)
+
   | otherwise = do
     fileCode <- ask
     error $ semmErrorMsg (show tE1) (show tE2) fileCode p
@@ -156,7 +163,7 @@ checkBinary op e1 e2 p
     tE2' = baseTypeT tE2
     baseT1 = baseTypeE e1
     baseT2 = baseTypeE e2
-    mbtypeList = getTLists [t1,t2]
+    tList = getTLists [t1,t2]
     eqOps = [Eq,NotEq]
     compOps = [Eq,NotEq,Greater,GreaterEq,Less,LessEq]
     aritInt = [DivEntera, Module]
@@ -174,11 +181,11 @@ checkBinary op e1 e2 p
 -- | Checks the unary's expression type is the spected
 checkUnary :: Type -> Type -> Pos -> MonadSymTab (Bool, Type)
 checkUnary tExpr tSpected p
-    | tExpr == TDummy = return (True, TDummy)
-    | tExpr == tSpected = return (True, tExpr)
-    | otherwise = do
-        fileCode <- ask
-        error $ semmErrorMsg (show tSpected) (show tExpr) fileCode p
+  | tExpr == TDummy = return (True, TDummy)
+  | tExpr == tSpected = return (True, tExpr)
+  | otherwise = do
+    fileCode <- ask
+    error $ semmErrorMsg (show tSpected) (show tExpr) fileCode p
 -------------------------------------------------------------------------------
 {-
   case op of
@@ -242,12 +249,14 @@ crearOpAnexo e1 e2 p
 checkIfSimple :: Type -> Type -> Type -> Pos -> MonadSymTab (Bool, Type)
 checkIfSimple tCond tTrue tFalse p
     | tCond == TBool && tFalse == tTrue = return (True, tTrue)
+    -- | tCond == TPDummy && tFalse == tTrue = return (True, tTrue)
     | otherwise = do
-        fileCode <- ask
-        if tCond /= TBool then
-            error $ semmErrorMsg "Battle" (show tCond) fileCode p
-        else
-            error $ semmErrorMsg (show tTrue) (show tFalse) fileCode p
+      fileCode <- ask
+      
+      if tCond /= TBool then
+        error $ semmErrorMsg "Battle" (show tCond) fileCode p
+      else
+        error $ semmErrorMsg (show tTrue) (show tFalse) fileCode p
 -------------------------------------------------------------------------------
 {-
   if tC == TBool && tT == tF then
@@ -291,7 +300,7 @@ changeTDummyList (TList t) newT      = TList (changeTDummyList t newT)
 changeTDummyList t newT               = t
 
 changeTPDummyFunction :: Expr -> Type -> Expr
-changeTPDummyFunction (FuncCall c TPDummy) newT =  FuncCall c newT
+changeTPDummyFunction (FuncCall c TPDummy) =  FuncCall c
 -- Error: otherwise
 
 -------------------------------------------------------------------------------
