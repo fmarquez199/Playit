@@ -250,36 +250,12 @@ Identifier :: { ((Id, Pos), InstrSeq) }
 
 -- Lvalues
 Lvalue :: { (Var, Pos) }
-  : Lvalue "." id
-    { % do
-      v <- field $1 (getTk $3) (getPos $3)
-      return (v, snd $1)
-    }
-  | Lvalue "|)" Expression "(|"
-    { % do
-      v <- index $1 $3 $2 $4
-      return (v, snd $1)
-    }
-  | Lvalue "|>" Expression "<|"
-    { % do
-      v <- index $1 $3 $2 $4
-      return (v, snd $1)
-    }
-  | pointer Lvalue
-    { % do
-      v <- desref $2 $1
-      return (v, snd $1)
-    }
-  | pointer "(" Lvalue ")"
-    { % do
-      v <- desref $3 $1
-      return (v, snd $1)
-    }
-  | id
-    { % do
-      v <- var (getTk $1) (getPos $1)
-      return (v, getPos $1)
-    }
+  : Lvalue "." id                 { % field $1 (getTk $3) (getPos $3) }
+  | Lvalue "|)" Expression "(|"   { % index $1 $3 $2 $4 }
+  | Lvalue "|>" Expression "<|"   { % index $1 $3 $2 $4 }
+  | pointer Lvalue                { % desref $2 $1 }
+  | pointer "(" Lvalue ")"        { % desref $3 $1 }
+  | id                            { % var (getTk $1) (getPos $1) }
 
 
 -- Data types
@@ -551,10 +527,10 @@ Param :: { (Type,Id) }
 -------------------------------------------------------------------------------
 -- Subroutines calls
 ProcCall :: { Instr }
-  : SubroutineCall     { % procCall (fst $1) (snd $1) }
+  : SubroutineCall     { % procCall $1 }
 
 FuncCall :: { (Expr,Pos) }
-  : SubroutineCall     { % funcCall (fst $1) (snd $1) }
+  : SubroutineCall     { % funcCall $1 }
 
 SubroutineCall :: { (Subroutine, Pos) }
   : call id "(" Arguments ")"

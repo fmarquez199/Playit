@@ -262,6 +262,20 @@ checkIfSimple tCond tTrue tFalse p
     tC = typeE cond
     tT = typeE true
     tF = typeE false
+--------------------
+  fileCode <- ask
+  if tC == TBool && tT == tF then
+      return $ IfSimple cond true false tT
+  else do
+      if tC /= TBool then
+          error $ semmErrorMsg "Battle" (show tC) fileCode pc
+      else
+          error $ semmErrorMsg (show tT) (show tF) fileCode p2
+      return $ IfSimple cond true false TError
+  where
+      tC = typeE cond
+      tT = typeE true
+      tF = typeE false
 -}
 
 -------------------------------------------------------------------------------
