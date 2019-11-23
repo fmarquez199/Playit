@@ -406,7 +406,7 @@ checkPromises = do
     (symTab, activeScopes, scopes , promises) <- get
     fileCode <- ask
 
-    forM promises $ \(PromiseSubrutine name args t p ) -> do
+    forM promises $ \(Promise name args t p ) -> do
         if t /= TPDummy then
             error $ errorMsg ("Function '" ++ name ++ "' is not defined") fileCode p
         else 
@@ -477,7 +477,7 @@ call subroutine args p = do
                 in error $ errorMsg msj fileCode p
     else do
         -- Add a promise to create subroutine
-        put(symTab, activeScopes, scopes, promises ++ [PromiseSubrutine subroutine (map typeE args) TPDummy p] )
+        put(symTab, activeScopes, scopes, promises ++ [Promise subroutine (map typeE args) TPDummy p] )
         return (Call subroutine args, p)
 -------------------------------------------------------------------------------
 

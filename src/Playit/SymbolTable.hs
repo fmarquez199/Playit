@@ -309,8 +309,8 @@ updatePromiseTypeFunction exprF t = do
         promise = getPromiseSubrutine name promises
     
     if isJust promise then do
-        let modifyTypePromise prom@(PromiseSubrutine id p _ pos) = 
-                if id == name then PromiseSubrutine id p t pos else prom
+        let modifyTypePromise prom@(Promise id p _ pos) = 
+                if id == name then Promise id p t pos else prom
 
         put(symTab, activeScopes, scope , map modifyTypePromise promises)
         updateType name 1 t

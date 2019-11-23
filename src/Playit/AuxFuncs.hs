@@ -288,6 +288,6 @@ getTListAnexo _ _ = Nothing
 -------------------------------------------------------------------------------
 getPromiseSubrutine:: Id -> Promises -> Maybe Promise
 getPromiseSubrutine _ []  = Nothing
-getPromiseSubrutine name (promise@(PromiseSubrutine id _ _ _):r)  = 
+getPromiseSubrutine name (promise@(Promise id _ _ _):r)  = 
     if  name == id then Just promise else getPromiseSubrutine name r
 -------------------------------------------------------------------------------

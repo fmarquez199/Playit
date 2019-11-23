@@ -332,7 +332,7 @@ instance Show SymbolInfo where
 
 
 -- Subroutine promise for co-recursive subroutines
-data Promise = PromiseSubrutine {
+data Promise = Promise {
     getIdPromise :: Id,
     getParamsPromise :: [Type],
     getTypePromise :: Type,
