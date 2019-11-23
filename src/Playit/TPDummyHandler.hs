@@ -50,10 +50,8 @@ updatePromiseTypeFunction exprF t = do
     Le asigna a las promesas de funcion1 y funcion2  el tipo de retorno t
 -}
 updateExprPromiseType :: Expr -> Type -> MonadSymTab ()
-updateExprPromiseType (Binary op e1 e2 TPDummy) t   = do
-    updateExprPromiseType e1 t
-    updateExprPromiseType e2 t
-updateExprPromiseType (FuncCall (Call name params) TPDummy ) t   = updateSubroutinePromiseType name t
+updateExprPromiseType (Binary op e1 e2 TPDummy) t = updateExprPromiseType e1 t >>  updateExprPromiseType e2 t
+updateExprPromiseType (FuncCall (Call name params) TPDummy ) t = updateSubroutinePromiseType name t
 updateExprPromiseType _ _   = return ()
     
 

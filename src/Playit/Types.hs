@@ -27,7 +27,7 @@ type Id = String
 type Pos = (Int, Int)
 
 -- Subroutine's parameters / arguments 
-type Params = [Expr]
+type Params = [(Expr,Pos)]
 
 -- Instruction sequence
 type InstrSeq = [Instr]
@@ -341,6 +341,14 @@ data Promise = Promise {
     deriving (Eq, Ord)
 
 type Promises = [Promise]
+
+-- 
+data LateCheckPromise = LateCheckPromise {
+    getLCPromiseExpr :: Expr, -- Expresion que debe ser evaluada cuando se actualiza el tipo de la promesa
+    getLCPromisePosArgs :: [Pos],  -- Posiciones (linea,columna) de los argumentos necesarios para el check
+    getLCPromiseLinks :: [Id] -- Otras promesas enlazadas a este check
+    }
+    deriving (Eq, Ord,Show)
 
 
 {- | New type that represents the symbol table
