@@ -37,6 +37,15 @@ getNParams (_:rs)       = getNParams rs
 
 
 -------------------------------------------------------------------------------
+-- | Gets the lists of parameters
+getParams :: [ExtraInfo] -> Maybe [(Type, Id)]
+getParams []           = Nothing
+getParams (Params p:_) = Just p
+getParams (_:rs)       = getParams rs
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 --                           Symbol table related
 -------------------------------------------------------------------------------
@@ -81,7 +90,7 @@ areSameTExtInf _ _ = False
 --      Power puff x = DeathZone
 --      RegUnion r = {3,*r*}
 eqAssigsTypes :: InstrSeq -> Type -> Bool
-eqAssigsTypes assigs t = all (\(Assig _ expr) -> typeE expr == t) assigs
+eqAssigsTypes assigs t = all (\(Assig _ expr _) -> typeE expr == t) assigs
 -------------------------------------------------------------------------------
 
 
@@ -125,6 +134,20 @@ isRegUnion _        = False
 isFunctionCall :: Expr -> Bool
 isFunctionCall (FuncCall _ _) = True
 isFunctionCall _              = False
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+isVoid :: Instr -> Bool
+isVoid = (== TVoid) . getTypeInstr
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+isSubtype :: Type -> Type -> Bool
+isSubtype t1 (TArray _ t2) = t1 == t2
+isSubtype t1 (TList t2) = t1 == t2
+isSubtype t1 _ = False
 -------------------------------------------------------------------------------
 
 
@@ -282,6 +305,25 @@ getTListAnexo t1 (TList t2)
     | isList t1 && isList t2 = Just (\l -> TList l) <*> getTListAnexo (typeArrLst t1) t2 -- [t] :[[t]] = recursivo t [t]
     | otherwise = Nothing
 getTListAnexo _ _ = Nothing
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+getTypeInstr :: Instr -> Type
+getTypeInstr (Assig _ _ t)          = t
+getTypeInstr (Assigs _ t)           = t
+getTypeInstr (Break t)              = t
+getTypeInstr (Continue t)           = t
+getTypeInstr (For _ _ _ _ t)        = t
+getTypeInstr (ForEach _ _ _ t)      = t
+getTypeInstr (ForWhile _ _ _ _ _ t) = t
+getTypeInstr (Free _ t)             = t
+getTypeInstr (IF _ t)               = t
+getTypeInstr (Print _ t)            = t
+getTypeInstr (ProcCall _ t)         = t
+getTypeInstr (Program _ t)          = t
+getTypeInstr (Return _ t)           = t
+getTypeInstr (While _ _ t)          = t
 -------------------------------------------------------------------------------
 
 
