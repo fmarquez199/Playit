@@ -156,7 +156,7 @@ defineSubroutine id category p = do
         let info = [SymbolInfo TDummy 1 category []]
         in addToSymTab [id] info symTab activeScopes scope promises
     else
-        let promise = getPromiseSubrutine id promises
+        let promise = getPromiseSubroutine id promises
         in
         if isJust promise then
             let promise' = fromJust promise
@@ -306,7 +306,7 @@ updatePromiseTypeFunction exprF t = do
     let name = case exprF of 
                 (FuncCall (Call name _) _) -> name
                 _ -> error "Internal error : FunctionCall doesn't have a name"
-        promise = getPromiseSubrutine name promises
+        promise = getPromiseSubroutine name promises
     
     if isJust promise then do
         let modifyTypePromise prom@(Promise id p _ pos) = 

@@ -286,8 +286,8 @@ getTListAnexo _ _ = Nothing
 
 
 -------------------------------------------------------------------------------
-getPromiseSubrutine:: Id -> Promises -> Maybe Promise
-getPromiseSubrutine _ []  = Nothing
-getPromiseSubrutine name (promise@(Promise id _ _ _):r)  = 
-    if  name == id then Just promise else getPromiseSubrutine name r
+getPromiseSubroutine:: Id -> Promises -> Maybe Promise
+getPromiseSubroutine _ []  = Nothing
+getPromiseSubroutine name (promise@(Promise id _ _ _):r)  = 
+    if  name == id then Just promise else getPromiseSubroutine name r
 -------------------------------------------------------------------------------

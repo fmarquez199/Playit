@@ -422,7 +422,7 @@ updateInfoSubrutine name cat p t = do
     (symTab, activeScopes, scopes, promises) <- get
     fileCode <- ask
     let paramsF = reverse p
-        promise = getPromiseSubrutine name promises
+        promise = getPromiseSubroutine name promises
 
     when (isJust promise) $ do
         let promise' = fromJust promise
@@ -499,7 +499,7 @@ procCall procedure@(Call name args) p = do
             return $ ProcCall procedure
     else do
         -- If no is declared but maybe(It has to be a promise) is a promise
-        let promise = getPromiseSubrutine name promises
+        let promise = getPromiseSubroutine name promises
         
         if isJust promise then do
             let info = [SymbolInfo TVoid 1 Procedures [Params [(typeE e,show i)| (e,i) <- zip args [1..]]]]
@@ -531,7 +531,7 @@ funcCall function@(Call name args) p = do
             return $ FuncCall function (getType $ head function')
     else do
         -- If no is declared but maybe(It has to be a promise) is a promise
-        let promise = getPromiseSubrutine name promises
+        let promise = getPromiseSubroutine name promises
         
         if isJust promise then do
             let info = [SymbolInfo TDummy 1 Functions [Params [(typeE e,show i)| (e,i) <- zip args [1..]]]]
