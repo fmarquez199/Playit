@@ -17,6 +17,7 @@ import Playit.Errors
 import Playit.SymbolTable
 import Playit.AuxFuncs
 import Playit.Types
+import Playit.PromisesHandler
 
 
 -------------------------------------------------------------------------------
@@ -159,7 +160,7 @@ register e p'
 
   where
     exprs = map fst e
-    p     = head $ snd e
+    p     = snd $ head e
 -------------------------------------------------------------------------------
 
 
@@ -206,7 +207,7 @@ array e = (ArrayList e (TArray (Literal (Integer $ length e) TInt) t), p)
 
   where
     exprs      = map fst e
-    p          = head $ snd e
+    p          = snd $ head e
     arrayTypes = map typeE exprs
     fstType    = head arrayTypes
     t          = if all (==fstType) arrayTypes then fstType else TError
@@ -217,15 +218,15 @@ array e = (ArrayList e (TArray (Literal (Integer $ length e) TInt) t), p)
 -- | Creates the same type list node
 list :: [(Expr,Pos)] -> Pos -> MonadSymTab (Expr,Pos)
 list [] p = return (ArrayList [] (TList TDummy), p) -- TODO : Recordar quitar el TDummy
-list e p
+list expr p
   | isJust t =
     let list = ArrayList exprs (TList (fromJust t))
         ids  = getAllPromiseIdsFromExpr list
-    in addCheckTailPromise list list (map snd e) ids >> return (list, p)
+    in addCheckTailPromise list list (map snd expr) ids >> return (list, p)
 
   | otherwise = do
     fileCode <- ask
-    let l = filter (\(e,p) -> typeE e /= TDummy && typeE e /= TPDummy) e
+    let l = filter (\(e,p) -> typeE e /= TDummy && typeE e /= TPDummy) expr
         (e,_) = head l
         expected = typeE e
         got = head $ dropWhile (\(e,p) ->  typeE e == expected) l
@@ -233,7 +234,7 @@ list e p
     error $ semmErrorMsg (show expected) (show $ typeE $ fst got) fileCode (snd got)
 
   where
-    exprs     = map fst e
+    exprs     = map fst expr
     -- p         = head $ snd e
     listTypes = map typeE exprs
     t         = getTLists listTypes
@@ -273,10 +274,10 @@ guard (cond,p) i = do
 -- | Creates the simple if instruction node
 ifSimple :: (Expr,Pos) -> (Expr,Pos) -> (Expr,Pos) -> MonadSymTab (Expr,Pos)
 ifSimple (cond,pC) (true,pT) (false,pF) = do
-  (ok,t) <- checkIfSimple (typeE cond) (typeE true) (typeE false) p
+  (ok,t) <- checkIfSimple (typeE cond) (typeE true) (typeE false) pC
 
-  if ok then return (IfSimple cond true false t, p)
-  else return (IfSimple cond true false TError, p)
+  if ok then return (IfSimple cond true false t, pC)
+  else return (IfSimple cond true false TError, pC)
 -------------------------------------------------------------------------------
 
 
@@ -317,7 +318,7 @@ forWhile var (e1,pE1) (e2,pE2) (e3,pE3) i = do
   let tE1    = typeE e1
       tE2    = typeE e2
       tE3    = typeE e3
-      forOK  = ForWhile var e1 e2 e3 i TVoid
+      forOk  = ForWhile var e1 e2 e3 i TVoid
       forErr = ForWhile var e1 e2 e3 i TError
 
   case tE1 of
@@ -383,7 +384,7 @@ checkPromises = do
   (symTab, activeScopes, scopes , promises) <- get
   fileCode <- ask
 
-  forM promises $ \(Promise name args t p ) -> do
+  forM promises $ \(Promise name args t p lc) -> do
     if t /= TPDummy then
       error $ errorMsg ("Function '" ++ name ++ "' is not defined") fileCode p
     else 
@@ -513,7 +514,7 @@ procCall (procedure@(Call name args), p) = do
 -}
     let extraInfo = Params [(typeE e,show i)| ((e,p),i) <- zip args [1..]]
         newProc = [SymbolInfo TVoid 1 Procedures [extraInfo]]
-        newProm = Promise name (map (\(e,p) -> (typeE e, p)) args) TVoid p []
+        newProm = Promise name (map (\(e,_) -> typeE e) args) TVoid p []
         newPromises = promises ++ [newProm]
         newSymTab = insertSymbols [name] newProc symTab
 
@@ -557,7 +558,7 @@ funcCall (function@(Call name args), p) = do
 -}
     let extraInfo = Params [(typeE e,show i)| ((e,p),i) <- zip args [1..]]
         newFunc = [SymbolInfo TPDummy 1 Functions [extraInfo]]
-        newProm = Promise name (map (\(e,p) -> (typeE e, p)) args) TPDummy p []
+        newProm = Promise name (map (\(e,_) -> typeE e) args) TPDummy p []
         newPromises = promises ++ [newProm]
         newSymTab = insertSymbols [name] newFunc symTab
 
@@ -576,13 +577,13 @@ funcCall (function@(Call name args), p) = do
 -------------------------------------------------------------------------------
 -- | Creates the print instruction node
 print' :: [(Expr,Pos)] -> Pos -> MonadSymTab Instr
-print' e p
+print' expr p
   | TError `notElem` exprsTypes = return $ Print exprs TVoid
   | otherwise = do
     return $ Print exprs TError
 
     fileCode <- ask
-    let l        = filter (\(e,p) -> typeE e /= TDummy && typeE e /= TPDummy) e
+    let l        = filter (\(e,p) -> typeE e /= TDummy && typeE e /= TPDummy) expr
         (e,_)    = head l
         expected = typeE e
         got      = head $ dropWhile (\(e,p) -> typeE e == expected) l
@@ -590,7 +591,7 @@ print' e p
     error $ semmErrorMsg "Runes" (show $ typeE $ fst got) fileCode (snd got)
 
   where
-    exprs = map fst e
+    exprs = map fst expr
     exprsTypes = map typeE exprs
     tE         = case getTLists exprsTypes of  
                   Just t -> t

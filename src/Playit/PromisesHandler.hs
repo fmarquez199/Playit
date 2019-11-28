@@ -12,7 +12,7 @@ module Playit.PromisesHandler where
 
 
 import Control.Monad.Trans.RWS
-import Control.Monad (void,forM,forM_)
+import Control.Monad (when,void,forM,forM_)
 --import qualified Data.Map as M
 import Data.Maybe (isJust,fromJust)
 import Playit.AuxFuncs
@@ -32,8 +32,8 @@ updatePromiseTypeFunction exprF t = do
       promise = getPromiseSubroutine name promises
   
   if isJust promise then do
-    let modifyTypePromise prom@(Promise id p _ pos) = 
-            if id == name then Promise id p t pos else prom
+    let modifyTypePromise prom@(Promise id p _ pos lc) = 
+            if id == name then Promise id p t pos lc else prom
 
     put(symTab, activeScopes, scope , map modifyTypePromise promises)
     updateType name 1 t
@@ -85,7 +85,7 @@ updateSubroutinePromiseType name t = do
       checkExpresionesPromise promise' t
       return ()
 
-    else when typePromise /= t $ do
+    else when (typePromise /= t) $ do
       -- error $ semmErrorMsg (show t) (show typePromise) fileCode p
       error "Internal error updateSubroutinePromiseType: IS THIS GONNA GET EXECUTED? LOL"
       return ()
@@ -160,14 +160,14 @@ addSubroutinePromiseLateChecks name expr lpos lids = do
     if (typePromise == TPDummy) && not (any (\c -> getLCPromiseExpr c == expr) checks) then do
 
       let 
-          nlc = LateCheckPromiseSubroutine expr lpos nlids
-          modifyTypePromise prom@(PromiseSubroutine id p t pos ch) = 
-              if id == name then PromiseSubroutine id p t pos (ch ++ [nlc]) else prom
+          nlc = LateCheckPromise expr lpos nlids
+          modifyTypePromise prom@(Promise id p t pos ch) = 
+              if id == name then Promise id p t pos (ch ++ [nlc]) else prom
 
       put(symTab, activeScopes, scope , map modifyTypePromise promises)
       return ()
 
-    else when typePromise /= TPDummy $ do
+    else when (typePromise /= TPDummy) $ do
       error "Internal error AddSubroutinePromiseLateChecks : IS THIS GONNA GET EXECUTED? LOL I HOPE NOT... it shouldnt...right?"
       return ()
   else do
@@ -189,10 +189,10 @@ checkExpresionesPromise promise tr = do
       params  = getParamsPromise promise
       checks  = getLateChecksPromise promise
 
-  forM_ checks $ \(LateCheckPromiseSubroutine e1 lpos1 lids1) -> do
+  forM_ checks $ \(LateCheckPromise e1 lpos1 lids1) -> do
 
     (symTab, activeScopes, scope,promises) <- get
-    let newcheck = LateCheckPromiseSubroutine (changeTPDummyFunctionInExpre name e1 tr) lpos1 lids1
+    let newcheck = LateCheckPromise (changeTPDummyFunctionInExpre name e1 tr) lpos1 lids1
     
     let ne1 = getLCPromiseExpr newcheck
     checkTypesLC ne1 lpos1
@@ -202,9 +202,9 @@ checkExpresionesPromise promise tr = do
       
       if isJust promise then do
         let
-          (PromiseSubroutine id2 p2 t2 pos2 ch2) = fromJust promise
-          nch2 = map (\lcp@(LateCheckPromiseSubroutine e2 lpos2 lids2) -> if e2 == e1 then LateCheckPromiseSubroutine ne1 lpos2 lids2 else  lcp) ch2
-          np = PromiseSubroutine id2 p2 t2 pos2 nch2
+          (Promise id2 p2 t2 pos2 ch2) = fromJust promise
+          nch2 = map (\lcp@(LateCheckPromise e2 lpos2 lids2) -> if e2 == e1 then LateCheckPromise ne1 lpos2 lids2 else  lcp) ch2
+          np = Promise id2 p2 t2 pos2 nch2
 
         return [np]
       else return []
@@ -221,8 +221,8 @@ checkExpresionesPromise promise tr = do
   (symTab, activeScopes, scope,promises) <- get
 
   let 
-    modifyTypePromise prom@(PromiseSubroutine id p t pos ch) = 
-      if id == name then PromiseSubroutine id p t pos [] else prom
+    modifyTypePromise prom@(Promise id p t pos ch) = 
+      if id == name then Promise id p t pos [] else prom
 
   put(symTab, activeScopes, scope , map modifyTypePromise promises)
   return ()
@@ -278,83 +278,98 @@ changeTPDummyFunctionInExpre name v@(Variable _ _) _   = v
 
 checkBinaryExpr :: BinOp -> Expr -> Pos-> Expr -> Pos -> MonadSymTab Bool
 checkBinaryExpr op e1 p1 e2 p2 = do
-    fileCode <- ask
-    let te1 = typeE e1
-    let te2 = typeE e2
+  fileCode <- ask
+  let te1 = typeE e1
+  let te2 = typeE e2
 
-    if te1 /= te2 then -- Si son distintos los tipos de las funciones
-        if op `elem` comp_eqs then
-          
-            if isTypeComparableEq te1 &&  not (isTypeComparableEq te2) then
-                error $ semmErrorMsg (show te1) (show te2) fileCode p2
-            else if not (isTypeComparableEq te1) &&  isTypeComparableEq te2 then
-                error $ semmErrorMsg (show te2) (show te1) fileCode p1
-            else  if isTypeComparableEq te1 && isTypeComparableEq te2 then
-                error $ semmErrorMsg (show te1) (show te2) fileCode p2
-            else 
-                error $ semmErrorMsg "Tipo comparable" (show te1) fileCode p1
+  if te1 /= te2 then -- Si son distintos los tipos de las funciones
 
-        else if (op `elem` comparators ) || (op `elem` aritmetic )then
-            if isTypeNumber te1 &&  not (isTypeNumber te2) then
-                error $ semmErrorMsg (show te1) (show te2) fileCode p2
-            else if not (isTypeNumber te1) &&  isTypeNumber te2 then
-                error $ semmErrorMsg (show te2) (show te1) fileCode p1
-            else  if isTypeNumber te1  && isTypeNumber te2 then
-                error $ semmErrorMsg (show te1) (show te2) fileCode p2
+    if op `elem` comp_eqs then
+      
+      if isTypeComparableEq te1 &&  not (isTypeComparableEq te2) then
+          error $ semmErrorMsg (show te1) (show te2) fileCode p2
+      else 
+        if not (isTypeComparableEq te1) &&  isTypeComparableEq te2 then
+          error $ semmErrorMsg (show te2) (show te1) fileCode p1
+        else
+          if isTypeComparableEq te1 && isTypeComparableEq te2 then
+            error $ semmErrorMsg (show te1) (show te2) fileCode p2
+          else 
+              error $ semmErrorMsg "Tipo comparable" (show te1) fileCode p1
+
+    else 
+
+      if (op `elem` comparators ) || (op `elem` aritmetic )then
+
+        if isTypeNumber te1 &&  not (isTypeNumber te2) then
+          error $ semmErrorMsg (show te1) (show te2) fileCode p2
+        else 
+          if not (isTypeNumber te1) &&  isTypeNumber te2 then
+            error $ semmErrorMsg (show te2) (show te1) fileCode p1
+          else 
+            if isTypeNumber te1  && isTypeNumber te2 then
+              error $ semmErrorMsg (show te1) (show te2) fileCode p2
             else 
                 error $ semmErrorMsg "Power or Skill" (show te1) fileCode p1
 
-        else if (op `elem` aritmetic_int then
-            if te1 == TInt then
-                error $ semmErrorMsg (show te1) (show te2) fileCode p2
+      else 
+        if op `elem` aritmetic_int then
+
+          if te1 == TInt then error $ semmErrorMsg (show te1) (show te2) fileCode p2
+          else 
+            if te2 == TInt then error $ semmErrorMsg (show te2) (show te1) fileCode p1
+            else error $ semmErrorMsg "Power" (show te1) fileCode p1
+
+        else 
+          if op `elem` boolean then
+
+            if te1 == TBool then error $ semmErrorMsg (show te1) (show te2) fileCode p2
             else 
-              if (te2 == TInt) then
-                error $ semmErrorMsg (show te2) (show te1) fileCode p1
-              else
-                  error $ semmErrorMsg "Power" (show te1) fileCode p1
-        else if (op `elem` boolean ) then
-            if te1 == TBool then
-                error $ semmErrorMsg (show te1) (show te2) fileCode p2
-            else if (te1 /= TBool) && (te2 == TBool) then
-                error $ semmErrorMsg (show te2) (show te1) fileCode p1
-            else
-                error $ semmErrorMsg "Battle" (show te1) fileCode p1
-        else if op == Anexo then
-            -- TODO: Sin hacer
-            error $ "Not implemented anexo with promises"
-        else return ()
-    else --- Si son iguales los tipos de las expresiones 
-        if (op `elem` comparators ) || (op `elem` aritmetic ) then
-            if ((te1 /= TInt) && (te1 /= TFloat)) then
-                error $ semmErrorMsg "Power or Skill" (show te1) fileCode p1
+              if (te1 /= TBool) && (te2 == TBool) then error $ semmErrorMsg (show te2) (show te1) fileCode p1
+              else error $ semmErrorMsg "Battle" (show te1) fileCode p1
+
+          else
+            if op == Anexo then
+              -- TODO: Sin hacer
+              error "Not implemented anexo with promises"
             else return ()
-        else if (op `elem` aritmetic_int ) then
-            if te1 /= TInt then
-                error $ semmErrorMsg "Power" (show te1) fileCode p1
-            else return ()
-        else if (op `elem` boolean ) then
-            if te1 /= TBool then
-                error $ semmErrorMsg "Battle" (show te1) fileCode p1
-            else return ()
-        else if op == Anexo then
-            -- TODO: Sin hacer
-            error $ "Not implemented anexo with promises"
+
+  else --- Si son iguales los tipos de las expresiones 
+    if (op `elem` comparators ) || (op `elem` aritmetic ) then
+
+      if (te1 /= TInt) && (te1 /= TFloat) then error $ semmErrorMsg "Power or Skill" (show te1) fileCode p1
+      else return ()
+
+    else 
+      if op `elem` aritmetic_int then
+        if te1 /= TInt then error $ semmErrorMsg "Power" (show te1) fileCode p1
         else return ()
 
-    return True
-    where
-        comparators = [Eq, NotEq, GreaterEq, LessEq, Greater, Less]
-        comp_eqs = [Eq, NotEq]
-        aritmetic = [Add, Minus, Mult, Division]
-        aritmetic_int = [DivEntera, Module]
-        boolean = [And, Or]
+      else 
+        if op `elem` boolean then
+          if te1 /= TBool then error $ semmErrorMsg "Battle" (show te1) fileCode p1
+          else return ()
+
+        else 
+          if op == Anexo then
+            -- TODO: Sin hacer
+            error "Not implemented anexo with promises"
+          else return ()
+
+  return True
+  where
+      comparators = [Eq, NotEq, GreaterEq, LessEq, Greater, Less]
+      comp_eqs = [Eq, NotEq]
+      aritmetic = [Add, Minus, Mult, Division]
+      aritmetic_int = [DivEntera, Module]
+      boolean = [And, Or]
 
 {-Checkea que la expresion sea correcta-}
 checkTypesLC :: Expr -> [Pos] -> MonadSymTab ()
 checkTypesLC (Binary op e1 e2 _) pos   = do
 
-    if (typeE e1) /= TPDummy && (typeE e2) /= TPDummy then do  -- En caso que alguno todavia no se haya leido/inferido no se checkea
-        checkBinaryExpr op e1 (pos !! 0) e2 (pos !! 1)
+    if (typeE e1 /= TPDummy) && (typeE e2 /= TPDummy) then do  -- En caso que alguno todavia no se haya leido/inferido no se checkea
+        checkBinaryExpr op e1 (head pos) e2 (pos !! 1)
         return ()
     else return ()
     return ()

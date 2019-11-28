@@ -17,7 +17,7 @@ import Playit.AuxFuncs
 import Playit.Errors
 import Playit.SymbolTable
 import Playit.Types
-import Playit.TPDummyHandler
+import Playit.PromisesHandler
 
 
 -------------------------------------------------------------------------------
@@ -166,13 +166,13 @@ checkBinary op e1 e2 p
     tE2' = baseTypeT tE2
     baseT1 = baseTypeE e1
     baseT2 = baseTypeE e2
-    tList = getTLists [t1,t2]
+    tList = getTLists [tE1,tE2]
     eqOps = [Eq,NotEq]
     compOps = [Eq,NotEq,Greater,GreaterEq,Less,LessEq]
     aritInt = [DivEntera, Module]
     boolOps = [And, Or]
     noTError = tE1 /= TError && tE2 /= TError -- TODO : Agregar a las comparaciones cuando no salga en el primer error
-    isRegUnios = isRegUnion tE1 || isRegUnion tE2
+    isRegUnions = isRegUnion tE1 || isRegUnion tE2
     isLists = isList tE1 && isList tE2 && isJust (getTLists [tE1,tE2])
     isNull = ((isPointer tE1 && tE2 == TNull) || (tE1 == TNull && isPointer tE2 )) || (tE1 == TNull && tE2 == TNull)
     notRegUnion = "Neither Register nor Union"
@@ -329,7 +329,8 @@ checkBinary op e1 e2 p
 -------------------------------------------------------------------------------
 -- | Checks the unary's expression type is the spected
 checkUnary :: UnOp -> Type -> Type -> Pos -> MonadSymTab (Bool, Type)
-checkUnary op tExpr tSpected p =
+checkUnary op tExpr tSpected p = do
+  fileCode <- ask
   case op of
     Length ->
       if isArray tExpr || isList tExpr then return (True, TInt)
@@ -341,10 +342,10 @@ checkUnary op tExpr tSpected p =
       else
         return (False, TError) >> error (semmErrorMsg "Power or Skill" (show tExpr) fileCode p)
 
-    _ | tExpr == TDummy = return (True, TDummy)
-      | tExpr == TPDummy = return (True, TPDummy)
-      | tExpr == tSpected = return (True, tExpr)
-      | otherwise =
+    _ | tExpr == TDummy -> return (True, TDummy)
+      | tExpr == TPDummy -> return (True, TPDummy)
+      | tExpr == tSpected -> return (True, tExpr)
+      | otherwise ->
         return (False, TError) >> error (semmErrorMsg (show tSpected) (show tExpr) fileCode p)
 -------------------------------------------------------------------------------
 

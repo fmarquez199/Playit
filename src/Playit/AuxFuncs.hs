@@ -441,6 +441,6 @@ getTypeInstr (While _ _ t)          = t
 -------------------------------------------------------------------------------
 getPromiseSubroutine:: Id -> Promises -> Maybe Promise
 getPromiseSubroutine _ []                                = Nothing
-getPromiseSubroutine name (promise@(Promise id _ _ _):r) = 
+getPromiseSubroutine name (promise@(Promise id _ _ _ _):r) = 
     if  name == id then Just promise else getPromiseSubroutine name r
 -------------------------------------------------------------------------------
