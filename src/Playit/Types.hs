@@ -334,7 +334,7 @@ instance Show SymbolInfo where
 -- Subroutine promise for co-recursive subroutines
 data Promise = Promise {
     getIdPromise :: Id,
-    getParamsPromise :: [Type],
+    getParamsPromise :: [(Type,Pos)],
     getTypePromise :: Type,
     getPosPromise :: Pos,
     getLateChecksPromise :: [LateCheckPromise]

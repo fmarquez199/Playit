@@ -230,10 +230,10 @@ data Token =
   TkProgramName      { getTk :: Id, getPos :: Pos }                  |
   TkID               { getTk :: Id, getPos :: Pos }                  |
   TkIDType           { getTk :: Id, getPos :: Pos }                  |
-  TkCHARACTER         { getTk :: Id, getPos :: Pos, getChar :: Char } |
+  TkCHARACTER         { getTk :: Id, getPos :: Pos, getTkChar :: Char } |
   TkSTRINGS          { getTk :: Id, getPos :: Pos }                  |
-  TkINT              { getTk :: Id, getPos :: Pos, getInt :: Int }   |
-  TkFLOAT            { getTk :: Id, getPos :: Pos, getFloat::Float } |
+  TkINT              { getTk :: Id, getPos :: Pos, getTkInt :: Int }   |
+  TkFLOAT            { getTk :: Id, getPos :: Pos, getTkFloat::Float } |
   TkFIN              { getTk :: Id, getPos :: Pos }                  |
   TkADD              { getTk :: Id, getPos :: Pos }                  |
   TkMIN              { getTk :: Id, getPos :: Pos }                  |

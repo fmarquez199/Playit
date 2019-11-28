@@ -157,8 +157,10 @@ isTypeNumber t = (t == TInt) || (t == TFloat)
 
 
 -------------------------------------------------------------------------------
+-- TODO: estan todos aquí no? ._.
 isTypeComparableEq :: Type -> Bool
 isTypeComparableEq t = isTypeNumber t || isList t || isPointer t || (t == TBool)
+    || (t == TChar) || (t == TStr) || isRegUnion t || isArray t
 -------------------------------------------------------------------------------
 
 
@@ -286,9 +288,16 @@ concatArrayLE (ArrayList l _:r) = l ++ concatArrayLE r
 
 
 -------------------------------------------------------------------------------
+{-
 -- Dada una lista de tipos lista, [(List t)], determina si todos los tipos 't'
 -- concuerdan y retorna ese tipo 't'. Recursiona de ser necesario
 -- Util para << >> == << >>, << >>::<< >> y derivados
+Examples :
+
+$ >lt = [TList TInt,TList TDummy]
+$ >getTLists lt
+Just Kit of(Power)
+-}
 getTLists:: [Type]-> Maybe Type
 getTLists ts 
   | all (==TPDummy) ts = do

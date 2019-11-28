@@ -85,23 +85,23 @@ import Playit.AST
 
   -- Symbols
   ".~"              { TkFIN _ _ }
-  "+"               { TkADD _ _ }
-  "-"               { TkMIN _ _ }
-  "*"               { TkMULT _ _ }
-  "/"               { TkDIV _ _ }
-  "//"              { TkDivEntera _ _ }
-  "%"               { TkMOD _ _ }
+  "+"               { TkADD _ $$ }
+  "-"               { TkMIN _ $$ }
+  "*"               { TkMULT _ $$ }
+  "/"               { TkDIV _ $$ }
+  "//"              { TkDivEntera _ $$ }
+  "%"               { TkMOD _ $$ }
   "++"              { TkINCREMENT _ $$ }
   "--"              { TkDECREMENT _ $$ }
   "#"               { TkLEN _ _ }
-  "||"              { TkOR _ _ }
-  "&&"              { TkAND _ _ }
-  "<="              { TkLessEqual _ _ }
-  "<"               { TkLessThan _ _ }
-  ">="              { TkGreaterEqual _ _ }
-  ">"               { TkGreaterThan _ _ }
-  "=="              { TkEQUAL _ _ }
-  "!="              { TkNotEqual _ _ }
+  "||"              { TkOR _ $$ }
+  "&&"              { TkAND _ $$ }
+  "<="              { TkLessEqual _ $$ }
+  "<"               { TkLessThan _ $$ }
+  ">="              { TkGreaterEqual _ $$ }
+  ">"               { TkGreaterThan _ $$ }
+  "=="              { TkEQUAL _ $$ }
+  "!="              { TkNotEqual _ $$ }
   "!"               { TkNOT _ _ }
   upperCase         { TkUPPER _ _ }
   lowerCase         { TkLOWER _ _ }
@@ -109,8 +109,8 @@ import Playit.AST
   ">>"              { TkCloseList _ $$ }
   "|>"              { TkOpenListIndex _ _ }
   "<|"              { TkCloseListIndex _ _ }
-  ":"               { TkANEXO _ _ }
-  "::"              { TkCONCAT _ _}
+  ":"               { TkANEXO _ $$ }
+  "::"              { TkCONCAT _ $$ }
   "|}"              { TkOpenArray _ _ }
   "{|"              { TkCloseArray _ _ }
   "|)"              { TkOpenArrayIndex _ _ }
@@ -166,15 +166,15 @@ ProgramWrapper :: { Instr }
 Program :: { Instr }
   : Definitions {-checkPromises-} EndLines world program ":" EndLines Instructions  EndLines ".~"  PopScope
     { %
-      checkPromises >> program $ reverse $7 
+      checkPromises >> program (reverse $7) 
     }
   | Definitions EndLines world program ":" EndLines ".~" PopScope
     { %
-      checkPromises >> return $ Program [] TVoid
+      checkPromises >> return (Program [] TVoid)
     }
   | world program ":" EndLines Instructions EndLines ".~"  PopScope
     { %
-      checkPromises >> program $ reverse $5
+      checkPromises >> program (reverse $5)
     }
   | world program ":" EndLines ".~" PopScope
       { Program [] TVoid }
@@ -420,9 +420,9 @@ InitVar2 :: { (Id, (Expr,Pos) ) }
     { % do
       (symtab, activeScopes, scope, promises) <- get
       let id = getTk $2
-          tE = typeE $4
+          tE = typeE $ fst $4
           baseTE = baseTypeT tE
-          isArryList
+          -- isArryList
           t = if isArray tE || isList tE then $1 else TError -- Check tipo base de Expr == Type, y Expr es Array/List
           var = Var id $1
           varInfo = [SymbolInfo $1 scope IterationVariable []]
@@ -473,8 +473,8 @@ Free :: { Instr }
 DefineSubroutine :: { () }
   : Firma ":" EndLines Instructions EndLines ".~"
     { %
-      let (id,category) = $1 in updateExtraInfo id category [AST (reverse $4)]
       -- TODO: check existe al menos un return
+      let (id,category) = $1 in updateExtraInfo id category [AST (reverse $4)]
     }
   | Firma ":" EndLines ".~"   { }
 
@@ -489,7 +489,7 @@ Firma :: { (Id, Category) }
   | Name PushScope Params Type 
     { %
       let (name,category) = $1
-      updateInfoSubroutine name category $3 $4 >> return $1
+      in updateInfoSubroutine name category $3 $4 >> return $1
     }
 
 -------------------------------------------------------------------------------
@@ -559,23 +559,23 @@ Expressions::{ [(Expr,Pos)] }
   | Expression                           { [$1] }
 
 Expression :: { (Expr,Pos) }
-  : Expression "+" Expression            { % binary Add $1 $3 }
-  | Expression "-" Expression            { % binary Minus $1 $3 }
-  | Expression "*" Expression            { % binary Mult $1 $3 }
-  | Expression "/" Expression            { % binary Division $1 $3 }
-  | Expression "//" Expression           { % binary DivEntera $1 $3 }
-  | Expression "%" Expression            { % binary Module $1 $3 }
-  | Expression "&&" Expression           { % binary And $1 $3 }
-  | Expression "||" Expression           { % binary Or $1 $3 }
-  | Expression "==" Expression           { % binary Eq $1 $3 }
-  | Expression "!=" Expression           { % binary NotEq $1 $3 }
-  | Expression ">=" Expression           { % binary GreaterEq $1 $3 }
-  | Expression "<=" Expression           { % binary LessEq $1 $3 }
-  | Expression ">" Expression            { % binary Greater $1 $3 }
-  | Expression "<" Expression            { % binary Less $1 $3 }
-  | Expression ":" Expression %prec ":"  { % binary Anexo $1 $3 }
+  : Expression "+" Expression            { % binary Add $1 $3 $2 }
+  | Expression "-" Expression            { % binary Minus $1 $3 $2 }
+  | Expression "*" Expression            { % binary Mult $1 $3 $2 }
+  | Expression "/" Expression            { % binary Division $1 $3 $2 }
+  | Expression "//" Expression           { % binary DivEntera $1 $3 $2 }
+  | Expression "%" Expression            { % binary Module $1 $3 $2 }
+  | Expression "&&" Expression           { % binary And $1 $3 $2 }
+  | Expression "||" Expression           { % binary Or $1 $3 $2 }
+  | Expression "==" Expression           { % binary Eq $1 $3 $2 }
+  | Expression "!=" Expression           { % binary NotEq $1 $3 $2 }
+  | Expression ">=" Expression           { % binary GreaterEq $1 $3 $2 }
+  | Expression "<=" Expression           { % binary LessEq $1 $3 $2 }
+  | Expression ">" Expression            { % binary Greater $1 $3 $2 }
+  | Expression "<" Expression            { % binary Less $1 $3 $2 }
+  | Expression ":" Expression %prec ":"  { % binary Anexo $1 $3 $2 }
   -- e1 && e2 TArray o excluve TList
-  | Expression "::" Expression           { % binary Concat $1 $3 }
+  | Expression "::" Expression           { % binary Concat $1 $3 $2 }
   
   --
   | Expression "?" Expression ":" Expression %prec "?"  { % ifSimple $1 $3 $5 }
@@ -596,20 +596,20 @@ Expression :: { (Expr,Pos) }
   | input                         { % read' (Literal EmptyVal TStr, $1) }
 
   -- Unary operators
-  | "#" Expression                        { % unary Length TVoid $2 }
-  | "-" Expression %prec negativo         { % unary Negative TVoid $2 }
-  | "!" Expression                        { % unary Not TInt $2 }
-  | upperCase Expression %prec upperCase  { % unary UpperCase TChar $2 }
-  | lowerCase Expression %prec lowerCase  { % unary LowerCase TChar $2 }
+  | "#" Expression                        { % unary Length $2 TVoid }
+  | "-" Expression %prec negativo         { % unary Negative $2 TVoid }
+  | "!" Expression                        { % unary Not $2 TInt }
+  | upperCase Expression %prec upperCase  { % unary UpperCase $2 TChar }
+  | lowerCase Expression %prec lowerCase  { % unary LowerCase $2 TChar }
   
   -- Literals
   | true      { (Literal (Boolean True) TBool, $1) }
   | false     { (Literal (Boolean False) TBool, $1) }
-  | integer   { (Literal (Integer $ getInt $1) TInt, getPos $1) }
-  | floats    { (Literal (Floatt $ getFloat $1) TFloat, getPos $1) }
-  | character { (Literal (Character $ getChar $1) TChar, getPos $1) }
+  | integer   { (Literal (Integer $ getTkInt $1) TInt, getPos $1) }
+  | floats    { (Literal (Floatt $ getTkFloat $1) TFloat, getPos $1) }
+  | character { (Literal (Character $ getTkChar $1) TChar, getPos $1) }
   | string    { (Literal (Str $ getTk $1) TStr, getPos $1) }
-  | null      { (Null, $1 }
+  | null      { (Null, $1) }
   | Lvalue    { let (v,p) = $1 in (Variable v (typeVar v), p) }
 
 

@@ -105,7 +105,7 @@ checkAssig tLval expr p
     tExpr = typeE expr
     isEmptyList = isList tExpr && baseTypeT tExpr == TDummy
     isListLval  = isList tLval && isSimpleType (baseTypeT tLval)
-    isLists = isEmptyList && isListLval
+    isLists = isEmptyList && isListLval -- && (isJust $ getTLists [tLval,tExpr])
     isRead = tExpr == TRead
     isNull = tExpr == TNull
     isInitReg = tExpr == TRegister
@@ -383,7 +383,25 @@ checkIfSimple tCond tTrue tFalse p
     else
       error $ semmErrorMsg (show tTrue) (show tFalse) fileCode p
 -------------------------------------------------------------------------------
-
+{-
+checkIfSimple :: Type -> Pos -> Type -> Pos -> Type -> Pos -> MonadSymTab (Bool, Type)
+checkIfSimple tCond pCond tTrue pTrue tFalse pFalse
+  | tCond `elem` [TBool,TPDummy] && (isJust mbTypeR) = return (True, fromJust mbTypeR)
+  | otherwise = do
+    fileCode <- ask
+    
+    if tCond /= TBool then
+      error $ semmErrorMsg "Battle" (show tCond) fileCode pCond
+    else
+        if isTypeConcrete tTrue && not (isTypeConcrete tFalse) then
+            error $ semmErrorMsg (show tTrue) (show tFalse) fileCode pFalse
+        else if not (isTypeConcrete tTrue) && isTypeConcrete tFalse then
+            error $ semmErrorMsg (show tFalse) (show tTrue) fileCode pTrue
+        else
+            error $ semmErrorMsg (show tTrue) (show tFalse) fileCode pFalse
+    where
+        mbTypeR = getTLists [tTrue,tFalse] 
+-}
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------

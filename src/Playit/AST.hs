@@ -203,12 +203,12 @@ unary op (expr,p) tSpected = do
 -------------------------------------------------------------------------------
 -- | Creates the same type array node
 array :: [(Expr,Pos)] -> (Expr,Pos)
-array e = (ArrayList e (TArray (Literal (Integer $ length e) TInt) t), p)
+array expr = (ArrayList e (TArray (Literal (Integer $ length e) TInt) t), p)
 
   where
-    exprs      = map fst e
-    p          = snd $ head e
-    arrayTypes = map typeE exprs
+    e          = map fst expr
+    p          = snd $ head expr
+    arrayTypes = map typeE e
     fstType    = head arrayTypes
     t          = if all (==fstType) arrayTypes then fstType else TError
 -------------------------------------------------------------------------------
@@ -408,7 +408,7 @@ updateInfoSubroutine name cat p t = do
         typeP = getTypePromise promise'
         errorTL = dropWhile (\((t1,_),(t2,_)) -> t1 == t2) (zip paramsP paramsF)
 
-    if  any (/=True) [t1 == t2 | (t1,(t2,id2)) <- zip paramsP paramsF ] then
+    if  any (/=True) [t1 == t2 | ((t1,_),(t2,id2)) <- zip paramsP paramsF ] then
       error $ errorMsg "Wrong type of arguments" fileCode (getPosPromise promise')
 
     else
@@ -514,7 +514,7 @@ procCall (procedure@(Call name args), p) = do
 -}
     let extraInfo = Params [(typeE e,show i)| ((e,p),i) <- zip args [1..]]
         newProc = [SymbolInfo TVoid 1 Procedures [extraInfo]]
-        newProm = Promise name (map (\(e,_) -> typeE e) args) TVoid p []
+        newProm = Promise name (map (\(e,p) -> (typeE e,p)) args) TVoid p []
         newPromises = promises ++ [newProm]
         newSymTab = insertSymbols [name] newProc symTab
 
@@ -558,7 +558,7 @@ funcCall (function@(Call name args), p) = do
 -}
     let extraInfo = Params [(typeE e,show i)| ((e,p),i) <- zip args [1..]]
         newFunc = [SymbolInfo TPDummy 1 Functions [extraInfo]]
-        newProm = Promise name (map (\(e,_) -> typeE e) args) TPDummy p []
+        newProm = Promise name (map (\(e,p) -> (typeE e,p)) args) TPDummy p []
         newPromises = promises ++ [newProm]
         newSymTab = insertSymbols [name] newFunc symTab
 
