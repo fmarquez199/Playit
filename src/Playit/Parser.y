@@ -55,20 +55,20 @@ import Playit.AST
   -- Iterations
   for               { TkCONTROLLER _ _ }
   do                { TkPLAY _ _ }
-  while             { TkLOCK _ $$ }
+  while             { TkLOCK _ _ }
   break             { TkGameOver _ _ }
   continue          { TkKeepPlaying _ _ }
   -- I/O
   input             { TkJOYSTICK _ $$ }
   print             { TkDROP _ $$ }
   -- Pointers
-  null              { TkDeathZone _ _ }
+  null              { TkDeathZone _ $$ }
   free              { TkFREE _ _ }
-  pointer           { TkPUFF _ $$ }
+  pointer           { TkPUFF _ _ }
 
   -- Boolean literals
-  true              { TkWIN _ _ }
-  false             { TkLOSE _ _ }
+  true              { TkWIN _ $$ }
+  false             { TkLOSE _ $$ }
 
   -- Ids
   program           { TkProgramName _ _ }
@@ -85,43 +85,43 @@ import Playit.AST
 
   -- Symbols
   ".~"              { TkFIN _ _ }
-  "+"               { TkADD _ $$ }
-  "-"               { TkMIN _ $$ }
-  "*"               { TkMULT _ $$ }
-  "/"               { TkDIV _ $$ }
-  "//"              { TkDivEntera _ $$ }
-  "%"               { TkMOD _ $$ }
+  "+"               { TkADD _ _ }
+  "-"               { TkMIN _ _ }
+  "*"               { TkMULT _ _ }
+  "/"               { TkDIV _ _ }
+  "//"              { TkDivEntera _ _ }
+  "%"               { TkMOD _ _ }
   "++"              { TkINCREMENT _ $$ }
   "--"              { TkDECREMENT _ $$ }
-  "#"               { TkLEN _ $$ }
-  "||"              { TkOR _ $$ }
-  "&&"              { TkAND _ $$ }
-  "<="              { TkLessEqual _ $$ }
-  "<"               { TkLessThan _ $$ }
-  ">="              { TkGreaterEqual _ $$ }
-  ">"               { TkGreaterThan _ $$ }
-  "=="              { TkEQUAL _ $$ }
-  "!="              { TkNotEqual _ $$ }
-  "!"               { TkNOT _ $$ }
-  upperCase         { TkUPPER _ $$ }
-  lowerCase         { TkLOWER _ $$ }
-  "<<"              { TkOpenList _ $$ }
+  "#"               { TkLEN _ _ }
+  "||"              { TkOR _ _ }
+  "&&"              { TkAND _ _ }
+  "<="              { TkLessEqual _ _ }
+  "<"               { TkLessThan _ _ }
+  ">="              { TkGreaterEqual _ _ }
+  ">"               { TkGreaterThan _ _ }
+  "=="              { TkEQUAL _ _ }
+  "!="              { TkNotEqual _ _ }
+  "!"               { TkNOT _ _ }
+  upperCase         { TkUPPER _ _ }
+  lowerCase         { TkLOWER _ _ }
+  "<<"              { TkOpenList _ _ }
   ">>"              { TkCloseList _ $$ }
-  "|>"              { TkOpenListIndex _ $$ }
-  "<|"              { TkCloseListIndex _ $$ }
-  ":"               { TkANEXO _ $$ }
-  "::"              { TkCONCAT _ $$}
+  "|>"              { TkOpenListIndex _ _ }
+  "<|"              { TkCloseListIndex _ _ }
+  ":"               { TkANEXO _ _ }
+  "::"              { TkCONCAT _ _}
   "|}"              { TkOpenArray _ _ }
   "{|"              { TkCloseArray _ _ }
-  "|)"              { TkOpenArrayIndex _ $$ }
-  "(|"              { TkCloseArrayIndex _ $$ }
-  "{"               { TkOpenBrackets _ $$ }
-  "}"               { TkCloseBrackets _ _ }
-  "<-"              { TkIN  _ $$ }
+  "|)"              { TkOpenArrayIndex _ _ }
+  "(|"              { TkCloseArrayIndex _ _ }
+  "{"               { TkOpenBrackets _ _ }
+  "}"               { TkCloseBrackets _ $$ }
+  "<-"              { TkIN  _ _ }
   "->"              { TkTO  _ _ }
   "?"               { TkREF _ _ }
   "|"               { TkGUARD _ _ }
-  "="               { TkASSIG _ $$ }
+  "="               { TkASSIG _ _ }
   "("               { TkOpenParenthesis _ _ }
   ")"               { TkCloseParenthesis _ _ }
   ","               { TkCOMA _ _ }
@@ -164,7 +164,7 @@ ProgramWrapper :: { Instr }
 
   
 Program :: { Instr }
-  : Definitions EndLines world program ":" EndLines Instructions  EndLines ".~"  PopScope
+  : Definitions {-checkPromises-} EndLines world program ":" EndLines Instructions  EndLines ".~"  PopScope
     { %
       checkPromises >> program $ reverse $7 
     }
@@ -251,10 +251,10 @@ Identifier :: { ((Id, Pos), InstrSeq) }
 -- Lvalues
 Lvalue :: { (Var, Pos) }
   : Lvalue "." id                 { % field $1 (getTk $3) (getPos $3) }
-  | Lvalue "|)" Expression "(|"   { % index $1 $3 $2 $4 }
-  | Lvalue "|>" Expression "<|"   { % index $1 $3 $2 $4 }
-  | pointer Lvalue                { % desref $2 $1 }
-  | pointer "(" Lvalue ")"        { % desref $3 $1 }
+  | Lvalue "|)" Expression "(|"   { % index $1 $3 }
+  | Lvalue "|>" Expression "<|"   { % index $1 $3 }
+  | pointer Lvalue                { % desref $2 }
+  | pointer "(" Lvalue ")"        { % desref $3 }
   | id                            { % var (getTk $1) (getPos $1) }
 
 
@@ -282,17 +282,17 @@ Instructions :: { InstrSeq }
   | Instruction                        { [$1] }
 
 Instruction :: { Instr }
-  : Asignation                      { $1 }
-  | Declaration                     { Assigs $1 TVoid }
-  | PushScope Controller PopScope   { $2 }
-  | PushScope Play PopScope         { $2 }
-  | Button                          { $1 }
-  | ProcCall                        { $1 }
-  | Out                             { $1 }
-  | Free                            { $1 }
-  | return Expression               { Return (fst $2) TVoid } -- TODO: Verificacion de tipo para regreso de funcion
-  | break                           { Break TVoid }
-  | continue                        { Continue TVoid }
+  : Asignation                         { $1 }
+  | Declaration                        { Assigs $1 TVoid }
+  | PushScope Controller PopScope      { $2 }
+  | PushScope Play PopScope            { $2 }
+  | Button                             { $1 }
+  | ProcCall                           { $1 }
+  | Out                                { $1 }
+  | Free                               { $1 }
+  | return Expression                  { Return (fst $2) TVoid } -- TODO: check tipo para regreso de func
+  | break                              { Break TVoid }
+  | continue                           { Continue TVoid }
 
 
 -------------------------------------------------------------------------------
@@ -473,25 +473,23 @@ Free :: { Instr }
 DefineSubroutine :: { () }
   : Firma ":" EndLines Instructions EndLines ".~"
     { %
-      let (id,category) = $1
-      in updateExtraInfo id category [AST (reverse $4)]
-    } -- TODO: check existe al menos un return
+      let (id,category) = $1 in updateExtraInfo id category [AST (reverse $4)]
+      -- TODO: check existe al menos un return
+    }
   | Firma ":" EndLines ".~"   { }
 
 
 -------------------------------------------------------------------------------
 Firma :: { (Id, Category) }
   : Name PushScope Params
-  { % do
+  { %
     let (name,category) = $1
-    updateInfoSubroutine name category $3 TVoid
-    return $1
+    in updateInfoSubroutine name category $3 TVoid >> return $1
   }
   | Name PushScope Params Type 
-    { % do
+    { %
       let (name,category) = $1
-      updateInfoSubroutine name category $3 $4
-      return $1
+      updateInfoSubroutine name category $3 $4 >> return $1
     }
 
 -------------------------------------------------------------------------------
@@ -527,16 +525,14 @@ Param :: { (Type,Id) }
 -------------------------------------------------------------------------------
 -- Subroutines calls
 ProcCall :: { Instr }
-  : SubroutineCall     { % procCall $1 }
+  : SubroutineCall                { % procCall $1 }
 
 FuncCall :: { (Expr,Pos) }
-  : SubroutineCall     { % funcCall $1 }
+  : SubroutineCall                { % funcCall $1 }
 
 SubroutineCall :: { (Subroutine, Pos) }
-  : call id "(" Arguments ")"
-    { % call (getTk $2) (reverse $4) (getPos $2) }
-  | call id "(" ")"
-    { % call (getTk $2) [] (getPos $2) }
+  : call id "(" Arguments ")"     { % call (getTk $2) (reverse $4) (getPos $2) }
+  | call id "(" ")"               { % call (getTk $2) [] (getPos $2) }
 -------------------------------------------------------------------------------
 
 
@@ -587,32 +583,33 @@ Expression :: { (Expr,Pos) }
   | "(" Expression ")"                                  { $2 }
  
   -- Registers / Unions initialization
-  | "{" Expressions "}"    { register $ reverse $2 }
-  | "{" "}"                { register [] } -- By default
+  -- TODO: Colocar idtipo {} . Ej: Potions {}
+  | "{" Expressions "}"           { register (reverse $2) $3 }
+  | "{" "}"                       { register [] $2 } -- By default
   
-  | "|)" Expressions "(|"  { array $ reverse $2 }
-  | "<<" Expressions ">>"  { % list (reverse $2) }
-  | "<<" ">>"              { % list [] }
-  | new Type               { (Unary New (IdType $2) (TPointer $2), $1) }
+  | "|)" Expressions "(|"         { array $ reverse $2 }
+  | "<<" Expressions ">>"         { % list (reverse $2) $3 }
+  | "<<" ">>"                     { % list [] $2 }
+  | new Type                      { (Unary New (IdType $2) (TPointer $2), $1) }
 
   | input Expression %prec input  { % read' $2 }
   | input                         { % read' (Literal EmptyVal TStr, $1) }
 
   -- Unary operators
-  | "#" Expression                        { % unary Length $2 }
-  | "-" Expression %prec negativo         { % unary Negative $2 }
-  | "!" Expression                        { % unary Not $2 }
-  | upperCase Expression %prec upperCase  { % unary UpperCase $2 }
-  | lowerCase Expression %prec lowerCase  { % unary LowerCase $2 }
+  | "#" Expression                        { % unary Length TVoid $2 }
+  | "-" Expression %prec negativo         { % unary Negative TVoid $2 }
+  | "!" Expression                        { % unary Not TInt $2 }
+  | upperCase Expression %prec upperCase  { % unary UpperCase TChar $2 }
+  | lowerCase Expression %prec lowerCase  { % unary LowerCase TChar $2 }
   
   -- Literals
-  | true      { (Literal (Boolean True) TBool, getPos $1) }
-  | false     { (Literal (Boolean False) TBool, getPos $1) }
+  | true      { (Literal (Boolean True) TBool, $1) }
+  | false     { (Literal (Boolean False) TBool, $1) }
   | integer   { (Literal (Integer $ getInt $1) TInt, getPos $1) }
   | floats    { (Literal (Floatt $ getFloat $1) TFloat, getPos $1) }
   | character { (Literal (Character $ getChar $1) TChar, getPos $1) }
   | string    { (Literal (Str $ getTk $1) TStr, getPos $1) }
-  | null      { (Null, getPos $1) }
+  | null      { (Null, $1 }
   | Lvalue    { let (v,p) = $1 in (Variable v (typeVar v), p) }
 
 
@@ -626,7 +623,9 @@ Expression :: { (Expr,Pos) }
 -------------------------------------------------------------------------------
 DefineRegister :: { () }
   : Register ":" PushScope EndLines Declarations EndLines ".~"
-    { % updatesDeclarationsCategory $1 }
+    { %
+      updatesDeclarationsCategory $1
+    }
   | Register ":" PushScope EndLines ".~" { }
 
 -- Add register name first for recursives registers
