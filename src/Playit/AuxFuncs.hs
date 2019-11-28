@@ -313,7 +313,7 @@ getTLists ts
 
           let tExpected = head listWithNoTPDummy
               isTExpected t = t == tExpected || (t == TNull && isPointer tExpected) || t == TPDummy
-              typesR = dropWhile isTExpected listNoTDummy
+              typesR = dropWhile isTExpected listWithNoTDummy
           in 
               if null typesR then return tExpected
               else Nothing

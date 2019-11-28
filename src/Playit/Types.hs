@@ -149,7 +149,7 @@ instance Show Instr where
 data Subroutine = Call Id Params    deriving (Eq, Ord)
 
 instance Show Subroutine where
-    show (Call n p) = n ++ "(" ++ intercalate "," (map show p) ++ ")"
+    show (Call n p ) = n ++ "(" ++ intercalate "," (map show p) ++ ")"
 
 
 -- Expressions
@@ -336,17 +336,20 @@ data Promise = Promise {
     getIdPromise :: Id,
     getParamsPromise :: [Type],
     getTypePromise :: Type,
-    getPosPromise :: Pos
+    getPosPromise :: Pos,
+    getLateChecksPromise :: [LateCheckPromise]
     }
     deriving (Eq, Ord)
 
 type Promises = [Promise]
-
+-- 
+-- Powe a = a() > b()? 1:2
+-- Power a = #(a() :: b())==10 ? 1:2
 -- 
 data LateCheckPromise = LateCheckPromise {
     getLCPromiseExpr :: Expr, -- Expresion que debe ser evaluada cuando se actualiza el tipo de la promesa
     getLCPromisePosArgs :: [Pos],  -- Posiciones (linea,columna) de los argumentos necesarios para el check
-    getLCPromiseLinks :: [Id] -- Otras promesas enlazadas a este check
+    getLCPromiseLinks :: [Id] -- Otras promesas enlazadas a este check (su relacionado)
     }
     deriving (Eq, Ord,Show)
 
