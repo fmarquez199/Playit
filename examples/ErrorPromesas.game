@@ -1,0 +1,23 @@
+
+monster suma(Power a , Power b) Power :
+  Power aa
+  Kit of Kit of Power  l1
+  Battle bb
+    @aa = kill entero1() + kill entero3()
+    @bb = ((kill entero3() + kill entero1():<<>>):kill entero2()) == l1
+    @bb = kill entero1() > kill entero3()
+
+    aa = 2 % 1
+
+.~
+monster entero3() Power:
+.~
+monster entero1() Skill :
+
+.~
+monster entero2() Kit of Kit of Power :
+
+.~
+
+world %HolaMundo%:
+ .~
