@@ -587,9 +587,8 @@ Expression :: { (Expr,Pos) }
   | "(" Expression ")"                                  { $2 }
  
   -- Registers / Unions initialization
-  -- TODO: Colocar idtipo {} . Ej: Potions {}
-  | "{" Expressions "}"           { register (reverse $2) $3 }
-  | "{" "}"                       { register [] $2 } -- By default
+  | idType "{" Expressions "}" { % regUnion (getTk $1, getPos $1) (reverse $3) }
+  | idType "{" "}"             { % regUnion (getTk $1, getPos $1) [] } -- By default
   
   | "|)" Expressions "(|"         { array $ reverse $2 }
   | "<<" Expressions ">>"         { % list (reverse $2) $3 }

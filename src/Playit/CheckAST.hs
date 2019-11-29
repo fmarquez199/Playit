@@ -92,6 +92,17 @@ checkAssigs assigs t p
 
 
 -------------------------------------------------------------------------------
+checkRegUnion :: Id -> [Expr] -> MonadSymTab Bool
+checkRegUnion name exprs = do
+  (symTab, activeScopes, scopes , promises) <- get
+  fileCode                                  <- ask
+  let reg                                   = lookupInSymTab name symTab
+
+  return $ TError `notElem` map typeE exprs && isJust reg
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
 -- | Checks the assignation's types
 checkAssig :: Type -> Expr -> Pos -> MonadSymTab Bool
 checkAssig tLval expr p

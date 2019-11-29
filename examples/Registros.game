@@ -1,9 +1,9 @@
 Inventory PotionsHealth: @ A
-    Power p
+    Power p = 6
 .~
 Inventory PotionsMana: @ B
-    PotionsHealth|}3{| phs
     Skill p
+    PotionsHealth|}3{| phs
 .~
 Inventory Potions: @ C
     
@@ -23,10 +23,10 @@ world %registros%:
     ph3 spawn p = 1
     
     PotionsMana puff pm = summon PotionsMana
-    @puff pm = {1'0, |)ph1, ph2, ph3(| }
+    puff pm = PotionsMana { }
     
     PotionsMana puff pm2 = summon PotionsMana
-    @puff pm2 = {1'0, [{}, {}, {}] }
+    puff pm2 = PotionsMana {1'0, |)PotionsHealth {},PotionsHealth {},PotionsHealth {}(| }
     puff pm2 spawn p = 2'5
     puff pm2 spawn phs = |)ph1, ph2, ph3(|
 

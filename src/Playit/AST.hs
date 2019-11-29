@@ -154,16 +154,18 @@ assig (lval,pLval) (expr,pE) = do
 
 -------------------------------------------------------------------------------
 -- |
--- TODO: Cambiar TRegister por el TNew correspondiente
-register :: [(Expr,Pos)] -> Pos -> (Expr,Pos)
-register [] p' = (Literal (Register []) TRegister, p')
-register e p'
-  | TError `notElem` map typeE exprs = (Literal (Register exprs) TRegister, p)
-  | otherwise = (Literal (Register exprs) TError, p)
-
-  where
+regUnion :: (Id,Pos) -> [(Expr,Pos)] -> MonadSymTab (Expr,Pos)
+regUnion (name,p) e = do
+  let
     exprs = map fst e
-    p     = snd $ head e
+    -- p     = snd $ head e
+  isDefined <- checkRegUnion name exprs
+
+  if isDefined then return (Literal (Register exprs) (TNew name), p)
+  else do
+    fileCode <- ask
+    return (Literal (Register exprs) TError, p)
+    error $ errorMsg "Undefined register or union" fileCode p
 -------------------------------------------------------------------------------
 
 
