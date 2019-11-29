@@ -146,7 +146,7 @@ isVoid = (== TVoid) . getTypeInstr
 isSubType :: Type -> Type -> Bool
 isSubType t1 (TArray _ t2) = t1 == t2
 isSubType t1 (TList t2)    = t1 == t2
-isSubType t1 _             = False
+isSubType _ _              = False
 -------------------------------------------------------------------------------
 
 
@@ -161,6 +161,14 @@ isTypeNumber t = (t == TInt) || (t == TFloat)
 isTypeComparableEq :: Type -> Bool
 isTypeComparableEq t = isTypeNumber t || isList t || isPointer t || (t == TBool)
     || (t == TChar) || (t == TStr) || isRegUnion t || isArray t
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-- rename to isRealType
+-- | 
+isTypeConcrete :: Type -> Bool
+isTypeConcrete t =  baseTypeT t `notElem` [TPDummy, TDummy, TNull]
 -------------------------------------------------------------------------------
 
 
@@ -341,78 +349,8 @@ getTLists ts
           
   | otherwise = Nothing
 -------------------------------------------------------------------------------
--- << <<>>, <<DeathZone>> >>
-{-
-getTLists:: [(Type,[Expr])]-> Either Type Type
-getTLists ts 
-    | all (\(t,e) -> isList(t) || (t == TPDummy)) ts = do
-        if 
-        
-        return $ Right (\l -> TList l) <*> getTLists(map (\((TList t),concatArrayLE lst) -> (t,ArrayList )) ts) -- [[[int]]] = recursivo [[int]]
-    | all (\(t,e) -> (not isList(t)) || (t == TPDummy) ) ts =  -- [[int]] = Just [int]
 
-        if any (\(t,e) -> t /= TDummy) ts then
 
-            if any (\(t,e) -> t /= TDummy && t /= TPDummy) ts then do
-
-                let 
-                    tFirst = head (filter (\(t,e) -> t /= TDummy && t /= TPDummy) ts)
-                    isTypeTFirst = (\t -> t == tFirst || (t == TNull && isPointer tFirst ) || t == TPDummy))
-                
-                if all isTypeTFirst (filter (\(t,e) -> t /= TDummy) ts) then do
-
-                    map (\(t,e) -> if t == TPDummy ) ts
-                    if any (\(t,e) -> t == TPDummy) (filter (\(t,e) -> t /= TDummy) ts) then do
-                        if all (\(t,e) -> t == TPDummy) listWithNoTDummy then do
-                            -- TODO : Agregar a condiciones para observar
-                        else
-                    else 
-                in
-                    if all  isTypeTFirst listWithNoTDummy then Just tFirst else Left tFirst
-            let 
-                listWithNoTDummy = filter (\(t,e) -> t /= TDummy) ts
-                listWithNoTPDummy = filter (/=TPDummy) listWithNoTDummy
-                listWithNoTNull = filter (/=TNull) listWithNoTPDummy
-            in
-                let 
-                    listWithNoTPDummy = filter (/=TPDummy) listWithNoTPDummy
-                    tFirst = head listWithNoTPDummy
-                    isTypeTFirst = (\t -> t == tFirst || (t == TNull && isPointer tFirst ))
-                in
-                    if all  isTypeTFirst listWithNoTDummy then Just tFirst else Left tFirst
-        else 
-            Right TDummy
-            
-    | otherwise = do
-        Left  (head (filter (/=TDummy) ts))
-
--------------------------------------------------------------------------------
-        if any (\(t,e) -> t /= TDummy) ts then
-            let 
-                listWithNoTDummy = filter (\(t,e) -> t /= TDummy) ts
-                listWithNoTPDummy = filter (/=TPDummy) listWithNoTDummy
-                listWithNoTNull = filter (/=TNull) listWithNoTPDummy
-            in
-                if any (\(t,e) -> t == TPDummy) listWithNoTDummy then do
-                    if all (\(t,e) -> t == TPDummy) listWithNoTDummy then do
-                        -- TODO : Agregar a condiciones para observar
-                    else
-                -- Si la lista tiene todos TNull (y tal vez TPDummy)
-                if any (==TNull) (filter (t -> t/=TDummy && t /= TPDummy) ts) &&  null (filter (t -> t/=TDummy && t /= TPDummy && t/= TNull) ts) then  
-                    Right TNull 
-                else
-                    let 
-                        listWithNoTPDummy = filter (/=TPDummy) listWithNoTNull
-                        tFirst = head listWithNoTPDummy
-                        isTypeTFirst = (\t -> t == tFirst || (t == TNull && isPointer tFirst ))
-                    in
-                        if all  isTypeTFirst listWithNoTDummy then Just tFirst else Left tFirst
-        else 
-            Right TDummy
-            
-    | otherwise = do
-        Left  (head (filter (/=TDummy) ts))
--}
 -------------------------------------------------------------------------------
 -- Dado un tipo y una lista (List t) regresa el t(si t es una lista recursiona) , si no es de esa forma regresa Nothing
 -- Util Para el problema de <<2>>:<< <<>> >> 
@@ -449,7 +387,7 @@ getTypeInstr (While _ _ t)          = t
 
 -------------------------------------------------------------------------------
 getPromiseSubroutine:: Id -> Promises -> Maybe Promise
-getPromiseSubroutine _ []                                = Nothing
+getPromiseSubroutine _ []                                  = Nothing
 getPromiseSubroutine name (promise@(Promise id _ _ _ _):r) = 
     if  name == id then Just promise else getPromiseSubroutine name r
 -------------------------------------------------------------------------------
