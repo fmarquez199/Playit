@@ -159,13 +159,13 @@ regUnion (name,p) e = do
   let
     exprs = map fst e
     -- p     = snd $ head e
-  isDefined <- checkRegUnion name exprs
+  (ok, msj) <- checkRegUnion name exprs
 
-  if isDefined then return (Literal (Register exprs) (TNew name), p)
+  if ok then return (Literal (Register exprs) (TNew name), p)
   else do
     fileCode <- ask
     return (Literal (Register exprs) TError, p)
-    error $ errorMsg "Undefined register or union" fileCode p
+    error $ errorMsg msj fileCode p
 -------------------------------------------------------------------------------
 
 

@@ -205,17 +205,20 @@ EndLines :: { () }
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 
-Declarations :: { () }
-  : Declarations EndLines Declaration  { }
-  | Declaration                        { }
+Declarations :: { [([(Type,Id)], InstrSeq)] }
+  : Declarations EndLines Declaration  { $3 : $1 }
+  | Declaration                        { [$1] }
 
-Declaration :: { InstrSeq }
+Declaration :: { ([(Type,Id)], InstrSeq) }
   : Type Identifiers
     { % do
       let (ids,assigs) = $2
-          pos = snd $ head ids
+          ids'         = map fst $ reverse ids
+          types        = replicate (length ids') $1
+          pos          = snd $ head ids
       insertDeclarations (reverse ids) $1 assigs
-      checkAssigs assigs $1 pos
+      assigs <- checkAssigs assigs $1 pos
+      return (zip types ids', assigs)
     }
 
 -------------------------------------------------------------------------------
@@ -287,7 +290,7 @@ Instructions :: { InstrSeq }
 
 Instruction :: { Instr }
   : Asignation                         { $1 }
-  | Declaration                        { Assigs $1 TVoid }
+  | Declaration                        { Assigs (snd $1) TVoid }
   | PushScope Controller PopScope      { $2 }
   | PushScope Play PopScope            { $2 }
   | Button                             { $1 }
@@ -627,7 +630,8 @@ Expression :: { (Expr,Pos) }
 DefineRegister :: { () }
   : Register ":" PushScope EndLines Declarations EndLines ".~"
     { %
-      updatesDeclarationsCategory $1
+      let extraI = [AST (concatMap snd $ reverse $5), Params (concatMap fst $ reverse $5)]
+      in updatesDeclarationsCategory $1 >> updateExtraInfo $1 TypeConstructors extraI
     }
   | Register ":" PushScope EndLines ".~" { }
 
@@ -635,7 +639,7 @@ DefineRegister :: { () }
 Register :: { Id }
   : register idType
     { %
-      defineRegUnion (getTk $2) TRegister (getPos $2)
+      defineRegUnion (getTk $2) TRegister [] (getPos $2)
     }
 -------------------------------------------------------------------------------
 
@@ -644,11 +648,13 @@ Register :: { Id }
 DefineUnion :: { Id }
   : union idType ":" PushScope EndLines Declarations EndLines ".~"  
     { %
-      defineRegUnion (getTk $2) TUnion (getPos $2)
+      let extraInfo = [AST (concatMap snd $6), Params (concatMap fst $6)]
+      in defineRegUnion (getTk $2) TUnion extraInfo (getPos $2)
     }
   | union idType ":" PushScope EndLines ".~"                         
     { %
-      defineRegUnion (getTk $2) TUnion (getPos $2)
+      let extraInfo = [AST [], Params []]
+      in defineRegUnion (getTk $2) TUnion extraInfo (getPos $2)
     }
 -------------------------------------------------------------------------------
 

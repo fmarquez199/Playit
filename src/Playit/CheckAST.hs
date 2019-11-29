@@ -92,13 +92,31 @@ checkAssigs assigs t p
 
 
 -------------------------------------------------------------------------------
-checkRegUnion :: Id -> [Expr] -> MonadSymTab Bool
+-- types ok, cantidad == #campos
+checkRegUnion :: Id -> [Expr] -> MonadSymTab (Bool, String)
 checkRegUnion name exprs = do
   (symTab, activeScopes, scopes , promises) <- get
   fileCode                                  <- ask
-  let reg                                   = lookupInSymTab name symTab
+  let
+    reg             = lookupInSymTab name symTab
+    noErr           = TError `notElem` map typeE exprs
 
-  return $ TError `notElem` map typeE exprs && isJust reg
+  if noErr && isJust reg then
+    let
+      (Params p)      = (getExtraInfo $ head $ fromJust reg) !! 1
+      typesE          = map typeE exprs
+      typesP          = map fst p
+      typesOk         = null typesE || typesE == typesP
+      fieldsAmmountOK = null exprs || length exprs == length p
+    in
+      if typesOk && fieldsAmmountOK then return (True, "")
+      else
+        if not (typesOk || fieldsAmmountOK) then
+          return (False, "Mismatched ammount of fields initialized for " ++ name)
+        else
+          return (False, "Mismatched types initializating " ++ name)
+  else 
+    return (False, "Undefined register or union " ++ name)
 -------------------------------------------------------------------------------
 
 

@@ -192,8 +192,8 @@ defineParameter (Param name t ref) p = do
 
 -------------------------------------------------------------------------------
 -- | Inserts a register / union into symbol table
-defineRegUnion :: Id -> Type -> Pos -> MonadSymTab Id
-defineRegUnion reg regType p = do
+defineRegUnion :: Id -> Type -> [ExtraInfo] -> Pos -> MonadSymTab Id
+defineRegUnion reg regType extraInfo p = do
     (symTab@(SymTab table), activeScopes, scope, promises) <- get
     fileCode <- ask
     let regInfo = lookupInScopes [1] reg symTab
@@ -204,7 +204,7 @@ defineRegUnion reg regType p = do
         else
             error $ errorMsg "Redefined Items" fileCode p
     else
-        let info = [SymbolInfo regType 1 TypeConstructors []]
+        let info = [SymbolInfo regType 1 TypeConstructors extraInfo]
         in addToSymTab [reg] info symTab activeScopes scope promises >> return reg
 -------------------------------------------------------------------------------
 
