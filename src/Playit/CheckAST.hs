@@ -349,59 +349,27 @@ checkUnary op tExpr tSpected p = do
         return (False, TError) >> error (semmErrorMsg (show tSpected) (show tExpr) fileCode p)
 -------------------------------------------------------------------------------
 
-{-
-crearOpAnexo ::  Expr -> Expr -> Posicion-> MonadSymTab Expr
-crearOpAnexo e1 e2 p
-    | isJust typeLR =
-        return $ OpBinario Anexo e1 e2 (fromJust typeLR)
-
-    | not $ isList typee2  = do
-        file <- ask
-        error $ "\n\nError: " ++ file ++ ": " ++ show p ++ "\n\t" ++
-            "El segundo operando de : '" ++ show Anexo ++ "'," ++
-            "'" ++ show e2 ++ "' debe ser una lista."
-    | typee1 /= typeArrLst typee2  = do
-        file <- ask
-        error $ "\n\nError: " ++ file ++ ": " ++ show p ++ "\n\t" ++
-            "El emento a anexar '" ++ show e1 ++ "'," ++ "' debe ser de tipo '"
-            ++ show (typeArrLst typee2) ++ "'."
-    where
-        typee1 = typeE e1
-        typee2 = typeE e2
-        typeLR = getTListAnexo typee1 typee2
--}
 
 -------------------------------------------------------------------------------
-checkIfSimple :: Type -> Type -> Type -> Pos -> MonadSymTab (Bool, Type)
-checkIfSimple tCond tTrue tFalse p
-  | tCond `elem` [TBool,TPDummy] && tFalse == tTrue = return (True, tTrue)
-  | otherwise = do
-    fileCode <- ask
-    
-    if tCond /= TBool then
-      error $ semmErrorMsg "Battle" (show tCond) fileCode p
-    else
-      error $ semmErrorMsg (show tTrue) (show tFalse) fileCode p
+checkIfSimple :: (Expr,Pos) -> (Expr,Pos) -> (Expr,Pos) -> FileCodeReader
+              -> MonadSymTab (Bool,Type)
+checkIfSimple (tCond,pCond) (tTrue,pTrue) (tFalse,pFalse)
+
+  | tCond `elem` [TBool,TPDummy] && isJust tResult      = return (True, tResult)
+  | tCond /= TBool = 
+    error $ semmErrorMsg "Battle" (show tCond) fileCode pCond
+
+  | isTypeConcrete tTrue && not (isTypeConcrete tFalse) =
+    error $ semmErrorMsg (show tTrue) (show tFalse) fileCode pFalse
+
+  | not (isTypeConcrete tTrue) && isTypeConcrete tFalse =
+    error $ semmErrorMsg (show tFalse) (show tTrue) fileCode pTrue
+
+  | otherwise = error $ semmErrorMsg (show tTrue) (show tFalse) fileCode pFalse
+
+  where tResult = getTLists [tTrue, tFalse]
 -------------------------------------------------------------------------------
-{-
-checkIfSimple :: Type -> Pos -> Type -> Pos -> Type -> Pos -> MonadSymTab (Bool, Type)
-checkIfSimple tCond pCond tTrue pTrue tFalse pFalse
-  | tCond `elem` [TBool,TPDummy] && (isJust mbTypeR) = return (True, fromJust mbTypeR)
-  | otherwise = do
-    fileCode <- ask
-    
-    if tCond /= TBool then
-      error $ semmErrorMsg "Battle" (show tCond) fileCode pCond
-    else
-        if isTypeConcrete tTrue && not (isTypeConcrete tFalse) then
-            error $ semmErrorMsg (show tTrue) (show tFalse) fileCode pFalse
-        else if not (isTypeConcrete tTrue) && isTypeConcrete tFalse then
-            error $ semmErrorMsg (show tFalse) (show tTrue) fileCode pTrue
-        else
-            error $ semmErrorMsg (show tTrue) (show tFalse) fileCode pFalse
-    where
-        mbTypeR = getTLists [tTrue,tFalse] 
--}
+
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
