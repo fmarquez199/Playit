@@ -339,7 +339,7 @@ updateInfoSubroutine name cat p t = do
             error $ semmErrorMsg (show typeP) (show t) fileCode (getPosPromise promise')
 
           else do
-            checkExpresionesPromise promise' t
+            checkExpr promise' t
             -- Quitamos la promesa
             -- (symTab, activeScopes, scopes , promises) <- get
             put(symTab, activeScopes, scopes ,filter (\p -> getIdPromise p /= name) promises)

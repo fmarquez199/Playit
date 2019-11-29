@@ -90,7 +90,7 @@ updatePromise name t = do
 
       put(symTab, activeScopes, scope , map modifyTypePromise promises)
       updateType name 1 t
-      checkExpresionesPromise promise' t
+      checkExpr promise' t
 
     else {-when (typePromise /= t) $-} do
       -- error $ semmErrorMsg (show t) (show typePromise) fileCode p
@@ -195,8 +195,8 @@ addLateChecks name expr lpos lids = do
 -- | Chequea las expresiones de una promesa dado que se le actualizó su tipo
 -- Se deben eliminar todos los checks debido a que solo se actualiza el tipo 
 -- una sola vez
-checkExpresionesPromise :: Promise -> Type-> MonadSymTab ()
-checkExpresionesPromise promise tr = do
+checkExpr :: Promise -> Type-> MonadSymTab ()
+checkExpr promise tr = do
   let 
     name    = getIdPromise promise
     params  = getParamsPromise promise
