@@ -149,7 +149,7 @@ checkBinary op e1 e2 p = do
               let allidsp = getRelatedPromises comp
               in addLateCheck comp comp [p1,p2] allidsp >> return (True, Tbool)
             else
-              return (False,TError) >> (error $ semmErrorMsg "Power or Skill" (show te1) fileCode p1)
+              return (False,TError) >> error (semmErrorMsg "Power or Skill" (show te1) fileCode p1)
 
       x | x `elem` aritOps ->
           if te1 == TInt || te2 == TFloat then return arit
@@ -158,7 +158,7 @@ checkBinary op e1 e2 p = do
               let allidsp = getRelatedPromises arit
               in addLateCheck arit arit [p1,p2] allidsp >> return arit
             else 
-              return (False,TError) >> (error $ semmErrorMsg powerSkill (show te1) fileCode p1)
+              return (False,TError) >> error (semmErrorMsg powerSkill (show te1) fileCode p1)
 
       x | x `elem` aritInt ->
           if te1 == TInt then return arit
@@ -168,7 +168,7 @@ checkBinary op e1 e2 p = do
               ne2 <- updateExpr e2 TInt
               return (Binary op ne1 ne2 TInt)
             else
-              return (False,TError) >> (error $ semmErrorMsg "Power" (show te1) fileCode p1)
+              return (False,TError) >> error (semmErrorMsg "Power" (show te1) fileCode p1)
 
       x | x `elem` boolOps ->
           if te1 == TBool then return (True, Tbool)
@@ -178,7 +178,7 @@ checkBinary op e1 e2 p = do
               ne2 <- updateExpr e2 TBool
               return (Binary op ne1 ne2 TBool)
             else
-              return (False,TError) >> (error $ semmErrorMsg "Battle" (show te1) fileCode p1)
+              return (False,TError) >> error (semmErrorMsg "Battle" (show te1) fileCode p1)
 
   else  -- TODO : Falta más manejo de TPDummy
     if (op `elem` eqOps ) then

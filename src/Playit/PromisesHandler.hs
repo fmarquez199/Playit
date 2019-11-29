@@ -183,6 +183,55 @@ addLateChecks name expr lpos lids = do
 
 
 -------------------------------------------------------------------------------
+-- | Cambia el tipo de retorno de la función en los contextos en los cuales aparece
+updatePromiseInExpr :: Id  -> Expr -> Type -> Expr
+updatePromiseInExpr name f@(FuncCall (Call id args) _) t =
+  if id == name then
+    FuncCall (Call name args) t
+  else f
+-- Solo sucede con Anexo o + , - , * , /
+updatePromiseInExpr name (Binary op e1 e2 tb) t = Binary op ne1 ne2 ntb 
+  where 
+    ne1        = updatePromiseInExpr name e1 t
+    ne2        = updatePromiseInExpr name e2 t
+    tE1        = typeE ne1
+    tE2        = typeE ne2
+    isAritOp x = x `elem` [Add, Minus, Mult, Division]
+    ntb        = case op of -- TODO: Falta caso  concatenación
+      Anexo  -> fromMaybe TError (getTLists [TList tE1,tE2])
+      Concat -> fromMaybe TError (getTLists [tE1,tE2])      
+      x | isAritOp x && (tE1 == TPDummy || tE2 == TPDummy) ->
+          TDummy
+          -- TODO : Faltan inferencias aquí para e2 o e1 si el otro es concreto
+        | isAritOp x && (tE1 == TInt || tE1 == TFloat) && tE2 == tE1 -> tE1
+        | otherwise -> TError
+      _   -> tb
+
+updatePromiseInExpr name (IfSimple e1 e2 e3 ti) t = IfSimple ne1 ne2 ne3 ti
+  where
+    ne1 = updatePromiseInExpr name e1 t
+    ne2 = updatePromiseInExpr name e2 t
+    ne3 = updatePromiseInExpr name e3 t
+
+updatePromiseInExpr name (Unary op e1 tu) t    = Unary op (updatePromiseInExpr name e1 t) tu
+updatePromiseInExpr name (Read e1 tr) t        = Read (updatePromiseInExpr name e1 t) tr
+updatePromiseInExpr name (ArrayList expr ta) t = ArrayList nexpr nta
+  where
+    nexpr = map (\e ->updatePromiseInExpr name e t) expr
+    mapTypes = map typeE nexpr
+    -- TODO: Falta manejar TError en getTLists para multiples errore
+    nta = case getTLists mapTypes of
+      Just t ->  TList t
+      Nothing -> TError
+
+updatePromiseInExpr name l@(Literal _ _) _  = l
+updatePromiseInExpr name v@(Variable _ _) _ = v
+updatePromiseInExpr name Null _             = Null
+updatePromiseInExpr name e _                = error $ "e : " ++ show e
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 --                               Checks
 -------------------------------------------------------------------------------
@@ -207,7 +256,7 @@ checkExpr promise tr = do
       newcheck = LateCheckPromise (updatePromiseInExpr name e1 tr) lpos1 lids1
       ne1 = getLCPromiseExpr newcheck
 
-    checkTypesLC ne1 lpos1
+    checkLateCheck ne1 lpos1
     
     lnp <- forM lids1 $ \idpl -> do
       let promise = getPromiseSubroutine idpl promises
@@ -239,55 +288,6 @@ checkExpr promise tr = do
       if id == name then Promise id p t pos (if isRealType tr then [] else newcheck') else prom
 
   put(symTab, activeScopes, scope, map modifyTypePromise promises)
--------------------------------------------------------------------------------
-
-
--------------------------------------------------------------------------------
--- | Cambia el tipo de retorno de la función en los contextos en los cuales aparece
-updatePromiseInExpr :: Id  -> Expr -> Type -> Expr
-updatePromiseInExpr name f@(FuncCall (Call id args) _) t =
-  if id == name then
-    FuncCall (Call name args) t
-  else f
--- Solo sucede con Anexo o + , - , * , /
-updatePromiseInExpr name (Binary op e1 e2 tb) t = Binary op ne1 ne2 ntb 
-  where 
-    ne1        = updatePromiseInExpr name e1 t
-    ne2        = updatePromiseInExpr name e2 t
-    tE1        = typeE ne1
-    tE2        = typeE ne2
-    isAritOp x = x `elem` [Add, Minus, Mult, Division]
-    ntb        = case op of -- TODO: Falta caso  concatenación
-      Anexo  -> fromMaybe TError (getTLists [TList tE1,tE2])
-      Concat -> fromMaybe TError (getTLists [tE1,tE2])      
-      x | isAritOp x && (tE1 == TPDummy || tE2 == TPDummy) ->
-          TDummy
-          -- TODO : Faltan inferencias aquí para e2 o e1 si el otro es concreto
-        | isAritOp x && (tE1 == TInt || tE1 == TFloat) && tE2 == tE1 -> tE1
-        | otherwise -> TError
-      _   -> tb
-
-updatePromiseInExpr name (IfSimple e1 e2 e3 ti) t = IfSimple ne1 ne2 ne3 ti
-  where
-    ne1 = updatePromiseInExpr name e1 t
-    ne2 = updatePromiseInExpr name e2 t
-    ne3 = updatePromiseInExpr name e3 t
-
-updatePromiseInExpr name (Unary op e1 tu) t       = Unary op (updatePromiseInExpr name e1 t) tu
-updatePromiseInExpr name (Read e1 tr) t           = Read (updatePromiseInExpr name e1 t) tr
-updatePromiseInExpr name (ArrayList expr ta) t    = ArrayList nexpr nta
-  where
-    nexpr = map (\e ->updatePromiseInExpr name e t) expr
-    mapTypes = map typeE nexpr
-    -- TODO: Falta manejar TError en getTLists para multiples errore
-    nta = case getTLists mapTypes of
-      Just t ->  TList t
-      Nothing -> TError
-
-updatePromiseInExpr name l@(Literal _ _) _  = l
-updatePromiseInExpr name v@(Variable _ _) _ = v
-updatePromiseInExpr name Null _             = Null
-updatePromiseInExpr name e _                = error $ "e : " ++ show e
 -------------------------------------------------------------------------------
 
 
@@ -354,8 +354,8 @@ checkBinaryExpr op e1 p1 e2 p2 = do
             when (op == Anexo) $
               let typeR = fromMaybe TError (getTLists [TList tE1,tE2])
               in
-              when (typeR == TError) $
-                error $ semmErrorMsg (show (TList tE1)) (show tE2) fileCode p2
+                when (typeR == TError) $
+                  error $ semmErrorMsg (show (TList tE1)) (show tE2) fileCode p2
 
   else --- Si son iguales los tipos de las expresiones 
     if op `elem` eqOps then
@@ -385,12 +385,12 @@ checkBinaryExpr op e1 p1 e2 p2 = do
 
 -------------------------------------------------------------------------------
 -- | Checkea que la expresion sea correcta
-checkTypesLC :: Expr -> [Pos] -> MonadSymTab ()
-checkTypesLC (Binary op e1 e2 _) pos =
+checkLateCheck :: Expr -> [Pos] -> MonadSymTab ()
+checkLateCheck (Binary op e1 e2 _) pos =
   when isRealType (typeE e1) && isRealType (typeE e2) $ -- En caso que alguno todavia no se haya leido/inferido no se checkea
     checkBinaryExpr op e1 (head pos) e2 (pos !! 1)
 
-checkTypesLC (IfSimple e1 e2 e3 _) lpos = do
+checkLateCheck (IfSimple e1 e2 e3 _) lpos = do
   let 
     tE1 = typeE e1
     tE2 = typeE e2
@@ -413,7 +413,7 @@ checkTypesLC (IfSimple e1 e2 e3 _) lpos = do
     else
         error $ semmErrorMsg "Battle" (show tE1) fileCode (head lpos)
 
-checkTypesLC (ArrayList exprs _) pos = do
+checkLateCheck (ArrayList exprs _) pos = do
   let
     mapTypes = map typeE exprs
     nta = getTLists mapTypes
