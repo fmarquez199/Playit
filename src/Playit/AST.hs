@@ -144,7 +144,10 @@ assig (lval,pLval) (expr,pE) = do
   iter <- checkIterVar lval
   asig <- checkAssig (typeVar lval) expr pE
 
-  if not iter && asig then return $ Assig lval expr TVoid
+  if not iter && asig then do
+    expr' <- updateExprPromiseType expr (typeVar lval)
+    return $ Assig lval expr' TVoid
+
   else return $ Assig lval (Literal EmptyVal TError) TError
 -------------------------------------------------------------------------------
 
@@ -201,6 +204,60 @@ unary op (expr,p) tSpected = do
 
 
 -------------------------------------------------------------------------------
+-- | Inserta en una lista un nuevo elemento en indice 0
+anexo :: BinOp -> (Expr,Pos) -> (Expr,Pos) -> MonadSymTab Expr
+anexo op (e1,p1) (e2,p2) = do
+    (ok,tOp) <- checkAnexo (e1,p1) (e2,p2)
+    
+    if ok then do
+
+        let exprR   = Binary op e1 e2 tOp
+
+        nexpr <- updateExprPromiseType exprR (fromJust $ getTLists [TList (typeE e1),(typeE e2)])
+
+        let allidsp = getAllPromiseIdsFromExpr nexpr
+        if not $ null allidsp then do
+            addCheckTailPromise nexpr nexpr [p1,p2] allidsp
+
+            return nexpr
+
+        else return exprR 
+
+
+
+    else return $ Binary op e1 e2 TError -- change when no exit with first error encounter
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-- | Create concat 2 lists operator node
+concatLists :: BinOp -> (Expr,Pos) -> (Expr,Pos) -> Pos -> MonadSymTab Expr
+concatLists op (e1,p1) (e2,p2) p 
+    | isList t1 && isList t2 && isJust tL  = do -- <<2>>:: <<>>
+        let 
+            exprR   = Binary Concat e1 e2 (fromJust tL)
+            allidsp = getAllPromiseIdsFromExpr exprR
+        if not $ null allidsp then do
+            addCheckTailPromise exprR exprR [p1,p2,p] allidsp
+            --TODO: HAcer inferencias adentro de una lista
+            return ()
+        else return ()
+        return exprR
+    | otherwise = do
+        (fileName,code) <- ask
+        --error $ semmErrorMsg (show baseT1) (show baseT2) fileCode p2
+        error ("\n\nError: " ++ show fileName ++ ": " ++ show p ++ "\n  "
+                ++ "Operation Concat needs expression '" ++ show e1 ++
+                    "' and expression '" ++ show e2 ++ "' to be same-type lists.")
+        return $ Binary Concat e1 e2 TError
+    where
+        t1 = typeE e1
+        t2 = typeE e2
+        tL = getTLists [t1,t2]
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
 -- | Creates the same type array node
 array :: [(Expr,Pos)] -> (Expr,Pos)
 array expr = (ArrayList e (TArray (Literal (Integer $ length e) TInt) t), p)
@@ -226,7 +283,7 @@ list expr p
 
   | otherwise = do
     fileCode <- ask
-    let l = filter (\(e,p) -> typeE e /= TDummy && typeE e /= TPDummy) expr
+    let l = filter (\(e,p) -> typeE e `notElem` [TDummy,TPDummy,TNull]) expr
         (e,_) = head l
         expected = typeE e
         got = head $ dropWhile (\(e,p) ->  typeE e == expected) l

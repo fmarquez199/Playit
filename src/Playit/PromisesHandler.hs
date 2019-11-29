@@ -11,8 +11,8 @@
 module Playit.PromisesHandler where
 
 
-import Control.Monad.Trans.RWS
 import Control.Monad (when,void,forM,forM_)
+import Control.Monad.Trans.RWS
 --import qualified Data.Map as M
 import Data.Maybe (isJust,fromJust)
 import Playit.AuxFuncs
@@ -22,24 +22,6 @@ import Playit.Types
 
 
 
--------------------------------------------------------------------------------
-updatePromiseTypeFunction :: Expr -> Type -> MonadSymTab ()
-updatePromiseTypeFunction exprF t = do
-  (symTab, activeScopes, scope,promises) <- get
-  let name = case exprF of 
-              (FuncCall (Call name _) _) -> name
-              _ -> error "Internal error : FunctionCall doesn't have a name"
-      promise = getPromiseSubroutine name promises
-  
-  if isJust promise then do
-    let modifyTypePromise prom@(Promise id p _ pos lc) = 
-            if id == name then Promise id p t pos lc else prom
-
-    put(symTab, activeScopes, scope , map modifyTypePromise promises)
-    updateType name 1 t
-  else
-    error $ "Internal error : Promise for '"  ++ name ++ "' not defined!"
--------------------------------------------------------------------------------
 
 {-
     Dada una expresion cuyo el tipo  de sus llamadas a funciones no se ha decidido. 
@@ -222,7 +204,7 @@ checkExpresionesPromise promise tr = do
       params  = getParamsPromise promise
       checks  = getLateChecksPromise promise
 
-  forM_ checks $ \(LateCheckPromise e1 lpos1 lids1) -> do
+  newcheck' <- forM_ checks $ \(LateCheckPromise e1 lpos1 lids1) -> do
 
     (symTab, activeScopes, scope,promises) <- get
     let newcheck = LateCheckPromise (changeTPDummyFunctionInExpre name e1 tr) lpos1 lids1
@@ -250,12 +232,15 @@ checkExpresionesPromise promise tr = do
         modifyTypePromise prom = if isToUpdate prom then promTpUpdate prom else prom
 
     put(symTab, activeScopes, scope , map modifyTypePromise promises)
-  
+    return newcheck
+
+{-   
+TODO :Eliminar solo si se actualiza a un tipo concreto -}
   (symTab, activeScopes, scope,promises) <- get
 
   let 
     modifyTypePromise prom@(Promise id p t pos ch) = 
-      if id == name then Promise id p t pos [] else prom
+      if id == name then Promise id p t pos (if isTypeConcrete tr then [] else newcheck') else prom
 
   put(symTab, activeScopes, scope , map modifyTypePromise promises)
   return ()
@@ -265,26 +250,33 @@ checkExpresionesPromise promise tr = do
     Cambia el tipo de retorno de la función en los contextos en los cuales aparece
 -}
 changeTPDummyFunctionInExpre :: Id  -> Expr -> Type -> Expr
-changeTPDummyFunctionInExpre name f@(FuncCall (Call id args) TPDummy ) t  = if id == name then FuncCall (Call name args) t else f
-changeTPDummyFunctionInExpre _ (FuncCall (Call id args) trf) _  = FuncCall (Call id args) trf
+changeTPDummyFunctionInExpre name f@(FuncCall (Call id args) _) t  = if id == name then FuncCall (Call name args) t else f
 -- Solo sucede con Anexo o + , - , * , /
-changeTPDummyFunctionInExpre name (Binary op e1 e2 TPDummy) t   = Binary op ne1 ne2 tb 
+changeTPDummyFunctionInExpre name (Binary op e1 e2 tb) t   = Binary op ne1 ne2 ntb 
   where 
     ne1 = changeTPDummyFunctionInExpre name e1 t
     ne2 = changeTPDummyFunctionInExpre name e2 t
     te1 = typeE ne1
     te2 = typeE ne2
-    tb  = case op of
-            Anexo  -> error "Not implemented yet Anexo"
-            _ | (te1 == TPDummy) || (te2 == TPDummy ) -> TPDummy 
-              -- TODO: Falta caso anexo, concatenación
-              | (te1 == TInt || te1 == TFloat) && te2 == te1 -> te1
-              | otherwise -> TError
-
-changeTPDummyFunctionInExpre name (Binary op e1 e2 tb) t   = Binary op ne1 ne2 tb
-  where
-    ne1 = changeTPDummyFunctionInExpre name e1 t
-    ne2 = changeTPDummyFunctionInExpre name e2 t
+    ntb  = case op of -- TODO: Falta caso  concatenación
+      Anexo  -> 
+          case getTLists [TList te1,te2]  of 
+                  Just t -> t 
+                  Nothing -> TError
+      Concat  ->
+          case getTLists [te1,te2]  of 
+                  Just t -> t --error $ "asdasdasd te1 : " ++ (show te1 ) ++ " e1: " ++ (show e1) ++ " te2: " ++ (show te2) ++ " e2 : " ++ (show e2)
+                  Nothing -> TError
+      
+      x | x `elem` [Add, Minus, Mult, Division] ->
+          if  (te1 == TPDummy) || (te2 == TPDummy) then 
+              TDummy
+              -- TODO : Faltan inferencias aquí para e2 o e1 si el otro es concreto
+          else if (te1 == TInt || te1 == TFloat) && te2 == te1 then 
+              te1 
+          else 
+              TError
+      _   -> tb
 changeTPDummyFunctionInExpre name (IfSimple e1 e2 e3 ti) t   = IfSimple ne1 ne2 ne3 ti
   where
     ne1 = changeTPDummyFunctionInExpre name e1 t
@@ -364,31 +356,42 @@ checkBinaryExpr op e1 p1 e2 p2 = do
 
           else
             if op == Anexo then
-              -- TODO: Sin hacer
-              error "Not implemented anexo with promises"
+              let
+                typeR = case getTLists [TList te1,te2] of
+                        Just t -> t
+                        Nothing -> TError
+              in
+              if typeR == TError then do
+                  error $ semmErrorMsg (show (TList te1)) (show te2) fileCode p2
+              else return ()
             else return ()
 
   else --- Si son iguales los tipos de las expresiones 
-    if (op `elem` comparators ) || (op `elem` aritmetic ) then
+    if op `elem` comp_eqs then
+      when (not $ isTypeComparableEq te1) $ do            
+        error $ semmErrorMsg "Tipo comparable" (show te1) fileCode p1
+      
+    else
+      if op `elem` comparators || op `elem` aritmetic then
 
-      if (te1 /= TInt) && (te1 /= TFloat) then error $ semmErrorMsg "Power or Skill" (show te1) fileCode p1
-      else return ()
-
-    else 
-      if op `elem` aritmetic_int then
-        if te1 /= TInt then error $ semmErrorMsg "Power" (show te1) fileCode p1
+        if (te1 /= TInt) && (te1 /= TFloat) then error $ semmErrorMsg "Power or Skill" (show te1) fileCode p1
         else return ()
 
       else 
-        if op `elem` boolean then
-          if te1 /= TBool then error $ semmErrorMsg "Battle" (show te1) fileCode p1
+        if op `elem` aritmetic_int then
+          if te1 /= TInt then error $ semmErrorMsg "Power" (show te1) fileCode p1
           else return ()
 
         else 
-          if op == Anexo then
-            -- TODO: Sin hacer
-            error "Not implemented anexo with promises"
-          else return ()
+          if op `elem` boolean then
+            if te1 /= TBool then error $ semmErrorMsg "Battle" (show te1) fileCode p1
+            else return ()
+
+          else 
+            if op == Anexo then
+              -- TODO: Sin hacer
+              error "Not implemented anexo with promises"
+            else return ()
 
   return True
   where
