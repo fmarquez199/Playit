@@ -53,7 +53,7 @@ updateExpr (Binary Anexo e1 e2 _) tl@(TList t) = do
   return (Binary Anexo ne1 ne2 ntr)
 
 updateExpr (FuncCall (Call name args) tf ) t =
-  updateSubroutinePromiseType name t >> return (FuncCall (Call name args) t)
+  updatePromise name t >> return (FuncCall (Call name args) t)
 
 updateExpr (ArrayList exprs _ ) tl@(TList t)  = do
   -- nexprs <- mapM (\e -> updateExpr e t) exprs
@@ -72,8 +72,8 @@ updateExpr e _   = return e
 
 -------------------------------------------------------------------------------
 -- |  Le asigna a una funcion promesa el tipo de retorno pasado como argumento.
-updateSubroutinePromiseType :: Id -> Type -> MonadSymTab ()
-updateSubroutinePromiseType name t = do
+updatePromise :: Id -> Type -> MonadSymTab ()
+updatePromise name t = do
   (symTab, activeScopes, scope, promises) <- get
   let promise = getPromiseSubroutine name promises
 
@@ -94,10 +94,10 @@ updateSubroutinePromiseType name t = do
 
     else {-when (typePromise /= t) $-} do
       -- error $ semmErrorMsg (show t) (show typePromise) fileCode p
-      error "Internal error updateSubroutinePromiseType: IS THIS GONNA GET EXECUTED? LOL"
+      error "Internal error updatePromise: IS THIS GONNA GET EXECUTED? LOL"
       -- return ()
   else do
-    -- error $ "Internal error updateSubroutinePromiseType: Promise for '"  ++ name ++ "' is not defined!"
+    -- error $ "Internal error updatePromise: Promise for '"  ++ name ++ "' is not defined!"
     return ()
 -------------------------------------------------------------------------------
 
