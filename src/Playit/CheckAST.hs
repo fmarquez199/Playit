@@ -96,7 +96,7 @@ checkAssigs assigs t p
 checkAssig :: Type -> Expr -> Pos -> MonadSymTab Bool
 checkAssig tLval expr p
   | isRead || isNull || isInitReg || (tExpr == tLval) || isLists = return True
-  | tExpr == TPDummy = updateExprPromiseType expr tLval >> return True
+  | tExpr == TPDummy = updateExpr expr tLval >> return True
   | otherwise = do
     fileCode <- ask
     error $ semmErrorMsg (show tLval) (show tExpr) fileCode p
@@ -164,8 +164,8 @@ checkBinary op e1 e2 p = do
           if te1 == TInt then return arit
           else 
             if te1 == TPDummy then do
-              ne1 <- updateExprPromiseType e1 TInt
-              ne2 <- updateExprPromiseType e2 TInt
+              ne1 <- updateExpr e1 TInt
+              ne2 <- updateExpr e2 TInt
               return (Binary op ne1 ne2 TInt)
             else
               return (False,TError) >> (error $ semmErrorMsg "Power" (show te1) fileCode p1)
@@ -174,8 +174,8 @@ checkBinary op e1 e2 p = do
           if te1 == TBool then return (True, Tbool)
           else
             if te1 == TPDummy then do
-              ne1 <- updateExprPromiseType e1 TBool
-              ne2 <- updateExprPromiseType e2 TBool
+              ne1 <- updateExpr e1 TBool
+              ne2 <- updateExpr e2 TBool
               return (Binary op ne1 ne2 TBool)
             else
               return (False,TError) >> (error $ semmErrorMsg "Battle" (show te1) fileCode p1)
@@ -183,12 +183,12 @@ checkBinary op e1 e2 p = do
   else  -- TODO : Falta más manejo de TPDummy
     if (op `elem` eqOps ) then
       if isTypeComparableEq te1 &&  (te2 == TPDummy) then do
-        ne2 <- updateExprPromiseType e2 te1
+        ne2 <- updateExpr e2 te1
         return (Binary op e1 ne2 TBool)
 
       else 
         if te1 == TPDummy &&  isTypeComparableEq te2 then do
-          ne1 <- updateExprPromiseType e1 te2
+          ne1 <- updateExpr e1 te2
           return (Binary op ne1 e2 TBool)
         
         else 
@@ -201,7 +201,7 @@ checkBinary op e1 e2 p = do
             
             else
               if (isList te1) && (isList te2)  && (isJust (getTLists [te1,te2])) then
-                --ne1 <- updateExprPromiseType e1 te2
+                --ne1 <- updateExpr e1 te2
                 -- TODO: Falta TDUmmy adentro de las listas
                 return (Binary op e1 e2 TBool)
             
@@ -210,12 +210,12 @@ checkBinary op e1 e2 p = do
                   return (Binary op e1 e2 TBool)
                 else 
                   if te1 == TPDummy && te2 == TNull then do
-                    ne1 <- updateExprPromiseType e1 (TPointer TPDummy)
+                    ne1 <- updateExpr e1 (TPointer TPDummy)
                     -- TODO: Falta manejar apuntador a TDUmmy
                     return (Binary op ne1 e2 TBool)
                   else 
                     if te1 == TNull && te2 == TPDummy then do
-                      ne2 <- updateExprPromiseType e1 (TPointer TPDummy)
+                      ne2 <- updateExpr e1 (TPointer TPDummy)
                       -- TODO: Falta manejar apuntador a TDUmmy
                       return (Binary op e1 ne2 TBool)
                     else  
@@ -226,13 +226,13 @@ checkBinary op e1 e2 p = do
     else 
       if (op `elem` compOps ) || (op `elem` aritOps )then
         if ((isTypeNumber te1) &&  (te2 == TPDummy)) then do
-          ne2 <- updateExprPromiseType e2 te1
+          ne2 <- updateExpr e2 te1
           if (op `elem` compOps) then return (Binary op e1 ne2 TBool)
           else return (Binary op e1 ne2 te1)
 
         else 
           if ((te1 == TPDummy) &&  (isTypeNumber te2)) then do
-            ne1 <- updateExprPromiseType e1 te2
+            ne1 <- updateExpr e1 te2
             if (op `elem` compOps) then
                 return (Binary op ne1 e2 TBool)
             else
@@ -249,11 +249,11 @@ checkBinary op e1 e2 p = do
       else 
         if (op `elem` aritInt ) then
           if (te1 == TInt) &&  (te2 == TPDummy) then do
-            ne2 <- updateExprPromiseType e2 te1
+            ne2 <- updateExpr e2 te1
             return (Binary op e1 ne2 te1)
           else 
             if ((te1 == TPDummy) &&  (te2 == TInt)) then do
-              ne1 <- updateExprPromiseType e1 te2
+              ne1 <- updateExpr e1 te2
               return (Binary op ne1 e2 te1)
             else 
               if te1 == TInt then error $ semmErrorMsg (show te1) (show te2) fileCode p2
@@ -264,11 +264,11 @@ checkBinary op e1 e2 p = do
         else 
           if (op `elem` boolOps ) then
             if (te1 == TBool) &&  (te2 == TPDummy) then do
-              ne2 <- updateExprPromiseType e2 te1
+              ne2 <- updateExpr e2 te1
               return (Binary op e1 ne2 TBool)
             else 
               if ((te1 == TPDummy) &&  (te2 == TBool)) then do
-                ne1 <- updateExprPromiseType e1 te2
+                ne1 <- updateExpr e1 te2
                 return (Binary op ne1 e2 TBool)
               else 
                 if (te1 == TBool) then error $ semmErrorMsg (show te1) (show te2) fileCode p2

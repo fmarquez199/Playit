@@ -39,25 +39,25 @@ import Playit.Types
 
   Le asigna a las promesas funcion1 y funcion2 el tipo de retorno t
 -}
-updateExprPromiseType :: Expr -> Type -> MonadSymTab Expr
-updateExprPromiseType (Binary op e1 e2 TPDummy) t = do
-  ne1 <- updateExprPromiseType e1 t
-  ne2 <- updateExprPromiseType e2 t
+updateExpr :: Expr -> Type -> MonadSymTab Expr
+updateExpr (Binary op e1 e2 TPDummy) t = do
+  ne1 <- updateExpr e1 t
+  ne2 <- updateExpr e2 t
   return (Binary op ne1 ne2 t)
 
-updateExprPromiseType (Binary Anexo e1 e2 _) tl@(TList t) = do    
-  ne1 <- updateExprPromiseType e1 t
-  ne2 <- updateExprPromiseType e2 tl
+updateExpr (Binary Anexo e1 e2 _) tl@(TList t) = do    
+  ne1 <- updateExpr e1 t
+  ne2 <- updateExpr e2 tl
 
   let ntr = fromMaybe TError (getTLists [TList (typeE ne1),typeE ne2])
   return (Binary Anexo ne1 ne2 ntr)
 
-updateExprPromiseType (FuncCall (Call name args) tf ) t =
+updateExpr (FuncCall (Call name args) tf ) t =
   updateSubroutinePromiseType name t >> return (FuncCall (Call name args) t)
 
-updateExprPromiseType (ArrayList exprs _ ) tl@(TList t)  = do
-  -- nexprs <- mapM (\e -> updateExprPromiseType e t) exprs
-  nexprs <- mapM (`updateExprPromiseType` t) exprs
+updateExpr (ArrayList exprs _ ) tl@(TList t)  = do
+  -- nexprs <- mapM (\e -> updateExpr e t) exprs
+  nexprs <- mapM (`updateExpr` t) exprs
   let
     mapTypes = map typeE nexprs
     ntr      = case getTLists mapTypes of
@@ -66,7 +66,7 @@ updateExprPromiseType (ArrayList exprs _ ) tl@(TList t)  = do
 
   return (ArrayList nexprs ntr)
 
-updateExprPromiseType e _   = return e
+updateExpr e _   = return e
 -------------------------------------------------------------------------------
 
 

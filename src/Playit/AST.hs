@@ -145,7 +145,7 @@ assig (lval,pLval) (expr,pE) = do
   asig <- checkAssig (typeVar lval) expr pE
 
   if not iter && asig then do
-    expr' <- updateExprPromiseType expr (typeVar lval)
+    expr' <- updateExpr expr (typeVar lval)
     return $ Assig lval expr' TVoid
 
   else return $ Assig lval (Literal EmptyVal TError) TError
@@ -213,7 +213,7 @@ anexo op (e1,p1) (e2,p2) = do
 
     let exprR = Binary op e1 e2 tOp
 
-    nexpr <- updateExprPromiseType exprR (fromJust $ getTLists [TList (typeE e1),typeE e2])
+    nexpr <- updateExpr exprR (fromJust $ getTLists [TList (typeE e1),typeE e2])
 
     let allidsp = getAllPromiseIdsFromExpr nexpr
     
