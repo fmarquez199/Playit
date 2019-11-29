@@ -10,7 +10,7 @@
 module Playit.CheckAST where
 
 import Control.Monad.Trans.RWS
-import Control.Monad (when)
+import Control.Monad (when,unless)
 import qualified Data.Map as M
 import Data.Maybe (isJust,fromJust,fromMaybe)
 import Playit.AuxFuncs
@@ -161,10 +161,10 @@ checkBinary op (e1,p1) (e2,p2) p = do
             if tE1 == TPDummy then
               let related = getRelatedPromises comp
               in addLateCheck comp comp [p1,p2] related >> return (True, comp)
-            else if tE1 == TNull then
-              return (True,comp)
             else
-              return (False, err) >> error (semmErrorMsg "Tipo comparable" (show tE1) fileCode p1)
+              if tE1 == TNull then return (True, comp)
+              else
+                return (False, err) >> error (semmErrorMsg "Tipo comparable" (show tE1) fileCode p1)
 
         else 
           if tE1 == TInt || tE1 == TFloat then return (True, comp)
@@ -206,12 +206,12 @@ checkBinary op (e1,p1) (e2,p2) p = do
 
   else -- Tipos distintos  -- TODO : Falta más manejo de TPDummy
     if op `elem` eqOps then
-      if (isTypeComparableEq tE1) && (tE2 == TPDummy) then do
+      if isTypeComparableEq tE1 && tE2 == TPDummy then do
         ne2 <- updateExpr e2 tE1
         return (True, Binary op e1 ne2 TBool)
 
       else 
-        if (tE1 == TPDummy) && (isTypeComparableEq tE2) then do
+        if tE1 == TPDummy && isTypeComparableEq tE2 then do
           ne1 <- updateExpr e1 tE2
           return (True, Binary op ne1 e2 TBool)
         
@@ -239,11 +239,12 @@ checkBinary op (e1,p1) (e2,p2) p = do
                       
                       else
                         if isLists then do
-                          let expr = (Binary op e1 e2 TBool)
-                          let allidsp = getRelatedPromises expr
-                          if not $ null allidsp then
+                          let
+                            expr    = (Binary op e1 e2 TBool)
+                            allidsp = getRelatedPromises expr
+                          unless (null allidsp) $
                             addLateCheck expr expr [p1,p2] allidsp
-                          else return ()
+
                           return (True, Binary op e1 e2 TBool)
                 
                         else          
