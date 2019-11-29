@@ -114,12 +114,12 @@ addLateCheck (IfSimple e1 e2 e3 _) e lpos lids =
   addLateCheck e1 e lpos lids >> addLateCheck e2 e lpos lids >> addLateCheck e3 e lpos lids
 
 addLateCheck (ArrayList exprs _ ) e lpos lids =
-    mapM_ (\e1 -> addLateCheck e1 e lpos lids) exprs
+  mapM_ (\e1 -> addLateCheck e1 e lpos lids) exprs
 
 addLateCheck (FuncCall (Call name _) TPDummy ) e lpos lids =
-    addSubroutinePromiseLateChecks name e lpos lids
+  addLateChecks name e lpos lids
 --addLateCheck (FuncCall (Call name _) TDummy ) e lpos lids   = do
-    --addSubroutinePromiseLateChecks name e lpos lids
+  --addLateChecks name e lpos lids
 
 addLateCheck _ _ _ _   = return ()
 -------------------------------------------------------------------------------
@@ -152,8 +152,8 @@ getRelatedPromises _                                = []
 -- rename to addLateCheks
 -- | Actualiza una promesa agregandole un check que se realizara cuando se
 -- actualize su tipo de retorno
-addSubroutinePromiseLateChecks :: Id -> Expr->[Pos] -> [Id] ->MonadSymTab ()
-addSubroutinePromiseLateChecks name expr lpos lids = do
+addLateChecks :: Id -> Expr->[Pos] -> [Id] ->MonadSymTab ()
+addLateChecks name expr lpos lids = do
   (symTab, activeScopes, scope, promises) <- get
   let promise = getPromiseSubroutine name promises
 
