@@ -71,31 +71,29 @@ updateExpr e _   = return e
 
 
 -------------------------------------------------------------------------------
--- |  Le asigna a una funcion promesa el tipo de retorno pasado como argumento.
+-- | Le asigna a una funcion promesa el tipo de retorno pasado como argumento.
 updatePromise :: Id -> Type -> MonadSymTab ()
 updatePromise name t = do
   (symTab, activeScopes, scope, promises) <- get
   let promise = getPromiseSubroutine name promises
 
   if isJust promise then
-
     let
       promise'    = fromJust promise
       typePromise = getTypePromise promise'
     in
-    if isJust (getTLists [typePromise,t]) then do
-      let 
-          modifyTypePromise prom@(Promise id p _ pos ch) = 
+      if isJust (getTLists [typePromise,t]) then do
+        let modifyTypePromise prom@(Promise id p _ pos ch) = 
               if id == name then Promise id p t pos ch else prom
 
-      put(symTab, activeScopes, scope , map modifyTypePromise promises)
-      updateType name 1 t
-      checkExpr promise' t
+        put(symTab, activeScopes, scope, map modifyTypePromise promises)
+        updateType name 1 t
+        checkExpr promise' t
 
-    else {-when (typePromise /= t) $-} do
-      -- error $ semmErrorMsg (show t) (show typePromise) fileCode p
-      error "Internal error updatePromise: IS THIS GONNA GET EXECUTED? LOL"
-      -- return ()
+      else {-when (typePromise /= t) $-} do
+        -- error $ semmErrorMsg (show t) (show typePromise) fileCode p
+        error "Internal error updatePromise: IS THIS GONNA GET EXECUTED? LOL"
+        -- return ()
   else do
     -- error $ "Internal error updatePromise: Promise for '"  ++ name ++ "' is not defined!"
     return ()
@@ -206,7 +204,7 @@ checkExpr promise tr = do
 
     (symTab, activeScopes, scope,promises) <- get
     let
-      newcheck = LateCheckPromise (changeTPDummyFunctionInExpre name e1 tr) lpos1 lids1
+      newcheck = LateCheckPromise (updatePromiseInExpr name e1 tr) lpos1 lids1
       ne1 = getLCPromiseExpr newcheck
 
     checkTypesLC ne1 lpos1
@@ -245,18 +243,17 @@ checkExpr promise tr = do
 
 
 -------------------------------------------------------------------------------
--- rename to changeTPDummy
 -- | Cambia el tipo de retorno de la función en los contextos en los cuales aparece
-changeTPDummyFunctionInExpre :: Id  -> Expr -> Type -> Expr
-changeTPDummyFunctionInExpre name f@(FuncCall (Call id args) _) t =
+updatePromiseInExpr :: Id  -> Expr -> Type -> Expr
+updatePromiseInExpr name f@(FuncCall (Call id args) _) t =
   if id == name then
     FuncCall (Call name args) t
   else f
 -- Solo sucede con Anexo o + , - , * , /
-changeTPDummyFunctionInExpre name (Binary op e1 e2 tb) t = Binary op ne1 ne2 ntb 
+updatePromiseInExpr name (Binary op e1 e2 tb) t = Binary op ne1 ne2 ntb 
   where 
-    ne1        = changeTPDummyFunctionInExpre name e1 t
-    ne2        = changeTPDummyFunctionInExpre name e2 t
+    ne1        = updatePromiseInExpr name e1 t
+    ne2        = updatePromiseInExpr name e2 t
     tE1        = typeE ne1
     tE2        = typeE ne2
     isAritOp x = x `elem` [Add, Minus, Mult, Division]
@@ -270,27 +267,27 @@ changeTPDummyFunctionInExpre name (Binary op e1 e2 tb) t = Binary op ne1 ne2 ntb
         | otherwise -> TError
       _   -> tb
 
-changeTPDummyFunctionInExpre name (IfSimple e1 e2 e3 ti) t = IfSimple ne1 ne2 ne3 ti
+updatePromiseInExpr name (IfSimple e1 e2 e3 ti) t = IfSimple ne1 ne2 ne3 ti
   where
-    ne1 = changeTPDummyFunctionInExpre name e1 t
-    ne2 = changeTPDummyFunctionInExpre name e2 t
-    ne3 = changeTPDummyFunctionInExpre name e3 t
+    ne1 = updatePromiseInExpr name e1 t
+    ne2 = updatePromiseInExpr name e2 t
+    ne3 = updatePromiseInExpr name e3 t
 
-changeTPDummyFunctionInExpre name (Unary op e1 tu) t       = Unary op (changeTPDummyFunctionInExpre name e1 t) tu
-changeTPDummyFunctionInExpre name (Read e1 tr) t           = Read (changeTPDummyFunctionInExpre name e1 t) tr
-changeTPDummyFunctionInExpre name (ArrayList expr ta) t    = ArrayList nexpr nta
+updatePromiseInExpr name (Unary op e1 tu) t       = Unary op (updatePromiseInExpr name e1 t) tu
+updatePromiseInExpr name (Read e1 tr) t           = Read (updatePromiseInExpr name e1 t) tr
+updatePromiseInExpr name (ArrayList expr ta) t    = ArrayList nexpr nta
   where
-    nexpr = map (\e ->changeTPDummyFunctionInExpre name e t) expr
+    nexpr = map (\e ->updatePromiseInExpr name e t) expr
     mapTypes = map typeE nexpr
     -- TODO: Falta manejar TError en getTLists para multiples errore
     nta = case getTLists mapTypes of
       Just t ->  TList t
       Nothing -> TError
 
-changeTPDummyFunctionInExpre name l@(Literal _ _) _  = l
-changeTPDummyFunctionInExpre name v@(Variable _ _) _ = v
-changeTPDummyFunctionInExpre name Null _             = Null
-changeTPDummyFunctionInExpre name e _                = error $ "e : " ++ show e
+updatePromiseInExpr name l@(Literal _ _) _  = l
+updatePromiseInExpr name v@(Variable _ _) _ = v
+updatePromiseInExpr name Null _             = Null
+updatePromiseInExpr name e _                = error $ "e : " ++ show e
 -------------------------------------------------------------------------------
 
 
