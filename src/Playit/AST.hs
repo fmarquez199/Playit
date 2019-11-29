@@ -8,16 +8,16 @@
 -}
 module Playit.AST where
 
-import Control.Monad.Trans.RWS
 import Control.Monad (void,when,forM,forM_)
+import Control.Monad.Trans.RWS
 import qualified Data.Map as M
 import Data.Maybe (fromJust, isJust, isNothing)
+import Playit.AuxFuncs
 import Playit.CheckAST
 import Playit.Errors
-import Playit.SymbolTable
-import Playit.AuxFuncs
-import Playit.Types
 import Playit.PromisesHandler
+import Playit.SymbolTable
+import Playit.Types
 
 
 -------------------------------------------------------------------------------
@@ -274,7 +274,8 @@ guard (cond,p) i = do
 -- | Creates the simple if instruction node
 ifSimple :: (Expr,Pos) -> (Expr,Pos) -> (Expr,Pos) -> MonadSymTab (Expr,Pos)
 ifSimple (cond,pC) (true,pT) (false,pF) = do
-  (ok,t) <- checkIfSimple (typeE cond) (typeE true) (typeE false) pC
+  fileCode <- ask
+  (ok,t) <- checkIfSimple (typeE cond,pC) (typeE true,pT) (typeE false,pF) fileCode
 
   if ok then return (IfSimple cond true false t, pC)
   else return (IfSimple cond true false TError, pC)
@@ -391,60 +392,6 @@ checkPromises = do
       error $ errorMsg ("Procedure '" ++ name ++ "' is not defined") fileCode p
     return ()
   
-  return ()
--------------------------------------------------------------------------------
-
--------------------------------------------------------------------------------
-updateInfoSubroutine:: Id -> Category -> [(Type,Id)] -> Type -> MonadSymTab ()
-updateInfoSubroutine name cat p t = do
-  (symTab, activeScopes, scopes, promises) <- get
-  fileCode <- ask
-  let paramsF = reverse p
-      promise = getPromiseSubroutine name promises
-
-  when (isJust promise) $ do
-    let promise' = fromJust promise
-        paramsP = getParamsPromise promise'
-        typeP = getTypePromise promise'
-        errorTL = dropWhile (\((t1,_),(t2,_)) -> t1 == t2) (zip paramsP paramsF)
-
-    if  any (/=True) [t1 == t2 | ((t1,_),(t2,id2)) <- zip paramsP paramsF ] then
-      error $ errorMsg "Wrong type of arguments" fileCode (getPosPromise promise')
-
-    else
-
-      if length paramsP /= length paramsF then
-
-        let msj = "Amount of arguments: " ++ show (length paramsP) ++
-                " not equal to expected:" ++ show (length paramsF)
-        in error $ errorMsg msj fileCode (getPosPromise promise')
-
-      else
-
-        if  not $ null errorTL then
-
-          let ((gotType,pGotType),(expectedType,_)) = head errorTL
-          in error $ semmErrorMsg (show expectedType) (show gotType) fileCode pGotType
-
-        else
-
-          if typeP /= TPDummy && typeP /= t then
-            error $ semmErrorMsg (show typeP) (show t) fileCode (getPosPromise promise')
-
-          else do
-            checkExpresionesPromise promise' t
-            -- Quitamos la promesa
-            -- (symTab, activeScopes, scopes , promises) <- get
-            put(symTab, activeScopes, scopes ,filter (\p -> getIdPromise p /= name) promises)
-            return () 
-{-        if typeP /= TPDummy && typeP /= t then
-          error $ semmErrorMsg (show typeP) (show t) fileCode (getPosPromise promise')
-        else do
-          put(symTab, activeScopes, scopes, filter (/= promise') promises)
-          return () 
--}
-  updateExtraInfo name cat [Params paramsF]
-  updateType name 1 t
   return ()
 -------------------------------------------------------------------------------
 
