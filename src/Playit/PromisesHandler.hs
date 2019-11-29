@@ -106,22 +106,22 @@ updatePromise name t = do
 -- | Dada una expresion en donde aparecen llamadas a funciones con tipo de retorno
 -- indeterminados, se buscan todas esas llamadas y se les agrega una expresion
 -- que se debe chequear cuando se actualizen los datos de las llamadas a la funcion
-addCheckTailPromise :: Expr -> Expr -> [Pos] -> [Id] -> MonadSymTab ()
-addCheckTailPromise (Binary op e1 e2 _) e lpos lids =
-  addCheckTailPromise e1 e lpos lids >> addCheckTailPromise e2 e lpos lids
+addLateCheck :: Expr -> Expr -> [Pos] -> [Id] -> MonadSymTab ()
+addLateCheck (Binary op e1 e2 _) e lpos lids =
+  addLateCheck e1 e lpos lids >> addLateCheck e2 e lpos lids
 
-addCheckTailPromise (IfSimple e1 e2 e3 _) e lpos lids =
-  addCheckTailPromise e1 e lpos lids >> addCheckTailPromise e2 e lpos lids >> addCheckTailPromise e3 e lpos lids
+addLateCheck (IfSimple e1 e2 e3 _) e lpos lids =
+  addLateCheck e1 e lpos lids >> addLateCheck e2 e lpos lids >> addLateCheck e3 e lpos lids
 
-addCheckTailPromise (ArrayList exprs _ ) e lpos lids =
-    mapM_ (\e1 -> addCheckTailPromise e1 e lpos lids) exprs
+addLateCheck (ArrayList exprs _ ) e lpos lids =
+    mapM_ (\e1 -> addLateCheck e1 e lpos lids) exprs
 
-addCheckTailPromise (FuncCall (Call name _) TPDummy ) e lpos lids =
+addLateCheck (FuncCall (Call name _) TPDummy ) e lpos lids =
     addSubroutinePromiseLateChecks name e lpos lids
---addCheckTailPromise (FuncCall (Call name _) TDummy ) e lpos lids   = do
+--addLateCheck (FuncCall (Call name _) TDummy ) e lpos lids   = do
     --addSubroutinePromiseLateChecks name e lpos lids
 
-addCheckTailPromise _ _ _ _   = return ()
+addLateCheck _ _ _ _   = return ()
 -------------------------------------------------------------------------------
 
 

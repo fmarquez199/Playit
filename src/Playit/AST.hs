@@ -217,7 +217,7 @@ anexo op (e1,p1) (e2,p2) = do
 
     let allidsp = getAllPromiseIdsFromExpr nexpr
     
-    if not $ null allidsp then addCheckTailPromise nexpr nexpr [p1,p2] allidsp >> return nexpr
+    if not $ null allidsp then addLateCheck nexpr nexpr [p1,p2] allidsp >> return nexpr
     else return exprR 
 
   else return $ Binary op e1 e2 TError -- change when no exit with first error encounter
@@ -234,7 +234,7 @@ concatLists op (e1,p1) (e2,p2) p
       allidsp = getAllPromiseIdsFromExpr exprR
     
     unless (null allidsp) $ do
-      addCheckTailPromise exprR exprR [p1,p2,p] allidsp
+      addLateCheck exprR exprR [p1,p2,p] allidsp
       --TODO: HAcer inferencias adentro de una lista
 
     return exprR
@@ -276,7 +276,7 @@ list expr p
   | isJust t =
     let list = ArrayList exprs (TList (fromJust t))
         ids  = getAllPromiseIdsFromExpr list
-    in addCheckTailPromise list list (map snd expr) ids >> return (list, p)
+    in addLateCheck list list (map snd expr) ids >> return (list, p)
 
   | otherwise = do
     fileCode <- ask
