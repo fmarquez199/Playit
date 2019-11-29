@@ -165,10 +165,9 @@ isTypeComparableEq t = isTypeNumber t || isList t || isPointer t || (t == TBool)
 
 
 -------------------------------------------------------------------------------
--- rename to isRealType
--- | 
-isTypeConcrete :: Type -> Bool
-isTypeConcrete t =  baseTypeT t `notElem` [TPDummy, TDummy, TNull]
+-- | Determines if the type isn't undefined
+isRealType :: Type -> Bool
+isRealType t =  baseTypeT t `notElem` [TPDummy, TDummy, TNull]
 -------------------------------------------------------------------------------
 
 

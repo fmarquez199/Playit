@@ -366,10 +366,10 @@ checkIfSimple (tCond,pCond) (tTrue,pTrue) (tFalse,pFalse)
   | tCond /= TBool = 
     error $ semmErrorMsg "Battle" (show tCond) fileCode pCond
 
-  | isTypeConcrete tTrue && not (isTypeConcrete tFalse) =
+  | isRealType tTrue && not (isRealType tFalse) =
     error $ semmErrorMsg (show tTrue) (show tFalse) fileCode pFalse
 
-  | not (isTypeConcrete tTrue) && isTypeConcrete tFalse =
+  | not (isRealType tTrue) && isRealType tFalse =
     error $ semmErrorMsg (show tFalse) (show tTrue) fileCode pTrue
 
   | otherwise = error $ semmErrorMsg (show tTrue) (show tFalse) fileCode pFalse

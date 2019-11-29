@@ -239,7 +239,7 @@ checkExpresionesPromise promise tr = do
 
   let 
     modifyTypePromise prom@(Promise id p t pos ch) = 
-      if id == name then Promise id p t pos (if isTypeConcrete tr then [] else newcheck') else prom
+      if id == name then Promise id p t pos (if isRealType tr then [] else newcheck') else prom
 
   put(symTab, activeScopes, scope, map modifyTypePromise promises)
 -------------------------------------------------------------------------------
@@ -391,7 +391,7 @@ checkBinaryExpr op e1 p1 e2 p2 = do
 -- | Checkea que la expresion sea correcta
 checkTypesLC :: Expr -> [Pos] -> MonadSymTab ()
 checkTypesLC (Binary op e1 e2 _) pos =
-  when isTypeConcrete (typeE e1) && isTypeConcrete (typeE e2) $ -- En caso que alguno todavia no se haya leido/inferido no se checkea
+  when isRealType (typeE e1) && isRealType (typeE e2) $ -- En caso que alguno todavia no se haya leido/inferido no se checkea
     checkBinaryExpr op e1 (head pos) e2 (pos !! 1)
 
 checkTypesLC (IfSimple e1 e2 e3 _) lpos = do
@@ -407,10 +407,10 @@ checkTypesLC (IfSimple e1 e2 e3 _) lpos = do
       let mbTypeR = getTLists [tE2,te3] -- Simula crear una lista que contiene esos dos tipos para ahorrar calculos
       in
       when (isNothing mbTypeR) $
-        if isTypeConcrete tE2 && not (isTypeConcrete te3) then
+        if isRealType tE2 && not (isRealType te3) then
           error $ semmErrorMsg (show tE2) (show te3) fileCode (lpos !! 2)
         else
-          if not (isTypeConcrete tE2) && isTypeConcrete te3 then
+          if not (isRealType tE2) && isRealType te3 then
             error $ semmErrorMsg (show te3) (show tE2) fileCode (lpos !! 1)
           else
             error $ semmErrorMsg (show tE2) (show te3) fileCode (lpos !! 2)
