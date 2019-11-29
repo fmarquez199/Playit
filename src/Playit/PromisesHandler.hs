@@ -11,10 +11,10 @@
 module Playit.PromisesHandler where
 
 
-import Control.Monad (when,void,forM,forM_)
+import Control.Monad (when,unless,void,forM,forM_)
 import Control.Monad.Trans.RWS
 --import qualified Data.Map as M
-import Data.Maybe (isJust,fromJust)
+import Data.Maybe (isJust,fromJust,fromMaybe)
 import Playit.AuxFuncs
 import Playit.Errors
 import Playit.SymbolTable
@@ -22,74 +22,75 @@ import Playit.Types
 
 
 
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+--                               Updates
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
-{-
-    Dada una expresion cuyo el tipo  de sus llamadas a funciones no se ha decidido. 
-    Ejemplo:
-        // Donde funcion1 y funcion2 no se han declarado y no se sabe si es suma de enteros
-        // o flotantes
-        funcion1() + funcion2()
-        
-    Le asigna a las promesas de funcion1 y funcion2  el tipo de retorno t
+
+-------------------------------------------------------------------------------
+{- |
+  Dada una expresion cuyo tipo de sus llamadas a funciones no se ha decidido. 
+  Ejemplo:
+    // Donde funcion1 y funcion2 no se han declarado y no se sabe si es suma de
+    // enteros o flotantes
+    funcion1() + funcion2()
+
+  Le asigna a las promesas funcion1 y funcion2 el tipo de retorno t
 -}
 updateExprPromiseType :: Expr -> Type -> MonadSymTab Expr
-updateExprPromiseType (Binary op e1 e2 TPDummy) t   = do
+updateExprPromiseType (Binary op e1 e2 TPDummy) t = do
   ne1 <- updateExprPromiseType e1 t
   ne2 <- updateExprPromiseType e2 t
   return (Binary op ne1 ne2 t)
-{-updateExprPromiseType (Binary op e1 e2 TDummy) t   = do
-    ne1 <- updateExprPromiseType e1 t
-    ne2 <- updateExprPromiseType e2 t
-    return (Binary op ne1 ne2 t) -}
-updateExprPromiseType (Binary Anexo e1 e2 _) tl@(TList t)   = do
-    
-    ne1 <- updateExprPromiseType e1 t
-    ne2 <- updateExprPromiseType e2 tl
 
-    let ntr = case getTLists [TList (typeE ne1),typeE ne2] of
-            Just t -> t
-            Nothing -> TError
-    return (Binary Anexo ne1 ne2 ntr)
-updateExprPromiseType (FuncCall (Call name args) tf ) t   = do
-    updateSubroutinePromiseType name t
-    return (FuncCall (Call name args) t)
+updateExprPromiseType (Binary Anexo e1 e2 _) tl@(TList t) = do    
+  ne1 <- updateExprPromiseType e1 t
+  ne2 <- updateExprPromiseType e2 tl
+
+  let ntr = fromMaybe TError (getTLists [TList (typeE ne1),typeE ne2])
+  return (Binary Anexo ne1 ne2 ntr)
+
+updateExprPromiseType (FuncCall (Call name args) tf ) t =
+  updateSubroutinePromiseType name t >> return (FuncCall (Call name args) t)
+
 updateExprPromiseType (ArrayList exprs _ ) tl@(TList t)  = do
+  -- nexprs <- mapM (\e -> updateExprPromiseType e t) exprs
+  nexprs <- mapM (`updateExprPromiseType` t) exprs
+  let
+    mapTypes = map typeE nexprs
+    ntr      = case getTLists mapTypes of
+      Just nt -> TList nt
+      Nothing -> TError
 
-    nexprs <- mapM (\e -> updateExprPromiseType e t) exprs
-    let         
-        mapTypes = map typeE nexprs
-        ntr = case getTLists mapTypes of
-            Just nt -> TList nt
-            Nothing -> TError
+  return (ArrayList nexprs ntr)
 
-    return (ArrayList nexprs ntr)
-updateExprPromiseType e _   = return $ e
-  
-    
+updateExprPromiseType e _   = return e
+-------------------------------------------------------------------------------
 
-{-
-    Le asigna a una promesa de funcion el tipo de retorno pasado como argumento.
--}
+
+-------------------------------------------------------------------------------
+-- |  Le asigna a una funcion promesa el tipo de retorno pasado como argumento.
 updateSubroutinePromiseType :: Id -> Type -> MonadSymTab ()
 updateSubroutinePromiseType name t = do
-  (symTab, activeScopes, scope,promises) <- get
-      
+  (symTab, activeScopes, scope, promises) <- get
   let promise = getPromiseSubroutine name promises
-  if isJust promise then do
 
-    let promise' = fromJust promise
-    let typePromise = getTypePromise promise'
+  if isJust promise then
 
-    if (isJust $ getTLists [typePromise,t]) then do
+    let
+      promise'    = fromJust promise
+      typePromise = getTypePromise promise'
+    in
+    if isJust (getTLists [typePromise,t]) then do
       let 
           modifyTypePromise prom@(Promise id p _ pos ch) = 
               if id == name then Promise id p t pos ch else prom
 
       put(symTab, activeScopes, scope , map modifyTypePromise promises)
-
       updateType name 1 t
       checkExpresionesPromise promise' t
-      return ()
 
     else {-when (typePromise /= t) $-} do
       -- error $ semmErrorMsg (show t) (show typePromise) fileCode p
@@ -98,118 +99,117 @@ updateSubroutinePromiseType name t = do
   else do
     -- error $ "Internal error updateSubroutinePromiseType: Promise for '"  ++ name ++ "' is not defined!"
     return ()
+-------------------------------------------------------------------------------
 
-  return ()
 
-{-
-Dada una expresion en donde aparecen llamadas a funciones con tipo de retorno indeterminados
-
-se buscan todas esas llamadas y se les agrega una expresion que se debe chequear cuando 
-se actualizen los datos de las llamadas a la funcion
--}
+-------------------------------------------------------------------------------
+-- | Dada una expresion en donde aparecen llamadas a funciones con tipo de retorno
+-- indeterminados, se buscan todas esas llamadas y se les agrega una expresion
+-- que se debe chequear cuando se actualizen los datos de las llamadas a la funcion
 addCheckTailPromise :: Expr -> Expr -> [Pos] -> [Id] -> MonadSymTab ()
-addCheckTailPromise (Binary op e1 e2 _) e lpos lids   = do
-  addCheckTailPromise e1 e lpos lids
-  addCheckTailPromise e2 e lpos lids
+addCheckTailPromise (Binary op e1 e2 _) e lpos lids =
+  addCheckTailPromise e1 e lpos lids >> addCheckTailPromise e2 e lpos lids
 
-addCheckTailPromise (IfSimple e1 e2 e3 _) e lpos lids = do
-  addCheckTailPromise e1 e lpos lids
-  addCheckTailPromise e2 e lpos lids
-  addCheckTailPromise e3 e lpos lids
-addCheckTailPromise (ArrayList exprs _ ) e lpos lids   =
+addCheckTailPromise (IfSimple e1 e2 e3 _) e lpos lids =
+  addCheckTailPromise e1 e lpos lids >> addCheckTailPromise e2 e lpos lids >> addCheckTailPromise e3 e lpos lids
+
+addCheckTailPromise (ArrayList exprs _ ) e lpos lids =
     mapM_ (\e1 -> addCheckTailPromise e1 e lpos lids) exprs
-addCheckTailPromise (FuncCall (Call name _) TPDummy ) e lpos lids   =
+
+addCheckTailPromise (FuncCall (Call name _) TPDummy ) e lpos lids =
     addSubroutinePromiseLateChecks name e lpos lids
 --addCheckTailPromise (FuncCall (Call name _) TDummy ) e lpos lids   = do
     --addSubroutinePromiseLateChecks name e lpos lids
 
-addCheckTailPromise (FuncCall _ _ ) _ _ _   = return ()
-addCheckTailPromise (Literal _ _) _ _ _ = return ()
-addCheckTailPromise (Variable _ _) _ _ _ = return ()
-addCheckTailPromise Null _ _ _ = return ()
+addCheckTailPromise _ _ _ _   = return ()
+-------------------------------------------------------------------------------
 
-{-
-Dada una expresion regresa todos los identificadores de promesas a funciones asociadas
--}
+
+-------------------------------------------------------------------------------
+-- rename to getRelatedPromises
+-- | Dada una expresion regresa todos los identificadores de promesas a
+-- funciones asociadas
 getAllPromiseIdsFromExpr :: Expr -> [Id]
-getAllPromiseIdsFromExpr (Binary _ e1 e2 _) = l3
+getAllPromiseIdsFromExpr (Binary _ e1 e2 _)    = l3
   where
     le1 = getAllPromiseIdsFromExpr e1
     le2 = getAllPromiseIdsFromExpr e2
     l3  = le1 ++ le2
-getAllPromiseIdsFromExpr (IfSimple e1 e2 e3 _)  = l4
+getAllPromiseIdsFromExpr (IfSimple e1 e2 e3 _) = l4
   where
     le1 = getAllPromiseIdsFromExpr e1
     le2 = getAllPromiseIdsFromExpr e2
     le3 = getAllPromiseIdsFromExpr e3
     l4  = le1 ++ le2 ++ le3
-getAllPromiseIdsFromExpr (Unary _ e _)  = getAllPromiseIdsFromExpr e
-getAllPromiseIdsFromExpr (Read e _)   = getAllPromiseIdsFromExpr e
-getAllPromiseIdsFromExpr (ArrayList expr _)  = concatMap getAllPromiseIdsFromExpr expr
-getAllPromiseIdsFromExpr (FuncCall (Call name _) TPDummy )  = [name]
---getAllPromiseIdsFromExpr (FuncCall (Call name _) TDummy )  = [name]
-getAllPromiseIdsFromExpr (FuncCall _ _ )  = []
-getAllPromiseIdsFromExpr (Literal _ _) = []
-getAllPromiseIdsFromExpr (Variable _ _) = []
-getAllPromiseIdsFromExpr Null = []
+getAllPromiseIdsFromExpr (Unary _ e _)      = getAllPromiseIdsFromExpr e
+getAllPromiseIdsFromExpr (Read e _)         = getAllPromiseIdsFromExpr e
+getAllPromiseIdsFromExpr (ArrayList expr _) = concatMap getAllPromiseIdsFromExpr expr
+getAllPromiseIdsFromExpr (FuncCall (Call name _) TPDummy) = [name]
+getAllPromiseIdsFromExpr _                                = []
+-------------------------------------------------------------------------------
 
 
-{-Actualiza una promesa agregandole un check que se realizara cuando se actualize su tipo 
-de retorno-}
+-------------------------------------------------------------------------------
+-- rename to addLateCheks
+-- | Actualiza una promesa agregandole un check que se realizara cuando se
+-- actualize su tipo de retorno
 addSubroutinePromiseLateChecks :: Id -> Expr->[Pos] -> [Id] ->MonadSymTab ()
 addSubroutinePromiseLateChecks name expr lpos lids = do
-  (symTab, activeScopes, scope,promises) <- get
-      
+  (symTab, activeScopes, scope, promises) <- get
   let promise = getPromiseSubroutine name promises
+
   if isJust promise then do
 
-    let promise' = fromJust promise
-    
-    let checks = getLateChecksPromise promise'
-    let typePromise = getTypePromise promise'
-    let nlids = filter (/= name) lids
+    let
+      promise'    = fromJust promise
+      checks      = getLateChecksPromise promise'
+      typePromise = getTypePromise promise'
+      nlids       = filter (/= name) lids
 
-    if ((typePromise `elem` [TPDummy,TDummy])|| 
-      ((isList typePromise) && (baseTypeT typePromise) `elem` [TPDummy,TDummy])) && 
-      (not $ any (\c -> getLCPromiseExpr c == expr) checks) then do
+    if (typePromise `elem` [TPDummy,TDummy] || (isList typePromise && baseTypeT typePromise `elem` [TPDummy,TDummy])) && not (any (\c -> getLCPromiseExpr c == expr) checks) then do
 
       let 
-          nlc = LateCheckPromise expr lpos nlids
-          modifyTypePromise prom@(Promise id p t pos ch) = 
-              if id == name then Promise id p t pos (ch ++ [nlc]) else prom
+        nlc = LateCheckPromise expr lpos nlids
+        modifyTypePromise prom@(Promise id p t pos ch) = 
+            if id == name then Promise id p t pos (ch ++ [nlc]) else prom
 
       put(symTab, activeScopes, scope , map modifyTypePromise promises)
-      return ()
 
-    else when (typePromise /= TPDummy) $ do
-      error $ "ADSasd " ++ (show typePromise) ++ " expr: " ++ (show expr)
-      error "Internal error AddSubroutinePromiseLateChecks : IS THIS GONNA GET EXECUTED? LOL I HOPE NOT... it shouldnt...right?"
-      return ()
-  else do
+    else
+      when (typePromise /= TPDummy) $ do
+        error $ "ADSasd " ++ show typePromise ++ " expr: " ++ show expr
+        error "Internal error AddSubroutinePromiseLateChecks : IS THIS GONNA GET EXECUTED? LOL I HOPE NOT... it shouldnt...right?"
+
+  else
     error $ "Internal error AddSubroutinePromiseLateChecks : Promise for '"  ++ name ++ "' is not defined!"
-    return ()
+-------------------------------------------------------------------------------
 
-  return ()
 
-{-
-Chequea las expresiones de una promesa dado que se le actualizó su tipo
-Se deben eliminar todos los checks debido a que solo se actualiza el tipo 
-una sola vez
--}
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+--                               Checks
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-- | Chequea las expresiones de una promesa dado que se le actualizó su tipo
+-- Se deben eliminar todos los checks debido a que solo se actualiza el tipo 
+-- una sola vez
 checkExpresionesPromise :: Promise -> Type-> MonadSymTab ()
 checkExpresionesPromise promise tr = do
-
   let 
-      name    = getIdPromise promise
-      params  = getParamsPromise promise
-      checks  = getLateChecksPromise promise
+    name    = getIdPromise promise
+    params  = getParamsPromise promise
+    checks  = getLateChecksPromise promise
 
   newcheck' <- forM_ checks $ \(LateCheckPromise e1 lpos1 lids1) -> do
 
     (symTab, activeScopes, scope,promises) <- get
-    let newcheck = LateCheckPromise (changeTPDummyFunctionInExpre name e1 tr) lpos1 lids1
-    
-    let ne1 = getLCPromiseExpr newcheck
+    let
+      newcheck = LateCheckPromise (changeTPDummyFunctionInExpre name e1 tr) lpos1 lids1
+      ne1 = getLCPromiseExpr newcheck
+
     checkTypesLC ne1 lpos1
     
     lnp <- forM lids1 $ \idpl -> do
@@ -225,234 +225,211 @@ checkExpresionesPromise promise tr = do
       else return []
 
     let 
-        lnp2 = concat lnp
-        lnpids = map (\p -> (getIdPromise p , p)) lnp2
-        isToUpdate p = any (\(id,_) -> id == getIdPromise p) lnpids
-        promTpUpdate p = snd $ head $ filter (\(id,_) -> id == getIdPromise p) lnpids
-        modifyTypePromise prom = if isToUpdate prom then promTpUpdate prom else prom
+      lnp2           = concat lnp
+      lnpids         = map (\p -> (getIdPromise p, p)) lnp2
+      isToUpdate p   = any (\(id,_) -> id == getIdPromise p) lnpids
+      promTpUpdate p = snd $ head $ filter (\(id,_) -> id == getIdPromise p) lnpids
+      modifyTypePromise prom = if isToUpdate prom then promTpUpdate prom else prom
 
     put(symTab, activeScopes, scope , map modifyTypePromise promises)
     return newcheck
 
-{-   
-TODO :Eliminar solo si se actualiza a un tipo concreto -}
+  -- TODO :Eliminar solo si se actualiza a un tipo concreto
   (symTab, activeScopes, scope,promises) <- get
 
   let 
     modifyTypePromise prom@(Promise id p t pos ch) = 
       if id == name then Promise id p t pos (if isTypeConcrete tr then [] else newcheck') else prom
 
-  put(symTab, activeScopes, scope , map modifyTypePromise promises)
-  return ()
+  put(symTab, activeScopes, scope, map modifyTypePromise promises)
+-------------------------------------------------------------------------------
 
 
-{-
-    Cambia el tipo de retorno de la función en los contextos en los cuales aparece
--}
+-------------------------------------------------------------------------------
+-- rename to changeTPDummy
+-- | Cambia el tipo de retorno de la función en los contextos en los cuales aparece
 changeTPDummyFunctionInExpre :: Id  -> Expr -> Type -> Expr
-changeTPDummyFunctionInExpre name f@(FuncCall (Call id args) _) t  = if id == name then FuncCall (Call name args) t else f
+changeTPDummyFunctionInExpre name f@(FuncCall (Call id args) _) t =
+  if id == name then
+    FuncCall (Call name args) t
+  else f
 -- Solo sucede con Anexo o + , - , * , /
-changeTPDummyFunctionInExpre name (Binary op e1 e2 tb) t   = Binary op ne1 ne2 ntb 
+changeTPDummyFunctionInExpre name (Binary op e1 e2 tb) t = Binary op ne1 ne2 ntb 
   where 
-    ne1 = changeTPDummyFunctionInExpre name e1 t
-    ne2 = changeTPDummyFunctionInExpre name e2 t
-    te1 = typeE ne1
-    te2 = typeE ne2
-    ntb  = case op of -- TODO: Falta caso  concatenación
-      Anexo  -> 
-          case getTLists [TList te1,te2]  of 
-                  Just t -> t 
-                  Nothing -> TError
-      Concat  ->
-          case getTLists [te1,te2]  of 
-                  Just t -> t --error $ "asdasdasd te1 : " ++ (show te1 ) ++ " e1: " ++ (show e1) ++ " te2: " ++ (show te2) ++ " e2 : " ++ (show e2)
-                  Nothing -> TError
-      
-      x | x `elem` [Add, Minus, Mult, Division] ->
-          if  (te1 == TPDummy) || (te2 == TPDummy) then 
-              TDummy
-              -- TODO : Faltan inferencias aquí para e2 o e1 si el otro es concreto
-          else if (te1 == TInt || te1 == TFloat) && te2 == te1 then 
-              te1 
-          else 
-              TError
+    ne1        = changeTPDummyFunctionInExpre name e1 t
+    ne2        = changeTPDummyFunctionInExpre name e2 t
+    tE1        = typeE ne1
+    tE2        = typeE ne2
+    isAritOp x = x `elem` [Add, Minus, Mult, Division]
+    ntb        = case op of -- TODO: Falta caso  concatenación
+      Anexo  -> fromMaybe TError (getTLists [TList tE1,tE2])
+      Concat -> fromMaybe TError (getTLists [tE1,tE2])      
+      x | isAritOp x && (tE1 == TPDummy || tE2 == TPDummy) ->
+          TDummy
+          -- TODO : Faltan inferencias aquí para e2 o e1 si el otro es concreto
+        | isAritOp x && (tE1 == TInt || tE1 == TFloat) && tE2 == tE1 -> tE1
+        | otherwise -> TError
       _   -> tb
-changeTPDummyFunctionInExpre name (IfSimple e1 e2 e3 ti) t   = IfSimple ne1 ne2 ne3 ti
+
+changeTPDummyFunctionInExpre name (IfSimple e1 e2 e3 ti) t = IfSimple ne1 ne2 ne3 ti
   where
     ne1 = changeTPDummyFunctionInExpre name e1 t
     ne2 = changeTPDummyFunctionInExpre name e2 t
     ne3 = changeTPDummyFunctionInExpre name e3 t
-changeTPDummyFunctionInExpre name (Unary op e1 tu) t   = Unary op e1 tu
-  where
-    ne1 = changeTPDummyFunctionInExpre name e1 t
-changeTPDummyFunctionInExpre name (Read e1 tr) t   = Read ne1 tr
-  where
-    ne1 = changeTPDummyFunctionInExpre name e1 t
-changeTPDummyFunctionInExpre name (ArrayList expr ta) t   = ArrayList nexpr nta
+
+changeTPDummyFunctionInExpre name (Unary op e1 tu) t       = Unary op (changeTPDummyFunctionInExpre name e1 t) tu
+changeTPDummyFunctionInExpre name (Read e1 tr) t           = Read (changeTPDummyFunctionInExpre name e1 t) tr
+changeTPDummyFunctionInExpre name (ArrayList expr ta) t    = ArrayList nexpr nta
   where
     nexpr = map (\e ->changeTPDummyFunctionInExpre name e t) expr
     mapTypes = map typeE nexpr
     -- TODO: Falta manejar TError en getTLists para multiples errore
     nta = case getTLists mapTypes of
-            Just t ->  TList t
-            Nothing -> TError
-changeTPDummyFunctionInExpre name l@(Literal _ _) _   = l
-changeTPDummyFunctionInExpre name v@(Variable _ _) _   = v
-changeTPDummyFunctionInExpre name Null _   = Null
-changeTPDummyFunctionInExpre name e _   = error $ "show e : " ++ (show e)
+      Just t ->  TList t
+      Nothing -> TError
+
+changeTPDummyFunctionInExpre name l@(Literal _ _) _  = l
+changeTPDummyFunctionInExpre name v@(Variable _ _) _ = v
+changeTPDummyFunctionInExpre name Null _             = Null
+changeTPDummyFunctionInExpre name e _                = error $ "e : " ++ show e
+-------------------------------------------------------------------------------
 
 
+-------------------------------------------------------------------------------
 checkBinaryExpr :: BinOp -> Expr -> Pos-> Expr -> Pos -> MonadSymTab Bool
 checkBinaryExpr op e1 p1 e2 p2 = do
   fileCode <- ask
-  let te1 = typeE e1
-  let te2 = typeE e2
+  let
+    tE1     = typeE e1
+    tE2     = typeE e2
+    eqOps   = [Eq, NotEq]
+    compOps = [Eq, NotEq, GreaterEq, LessEq, Greater, Less]
+    aritOps = [Add, Minus, Mult, Division]
+    aritInt = [DivEntera, Module]
+    boolOps = [And, Or]
 
-  if te1 /= te2 then -- Si son distintos los tipos de las funciones
+  if tE1 /= tE2 then -- Si son distintos los tipos de las funciones
 
-    if op `elem` comp_eqs then
+    if op `elem` eqOps then
       
-      if isTypeComparableEq te1 &&  not (isTypeComparableEq te2) then
-          error $ semmErrorMsg (show te1) (show te2) fileCode p2
+      if isTypeComparableEq tE1 &&  not (isTypeComparableEq tE2) then
+        error $ semmErrorMsg (show tE1) (show tE2) fileCode p2
       else 
-        if not (isTypeComparableEq te1) &&  isTypeComparableEq te2 then
-          error $ semmErrorMsg (show te2) (show te1) fileCode p1
+        if not (isTypeComparableEq tE1) &&  isTypeComparableEq tE2 then
+          error $ semmErrorMsg (show tE2) (show tE1) fileCode p1
         else
-          if isTypeComparableEq te1 && isTypeComparableEq te2 then
-            error $ semmErrorMsg (show te1) (show te2) fileCode p2
+          if isTypeComparableEq tE1 && isTypeComparableEq tE2 then
+            error $ semmErrorMsg (show tE1) (show tE2) fileCode p2
           else 
-              error $ semmErrorMsg "Tipo comparable" (show te1) fileCode p1
+            error $ semmErrorMsg "Tipo comparable" (show tE1) fileCode p1
 
     else 
 
-      if (op `elem` comparators ) || (op `elem` aritmetic )then
+      if (op `elem` compOps ) || (op `elem` aritOps )then
 
-        if isTypeNumber te1 &&  not (isTypeNumber te2) then
-          error $ semmErrorMsg (show te1) (show te2) fileCode p2
+        if isTypeNumber tE1 &&  not (isTypeNumber tE2) then
+          error $ semmErrorMsg (show tE1) (show tE2) fileCode p2
         else 
-          if not (isTypeNumber te1) &&  isTypeNumber te2 then
-            error $ semmErrorMsg (show te2) (show te1) fileCode p1
+          if not (isTypeNumber tE1) &&  isTypeNumber tE2 then
+            error $ semmErrorMsg (show tE2) (show tE1) fileCode p1
           else 
-            if isTypeNumber te1  && isTypeNumber te2 then
-              error $ semmErrorMsg (show te1) (show te2) fileCode p2
+            if isTypeNumber tE1  && isTypeNumber tE2 then
+              error $ semmErrorMsg (show tE1) (show tE2) fileCode p2
             else 
-                error $ semmErrorMsg "Power or Skill" (show te1) fileCode p1
+              error $ semmErrorMsg "Power or Skill" (show tE1) fileCode p1
 
       else 
-        if op `elem` aritmetic_int then
+        if op `elem` aritInt then
 
-          if te1 == TInt then error $ semmErrorMsg (show te1) (show te2) fileCode p2
+          if tE1 == TInt then error $ semmErrorMsg (show tE1) (show tE2) fileCode p2
           else 
-            if te2 == TInt then error $ semmErrorMsg (show te2) (show te1) fileCode p1
-            else error $ semmErrorMsg "Power" (show te1) fileCode p1
+            if tE2 == TInt then error $ semmErrorMsg (show tE2) (show tE1) fileCode p1
+            else error $ semmErrorMsg "Power" (show tE1) fileCode p1
 
         else 
-          if op `elem` boolean then
+          if op `elem` boolOps then
 
-            if te1 == TBool then error $ semmErrorMsg (show te1) (show te2) fileCode p2
+            if tE1 == TBool then error $ semmErrorMsg (show tE1) (show tE2) fileCode p2
             else 
-              if (te1 /= TBool) && (te2 == TBool) then error $ semmErrorMsg (show te2) (show te1) fileCode p1
-              else error $ semmErrorMsg "Battle" (show te1) fileCode p1
+              if (tE1 /= TBool) && (tE2 == TBool) then error $ semmErrorMsg (show tE2) (show tE1) fileCode p1
+              else error $ semmErrorMsg "Battle" (show tE1) fileCode p1
 
           else
-            if op == Anexo then
-              let
-                typeR = case getTLists [TList te1,te2] of
-                        Just t -> t
-                        Nothing -> TError
+            when (op == Anexo) $
+              let typeR = fromMaybe TError (getTLists [TList tE1,tE2])
               in
-              if typeR == TError then do
-                  error $ semmErrorMsg (show (TList te1)) (show te2) fileCode p2
-              else return ()
-            else return ()
+              when (typeR == TError) $
+                error $ semmErrorMsg (show (TList tE1)) (show tE2) fileCode p2
 
   else --- Si son iguales los tipos de las expresiones 
-    if op `elem` comp_eqs then
-      when (not $ isTypeComparableEq te1) $ do            
-        error $ semmErrorMsg "Tipo comparable" (show te1) fileCode p1
+    if op `elem` eqOps then
+      unless (isTypeComparableEq tE1) $           
+        error $ semmErrorMsg "Tipo comparable" (show tE1) fileCode p1
       
     else
-      if op `elem` comparators || op `elem` aritmetic then
-
-        if (te1 /= TInt) && (te1 /= TFloat) then error $ semmErrorMsg "Power or Skill" (show te1) fileCode p1
-        else return ()
-
-      else 
-        if op `elem` aritmetic_int then
-          if te1 /= TInt then error $ semmErrorMsg "Power" (show te1) fileCode p1
-          else return ()
-
-        else 
-          if op `elem` boolean then
-            if te1 /= TBool then error $ semmErrorMsg "Battle" (show te1) fileCode p1
-            else return ()
-
-          else 
-            if op == Anexo then
+      if op `elem` compOps || op `elem` aritOps then
+        when (tE1 /= TInt) && (tE1 /= TFloat) $
+          error $ semmErrorMsg "Power or Skill" (show tE1) fileCode p1
+      else
+        if op `elem` aritInt then
+          when (tE1 /= TInt) $
+            error $ semmErrorMsg "Power" (show tE1) fileCode p1
+        else
+          if op `elem` boolOps then
+            when (tE1 /= TBool) $
+              error $ semmErrorMsg "Battle" (show tE1) fileCode p1
+          else
+            when (op == Anexo) $ do
               -- TODO: Sin hacer
               error "Not implemented anexo with promises"
-            else return ()
 
   return True
-  where
-      comparators = [Eq, NotEq, GreaterEq, LessEq, Greater, Less]
-      comp_eqs = [Eq, NotEq]
-      aritmetic = [Add, Minus, Mult, Division]
-      aritmetic_int = [DivEntera, Module]
-      boolean = [And, Or]
+-------------------------------------------------------------------------------
 
 
-
-isTypeConcrete :: Type -> Bool
-isTypeConcrete t =  not $ elem (baseTypeT t)  [TPDummy,TDummy,TNull]
-
-
-{-Checkea que la expresion sea correcta-}
+-------------------------------------------------------------------------------
+-- | Checkea que la expresion sea correcta
 checkTypesLC :: Expr -> [Pos] -> MonadSymTab ()
-checkTypesLC (Binary op e1 e2 _) pos   = do
-
-    if ( isTypeConcrete $ typeE e1) && (isTypeConcrete $ typeE e2) then do  -- En caso que alguno todavia no se haya leido/inferido no se checkea
-        checkBinaryExpr op e1 (head pos) e2 (pos !! 1)
-        return ()
-    else return ()
-    return ()
+checkTypesLC (Binary op e1 e2 _) pos =
+  when isTypeConcrete (typeE e1) && isTypeConcrete (typeE e2) $ -- En caso que alguno todavia no se haya leido/inferido no se checkea
+    checkBinaryExpr op e1 (head pos) e2 (pos !! 1)
 
 checkTypesLC (IfSimple e1 e2 e3 _) lpos = do
+  let 
+    tE1 = typeE e1
+    tE2 = typeE e2
+    te3 = typeE e3
+
+  when (tE1 /= TPDummy && tE2 /= TPDummy && te3 /= TPDummy) $ do
+    fileCode <- ask
+
+    if tE1 == TBool then
+      let mbTypeR = getTLists [tE2,te3] -- Simula crear una lista que contiene esos dos tipos para ahorrar calculos
+      in
+      when (isNothing mbTypeR) $
+        if isTypeConcrete tE2 && not (isTypeConcrete te3) then
+          error $ semmErrorMsg (show tE2) (show te3) fileCode (lpos !! 2)
+        else
+          if not (isTypeConcrete tE2) && isTypeConcrete te3 then
+            error $ semmErrorMsg (show te3) (show tE2) fileCode (lpos !! 1)
+          else
+            error $ semmErrorMsg (show tE2) (show te3) fileCode (lpos !! 2)
+    else
+        error $ semmErrorMsg "Battle" (show tE1) fileCode (head lpos)
+
+checkTypesLC (ArrayList exprs _) pos = do
+  let
+    mapTypes = map typeE exprs
+    nta = getTLists mapTypes
+
+  unless (isJust nta) $ do
+    fileCode <- ask
     let 
-        te1 = typeE e1
-        te2 = typeE e2
-        te3 = typeE e3
+      exprsP = zip exprs pos
+      l = filter (\(e,p) -> typeE e `notElem` [TDummy, TPDummy]) exprsP
+      (e,p) = head l
+      expected = typeE e
+      got = head $ dropWhile (\(e,p) -> typeE e == expected) l
 
-    if te1 /= TPDummy &&  te2 /= TPDummy && te3 /= TPDummy then do
-        fileCode <- ask
-
-        if te1 == TBool then do
-            let mbTypeR = getTLists [te2,te3] -- Simula crear una lista que contiene esos dos tipos para ahorrar calculos
-
-            if mbTypeR == Nothing then do
-                if isTypeConcrete te2 && not (isTypeConcrete te3) then
-                    error $ semmErrorMsg (show te2) (show te3) fileCode (lpos !! 2)
-                else if not (isTypeConcrete te2) && isTypeConcrete te3 then
-                    error $ semmErrorMsg (show te3) (show te2) fileCode (lpos !! 1)
-                else
-                    error $ semmErrorMsg (show te2) (show te3) fileCode (lpos !! 2)
-            else return()
-        else do
-            error $ semmErrorMsg "Battle" (show te1) fileCode (lpos !! 0)
-    else return()
-checkTypesLC (ArrayList exprs _) pos   = do
-
-    let
-        mapTypes = map typeE exprs
-        nta = getTLists mapTypes
-
-    if not $ isJust nta then do
-        fileCode <- ask
-        let 
-            exprsP = zip exprs pos
-            l = filter (\(e,p) -> typeE e /= TDummy && typeE e /= TPDummy) exprsP
-            (e,p) = head l
-            expected = typeE e
-            got = head $ dropWhile (\(e,p) ->  typeE e == expected) l
-        error $ semmErrorMsg (show expected) (show $ typeE $ fst got) fileCode (snd got)
-    else return ()
+    error $ semmErrorMsg (show expected) (show $ typeE $ fst got) fileCode (snd got)
+-------------------------------------------------------------------------------

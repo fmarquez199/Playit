@@ -309,10 +309,11 @@ updateInfoSubroutine name cat p t = do
       promise = getPromiseSubroutine name promises
 
   when (isJust promise) $ do
-    let promise' = fromJust promise
-        paramsP = getParamsPromise promise'
-        typeP = getTypePromise promise'
-        errorTL = dropWhile (\((t1,_),(t2,_)) -> t1 == t2) (zip paramsP paramsF)
+    let 
+      promise' = fromJust promise
+      paramsP  = getParamsPromise promise'
+      typeP    = getTypePromise promise'
+      errorTL  = dropWhile (\((t1,_),(t2,_)) -> t1 == t2) (zip paramsP paramsF)
 
     if  any (/=True) [t1 == t2 | ((t1,_),(t2,id2)) <- zip paramsP paramsF ] then
       error $ errorMsg "Wrong type of arguments" fileCode (getPosPromise promise')
@@ -368,12 +369,9 @@ checkPromises = do
   (symTab, activeScopes, scopes , promises) <- get
   fileCode <- ask
 
-  forM promises $ \(Promise name args t p lc) -> do
+  forM promises $ \(Promise name args t p lc) ->
     if t /= TPDummy then
       error $ errorMsg ("Function '" ++ name ++ "' is not defined") fileCode p
     else 
       error $ errorMsg ("Procedure '" ++ name ++ "' is not defined") fileCode p
-    return ()
-  
-  return ()
 -------------------------------------------------------------------------------

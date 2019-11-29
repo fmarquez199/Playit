@@ -207,25 +207,20 @@ unary op (expr,p) tSpected = do
 -- | Inserta en una lista un nuevo elemento en indice 0
 anexo :: BinOp -> (Expr,Pos) -> (Expr,Pos) -> MonadSymTab Expr
 anexo op (e1,p1) (e2,p2) = do
-    (ok,tOp) <- checkAnexo (e1,p1) (e2,p2)
+  (ok,tOp) <- checkAnexo (e1,p1) (e2,p2)
+  
+  if ok then do
+
+    let exprR = Binary op e1 e2 tOp
+
+    nexpr <- updateExprPromiseType exprR (fromJust $ getTLists [TList (typeE e1),typeE e2])
+
+    let allidsp = getAllPromiseIdsFromExpr nexpr
     
-    if ok then do
+    if not $ null allidsp then addCheckTailPromise nexpr nexpr [p1,p2] allidsp >> return nexpr
+    else return exprR 
 
-        let exprR   = Binary op e1 e2 tOp
-
-        nexpr <- updateExprPromiseType exprR (fromJust $ getTLists [TList (typeE e1),(typeE e2)])
-
-        let allidsp = getAllPromiseIdsFromExpr nexpr
-        if not $ null allidsp then do
-            addCheckTailPromise nexpr nexpr [p1,p2] allidsp
-
-            return nexpr
-
-        else return exprR 
-
-
-
-    else return $ Binary op e1 e2 TError -- change when no exit with first error encounter
+  else return $ Binary op e1 e2 TError -- change when no exit with first error encounter
 -------------------------------------------------------------------------------
 
 
@@ -233,27 +228,29 @@ anexo op (e1,p1) (e2,p2) = do
 -- | Create concat 2 lists operator node
 concatLists :: BinOp -> (Expr,Pos) -> (Expr,Pos) -> Pos -> MonadSymTab Expr
 concatLists op (e1,p1) (e2,p2) p 
-    | isList t1 && isList t2 && isJust tL  = do -- <<2>>:: <<>>
-        let 
-            exprR   = Binary Concat e1 e2 (fromJust tL)
-            allidsp = getAllPromiseIdsFromExpr exprR
-        if not $ null allidsp then do
-            addCheckTailPromise exprR exprR [p1,p2,p] allidsp
-            --TODO: HAcer inferencias adentro de una lista
-            return ()
-        else return ()
-        return exprR
-    | otherwise = do
-        (fileName,code) <- ask
-        --error $ semmErrorMsg (show baseT1) (show baseT2) fileCode p2
-        error ("\n\nError: " ++ show fileName ++ ": " ++ show p ++ "\n  "
-                ++ "Operation Concat needs expression '" ++ show e1 ++
-                    "' and expression '" ++ show e2 ++ "' to be same-type lists.")
-        return $ Binary Concat e1 e2 TError
-    where
-        t1 = typeE e1
-        t2 = typeE e2
-        tL = getTLists [t1,t2]
+  | isList t1 && isList t2 && isJust tL  = do -- <<2>>:: <<>>
+    let 
+      exprR   = Binary Concat e1 e2 (fromJust tL)
+      allidsp = getAllPromiseIdsFromExpr exprR
+    
+    unless (null allidsp) $ do
+      addCheckTailPromise exprR exprR [p1,p2,p] allidsp
+      --TODO: HAcer inferencias adentro de una lista
+
+    return exprR
+
+  | otherwise = do
+    (fileName,code) <- ask
+    --error $ semmErrorMsg (show baseT1) (show baseT2) fileCode p2
+    error ("\n\nError: " ++ show fileName ++ ": " ++ show p ++ "\n  "
+          ++ "Operation Concat needs expression '" ++ show e1 ++
+          "' and expression '" ++ show e2 ++ "' to be same-type lists.")
+    return $ Binary Concat e1 e2 TError
+
+  where
+    t1 = typeE e1
+    t2 = typeE e2
+    tL = getTLists [t1,t2]
 -------------------------------------------------------------------------------
 
 
@@ -283,10 +280,11 @@ list expr p
 
   | otherwise = do
     fileCode <- ask
-    let l = filter (\(e,p) -> typeE e `notElem` [TDummy,TPDummy,TNull]) expr
-        (e,_) = head l
-        expected = typeE e
-        got = head $ dropWhile (\(e,p) ->  typeE e == expected) l
+    let 
+      l        = filter (\(e,p) -> typeE e `notElem` [TDummy,TPDummy,TNull]) expr
+      (e,_)    = head l
+      expected = typeE e
+      got      = head $ dropWhile (\(e,p) ->  typeE e == expected) l
 
     error $ semmErrorMsg (show expected) (show $ typeE $ fst got) fileCode (snd got)
 
@@ -311,7 +309,7 @@ if' :: [(Expr, InstrSeq)] -> Pos -> Instr
 if' cases p = if allSeqsVoid then IF cases TVoid else IF cases TError
   where
     seqs        = map snd cases
-    allSeqsVoid = and $ (map $ all isVoid) seqs
+    allSeqsVoid = all (all isVoid) seqs
 -------------------------------------------------------------------------------
 
 
@@ -351,8 +349,9 @@ ifSimple (cond,pC) (true,pT) (false,pF) = do
 for :: Id -> (Expr,Pos) -> (Expr,Pos) -> InstrSeq  -> MonadSymTab Instr
 for var (e1,pE1) (e2,pE2) i = do
   fileCode <- ask
-  let tE1 = typeE e1
-      tE2 = typeE e2
+  let 
+    tE1 = typeE e1
+    tE2 = typeE e2
 
   case typeE e1 of
     TInt -> case typeE e2 of
@@ -373,11 +372,12 @@ for var (e1,pE1) (e2,pE2) i = do
 forWhile :: Id -> (Expr,Pos) -> (Expr,Pos) -> (Expr,Pos) -> InstrSeq -> MonadSymTab Instr
 forWhile var (e1,pE1) (e2,pE2) (e3,pE3) i = do
   fileCode <- ask
-  let tE1    = typeE e1
-      tE2    = typeE e2
-      tE3    = typeE e3
-      forOk  = ForWhile var e1 e2 e3 i TVoid
-      forErr = ForWhile var e1 e2 e3 i TError
+  let 
+    tE1    = typeE e1
+    tE2    = typeE e2
+    tE3    = typeE e3
+    forOk  = ForWhile var e1 e2 e3 i TVoid
+    forErr = ForWhile var e1 e2 e3 i TError
 
   case tE1 of
     TInt -> case tE2 of
@@ -405,10 +405,11 @@ forWhile var (e1,pE1) (e2,pE2) (e3,pE3) i = do
 forEach :: Id -> (Expr,Pos) -> InstrSeq -> MonadSymTab Instr
 forEach var (e,p) i = do
   fileCode <- ask
-  let tE     = typeE e
-      forOk  = ForEach var e i TVoid
-      forErr = ForEach var e i TError
-      returnCheckedFor = if all isVoid i then return forOk else return forErr
+  let 
+    tE               = typeE e
+    forOk            = ForEach var e i TVoid
+    forErr           = ForEach var e i TError
+    returnCheckedFor = if all isVoid i then return forOk else return forErr
   
   if isArray tE || isList tE then returnCheckedFor
   else return forErr >> error (semmErrorMsg "Array or Kit" (show tE) fileCode p)
@@ -420,9 +421,10 @@ forEach var (e,p) i = do
 while :: (Expr,Pos) -> InstrSeq -> MonadSymTab Instr
 while (cond,p) i = do
   fileCode <- ask
-  let tc         = typeE cond
-      whileOk    = While cond i TVoid
-      whileError = While cond i TError
+  let 
+    tc         = typeE cond
+    whileOk    = While cond i TVoid
+    whileError = While cond i TError
 
   case tc of
     TBool -> if all isVoid i then return whileOk else return whileError 
@@ -449,19 +451,21 @@ call subroutine args p = do
   let symInfos = lookupInScopes [1,0] subroutine symTab
   
   if isJust symInfos then
-    let isSubroutine si = getCategory si `elem` [Procedures, Functions]
-        subroutine' = filter isSubroutine (fromJust symInfos)
+    let
+      isSubroutine si = getCategory si `elem` [Procedures, Functions]
+      subroutine'     = filter isSubroutine (fromJust symInfos)
     in
-    if null subroutine' then
-      error $ errorMsg "This is not a subroutine" fileCode p
-    else
-      let nParams = fromJust $ getNParams $ getExtraInfo $ head subroutine'
-          nArgs = length args
-      in
-      if nArgs == nParams then return (Call subroutine args,p)
+      if null subroutine' then
+        error $ errorMsg "This is not a subroutine" fileCode p
       else
-        let msj = "Amount of arguments: " ++ show nArgs ++ " not equal to expected:" ++ show nParams
-        in error $ errorMsg msj fileCode p
+        let 
+          nParams = fromJust $ getNParams $ getExtraInfo $ head subroutine'
+          nArgs   = length args
+        in
+          if nArgs == nParams then return (Call subroutine args,p)
+          else
+            let msj = "Amount of arguments: " ++ show nArgs ++ " not equal to expected:" ++ show nParams
+            in error $ errorMsg msj fileCode p
   else
     -- Add a promise to create subroutine
     -- Si no existe construimos la llamada igual para que procCall o funcCall creen la promesa
@@ -479,14 +483,14 @@ procCall (procedure@(Call name args), p) = do
   let symInfos = lookupInScopes [1,0] name symTab
   
   if isJust symInfos then
-    let isProcedure symInfo = getCategory symInfo == Procedures
-        procedure' = filter isProcedure (fromJust symInfos)
+    let
+      isProcedure symInfo = getCategory symInfo == Procedures
+      procedure'          = filter isProcedure (fromJust symInfos)
     in
-    if null procedure' then do
-      return $ ProcCall procedure TError
-      error $ errorMsg ("'" ++ name  ++ "' is not a procedure") fileCode p
-    else
-      return $ ProcCall procedure TVoid
+      if null procedure' then
+        return (ProcCall procedure TError) >> error $ errorMsg ("'" ++ name  ++ "' is not a procedure") fileCode p
+      else
+        return $ ProcCall procedure TVoid
 
   else do
     -- If no is declared but maybe(It has to be a promise) is a promise
@@ -500,11 +504,12 @@ procCall (procedure@(Call name args), p) = do
     else
       error $ "Error interno:  Procedure '" ++ name ++ "' doesn't have a promise."
 -}
-    let extraInfo = Params [(typeE e,show i)| ((e,p),i) <- zip args [1..]]
-        newProc = [SymbolInfo TVoid 1 Procedures [extraInfo]]
-        newProm = Promise name (map (\(e,p) -> (typeE e,p)) args) TVoid p []
-        newPromises = promises ++ [newProm]
-        newSymTab = insertSymbols [name] newProc symTab
+    let 
+      extraInfo   = Params [(typeE e,show i)| ((e,p),i) <- zip args [1..]]
+      newProc     = [SymbolInfo TVoid 1 Procedures [extraInfo]]
+      newProm     = Promise name (map (\(e,p) -> (typeE e,p)) args) TVoid p []
+      newPromises = promises ++ [newProm]
+      newSymTab   = insertSymbols [name] newProc symTab
 
     put (newSymTab, activeScopes, scope, newPromises)
     return $ ProcCall procedure TVoid
@@ -523,15 +528,14 @@ funcCall (function@(Call name args), p) = do
   let symInfos = lookupInScopes [1,0] name symTab
   
   if isJust symInfos then
-
-    let isFunction symInfo = getCategory symInfo == Functions
-        function' = filter isFunction (fromJust symInfos)
+    let 
+      isFunction symInfo = getCategory symInfo == Functions
+      function' = filter isFunction (fromJust symInfos)
     in
-    if null function' then do
-      return (FuncCall function TError, p)
-      error $ errorMsg ("'" ++ name  ++ "' is not a function") fileCode p
-    else
-      return (FuncCall function (getType $ head function'), p)
+      if null function' then
+        return (FuncCall function TError, p) >> error $ errorMsg ("'" ++ name  ++ "' is not a function") fileCode p
+      else
+        return (FuncCall function (getType $ head function'), p)
 
   else do
     -- If no is declared but maybe(It has to be a promise) is a promise
@@ -544,11 +548,12 @@ funcCall (function@(Call name args), p) = do
     else
       error $ "Error interno:  Function '" ++ name ++ "' doesn't have a promise,"
 -}
-    let extraInfo = Params [(typeE e,show i)| ((e,p),i) <- zip args [1..]]
-        newFunc = [SymbolInfo TPDummy 1 Functions [extraInfo]]
-        newProm = Promise name (map (\(e,p) -> (typeE e,p)) args) TPDummy p []
-        newPromises = promises ++ [newProm]
-        newSymTab = insertSymbols [name] newFunc symTab
+    let
+      extraInfo   = Params [(typeE e,show i)| ((e,p),i) <- zip args [1..]]
+      newFunc     = [SymbolInfo TPDummy 1 Functions [extraInfo]]
+      newProm     = Promise name (map (\(e,p) -> (typeE e,p)) args) TPDummy p []
+      newPromises = promises ++ [newProm]
+      newSymTab   = insertSymbols [name] newFunc symTab
 
     put (newSymTab, activeScopes, scope, newPromises)
     return (FuncCall function TPDummy, p)
@@ -571,19 +576,18 @@ print' expr p
     return $ Print exprs TError
 
     fileCode <- ask
-    let l        = filter (\(e,p) -> typeE e /= TDummy && typeE e /= TPDummy) expr
-        (e,_)    = head l
-        expected = typeE e
-        got      = head $ dropWhile (\(e,p) -> typeE e == expected) l
+    let 
+      l        = filter (\(e,p) -> typeE e /= TDummy && typeE e /= TPDummy) expr
+      (e,_)    = head l
+      expected = typeE e
+      got      = head $ dropWhile (\(e,p) -> typeE e == expected) l
 
     error $ semmErrorMsg "Runes" (show $ typeE $ fst got) fileCode (snd got)
 
   where
-    exprs = map fst expr
+    exprs      = map fst expr
     exprsTypes = map typeE exprs
-    tE         = case getTLists exprsTypes of  
-                  Just t -> t
-                  Nothing -> TError
+    tE         = fromMaybe TError (getTLists exprsTypes)  
 -------------------------------------------------------------------------------
 
 
