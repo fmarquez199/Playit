@@ -11,10 +11,10 @@
 module Playit.PromisesHandler where
 
 
-import Control.Monad (when,unless,void,forM,forM_)
+import Control.Monad (void,when,unless,void,forM,forM_)
 import Control.Monad.Trans.RWS
 --import qualified Data.Map as M
-import Data.Maybe (isJust,fromJust,fromMaybe)
+import Data.Maybe (isJust,isNothing,fromJust,fromMaybe)
 import Playit.AuxFuncs
 import Playit.Errors
 import Playit.SymbolTable
@@ -97,6 +97,62 @@ updatePromise name t = do
   else do
     -- error $ "Internal error updatePromise: Promise for '"  ++ name ++ "' is not defined!"
     return ()
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+updateInfoSubroutine:: Id -> Category -> [(Type,Id)] -> Type -> MonadSymTab ()
+updateInfoSubroutine name cat p t = do
+  (symTab, activeScopes, scopes, promises) <- get
+  fileCode <- ask
+  let paramsF = reverse p
+      promise = getPromiseSubroutine name promises
+
+  when (isJust promise) $ do
+    let 
+      promise' = fromJust promise
+      paramsP  = getParamsPromise promise'
+      typeP    = getTypePromise promise'
+      errorTL  = dropWhile (\((t1,_),(t2,_)) -> t1 == t2) (zip paramsP paramsF)
+
+    if  any (/=True) [t1 == t2 | ((t1,_),(t2,_)) <- zip paramsP paramsF ] then
+      error $ errorMsg "Wrong type of arguments" fileCode (getPosPromise promise')
+
+    else
+
+      if length paramsP /= length paramsF then
+
+        let msj = "Amount of arguments: " ++ show (length paramsP) ++
+                " not equal to expected:" ++ show (length paramsF)
+        in error $ errorMsg msj fileCode (getPosPromise promise')
+
+      else
+
+        if  not $ null errorTL then
+
+          let ((gotType,pGotType),(expectedType,_)) = head errorTL
+          in error $ semmErrorMsg (show expectedType) (show gotType) fileCode pGotType
+
+        else
+
+          if typeP /= TPDummy && typeP /= t then
+            error $ semmErrorMsg (show typeP) (show t) fileCode (getPosPromise promise')
+
+          else do
+            checkExpr promise' t
+            -- Quitamos la promesa
+            -- (symTab, activeScopes, scopes , promises) <- get
+            put(symTab, activeScopes, scopes ,filter (\p -> getIdPromise p /= name) promises)
+            return () 
+{-        if typeP /= TPDummy && typeP /= t then
+          error $ semmErrorMsg (show typeP) (show t) fileCode (getPosPromise promise')
+        else do
+          put(symTab, activeScopes, scopes, filter (/= promise') promises)
+          return () 
+-}
+  updateExtraInfo name cat [Params paramsF]
+  updateType name 1 t
+  return ()
 -------------------------------------------------------------------------------
 
 
@@ -224,10 +280,10 @@ updatePromiseInExpr name (ArrayList expr ta) t = ArrayList nexpr nta
       Just t ->  TList t
       Nothing -> TError
 
-updatePromiseInExpr name l@(Literal _ _) _  = l
-updatePromiseInExpr name v@(Variable _ _) _ = v
-updatePromiseInExpr name Null _             = Null
-updatePromiseInExpr name e _                = error $ "e : " ++ show e
+updatePromiseInExpr _ l@(Literal _ _) _  = l
+updatePromiseInExpr _ v@(Variable _ _) _ = v
+updatePromiseInExpr _ Null _             = Null
+updatePromiseInExpr _ e _                = error $ "e : " ++ show e
 -------------------------------------------------------------------------------
 
 
@@ -246,10 +302,10 @@ checkExpr :: Promise -> Type-> MonadSymTab ()
 checkExpr promise tr = do
   let 
     name    = getIdPromise promise
-    params  = getParamsPromise promise
+    -- params  = getParamsPromise promise
     checks  = getLateChecksPromise promise
 
-  newcheck' <- forM_ checks $ \(LateCheckPromise e1 lpos1 lids1) -> do
+  newcheck' <- forM checks $ \(LateCheckPromise e1 lpos1 lids1) -> do
 
     (symTab, activeScopes, scope,promises) <- get
     let
@@ -259,11 +315,11 @@ checkExpr promise tr = do
     checkLateCheck ne1 lpos1
     
     lnp <- forM lids1 $ \idpl -> do
-      let promise = getPromiseSubroutine idpl promises
+      let promise' = getPromiseSubroutine idpl promises
       
-      if isJust promise then do
+      if isJust promise' then do
         let
-          (Promise id2 p2 t2 pos2 ch2) = fromJust promise
+          (Promise id2 p2 t2 pos2 ch2) = fromJust promise'
           nch2 = map (\lcp@(LateCheckPromise e2 lpos2 lids2) -> if e2 == e1 then LateCheckPromise ne1 lpos2 lids2 else  lcp) ch2
           np = Promise id2 p2 t2 pos2 nch2
 
@@ -364,7 +420,7 @@ checkBinaryExpr op e1 p1 e2 p2 = do
       
     else
       if op `elem` compOps || op `elem` aritOps then
-        when (tE1 /= TInt) && (tE1 /= TFloat) $
+        when ((tE1 /= TInt) && (tE1 /= TFloat)) $
           error $ semmErrorMsg "Power or Skill" (show tE1) fileCode p1
       else
         if op `elem` aritInt then
@@ -387,8 +443,8 @@ checkBinaryExpr op e1 p1 e2 p2 = do
 -- | Checkea que la expresion sea correcta
 checkLateCheck :: Expr -> [Pos] -> MonadSymTab ()
 checkLateCheck (Binary op e1 e2 _) pos =
-  when isRealType (typeE e1) && isRealType (typeE e2) $ -- En caso que alguno todavia no se haya leido/inferido no se checkea
-    checkBinaryExpr op e1 (head pos) e2 (pos !! 1)
+  when (isRealType (typeE e1) && isRealType (typeE e2)) $ -- En caso que alguno todavia no se haya leido/inferido no se checkea
+    void $ checkBinaryExpr op e1 (head pos) e2 (pos !! 1)
 
 checkLateCheck (IfSimple e1 e2 e3 _) lpos = do
   let 

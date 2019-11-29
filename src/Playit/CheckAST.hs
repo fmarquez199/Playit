@@ -12,7 +12,7 @@ module Playit.CheckAST where
 import Control.Monad.Trans.RWS
 import Control.Monad (when)
 import qualified Data.Map as M
-import Data.Maybe (isJust,fromJust)
+import Data.Maybe (isJust,fromJust,fromMaybe)
 import Playit.AuxFuncs
 import Playit.Errors
 import Playit.SymbolTable
@@ -125,170 +125,10 @@ checkIterVar var = do
 
 -------------------------------------------------------------------------------
 -- | Checks the binary's expression's types
-checkBinary :: BinOp -> Expr -> Expr -> Pos -> MonadSymTab (Bool, Type)
-checkBinary op e1 e2 p = do
+checkBinary :: BinOp -> (Expr,Pos) -> (Expr,Pos) -> Pos -> MonadSymTab (Bool,Expr)
+checkBinary op (e1,p1) (e2,p2) p = do
   fileCode <- ask
-
-  if te1 == te2 then
-    case op of
-      x | x `elem` compOps ->
-        if op `elem` eqOps then 
-
-          if isTypeComparableEq te1 then return (True, Tbool)
-          else 
-            if te1 == TPDummy then
-              let allidsp = getRelatedPromises comp
-              in addLateCheck comp comp [p1,p2] allidsp >> return (True, Tbool)
-            else
-              return (False,TError) >> error (semmErrorMsg "Tipo comparable" (show te1) fileCode p1)
-
-        else 
-          if te1 == TInt || te1 == TFloat then return (True, Tbool)
-          else
-            if te1 == TPDummy then
-              let allidsp = getRelatedPromises comp
-              in addLateCheck comp comp [p1,p2] allidsp >> return (True, Tbool)
-            else
-              return (False,TError) >> error (semmErrorMsg "Power or Skill" (show te1) fileCode p1)
-
-      x | x `elem` aritOps ->
-          if te1 == TInt || te2 == TFloat then return arit
-          else 
-            if te1 == TPDummy then
-              let allidsp = getRelatedPromises arit
-              in addLateCheck arit arit [p1,p2] allidsp >> return arit
-            else 
-              return (False,TError) >> error (semmErrorMsg powerSkill (show te1) fileCode p1)
-
-      x | x `elem` aritInt ->
-          if te1 == TInt then return arit
-          else 
-            if te1 == TPDummy then do
-              ne1 <- updateExpr e1 TInt
-              ne2 <- updateExpr e2 TInt
-              return (Binary op ne1 ne2 TInt)
-            else
-              return (False,TError) >> error (semmErrorMsg "Power" (show te1) fileCode p1)
-
-      x | x `elem` boolOps ->
-          if te1 == TBool then return (True, Tbool)
-          else
-            if te1 == TPDummy then do
-              ne1 <- updateExpr e1 TBool
-              ne2 <- updateExpr e2 TBool
-              return (Binary op ne1 ne2 TBool)
-            else
-              return (False,TError) >> error (semmErrorMsg "Battle" (show te1) fileCode p1)
-
-  else  -- TODO : Falta más manejo de TPDummy
-    if (op `elem` eqOps ) then
-      if isTypeComparableEq te1 &&  (te2 == TPDummy) then do
-        ne2 <- updateExpr e2 te1
-        return (Binary op e1 ne2 TBool)
-
-      else 
-        if te1 == TPDummy &&  isTypeComparableEq te2 then do
-          ne1 <- updateExpr e1 te2
-          return (Binary op ne1 e2 TBool)
-        
-        else 
-          if ((isTypeComparableEq te1) &&  (not $ isTypeComparableEq te2)) then
-            error $ semmErrorMsg (show te1) (show te2) fileCode p2
-          
-          else
-            if ((not $ isTypeComparableEq te1) &&  (isTypeComparableEq te2)) then
-              error $ semmErrorMsg (show te2) (show te1) fileCode p1
-            
-            else
-              if (isList te1) && (isList te2)  && (isJust (getTLists [te1,te2])) then
-                --ne1 <- updateExpr e1 te2
-                -- TODO: Falta TDUmmy adentro de las listas
-                return (Binary op e1 e2 TBool)
-            
-              else 
-                if (isPointer te1 && te2 == TNull || te1 == TNull && isPointer te2) || (te1 == TNull && te2 == TNull) then
-                  return (Binary op e1 e2 TBool)
-                else 
-                  if te1 == TPDummy && te2 == TNull then do
-                    ne1 <- updateExpr e1 (TPointer TPDummy)
-                    -- TODO: Falta manejar apuntador a TDUmmy
-                    return (Binary op ne1 e2 TBool)
-                  else 
-                    if te1 == TNull && te2 == TPDummy then do
-                      ne2 <- updateExpr e1 (TPointer TPDummy)
-                      -- TODO: Falta manejar apuntador a TDUmmy
-                      return (Binary op e1 ne2 TBool)
-                    else  
-                      if isTypeComparableEq te1 && isTypeComparableEq te2 then error $ semmErrorMsg (show te1) (show te2) fileCode p2
-                      else -- TODO :Faltan arrays compatibles
-                          error $ semmErrorMsg "Tipo comparable" (show te1) fileCode p1
-
-    else 
-      if (op `elem` compOps ) || (op `elem` aritOps )then
-        if ((isTypeNumber te1) &&  (te2 == TPDummy)) then do
-          ne2 <- updateExpr e2 te1
-          if (op `elem` compOps) then return (Binary op e1 ne2 TBool)
-          else return (Binary op e1 ne2 te1)
-
-        else 
-          if ((te1 == TPDummy) &&  (isTypeNumber te2)) then do
-            ne1 <- updateExpr e1 te2
-            if (op `elem` compOps) then
-                return (Binary op ne1 e2 TBool)
-            else
-                return (Binary op ne1 e2 te1)
-          else 
-            if ((isTypeNumber te1) &&  (not $ isTypeNumber te2)) then error $ semmErrorMsg (show te1) (show te2) fileCode p2
-            else 
-              if ((not $ isTypeNumber te1) &&  (isTypeNumber te2)) then error $ semmErrorMsg (show te2) (show te1) fileCode p1
-              else  
-                if (isTypeNumber te1)  && (isTypeNumber te2) then error $ semmErrorMsg (show te1) (show te2) fileCode p2
-                else 
-                    error $ semmErrorMsg powerSkill (show te1) fileCode p1
-
-      else 
-        if (op `elem` aritInt ) then
-          if (te1 == TInt) &&  (te2 == TPDummy) then do
-            ne2 <- updateExpr e2 te1
-            return (Binary op e1 ne2 te1)
-          else 
-            if ((te1 == TPDummy) &&  (te2 == TInt)) then do
-              ne1 <- updateExpr e1 te2
-              return (Binary op ne1 e2 te1)
-            else 
-              if te1 == TInt then error $ semmErrorMsg (show te1) (show te2) fileCode p2
-              else 
-                if te2 == TInt then error $ semmErrorMsg (show te2) (show te1) fileCode p1
-                else error $ semmErrorMsg "Power" (show te1) fileCode p1
-        
-        else 
-          if (op `elem` boolOps ) then
-            if (te1 == TBool) &&  (te2 == TPDummy) then do
-              ne2 <- updateExpr e2 te1
-              return (Binary op e1 ne2 TBool)
-            else 
-              if ((te1 == TPDummy) &&  (te2 == TBool)) then do
-                ne1 <- updateExpr e1 te2
-                return (Binary op ne1 e2 TBool)
-              else 
-                if (te1 == TBool) then error $ semmErrorMsg (show te1) (show te2) fileCode p2
-                else 
-                  if (te2 == TBool) then error $ semmErrorMsg (show te2) (show te1) fileCode p1
-                  else error $ semmErrorMsg "Battle" (show te1) fileCode p1
-          else 
-            if op == Anexo then
-              -- TODO: Sin hacer anexo ni concatenación
-              error $ "Not implemented anexos "
-            else error $ "Internal error: Op not recognized "
-
-  {-
-    Anexo ->
-      if isSubtype te1 te2 && (not $ isArray te2) then return anex
-      else 
-        return (False,TError) >> (error $ semmErrorMsg (show ste2) (show te1) fileCode p1)
-  -}
-
-  where
+  let
     tE1         = typeE e1
     tE2         = typeE e2
     tE2'        = baseTypeT tE2
@@ -306,11 +146,167 @@ checkBinary op e1 e2 p = do
     err         = Binary op e1 e2 TError
     noTError    = tE1 /= TError && tE2 /= TError -- TODO : Agregar a las comparaciones cuando no salga en el primer error
     isRegUnions = isRegUnion tE1 || isRegUnion tE2
-    isLists = isList tE1 && isList tE2 && isJust (getTLists [tE1,tE2])
-    isNull  = ((isPointer tE1 && tE2 == TNull) || (tE1 == TNull && isPointer tE2 )) || (tE1 == TNull && tE2 == TNull)
+    isLists     = isList tE1 && isList tE2 && isJust (getTLists [tE1,tE2])
+    isNull  = ((isPointer tE1 && tE2 == TNull) || (tE1 == TNull && isPointer tE2)) || (tE1 == TNull && tE2 == TNull)
     notRegUnion = "Neither Register nor Union"
     regUnion    = "Register or Union"
     powerSkill  = "Power or Skill"
+
+  if tE1 == tE2 then
+    case op of
+      x | x `elem` compOps ->
+        if op `elem` eqOps then 
+          if isTypeComparableEq tE1 then return (True, comp)
+          else 
+            if tE1 == TPDummy then
+              let related = getRelatedPromises comp
+              in addLateCheck comp comp [p1,p2] related >> return (True, comp)
+            else
+              return (False, err) >> error (semmErrorMsg "Tipo comparable" (show tE1) fileCode p1)
+
+        else 
+          if tE1 == TInt || tE1 == TFloat then return (True, comp)
+          else
+            if tE1 == TPDummy then
+              let related = getRelatedPromises comp
+              in addLateCheck comp comp [p1,p2] related >> return (True, comp)
+            else
+              return (False, err) >> error (semmErrorMsg "Power or Skill" (show tE1) fileCode p1)
+
+      x | x `elem` aritOps ->
+          if tE1 == TInt || tE2 == TFloat then return (True, arit)
+          else 
+            if tE1 == TPDummy then
+              let related = getRelatedPromises arit
+              in addLateCheck arit arit [p1,p2] related >> return (True,arit)
+            else 
+              return (False, err) >> error (semmErrorMsg powerSkill (show tE1) fileCode p1)
+
+      x | x `elem` aritInt ->
+          if tE1 == TInt then return (True, arit)
+          else 
+            if tE1 == TPDummy then do
+              ne1 <- updateExpr e1 TInt
+              ne2 <- updateExpr e2 TInt
+              return (True, Binary op ne1 ne2 TInt)
+            else
+              return (False, err) >> error (semmErrorMsg "Power" (show tE1) fileCode p1)
+
+      x | x `elem` boolOps ->
+          if tE1 == TBool then return (True, comp)
+          else
+            if tE1 == TPDummy then do
+              ne1 <- updateExpr e1 TBool
+              ne2 <- updateExpr e2 TBool
+              return (True, Binary op ne1 ne2 TBool)
+            else
+              return (False, err) >> error (semmErrorMsg "Battle" (show tE1) fileCode p1)
+
+  else  -- TODO : Falta más manejo de TPDummy
+    if op `elem` eqOps then
+      if isTypeComparableEq tE1 && tE2 == TPDummy then do
+        ne2 <- updateExpr e2 tE1
+        return (True, Binary op e1 ne2 TBool)
+
+      else 
+        if tE1 == TPDummy && isTypeComparableEq tE2 then do
+          ne1 <- updateExpr e1 tE2
+          return (True, Binary op ne1 e2 TBool)
+        
+        else 
+          if isTypeComparableEq tE1 && not (isTypeComparableEq tE2) then
+            error $ semmErrorMsg (show tE1) (show tE2) fileCode p2
+          
+          else
+            if not (isTypeComparableEq tE1) && isTypeComparableEq tE2 then
+              error $ semmErrorMsg (show tE2) (show tE1) fileCode p1
+            
+            else
+              if isLists || isNull then
+                --ne1 <- updateExpr e1 tE2
+                -- TODO: Falta TDUmmy adentro de las listas
+                return (True, Binary op e1 e2 TBool)
+            
+              else
+                if tE1 == TPDummy && tE2 == TNull then do
+                  ne1 <- updateExpr e1 (TPointer TPDummy)
+                  -- TODO: Falta manejar apuntador a TDUmmy
+                  return (True, Binary op ne1 e2 TBool)
+                else
+                  if tE1 == TNull && tE2 == TPDummy then do
+                    ne2 <- updateExpr e2 (TPointer TPDummy)
+                    -- TODO: Falta manejar apuntador a TDUmmy
+                    return (True, Binary op e1 ne2 TBool)
+                  else
+                    if isTypeComparableEq tE1 && isTypeComparableEq tE2 then
+                      error $ semmErrorMsg (show tE1) (show tE2) fileCode p2
+                    else -- TODO :Faltan arrays compatibles
+                        error $ semmErrorMsg "Tipo comparable" (show tE1) fileCode p1
+
+    else 
+      if op `elem` compOps || op `elem` aritOps then
+        if isTypeNumber tE1 &&  tE2 == TPDummy then do
+          ne2 <- updateExpr e2 tE1
+          if op `elem` compOps then return (True, Binary op e1 ne2 TBool)
+          else return (True, Binary op e1 ne2 tE1)
+
+        else 
+          if tE1 == TPDummy &&  isTypeNumber tE2 then do
+            ne1 <- updateExpr e1 tE2
+            if op `elem` compOps then
+              return (True, Binary op ne1 e2 TBool)
+            else
+              return (True, Binary op ne1 e2 tE1)
+          else 
+            if isTypeNumber tE1 && not (isTypeNumber tE2) then error $ semmErrorMsg (show tE1) (show tE2) fileCode p2
+            else 
+              if not (isTypeNumber tE1) &&  isTypeNumber tE2 then error $ semmErrorMsg (show tE2) (show tE1) fileCode p1
+              else  
+                if isTypeNumber tE1  && isTypeNumber tE2 then error $ semmErrorMsg (show tE1) (show tE2) fileCode p2
+                else 
+                  error $ semmErrorMsg powerSkill (show tE1) fileCode p1
+
+      else 
+        if op `elem` aritInt then
+          if tE1 == TInt && tE2 == TPDummy then do
+            ne2 <- updateExpr e2 tE1
+            return (True, Binary op e1 ne2 tE1)
+          else 
+            if tE1 == TPDummy &&  tE2 == TInt then do
+              ne1 <- updateExpr e1 tE2
+              return (True, Binary op ne1 e2 tE1)
+            else 
+              if tE1 == TInt then error $ semmErrorMsg (show tE1) (show tE2) fileCode p2
+              else 
+                if tE2 == TInt then error $ semmErrorMsg (show tE2) (show tE1) fileCode p1
+                else error $ semmErrorMsg "Power" (show tE1) fileCode p1
+        
+        else 
+          if op `elem` boolOps then
+            if tE1 == TBool && tE2 == TPDummy then do
+              ne2 <- updateExpr e2 tE1
+              return (True, Binary op e1 ne2 TBool)
+            else 
+              if tE1 == TPDummy && tE2 == TBool then do
+                ne1 <- updateExpr e1 tE2
+                return (True, Binary op ne1 e2 TBool)
+              else 
+                if tE1 == TBool then error $ semmErrorMsg (show tE1) (show tE2) fileCode p2
+                else 
+                  if tE2 == TBool then error $ semmErrorMsg (show tE2) (show tE1) fileCode p1
+                  else error $ semmErrorMsg "Battle" (show tE1) fileCode p1
+          else 
+            if op == Anexo then
+              -- TODO: Sin hacer anexo ni concatenación
+              error "Not implemented anexos "
+            else error "Internal error: Op not recognized "
+
+  {-
+    Anexo ->
+      if isSubtype tE1 tE2 &&not (isArray tE2) then return anex
+      else 
+        return (False,TError) >> (error $ semmErrorMsg (show ste2) (show tE1) fileCode p1)
+  -}
 -------------------------------------------------------------------------------
 
 
@@ -321,15 +317,12 @@ checkAnexo (e1,p1) (e2,p2)
     | typeR /= TError = return (True, typeR)
     | otherwise = do
         fileCode <- ask
-        error $ semmErrorMsg (show (TList te1)) (show te2) fileCode p2
+        error $ semmErrorMsg (show (TList tE1)) (show tE2) fileCode p2
 
     where
-        te1 = typeE e1
-        te2 = typeE e2
-        typeR = case getTLists [TList te1,te2] of
-                Just t -> t
-                Nothing -> TError
-        
+        tE1 = typeE e1
+        tE2 = typeE e2
+        typeR = fromMaybe TError (getTLists [TList tE1,tE2])
 -------------------------------------------------------------------------------
 
 
@@ -358,9 +351,9 @@ checkUnary op tExpr tSpected p = do
 
 
 -------------------------------------------------------------------------------
-checkIfSimple :: (Expr,Pos) -> (Expr,Pos) -> (Expr,Pos) -> FileCodeReader
+checkIfSimple :: (Type,Pos) -> (Type,Pos) -> (Type,Pos) -> FileCodeReader
               -> MonadSymTab (Bool,Type)
-checkIfSimple (tCond,pCond) (tTrue,pTrue) (tFalse,pFalse)
+checkIfSimple (tCond,pCond) (tTrue,pTrue) (tFalse,pFalse) fileCode
 
   | tCond `elem` [TBool,TPDummy] && isJust tResult = return (True, fromJust tResult)
   | tCond /= TBool = 

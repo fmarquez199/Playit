@@ -8,10 +8,10 @@
 -}
 module Playit.AST where
 
-import Control.Monad (void,when,forM,forM_)
+import Control.Monad (void,when,unless,forM,forM_)
 import Control.Monad.Trans.RWS
 import qualified Data.Map as M
-import Data.Maybe (fromJust, isJust, isNothing)
+import Data.Maybe (fromJust,isJust,isNothing,fromMaybe)
 import Playit.AuxFuncs
 import Playit.CheckAST
 import Playit.Errors
@@ -177,11 +177,11 @@ register e p'
 -------------------------------------------------------------------------------
 -- | Creates the binary operator node
 binary :: BinOp -> (Expr,Pos) -> (Expr,Pos) -> Pos -> MonadSymTab (Expr,Pos)
-binary op (e1,p1) (e2,p2) p = do
-  (ok,tOp) <- checkBinary op e1 e2 p
+binary op e1 e2 p = do
+  (ok,bin) <- checkBinary op e1 e2 p
   
-  if ok then return (Binary op e1 e2 tOp, p)
-  else return (Binary op e1 e2 TError, p)
+  return (bin, p)
+  -- else return (Binary op e1 e2 TError, p)
 -------------------------------------------------------------------------------
 
 

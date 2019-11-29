@@ -18,6 +18,7 @@ import Playit.Errors
 import Playit.Lexer
 import Playit.Types
 import Playit.AST
+import Playit.PromisesHandler
 
 }
 
@@ -164,11 +165,11 @@ ProgramWrapper :: { Instr }
 
   
 Program :: { Instr }
-  : ChekedDefinitions EndLines world program ":" EndLines Instructions  EndLines ".~"  PopScope
+  : ChekedDefinitions world program ":" EndLines Instructions  EndLines ".~"  PopScope
     { %
-      program (reverse $7) 
+      program (reverse $6) 
     }
-  | ChekedDefinitions EndLines world program ":" EndLines ".~" PopScope
+  | ChekedDefinitions world program ":" EndLines ".~" PopScope
     { %
       return (Program [] TVoid)
     }
@@ -181,7 +182,7 @@ Program :: { Instr }
 
 
 ChekedDefinitions :: { () }
-  : Definitions              { % checkPromises }
+  : Definitions EndLines      { % checkPromises }
 
 Definitions :: { () }
   : Definitions EndLines Definition { }
