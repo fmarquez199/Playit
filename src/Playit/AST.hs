@@ -379,22 +379,6 @@ while (cond,p) i = do
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 
--------------------------------------------------------------------------------
-checkPromises ::  MonadSymTab ()
-checkPromises = do
-  (symTab, activeScopes, scopes , promises) <- get
-  fileCode <- ask
-
-  forM promises $ \(Promise name args t p lc) -> do
-    if t /= TPDummy then
-      error $ errorMsg ("Function '" ++ name ++ "' is not defined") fileCode p
-    else 
-      error $ errorMsg ("Procedure '" ++ name ++ "' is not defined") fileCode p
-    return ()
-  
-  return ()
--------------------------------------------------------------------------------
-
 
 -------------------------------------------------------------------------------
 
