@@ -296,47 +296,45 @@ baseTypeArrLst (TList t)    = t
   Just Kit of(Power)
 -}
 getTLists:: [Type]-> Maybe Type
+getTLists [] = Just TDummy
 getTLists ts 
-  | all (==TPDummy) ts = do
-    -- TODO: Agregar a la cola de expresiones a evaluar
-    return TPDummy
+    | all (\t -> t == TPDummy) ts = do
+        return TPDummy
+    | all (\t -> t == TDummy) ts = do
+        return TDummy
 
-  | all (\t -> isList t || (t == TPDummy)) ts = do -- [[[int]]] = recursivo [[int]]
-    let listNoTPDummy = filter (/= TPDummy) ts
-    t <- getTLists $ map (\(TList t) -> t) listNoTPDummy
-    return (TList t)
-  
-  | all (\t -> not (isList t) || (t == TPDummy) ) ts =  -- [[int]] = Just [int]
+    | all (\t -> isList t || (t == TPDummy) || (t == TDummy)) ts = do
+        let listNoDummy = filter (\t  -> (t /= TPDummy) && (t /= TDummy)) ts
+        t <- getTLists $ map (\(TList t) -> t) listNoDummy
 
-    if any (/= TDummy) ts then
-      
-      let
-        listWithNoTDummy  = filter (/=TDummy) ts
-        listWithNoTNull   = filter (/=TNull) listWithNoTDummy
-        listWithNoTPDummy = filter (/=TPDummy) listWithNoTDummy
-      in
-        if not $ null listWithNoTPDummy then 
-          let
-            tExpected     = head listWithNoTPDummy
-            isTExpected t = t == tExpected || (t == TNull && isPointer tExpected) || t == TPDummy
-            typesR        = dropWhile isTExpected listWithNoTDummy
-          in 
-            if null typesR then return tExpected
-            else Nothing
+        return (TList t)
+    | all (not . isList) ts =  -- [[int]] = Just [int]
 
-        else return TPDummy
-        -- if null listWithNoTNull then  -- Si la lista tiene todos TNull
-        --   Just TNull 
-        -- else
-        --   let tFirst = head listWithNoTNull
-        --       isTypeTFirst t = t == tFirst || (t == TNull && isPointer tFirst )
-        --   in
-        --     if all isTypeTFirst listWithNoTDummy then Just tFirst
-        --     else Nothing
-    else return TDummy
+        if any (\t -> t /= TDummy) ts then do
+            let 
+                listNoTDummy = filter (\t -> t /= TDummy) ts
+                listNoDummy  = filter (\t -> t /= TPDummy) listNoTDummy
+        
+            if not $ null listNoDummy then do
+                let 
+                    listNoTNull = filter (/= TNull) listNoDummy
 
-  | otherwise = Nothing
--------------------------------------------------------------------------------
+                if not $ null listNoTNull then 
+                    let 
+                        tExpected = head listNoTNull
+                        isTypeExpected = (\t -> t == tExpected || 
+                            (t == TNull && isPointer tExpected )||
+                            t == TPDummy)
+                        typesR = dropWhile isTypeExpected listNoTDummy
+                    in 
+                        if null typesR then return tExpected else Nothing
+                else 
+                    return TNull
+            else return TPDummy
+        else 
+            return TDummy
+            
+    | otherwise = Nothing-------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------

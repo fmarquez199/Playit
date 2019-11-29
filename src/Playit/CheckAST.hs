@@ -161,6 +161,8 @@ checkBinary op (e1,p1) (e2,p2) p = do
             if tE1 == TPDummy then
               let related = getRelatedPromises comp
               in addLateCheck comp comp [p1,p2] related >> return (True, comp)
+            else if tE1 == TNull then
+              return (True,comp)
             else
               return (False, err) >> error (semmErrorMsg "Tipo comparable" (show tE1) fileCode p1)
 
@@ -202,46 +204,53 @@ checkBinary op (e1,p1) (e2,p2) p = do
             else
               return (False, err) >> error (semmErrorMsg "Battle" (show tE1) fileCode p1)
 
-  else  -- TODO : Falta más manejo de TPDummy
+  else -- Tipos distintos  -- TODO : Falta más manejo de TPDummy
     if op `elem` eqOps then
-      if isTypeComparableEq tE1 && tE2 == TPDummy then do
+      if (isTypeComparableEq tE1) && (tE2 == TPDummy) then do
         ne2 <- updateExpr e2 tE1
         return (True, Binary op e1 ne2 TBool)
 
       else 
-        if tE1 == TPDummy && isTypeComparableEq tE2 then do
+        if (tE1 == TPDummy) && (isTypeComparableEq tE2) then do
           ne1 <- updateExpr e1 tE2
           return (True, Binary op ne1 e2 TBool)
         
         else 
-          if isTypeComparableEq tE1 && not (isTypeComparableEq tE2) then
-            error $ semmErrorMsg (show tE1) (show tE2) fileCode p2
-          
-          else
-            if not (isTypeComparableEq tE1) && isTypeComparableEq tE2 then
-              error $ semmErrorMsg (show tE2) (show tE1) fileCode p1
-            
-            else
-              if isLists || isNull then
-                --ne1 <- updateExpr e1 tE2
-                -- TODO: Falta TDUmmy adentro de las listas
-                return (True, Binary op e1 e2 TBool)
-            
+          if isNull then
+            -- TODO: Falta TDUmmy adentro de  punteros
+            return (True, Binary op e1 e2 TBool)
+          else 
+              if tE1 == TPDummy && tE2 == TNull then do
+                ne1 <- updateExpr e1 (TPointer TPDummy)
+                -- TODO: Falta manejar apuntador a TDUmmy
+                return (True, Binary op ne1 e2 TBool)
               else
-                if tE1 == TPDummy && tE2 == TNull then do
-                  ne1 <- updateExpr e1 (TPointer TPDummy)
+                if tE1 == TNull && tE2 == TPDummy then do
+                  ne2 <- updateExpr e2 (TPointer TPDummy)
                   -- TODO: Falta manejar apuntador a TDUmmy
-                  return (True, Binary op ne1 e2 TBool)
+                  return (True, Binary op e1 ne2 TBool)
                 else
-                  if tE1 == TNull && tE2 == TPDummy then do
-                    ne2 <- updateExpr e2 (TPointer TPDummy)
-                    -- TODO: Falta manejar apuntador a TDUmmy
-                    return (True, Binary op e1 ne2 TBool)
-                  else
-                    if isTypeComparableEq tE1 && isTypeComparableEq tE2 then
+                    if isTypeComparableEq tE1 && not (isTypeComparableEq tE2) then
                       error $ semmErrorMsg (show tE1) (show tE2) fileCode p2
-                    else -- TODO :Faltan arrays compatibles
-                        error $ semmErrorMsg "Tipo comparable" (show tE1) fileCode p1
+                    
+                    else
+                      if not (isTypeComparableEq tE1) && isTypeComparableEq tE2 then
+                        error $ semmErrorMsg (show tE2) (show tE1) fileCode p1
+                      
+                      else
+                        if isLists then do
+                          let expr = (Binary op e1 e2 TBool)
+                          let allidsp = getRelatedPromises expr
+                          if not $ null allidsp then
+                            addLateCheck expr expr [p1,p2] allidsp
+                          else return ()
+                          return (True, Binary op e1 e2 TBool)
+                
+                        else          
+                          if isTypeComparableEq tE1 && isTypeComparableEq tE2 then
+                            error $ semmErrorMsg (show tE1) (show tE2) fileCode p2
+                          else -- TODO :Faltan arrays compatibles
+                            error $ semmErrorMsg "Tipo comparable" (show tE1) fileCode p1
 
     else 
       if op `elem` compOps || op `elem` aritOps then

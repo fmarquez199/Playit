@@ -52,9 +52,9 @@ data Type =
     TStr             |
     TUnion           |
     TVoid              -- Procedures type by default
-    deriving(Eq, Ord)
+    deriving(Eq, Ord,Show)
 
-instance Show Type where
+{-instance Show Type where
     show (TArray e t) = show t ++ "|}" ++ show e ++ "{|"
     show TBool        = "Battle"
     show TChar        = "Rune"
@@ -72,7 +72,7 @@ instance Show Type where
     show TStr         = "Runes"
     show TUnion       = "Items"
     show TVoid        = "Void"
-
+-}
     
 -- Kinds of variables
 data Var =
