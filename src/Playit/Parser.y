@@ -164,21 +164,24 @@ ProgramWrapper :: { Instr }
 
   
 Program :: { Instr }
-  : Definitions {-checkPromises-} EndLines world program ":" EndLines Instructions  EndLines ".~"  PopScope
+  : ChekedDefinitions EndLines world program ":" EndLines Instructions  EndLines ".~"  PopScope
     { %
-      checkPromises >> program (reverse $7) 
+      program (reverse $7) 
     }
-  | Definitions EndLines world program ":" EndLines ".~" PopScope
+  | ChekedDefinitions EndLines world program ":" EndLines ".~" PopScope
     { %
-      checkPromises >> return (Program [] TVoid)
+      return (Program [] TVoid)
     }
   | world program ":" EndLines Instructions EndLines ".~"  PopScope
     { %
-      checkPromises >> program (reverse $5)
+      program (reverse $5)
     }
   | world program ":" EndLines ".~" PopScope
       { Program [] TVoid }
 
+
+ChekedDefinitions :: { () }
+  : Definitions              { % checkPromises }
 
 Definitions :: { () }
   : Definitions EndLines Definition { }
