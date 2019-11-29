@@ -126,26 +126,25 @@ addLateCheck _ _ _ _   = return ()
 
 
 -------------------------------------------------------------------------------
--- rename to getRelatedPromises
 -- | Dada una expresion regresa todos los identificadores de promesas a
 -- funciones asociadas
-getAllPromiseIdsFromExpr :: Expr -> [Id]
-getAllPromiseIdsFromExpr (Binary _ e1 e2 _)    = l3
+getRelatedPromises :: Expr -> [Id]
+getRelatedPromises (Binary _ e1 e2 _)    = l3
   where
-    le1 = getAllPromiseIdsFromExpr e1
-    le2 = getAllPromiseIdsFromExpr e2
+    le1 = getRelatedPromises e1
+    le2 = getRelatedPromises e2
     l3  = le1 ++ le2
-getAllPromiseIdsFromExpr (IfSimple e1 e2 e3 _) = l4
+getRelatedPromises (IfSimple e1 e2 e3 _) = l4
   where
-    le1 = getAllPromiseIdsFromExpr e1
-    le2 = getAllPromiseIdsFromExpr e2
-    le3 = getAllPromiseIdsFromExpr e3
+    le1 = getRelatedPromises e1
+    le2 = getRelatedPromises e2
+    le3 = getRelatedPromises e3
     l4  = le1 ++ le2 ++ le3
-getAllPromiseIdsFromExpr (Unary _ e _)      = getAllPromiseIdsFromExpr e
-getAllPromiseIdsFromExpr (Read e _)         = getAllPromiseIdsFromExpr e
-getAllPromiseIdsFromExpr (ArrayList expr _) = concatMap getAllPromiseIdsFromExpr expr
-getAllPromiseIdsFromExpr (FuncCall (Call name _) TPDummy) = [name]
-getAllPromiseIdsFromExpr _                                = []
+getRelatedPromises (Unary _ e _)      = getRelatedPromises e
+getRelatedPromises (Read e _)         = getRelatedPromises e
+getRelatedPromises (ArrayList expr _) = concatMap getRelatedPromises expr
+getRelatedPromises (FuncCall (Call name _) TPDummy) = [name]
+getRelatedPromises _                                = []
 -------------------------------------------------------------------------------
 
 

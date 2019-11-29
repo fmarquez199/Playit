@@ -215,7 +215,7 @@ anexo op (e1,p1) (e2,p2) = do
 
     nexpr <- updateExpr exprR (fromJust $ getTLists [TList (typeE e1),typeE e2])
 
-    let allidsp = getAllPromiseIdsFromExpr nexpr
+    let allidsp = getRelatedPromises nexpr
     
     if not $ null allidsp then addLateCheck nexpr nexpr [p1,p2] allidsp >> return nexpr
     else return exprR 
@@ -231,7 +231,7 @@ concatLists op (e1,p1) (e2,p2) p
   | isList t1 && isList t2 && isJust tL  = do -- <<2>>:: <<>>
     let 
       exprR   = Binary Concat e1 e2 (fromJust tL)
-      allidsp = getAllPromiseIdsFromExpr exprR
+      allidsp = getRelatedPromises exprR
     
     unless (null allidsp) $ do
       addLateCheck exprR exprR [p1,p2,p] allidsp
@@ -275,7 +275,7 @@ list [] p = return (ArrayList [] (TList TDummy), p) -- TODO : Recordar quitar el
 list expr p
   | isJust t =
     let list = ArrayList exprs (TList (fromJust t))
-        ids  = getAllPromiseIdsFromExpr list
+        ids  = getRelatedPromises list
     in addLateCheck list list (map snd expr) ids >> return (list, p)
 
   | otherwise = do

@@ -137,7 +137,7 @@ checkBinary op e1 e2 p = do
           if isTypeComparableEq te1 then return (True, Tbool)
           else 
             if te1 == TPDummy then
-              let allidsp = getAllPromiseIdsFromExpr comp
+              let allidsp = getRelatedPromises comp
               in addLateCheck comp comp [p1,p2] allidsp >> return (True, Tbool)
             else
               return (False,TError) >> error (semmErrorMsg "Tipo comparable" (show te1) fileCode p1)
@@ -146,7 +146,7 @@ checkBinary op e1 e2 p = do
           if te1 == TInt || te1 == TFloat then return (True, Tbool)
           else
             if te1 == TPDummy then
-              let allidsp = getAllPromiseIdsFromExpr comp
+              let allidsp = getRelatedPromises comp
               in addLateCheck comp comp [p1,p2] allidsp >> return (True, Tbool)
             else
               return (False,TError) >> (error $ semmErrorMsg "Power or Skill" (show te1) fileCode p1)
@@ -155,7 +155,7 @@ checkBinary op e1 e2 p = do
           if te1 == TInt || te2 == TFloat then return arit
           else 
             if te1 == TPDummy then
-              let allidsp = getAllPromiseIdsFromExpr arit
+              let allidsp = getRelatedPromises arit
               in addLateCheck arit arit [p1,p2] allidsp >> return arit
             else 
               return (False,TError) >> (error $ semmErrorMsg powerSkill (show te1) fileCode p1)
