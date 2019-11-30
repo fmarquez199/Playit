@@ -3,14 +3,44 @@ Inventory Contacto:
 .~
 
 world %test%:
-    Kit of Contacto lista
-    Contacto c1, c2, c3    
-    Contacto|}3{| array = |)c1,c2,c3(|
+    Contacto cn
 
-    Power|}3{| puff a0, a1
-    puff a1 = |)1,2,3(|
+    @ Si pongo como tamanyo algo como (10 + 1 - 1) da errores, porque el tipo lo incluye
+    @ Notar que utilizo inicialización fuera de una declaración
+    Battle|}10{|  a @array de booleanos
 
-    Power a2, a3
+    a = |)Win,Lose,Win,Lose,Win,Lose,Win,Lose,Win,Lose(|
 
-  Kit of Kit of Kit of Power asd
+    Power|}10{|   b @array de enteros
+    b = |)1,2,3,4,5,6,7,8,9,10(|
+
+    Rune|}3{|    c @array de caracteres
+    c = |)*a*,*b*,*c*(|
+
+    Runes|}3{|   d @array de strings
+    d = |)~a~,~b~,~c~(|
+
+    Skill|}3{|   e @array de flotantes
+    e = |)1'0,1'1,1'2(|
+
+    Contacto|}3{|   f @array de registros/uniones
+    f = |)cn,cn,cn(|
+
+    (Kit of Power)|}3{| g @array de listas de enteros
+    g = |)kill f1(),kill f2(),kill f3()(|
+
+    Power|}#kill f4(){| ap
+    
+
+    (Power puff)|}3{| h @ array de punteros a enteros
+    Power puff p
+    @h = |)DeathZone , (summon Power),DeathZone(|
+    h = |)p,p,p(|
+
+    @ array de punteros a listas de punteros a listas de punteros a enteros
+    (( Kit of ((Kit of (Power puff)) puff)) puff)|}3{| i 
+
+    ( Kit of ((Kit of (Power puff)) puff)) puff pp
+    i = |)pp,pp,pp(|
+    @i = |)pp,DeathZone,pp(|
 .~

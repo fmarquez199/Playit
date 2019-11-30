@@ -502,6 +502,7 @@ call subroutine args p = do
   fileCode <- ask
   let
     symInfos = lookupInScopes [1,0] subroutine symTab
+    sub      = (Call subroutine args, p)
   
   if isJust symInfos then
     let
@@ -509,7 +510,7 @@ call subroutine args p = do
       subroutine'     = filter isSubroutine (fromJust symInfos)
     in
       if null subroutine' then
-        error $ errorMsg "This is not a subroutine" fileCode p
+        tell [errorMsg "This is not a subroutine" fileCode p] >> return sub
       else
         let 
           nParams = fromJust $ getNParams $ getExtraInfo $ head subroutine'
@@ -518,12 +519,12 @@ call subroutine args p = do
           if nArgs == nParams then return (Call subroutine args,p)
           else
             let msj = "Amount of arguments: " ++ show nArgs ++ " not equal to expected:" ++ show nParams
-            in error $ errorMsg msj fileCode p
+            in tell [errorMsg msj fileCode p] >> return sub
   else
     -- Add a promise to create subroutine
     -- Si no existe construimos la llamada igual para que procCall o funcCall creen la promesa
     -- put(symTab, activeScopes, scopes, promises ++ [Promise subroutine (map typeE args) TPDummy p] )
-    return (Call subroutine args, p)
+    return sub
 -------------------------------------------------------------------------------
 
 

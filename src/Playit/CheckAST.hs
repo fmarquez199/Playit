@@ -93,7 +93,7 @@ checkAssig tLval expr p fileCode
     -- Si son arrays y arrays del mismo tipo 
     --- TODO:  Faltaría verificar que tienen el mismo tamaño para arrays con expresiones no literales
     --          Ejemplo Power|)2(|  ==  Power|)1+1(|
-    if isJust tarrays && e1 == e2 then return "" else return msg
+    if isJust tarrays && e1 == e2 then "" else msg
   
   | otherwise                                                    = msg
 
@@ -296,11 +296,11 @@ checkBinary op (e1,p1) (e2,p2) p = do
                               newExpr = (Binary op ne1 ne2 TBool)
                               newRelated = getRelatedPromises newExpr
                             
-                            when not (null  newRelated) $
+                            when (not $ null  newRelated) $
                               addLateCheck newExpr newExpr [p1,p2] newRelated
                             return (newExpr, "")
                           else 
-                            return (expr, "")
+                            return (comp, "")
                 
                         else
                           if isPointer tE1 && isPointer tE2  && isJust (getTPointer [tE1,tE2]) then
@@ -319,7 +319,7 @@ checkBinary op (e1,p1) (e2,p2) p = do
                                 addLateCheck newExpr newExpr [p1,p2] newRelated
                               return (newExpr, "")
                             else
-                              return (expr, "")
+                              return (comp, "")
                           else
                             if isTypeComparableEq tE1 && isTypeComparableEq tE2 then
                               return (err,msgTE12P2)

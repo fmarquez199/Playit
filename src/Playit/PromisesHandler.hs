@@ -145,7 +145,7 @@ updateInfoSubroutine name cat p t = do
       errorTL  = dropWhile (\((t1,_),(t2,_)) -> t1 == t2) (zip paramsP paramsF)
 
     if  any (/=True) [t1 == t2 | ((t1,_),(t2,_)) <- zip paramsP paramsF ] then
-      error $ errorMsg "Wrong type of arguments" fileCode (getPosPromise promise')
+      tell [errorMsg "Wrong type of arguments" fileCode (getPosPromise promise')]
 
     else
 
@@ -153,19 +153,19 @@ updateInfoSubroutine name cat p t = do
 
         let msj = "Amount of arguments: " ++ show (length paramsP) ++
                 " not equal to expected:" ++ show (length paramsF)
-        in error $ errorMsg msj fileCode (getPosPromise promise')
+        in tell [errorMsg msj fileCode (getPosPromise promise')]
 
       else
 
         if  not $ null errorTL then
 
           let ((gotType,pGotType),(expectedType,_)) = head errorTL
-          in error $ semmErrorMsg (show expectedType) (show gotType) fileCode pGotType
+          in tell [semmErrorMsg (show expectedType) (show gotType) fileCode pGotType]
 
         else
 
           if typeP /= TPDummy && typeP /= t then
-            error $ semmErrorMsg (show typeP) (show t) fileCode (getPosPromise promise')
+            tell [semmErrorMsg (show typeP) (show t) fileCode (getPosPromise promise')]
 
           else do
             checkExpr promise' t
@@ -238,7 +238,7 @@ getRelatedPromises _                          = []
 -- rename to addLateCheks
 -- | Actualiza una promesa agregandole un check que se realizara cuando se
 -- actualize su tipo de retorno
-addLateChecks :: Id -> Expr->[Pos] -> [Id] ->MonadSymTab ()
+addLateChecks :: Id -> Expr -> [Pos] -> [Id] -> MonadSymTab ()
 addLateChecks name expr lpos lids = do
   (symTab, activeScopes, scope, promises) <- get
   let promise = getPromiseSubroutine name promises
@@ -394,16 +394,16 @@ checkUnaryExpr op e t p = do
 
   if op == Length then
     unless (isArray te || isList te) $
-      error $ semmErrorMsg "Array or Kit" (show te) fileCode p
+      tell [semmErrorMsg "Array or Kit" (show te) fileCode p]
   else 
     when (op == Negative) $
         unless (te == TInt || te == TFloat) $
-          error $ semmErrorMsg "Power or Skill" (show te) fileCode p
+          tell [semmErrorMsg "Power or Skill" (show te) fileCode p]
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
-checkBinaryExpr :: BinOp -> Expr -> Pos-> Expr -> Pos -> MonadSymTab Bool
+checkBinaryExpr :: BinOp -> Expr -> Pos-> Expr -> Pos -> MonadSymTab ()
 checkBinaryExpr op e1 p1 e2 p2 = do
   fileCode <- ask
   let
@@ -420,77 +420,77 @@ checkBinaryExpr op e1 p1 e2 p2 = do
     if op `elem` eqOps then
       
       if isTypeComparableEq tE1 &&  not (isTypeComparableEq tE2) then
-        error $ semmErrorMsg (show tE1) (show tE2) fileCode p2
+        tell [semmErrorMsg (show tE1) (show tE2) fileCode p2]
       else 
         if not (isTypeComparableEq tE1) &&  isTypeComparableEq tE2 then
-          error $ semmErrorMsg (show tE2) (show tE1) fileCode p1
+          tell [semmErrorMsg (show tE2) (show tE1) fileCode p1]
         else
           if isTypeComparableEq tE1 && isTypeComparableEq tE2 then
-            error $ semmErrorMsg (show tE1) (show tE2) fileCode p2
+            tell [semmErrorMsg (show tE1) (show tE2) fileCode p2]
           else 
-            error $ semmErrorMsg "Tipo comparable" (show tE1) fileCode p1
+            tell [semmErrorMsg "Tipo comparable" (show tE1) fileCode p1]
 
     else 
 
       if (op `elem` compOps ) || (op `elem` aritOps )then
 
         if isTypeNumber tE1 &&  not (isTypeNumber tE2) then
-          error $ semmErrorMsg (show tE1) (show tE2) fileCode p2
+          tell [semmErrorMsg (show tE1) (show tE2) fileCode p2]
         else 
           if not (isTypeNumber tE1) &&  isTypeNumber tE2 then
-            error $ semmErrorMsg (show tE2) (show tE1) fileCode p1
+            tell [semmErrorMsg (show tE2) (show tE1) fileCode p1]
           else 
             if isTypeNumber tE1  && isTypeNumber tE2 then
-              error $ semmErrorMsg (show tE1) (show tE2) fileCode p2
+              tell [semmErrorMsg (show tE1) (show tE2) fileCode p2]
             else 
-              error $ semmErrorMsg "Power or Skill" (show tE1) fileCode p1
+              tell [semmErrorMsg "Power or Skill" (show tE1) fileCode p1]
 
       else 
         if op `elem` aritInt then
 
-          if tE1 == TInt then error $ semmErrorMsg (show tE1) (show tE2) fileCode p2
+          if tE1 == TInt then tell [semmErrorMsg (show tE1) (show tE2) fileCode p2]
           else 
-            if tE2 == TInt then error $ semmErrorMsg (show tE2) (show tE1) fileCode p1
-            else error $ semmErrorMsg "Power" (show tE1) fileCode p1
+            if tE2 == TInt then tell [semmErrorMsg (show tE2) (show tE1) fileCode p1]
+            else tell [semmErrorMsg "Power" (show tE1) fileCode p1]
 
         else 
           if op `elem` boolOps then
 
-            if tE1 == TBool then error $ semmErrorMsg (show tE1) (show tE2) fileCode p2
+            if tE1 == TBool then tell [semmErrorMsg (show tE1) (show tE2) fileCode p2]
             else 
-              if (tE1 /= TBool) && (tE2 == TBool) then error $ semmErrorMsg (show tE2) (show tE1) fileCode p1
-              else error $ semmErrorMsg "Battle" (show tE1) fileCode p1
+              if (tE1 /= TBool) && (tE2 == TBool) then tell [semmErrorMsg (show tE2) (show tE1) fileCode p1]
+              else tell [semmErrorMsg "Battle" (show tE1) fileCode p1]
 
           else
             when (op == Anexo) $
               let typeR = fromMaybe TError (getTLists [TList tE1,tE2])
               in
                 when (typeR == TError) $
-                  error $ semmErrorMsg (show (TList tE1)) (show tE2) fileCode p2
+                  tell [semmErrorMsg (show (TList tE1)) (show tE2) fileCode p2]
 
   else --- Si son iguales los tipos de las expresiones 
     if op `elem` eqOps then
       unless (isTypeComparableEq tE1) $           
-        error $ semmErrorMsg "Tipo comparable" (show tE1) fileCode p1
+        tell [semmErrorMsg "Tipo comparable" (show tE1) fileCode p1]
       
     else
       if op `elem` compOps || op `elem` aritOps then
         when ((tE1 /= TInt) && (tE1 /= TFloat)) $
-          error $ semmErrorMsg "Power or Skill" (show tE1) fileCode p1
+          tell [semmErrorMsg "Power or Skill" (show tE1) fileCode p1]
       else
         if op `elem` aritInt then
           when (tE1 /= TInt) $
-            error $ semmErrorMsg "Power" (show tE1) fileCode p1
+            tell [semmErrorMsg "Power" (show tE1) fileCode p1]
         else
           if op `elem` boolOps then
             when (tE1 /= TBool) $
-              error $ semmErrorMsg "Battle" (show tE1) fileCode p1
+              tell [semmErrorMsg "Battle" (show tE1) fileCode p1]
           else
             when (op == Anexo) $ do
               -- TODO: Sin hacer
               error "Not implemented anexo with promises"
 
-  return True
+  return ()
 -------------------------------------------------------------------------------
 
 
@@ -503,7 +503,7 @@ checkLateCheck (Binary op e1 e2 _) pos =
     tE2 = typeE e2
   in
     when ((tE1 /= TPDummy && tE1 /= TDummy) && (tE2 /= TPDummy && tE2 /= TDummy)) $ 
-      void $ checkBinaryExpr op e1 (head pos) e2 (pos !! 1)
+      checkBinaryExpr op e1 (head pos) e2 (pos !! 1)
 
 checkLateCheck (Unary op e texpr) pos =
   let
@@ -526,14 +526,14 @@ checkLateCheck (IfSimple e1 e2 e3 _) lpos = do
       in
       when (isNothing mbTypeR) $
         if isRealType tE2 && not (isRealType te3) then
-          error $ semmErrorMsg (show tE2) (show te3) fileCode (lpos !! 2)
+          tell [semmErrorMsg (show tE2) (show te3) fileCode (lpos !! 2)]
         else
           if not (isRealType tE2) && isRealType te3 then
-            error $ semmErrorMsg (show te3) (show tE2) fileCode (lpos !! 1)
+            tell [semmErrorMsg (show te3) (show tE2) fileCode (lpos !! 1)]
           else
-            error $ semmErrorMsg (show tE2) (show te3) fileCode (lpos !! 2)
+            tell [semmErrorMsg (show tE2) (show te3) fileCode (lpos !! 2)]
     else
-        error $ semmErrorMsg "Battle" (show tE1) fileCode (head lpos)
+        tell [semmErrorMsg "Battle" (show tE1) fileCode (head lpos)]
 
 checkLateCheck (ArrayList exprs _) pos = do
   let
@@ -549,5 +549,5 @@ checkLateCheck (ArrayList exprs _) pos = do
       expected = typeE e
       got = head $ dropWhile (\(e,p) -> typeE e == expected) l
 
-    error $ semmErrorMsg (show expected) (show $ typeE $ fst got) fileCode (snd got)
+    tell [semmErrorMsg (show expected) (show $ typeE $ fst got) fileCode (snd got)]
 -------------------------------------------------------------------------------
