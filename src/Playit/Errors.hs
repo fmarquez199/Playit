@@ -122,9 +122,7 @@ errorProg msg instrs tk n = do
 
 -------------------------------------------------------------------------------
 errorIf :: String -> [(Expr, InstrSeq)] -> Token -> MonadSymTab Instr
-errorIf msg cases tk = do
-  tellParserError msg tk
-  return $ IF cases TError
+errorIf msg cases tk = tellParserError msg tk >> return (IF cases TError)
 -------------------------------------------------------------------------------
 
 
@@ -137,33 +135,28 @@ errorIf msg cases tk = do
 
 -------------------------------------------------------------------------------
 errorFor :: String -> Id -> Expr -> Expr -> InstrSeq -> Token -> MonadSymTab Instr
-errorFor msg var e1 e2 i tk = do
-  tellParserError msg tk
-  return $ For var e1 e2 i TError
+errorFor msg var e1 e2 i tk =
+  tellParserError msg tk >> return (For var e1 e2 i TError)
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
 errorForWhile :: String -> Id -> Expr -> Expr -> Expr -> InstrSeq -> Token -> MonadSymTab Instr
-errorForWhile msg var e1 e2 e3 i tk = do
-  tellParserError msg tk
-  return $ ForWhile var e1 e2 e3 i TError
+errorForWhile msg var e1 e2 e3 i tk =
+  tellParserError msg tk >> return (ForWhile var e1 e2 e3 i TError)
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
 errorForEach :: String -> Id -> Expr -> InstrSeq -> Token -> MonadSymTab Instr
-errorForEach msg var e i tk = do
-  tellParserError msg tk
-  return $ ForEach var e i TError
+errorForEach msg var e i tk =
+  tellParserError msg tk >> return (ForEach var e i TError)
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
 errorWhile :: String -> Expr -> InstrSeq -> Token -> MonadSymTab Instr
-errorWhile msg e i tk = do
-  tellParserError msg tk
-  return $ While e i TError
+errorWhile msg e i tk = tellParserError msg tk >> return (While e i TError)
 -------------------------------------------------------------------------------
 
 

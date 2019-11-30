@@ -373,8 +373,34 @@ getTypeInstr (While _ _ t)          = t
 
 
 -------------------------------------------------------------------------------
-getPromiseSubroutine:: Id -> Promises -> Maybe Promise
+getPromiseSubroutine :: Id -> Promises -> Maybe Promise
 getPromiseSubroutine _ []                                    = Nothing
 getPromiseSubroutine name (promise@(Promise id _ _ _ _) : r) = 
   if name == id then Just promise else getPromiseSubroutine name r
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+getInstrSeq :: Instr -> InstrSeq
+getInstrSeq (Assigs is t)           = is
+getInstrSeq (For _ _ _ is _)        = is
+getInstrSeq (ForEach _ _ is _)      = is
+getInstrSeq (ForWhile _ _ _ _ is _) = is
+getInstrSeq (IF gs _)               = concatMap snd gs
+getInstrSeq (Program is _)          = is
+getInstrSeq (While _ is _)          = is
+getInstrSeq instr                   = [instr]
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+isReturn :: Instr -> Bool
+isReturn (Return _ _) = True
+isReturn _            = False
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+typeReturn :: Instr -> Type
+typeReturn (Return e _) = typeE e
+typeReturn _            = TError
 -------------------------------------------------------------------------------

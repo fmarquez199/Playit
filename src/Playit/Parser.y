@@ -143,10 +143,10 @@ import Playit.PromisesHandler
 %nonassoc ">" "<" ">=" "<="
 %left "+" "-"
 %left "*" "/" "//" "%"
-%right negativo "!" upperCase lowerCase input
+%right negativo "!" upperCase lowerCase
 %left "++" "|}" "{|" "<<" ">>" "::" "|)" "(|" "|>" "<|"
 %left "--"
-%right "#" pointer endLine
+%right "#" pointer endLine input
 %left "?" 
 
 %%
@@ -165,7 +165,7 @@ ProgramWrapper :: { Instr }
 
   
 Program :: { Instr }
-  : ChekedDefinitions world program ":" EndLines Instructions  EndLines ".~"  PopScope
+  : ChekedDefinitions world program ":" EndLines Instructions EndLines ".~" PopScope
     { %
       program (reverse $6) 
     }
