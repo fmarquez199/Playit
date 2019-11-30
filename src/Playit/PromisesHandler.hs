@@ -40,6 +40,10 @@ import Playit.Types
   Le asigna a las promesas funcion1 y funcion2 el tipo de retorno t
 -}
 updateExpr :: Expr -> Type -> MonadSymTab Expr
+updateExpr (Unary op e TPDummy) t = do
+  --error $ "e = "  ++ show e ++ " op = " ++ show op ++ " t = " ++ show t
+  ne <- updateExpr e t
+  return (Unary op ne (typeE ne))
 updateExpr (Binary op e1 e2 TPDummy) t = do
   ne1 <- updateExpr e1 t
   ne2 <- updateExpr e2 t
@@ -49,12 +53,27 @@ updateExpr (Binary Anexo e1 e2 _) tl@(TList t) = do
   ne1 <- updateExpr e1 t
   ne2 <- updateExpr e2 tl
 
-  let ntr = fromMaybe TError (getTLists [TList (typeE ne1),typeE ne2])
-  return (Binary Anexo ne1 ne2 ntr)
+  -- let ntr = fromMaybe TError (getTLists [TList (typeE ne1),typeE ne2])
+  return (Binary Anexo ne1 ne2 tl)
+
+updateExpr (Binary Concat e1 e2 _) tl@(TList t) = do    
+  ne1 <- updateExpr e1 tl
+  ne2 <- updateExpr e2 tl
+
+  let ntr = fromMaybe TError (getTLists [typeE ne1,typeE ne2])
+  return (Binary Concat ne1 ne2 ntr)
+  
+updateExpr (Binary op e1 e2 TBool) tl@(TList t) = do    
+  ne1 <- updateExpr e1 t
+  ne2 <- updateExpr e2 t
+
+  return (Binary op ne1 ne2 TBool)
 
 updateExpr (FuncCall (Call name args) tf ) t =
-  updatePromise name t >> return (FuncCall (Call name args) t)
-
+  let
+    nt = if t == TNull then TPointer TDummy else t
+  in
+    updatePromise name nt >> return (FuncCall (Call name args) nt)
 updateExpr (ArrayList exprs _ ) tl@(TList t)  = do
   -- nexprs <- mapM (\e -> updateExpr e t) exprs
   nexprs <- mapM (`updateExpr` t) exprs
@@ -62,6 +81,16 @@ updateExpr (ArrayList exprs _ ) tl@(TList t)  = do
     mapTypes = map typeE nexprs
     ntr      = case getTLists mapTypes of
       Just nt -> TList nt
+      Nothing -> TError
+
+  return (ArrayList nexprs ntr)
+
+updateExpr (ArrayList exprs _ ) tl@(TArray e t)  = do
+  nexprs <- mapM (`updateExpr` t) exprs
+  let
+    mapTypes = map typeE nexprs
+    ntr      = case getTLists mapTypes of
+      Just nt -> TArray e nt
       Nothing -> TError
 
   return (ArrayList nexprs ntr)
@@ -161,8 +190,11 @@ updateInfoSubroutine name cat p t = do
 -- indeterminados, se buscan todas esas llamadas y se les agrega una expresion
 -- que se debe chequear cuando se actualizen los datos de las llamadas a la funcion
 addLateCheck :: Expr -> Expr -> [Pos] -> [Id] -> MonadSymTab ()
-addLateCheck (Binary op e1 e2 _) e lpos lids =
+addLateCheck (Binary _ e1 e2 _) e lpos lids =
   addLateCheck e1 e lpos lids >> addLateCheck e2 e lpos lids
+
+addLateCheck (Unary _ e1 _) e lpos lids =
+  addLateCheck e1 e lpos lids
 
 addLateCheck (IfSimple e1 e2 e3 _) e lpos lids =
   addLateCheck e1 e lpos lids >> addLateCheck e2 e lpos lids >> addLateCheck e3 e lpos lids
@@ -197,8 +229,8 @@ getRelatedPromises (IfSimple e1 e2 e3 _) = l4
 getRelatedPromises (Unary _ e _)      = getRelatedPromises e
 getRelatedPromises (Read e _)         = getRelatedPromises e
 getRelatedPromises (ArrayList expr _) = concatMap getRelatedPromises expr
-getRelatedPromises (FuncCall (Call name _) TPDummy) = [name]
-getRelatedPromises _                                = []
+getRelatedPromises (FuncCall (Call name _) t) = [name | not $ isRealType t]
+getRelatedPromises _                          = []
 -------------------------------------------------------------------------------
 
 
@@ -219,7 +251,8 @@ addLateChecks name expr lpos lids = do
       typePromise = getTypePromise promise'
       nlids       = filter (/= name) lids
 
-    if (typePromise `elem` [TPDummy,TDummy] || (isList typePromise && baseTypeT typePromise `elem` [TPDummy,TDummy])) && not (any (\c -> getLCPromiseExpr c == expr) checks) then do
+    if not $ isRealType typePromise && 
+      not (any (\c -> getLCPromiseExpr c == expr) checks) then do
 
       let 
         nlc = LateCheckPromise expr lpos nlids
@@ -229,8 +262,8 @@ addLateChecks name expr lpos lids = do
       put(symTab, activeScopes, scope , map modifyTypePromise promises)
 
     else
-      when (typePromise /= TPDummy) $ do
-        error $ "ADSasd " ++ show typePromise ++ " expr: " ++ show expr
+      when (isRealType typePromise) $ do
+        error $ "Internal error here pls send help " ++ show typePromise ++ " expr: " ++ show expr ++ "name = " ++ name ++ " tipo promesa: " ++ show typePromise
         error "Internal error AddSubroutinePromiseLateChecks : IS THIS GONNA GET EXECUTED? LOL I HOPE NOT... it shouldnt...right?"
 
   else
@@ -269,7 +302,11 @@ updatePromiseInExpr name (IfSimple e1 e2 e3 ti) t = IfSimple ne1 ne2 ne3 ti
     ne2 = updatePromiseInExpr name e2 t
     ne3 = updatePromiseInExpr name e3 t
 
-updatePromiseInExpr name (Unary op e1 tu) t    = Unary op (updatePromiseInExpr name e1 t) tu
+updatePromiseInExpr name (Unary op e tr) t = Unary op ne ntr
+  where
+    ne  = updatePromiseInExpr name e t
+    ntr = if tr == TPDummy then typeE ne else tr
+
 updatePromiseInExpr name (Read e1 tr) t        = Read (updatePromiseInExpr name e1 t) tr
 updatePromiseInExpr name (ArrayList expr ta) t = ArrayList nexpr nta
   where
@@ -277,7 +314,7 @@ updatePromiseInExpr name (ArrayList expr ta) t = ArrayList nexpr nta
     mapTypes = map typeE nexpr
     -- TODO: Falta manejar TError en getTLists para multiples errore
     nta = case getTLists mapTypes of
-      Just t ->  TList t
+      Just t ->  TList t  -- TODO: Falta condicion para TArray
       Nothing -> TError
 
 updatePromiseInExpr _ l@(Literal _ _) _  = l
@@ -344,6 +381,24 @@ checkExpr promise tr = do
       if id == name then Promise id p t pos (if isRealType tr then [] else newcheck') else prom
 
   put(symTab, activeScopes, scope, map modifyTypePromise promises)
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+checkUnaryExpr :: UnOp -> Expr -> Type -> Pos -> MonadSymTab ()
+checkUnaryExpr op e t p = do
+  fileCode <- ask
+
+  let 
+    te = typeE e
+
+  if op == Length then
+    unless (isArray te || isList te) $
+      error $ semmErrorMsg "Array or Kit" (show te) fileCode p
+  else 
+    when (op == Negative) $
+        unless (te == TInt || te == TFloat) $
+          error $ semmErrorMsg "Power or Skill" (show te) fileCode p
 -------------------------------------------------------------------------------
 
 
@@ -443,8 +498,19 @@ checkBinaryExpr op e1 p1 e2 p2 = do
 -- | Checkea que la expresion sea correcta
 checkLateCheck :: Expr -> [Pos] -> MonadSymTab ()
 checkLateCheck (Binary op e1 e2 _) pos =
-  when (isRealType (typeE e1) && isRealType (typeE e2)) $ -- En caso que alguno todavia no se haya leido/inferido no se checkea
-    void $ checkBinaryExpr op e1 (head pos) e2 (pos !! 1)
+  let 
+    tE1 = typeE e1
+    tE2 = typeE e2
+  in
+    when ((tE1 /= TPDummy && tE1 /= TDummy) && (tE2 /= TPDummy && tE2 /= TDummy)) $ 
+      void $ checkBinaryExpr op e1 (head pos) e2 (pos !! 1)
+
+checkLateCheck (Unary op e texpr) pos =
+  let
+    tE = typeE e
+  in
+    when (tE /= TPDummy && tE /= TDummy) $ 
+      void $ checkUnaryExpr op e texpr (head pos)
 
 checkLateCheck (IfSimple e1 e2 e3 _) lpos = do
   let 

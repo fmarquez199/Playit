@@ -89,6 +89,12 @@ checkAssigs assigs t p fileCode
 checkAssig :: Type -> Expr -> Pos -> FileCodeReader -> String
 checkAssig tLval expr p fileCode
   | isRead || isNull || isInitReg || (tExpr == tLval) || isLists = ""
+  | isArray tLval && isArray tExpr =
+    -- Si son arrays y arrays del mismo tipo 
+    --- TODO:  Faltaría verificar que tienen el mismo tamaño para arrays con expresiones no literales
+    --          Ejemplo Power|)2(|  ==  Power|)1+1(|
+    if isJust tarrays && e1 == e2 then return "" else return msg
+  
   | otherwise                                                    = msg
 
   where
@@ -100,6 +106,9 @@ checkAssig tLval expr p fileCode
     isNull      = tExpr == TNull
     isInitReg   = tExpr == TRegister
     msg         = semmErrorMsg (show tLval) (show tExpr) fileCode p
+    (TArray e1 _) = tLval
+    (TArray e2 _) = tExpr
+    tarrays        = getTLists [baseTypeArrLst tLval,baseTypeArrLst tExpr]
 -------------------------------------------------------------------------------
 
 
@@ -113,7 +122,6 @@ checkRegUnion name exprs symTab fileCode
   | noErr && isJust reg                            = msgBadTypes
   | noErr                                          = msgUndefined
   | otherwise                                      = msgTError
-
 
 {-  if noErr && isJust reg then
     let
@@ -180,10 +188,15 @@ checkBinary op (e1,p1) (e2,p2) p = do
     noTError    = tE1 /= TError && tE2 /= TError -- TODO : Agregar a las comparaciones cuando no salga en el primer error
     isRegUnions = isRegUnion tE1 || isRegUnion tE2
     isLists     = isList tE1 && isList tE2 && isJust (getTLists [tE1,tE2])
-    isNull  = ((isPointer tE1 && tE2 == TNull) || (tE1 == TNull && isPointer tE2)) || (tE1 == TNull && tE2 == TNull)
+    nullE1      = tE1 == TNull && isPointer tE2
+    nullE2      = isPointer tE1 && tE2 == TNull
+    isNull      = (nullE1 || nullE2) || (tE1 == TNull && tE2 == TNull)
     notRegUnion = "Neither Register nor Union"
     regUnion    = "Register or Union"
     powerSkill  = "Power or Skill"
+    msgTE12P2   = semmErrorMsg (show tE1) (show tE2) fileCode p2
+    msgTE21P1   = semmErrorMsg (show tE2) (show tE1) fileCode p1
+    msgComp     = semmErrorMsg "Tipo comparable" (show tE1) fileCode p1
 
   if tE1 == tE2 then
     case op of
@@ -197,7 +210,7 @@ checkBinary op (e1,p1) (e2,p2) p = do
             else
               if tE1 == TNull then return (comp, "")
               else
-                return (err, semmErrorMsg "Tipo comparable" (show tE1) fileCode p1)
+                return (err, msgComp)
 
         else 
           if tE1 == TInt || tE1 == TFloat then return (comp, "")
@@ -264,28 +277,54 @@ checkBinary op (e1,p1) (e2,p2) p = do
                   return (Binary op e1 ne2 TBool, "")
                 else
                     if isTypeComparableEq tE1 && not (isTypeComparableEq tE2) then
-                      error $ semmErrorMsg (show tE1) (show tE2) fileCode p2
+                      return (err,msgTE12P2)
                     
                     else
                       if not (isTypeComparableEq tE1) && isTypeComparableEq tE2 then
-                        error $ semmErrorMsg (show tE2) (show tE1) fileCode p1
+                        return (err,msgTE21P1)
                       
                       else
-                        if isLists then do
+                        if isLists then
                           let
-                            expr    = (Binary op e1 e2 TBool)
-                            allidsp = getRelatedPromises expr
-
-                          unless (null allidsp) $
-                            addLateCheck expr expr [p1,p2] allidsp
-
-                          return (Binary op e1 e2 TBool, "")
+                            typel = fromJust $ getTLists [tE1,tE2] 
+                            allidsp = getRelatedPromises comp
+                          in
+                          if not (null allidsp) then do
+                            ne1 <- updateExpr e1 typel
+                            ne2 <- updateExpr e2 typel
+                            let 
+                              newExpr = (Binary op ne1 ne2 TBool)
+                              newRelated = getRelatedPromises newExpr
+                            
+                            when not (null  newRelated) $
+                              addLateCheck newExpr newExpr [p1,p2] newRelated
+                            return (newExpr, "")
+                          else 
+                            return (expr, "")
                 
-                        else          
-                          if isTypeComparableEq tE1 && isTypeComparableEq tE2 then
-                            error $ semmErrorMsg (show tE1) (show tE2) fileCode p2
-                          else -- TODO :Faltan arrays compatibles
-                            error $ semmErrorMsg "Tipo comparable" (show tE1) fileCode p1
+                        else
+                          if isPointer tE1 && isPointer tE2  && isJust (getTPointer [tE1,tE2]) then
+                            let
+                              typep = fromJust $ getTPointer [tE1,tE2] 
+                              allidsp = getRelatedPromises comp
+                            in
+                            if not (null allidsp) then do
+                              ne1 <- updateExpr e1 typep
+                              ne2 <- updateExpr e2 typep
+                              let 
+                                newExpr = (Binary op ne1 ne2 TBool)
+                                newRelated = getRelatedPromises newExpr
+                              
+                              when (not $ null  newRelated) $
+                                addLateCheck newExpr newExpr [p1,p2] newRelated
+                              return (newExpr, "")
+                            else
+                              return (expr, "")
+                          else
+                            if isTypeComparableEq tE1 && isTypeComparableEq tE2 then
+                              return (err,msgTE12P2)
+                            else -- TODO :Faltan arrays compatibles
+                              return (err,msgComp)
 
     else 
       if op `elem` compOps || op `elem` aritOps then
@@ -302,13 +341,13 @@ checkBinary op (e1,p1) (e2,p2) p = do
             else
               return (Binary op ne1 e2 tE1, "")
           else 
-            if isTypeNumber tE1 && not (isTypeNumber tE2) then error $ semmErrorMsg (show tE1) (show tE2) fileCode p2
+            if isTypeNumber tE1 && not (isTypeNumber tE2) then return (err,msgTE12P2)
             else 
-              if not (isTypeNumber tE1) &&  isTypeNumber tE2 then error $ semmErrorMsg (show tE2) (show tE1) fileCode p1
+              if not (isTypeNumber tE1) &&  isTypeNumber tE2 then return (err,msgTE21P1)
               else  
-                if isTypeNumber tE1  && isTypeNumber tE2 then error $ semmErrorMsg (show tE1) (show tE2) fileCode p2
+                if isTypeNumber tE1  && isTypeNumber tE2 then return (err,msgTE12P2)
                 else 
-                  error $ semmErrorMsg powerSkill (show tE1) fileCode p1
+                  return (err,semmErrorMsg powerSkill (show tE1) fileCode p1)
 
       else 
         if op `elem` aritInt then
@@ -320,10 +359,10 @@ checkBinary op (e1,p1) (e2,p2) p = do
               ne1 <- updateExpr e1 tE2
               return (Binary op ne1 e2 tE1, "")
             else 
-              if tE1 == TInt then error $ semmErrorMsg (show tE1) (show tE2) fileCode p2
+              if tE1 == TInt then return (err,msgTE12P2)
               else 
-                if tE2 == TInt then error $ semmErrorMsg (show tE2) (show tE1) fileCode p1
-                else error $ semmErrorMsg "Power" (show tE1) fileCode p1
+                if tE2 == TInt then return (err,msgTE21P1)
+                else return (err,semmErrorMsg "Power" (show tE1) fileCode p1)
         
         else 
           if op `elem` boolOps then
@@ -335,10 +374,10 @@ checkBinary op (e1,p1) (e2,p2) p = do
                 ne1 <- updateExpr e1 tE2
                 return (Binary op ne1 e2 TBool, "")
               else 
-                if tE1 == TBool then error $ semmErrorMsg (show tE1) (show tE2) fileCode p2
+                if tE1 == TBool then return (err,msgTE12P2)
                 else 
-                  if tE2 == TBool then error $ semmErrorMsg (show tE2) (show tE1) fileCode p1
-                  else error $ semmErrorMsg "Battle" (show tE1) fileCode p1
+                  if tE2 == TBool then return (err,msgTE21P1)
+                  else return (err,semmErrorMsg "Battle" (show tE1) fileCode p1)
           else 
             if op == Anexo then
               -- TODO: Sin hacer anexo ni concatenación

@@ -114,7 +114,7 @@ import Playit.PromisesHandler
   "::"              { TkCONCAT _ $$ }
   "|}"              { TkOpenArray _ _ }
   "{|"              { TkCloseArray _ _ }
-  "|)"              { TkOpenArrayIndex _ _ }
+  "|)"              { TkOpenArrayIndex _ $$ }
   "(|"              { TkCloseArrayIndex _ _ }
   "{"               { TkOpenBrackets _ _ }
   "}"               { TkCloseBrackets _ $$ }
@@ -167,22 +167,27 @@ ProgramWrapper :: { Instr }
 Program :: { Instr }
   : ChekedDefinitions world program ":" EndLines Instructions EndLines ".~" PopScope
     { %
-      program (reverse $6) 
+-- Checkeo aquí porque en main también se crean promesas (aunque es más un error de nosotros)
+    checkPromises >> program (reverse $6)
     }
   | ChekedDefinitions world program ":" EndLines ".~" PopScope
     { %
-      return (Program [] TVoid)
+      checkPromises >> return (Program [] TVoid)
     }
   | world program ":" EndLines Instructions EndLines ".~"  PopScope
     { %
-      program (reverse $5)
+      checkPromises >> program (reverse $5)
     }
   | world program ":" EndLines ".~" PopScope
       { Program [] TVoid }
 
 
 ChekedDefinitions :: { () }
-  : Definitions EndLines      { % checkPromises }
+  : Definitions EndLines--      { % checkPromises }
+  {  {-checkPromises comentado porque en main el usuario peude hacer llamadas a 
+  funciones no definidas y estas no se detectarian, a menos que detectemos que estamos en main y cuando se llama a una
+  función no se le crea una promesa, pero eso habría que modificar el estado so es un TODO -}}
+
 
 Definitions :: { () }
   : Definitions EndLines Definition { }
@@ -272,7 +277,7 @@ Lvalue :: { (Var, Pos) }
 
 -- Data types
 Type :: { Type }
-  : Type "|}" Expression "{|" %prec "|}"  { TArray (fst $3) $1 }
+  : Type "|}" Expression "{|" %prec "|}"  { % tArray $3 $1 }
   | listOf Type  %prec "?"                { TList $2 }
   | Type pointer                          { TPointer $1 }
   | "(" Type ")"                          { $2 }
@@ -585,9 +590,9 @@ Expression :: { (Expr,Pos) }
   | Expression "<=" Expression           { % binary LessEq $1 $3 $2 }
   | Expression ">" Expression            { % binary Greater $1 $3 $2 }
   | Expression "<" Expression            { % binary Less $1 $3 $2 }
-  | Expression ":" Expression %prec ":"  { % binary Anexo $1 $3 $2 }
+  | Expression ":" Expression %prec ":"  { % anexo $1 $3 $2 }
   -- e1 && e2 TArray o excluve TList
-  | Expression "::" Expression           { % binary Concat $1 $3 $2 }
+  | Expression "::" Expression           { % concatLists $1 $3 $2 }
   
   --
   | Expression "?" Expression ":" Expression %prec "?"  { % ifSimple $1 $3 $5 }
@@ -598,7 +603,7 @@ Expression :: { (Expr,Pos) }
   | idType "{" Expressions "}" { % regUnion (getTk $1, getPos $1) (reverse $3) }
   | idType "{" "}"             { % regUnion (getTk $1, getPos $1) [] } -- By default
   
-  | "|)" Expressions "(|"         { % array (reverse $2) }
+  | "|)" Expressions "(|"         { % array (reverse $2) $1 }
   | "<<" Expressions ">>"         { % list (reverse $2) $3 }
   | "<<" ">>"                     { % list [] $2 }
   | new Type                      { (Unary New (IdType $2) (TPointer $2), $1) }
@@ -609,7 +614,7 @@ Expression :: { (Expr,Pos) }
   -- Unary operators
   | "#" Expression                        { % unary Length $2 TVoid }
   | "-" Expression %prec negativo         { % unary Negative $2 TVoid }
-  | "!" Expression                        { % unary Not $2 TInt }
+  | "!" Expression                        { % unary Not $2 TBool }
   | upperCase Expression %prec upperCase  { % unary UpperCase $2 TChar }
   | lowerCase Expression %prec lowerCase  { % unary LowerCase $2 TChar }
   

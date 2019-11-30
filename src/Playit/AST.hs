@@ -227,12 +227,12 @@ unary op (expr,p) tExpected = do
 
 -------------------------------------------------------------------------------
 -- | Inserta en una lista un nuevo elemento en indice 0
-anexo :: BinOp -> (Expr,Pos) -> (Expr,Pos) -> Pos -> MonadSymTab (Expr, Pos)
-anexo op (e1,p1) (e2,p2) p = do
+anexo :: (Expr,Pos) -> (Expr,Pos) -> Pos -> MonadSymTab (Expr, Pos)
+anexo (e1,p1) (e2,p2) p = do
   fileCode <- ask
   let
     (tOp, msg) = checkAnexo (e1,p1) (e2,p2) fileCode
-    e          = Binary op e1 e2 tOp
+    e          = Binary Anexo e1 e2 tOp
   
   if null msg then do
 
@@ -249,8 +249,8 @@ anexo op (e1,p1) (e2,p2) p = do
 
 -------------------------------------------------------------------------------
 -- | Create concat 2 lists operator node
-concatLists :: BinOp -> (Expr,Pos) -> (Expr,Pos) -> Pos -> MonadSymTab (Expr,Pos)
-concatLists op (e1,p1) (e2,p2) p 
+concatLists :: (Expr,Pos) -> (Expr,Pos) -> Pos -> MonadSymTab (Expr,Pos)
+concatLists (e1,p1) (e2,p2) p 
   | isList t1 && isList t2 && isJust tL = do -- <<2>>:: <<>>
     let
       typel   = fromJust tL
@@ -660,17 +660,17 @@ read' (e,p) = do
 
 {-Esta funcion se encarga de verificar que el tipo de la expresión del tamaño de un 
 array sea entero--}
-arrayLengthE :: (Expr , Pos) -> MonadSymTab Type
-arrayLengthE (e,p)
-  | te == TInt  = return $ TArray e TInt
+tArray :: (Expr, Pos) -> Type -> MonadSymTab Type
+tArray (e,p) t
+  | te == TInt  = return $ TArray e t
   | te == TPDummy  = do
     ne <- updateExpr e TInt
-    return (TArray ne TInt)
+    return (TArray ne t)
 
   | otherwise = do
     fileCode <- ask
-    error (semmErrorMsg "TInt" (show te) fileCode p)
-    return $ TArray e TInt
+    tell [semmErrorMsg "TInt" (show te) fileCode p] >> return (TArray e t)
+
   where
     te = typeE e
 

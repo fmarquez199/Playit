@@ -8,6 +8,7 @@
 -}
 module Playit.AuxFuncs where
 
+import Data.Maybe
 import Playit.Types
 
 
@@ -286,6 +287,22 @@ baseTypeArrLst (TList t)    = t
 
 
 -------------------------------------------------------------------------------
+getTPointer :: [Type] -> Maybe Type
+getTPointer [] = Just TDummy
+getTPointer ts 
+    | all (== TDummy)   ts  = return TDummy
+    | all (== TPDummy)  ts  = return TPDummy
+    | all (\t -> isPointer t || (t == TPDummy) || (t == TDummy)) ts = do
+        let listNoDummy = filter (\t  -> (t /= TPDummy) && (t /= TDummy)) ts
+        t <- getTPointer $ map (\(TPointer t) -> t) listNoDummy
+
+        return (TPointer t)
+    | all (not . isPointer) ts = getTLists ts
+    | otherwise = Nothing
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
 {- |
   Dada una lista de tipos lista, [(List t)], determina si todos los tipos 't'
   concuerdan y retorna ese tipo 't'. Recursiona de ser necesario
@@ -315,23 +332,28 @@ getTLists ts
         listNoTDummy = filter (/= TDummy) ts
         listNoDummy  = filter (/= TPDummy) listNoTDummy
   
-      if not $ null listNoDummy then do
+      if not $ null listNoDummy then
         let
           listNoTNull = filter (/= TNull) listNoDummy
-
+        in
         if not $ null listNoTNull then 
           let 
-              tExpected = head listNoTNull
-              isTypeExpected t = t == tExpected || (t == TNull && isPointer tExpected )|| t == TPDummy
-              typesR = dropWhile isTypeExpected listNoTDummy
-          in 
-            if null typesR then return tExpected else Nothing
+            tExpected = head listNoTNull
+          in
+            if isPointer tExpected then
+              maybe Nothing return (getTPointer listNoTNull)
+            else
+              let
+                isNull t      = t == TNull && isPointer tExpected
+                isTExpected t = t == tExpected || isNull t || t == TPDummy
+                typesR        = dropWhile isTExpected listNoTDummy
+              in if null typesR then return tExpected else Nothing
         else 
           return TNull
       else
         return TPDummy
     else 
-        return TDummy
+      return TDummy
           
   | otherwise = Nothing
 -------------------------------------------------------------------------------
