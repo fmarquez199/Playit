@@ -200,14 +200,21 @@ binary op ep1@(e1,_) ep2@(e2,_) p = do
 -------------------------------------------------------------------------------
 -- | Creates the unary operator node
 unary :: UnOp -> (Expr,Pos) -> Type -> MonadSymTab (Expr,Pos)
-unary op (expr,p) tSpected = do
+unary op (expr,p) tExpected = do
   fileCode <- ask
   let
-    (tOp, msg) = checkUnary op (typeE expr) tSpected p fileCode
-    e          = (Unary op expr tOp, p)
+    (tOp, msg) = checkUnary op (typeE expr) tExpected p fileCode
+    e          = Unary op expr tOp
+    related    = getRelatedPromises expr
   
-  if null msg then return e
-  else tell [msg] >> return e
+  if null msg && not (null related) then
+    if tExpected /= TVoid then do
+      newExpr <- updateExpr expr tExpected
+      return (Unary op newExpr tOp, p)
+    else
+      addLateCheck e e [p] related >> return (e, p)
+  else
+    tell [msg] >> return (e, p)
 -------------------------------------------------------------------------------
 
 
@@ -245,44 +252,71 @@ anexo op (e1,p1) (e2,p2) p = do
 concatLists :: BinOp -> (Expr,Pos) -> (Expr,Pos) -> Pos -> MonadSymTab (Expr,Pos)
 concatLists op (e1,p1) (e2,p2) p 
   | isList t1 && isList t2 && isJust tL = do -- <<2>>:: <<>>
-    let 
-      exprR   = Binary Concat e1 e2 (fromJust tL)
-      related = getRelatedPromises exprR
-    
-    unless (null related) $ do
-      addLateCheck exprR exprR [p1,p2,p] related
-      --TODO: HAcer inferencias adentro de una lista
+    let
+      typel   = fromJust tL
+      exprR   = Binary Concat e1 e2 typel
 
-    return (exprR, p)
+    newE <- updateExpr exprR typel
+    let
+      related = getRelatedPromises newE
+    
+    unless (null related) $ addLateCheck newE newE [p1,p2,p] related
+    return (newE, p)
 
   | otherwise = do
     fileCode <- ask
-    tell [semmErrorMsg (show t1) (show t2) fileCode p2]
-    return (Binary Concat e1 e2 TError, p)
+
+    if isList t1 && not (isList t2) then
+      tell [semmErrorMsg (show t1) (show t2) fileCode p2] >> return (err, p2)
+    else do
+      if (not (isList t1) && isList t2) || (isList t1 && isList t2) then
+        tell [semmErrorMsg (show t2) (show t1) fileCode p1]
+      else
+        tell [semmErrorMsg "List" (show t1) fileCode p1]
+      return (err, p1)
+    return (err, p)
 
   where
-    t1     = typeE e1
-    t2     = typeE e2
-    tL     = getTLists [t1,t2]
+    t1  = typeE e1
+    t2  = typeE e2
+    tL  = getTLists [t1,t2]
+    err = Binary Concat e1 e2 TError
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
 -- | Creates the same type array node
-array :: [(Expr,Pos)] -> MonadSymTab (Expr,Pos)
-array expr = do
-  fileCode <- ask
-  let
-    e          = map fst expr
-    p          = snd $ head expr -- change to pos of the expr that has the error. See example in 'list' func
-    arrayTypes = map typeE e
-    fstType    = head arrayTypes
-    t          = if all (==fstType) arrayTypes then fstType else TError
-    arr        = (ArrayList e (TArray (Literal (Integer $ length e) TInt) t), p)
-    msg        = semmErrorMsg (show fstType) (show t) fileCode p
+array :: [(Expr,Pos)] -> Pos -> MonadSymTab (Expr,Pos)
+array expr p
+  | t /= TError = do
+    let
+      ids = getRelatedPromises arr
+
+    unless (null ids) $ do
+      newArray <- updateExpr arr t
+      let 
+        nids = getRelatedPromises newArray
+      
+      unless (null nids) $ addLateCheck newArray newArray (map snd expr) nids 
+      
+    return (arr, p)
   
-  if t /= TError then return arr
-  else tell [msg] >> return arr
+  | otherwise = do
+    fileCode <- ask
+    let 
+      l        = filter (\(e,p) -> typeE e `notElem` [TDummy,TPDummy,TNull]) expr
+      expected = typeE $ fst $ head l
+      got      = head $ dropWhile (\(e,_) -> typeE e == expected) l
+  
+    tell [semmErrorMsg (show expected) (show $ typeE $ fst got) fileCode (snd got)]
+    return (arr, p)
+
+  where
+    e          = map fst expr
+    -- p          = snd $ head expr -- change to pos of the expr that has the error. See example in 'list' func
+    arrayTypes = map typeE e
+    t          = fromMaybe TError (getTLists arrayTypes)
+    arr        = ArrayList e (TArray (Literal (Integer $ length e) TInt) t)
 -------------------------------------------------------------------------------
 
 
@@ -291,18 +325,26 @@ array expr = do
 list :: [(Expr,Pos)] -> Pos -> MonadSymTab (Expr,Pos)
 list [] p = return (ArrayList [] (TList TDummy), p) -- TODO : Recordar quitar el TDummy
 list expr p
-  | isJust t =
+  | isJust t = do
     let
-      list = ArrayList exprs (TList (fromJust t))
-      ids  = getRelatedPromises list
-    in addLateCheck list list (map snd expr) ids >> return (list, p)
+      typel = TList (fromJust t)
+      list  = ArrayList exprs typel
+      ids   = getRelatedPromises list
+
+    unless (null ids) $ do
+      newList <- updateExpr list typel
+      let 
+        newIds  = getRelatedPromises newList
+      
+      unless (null newIds) $ addLateCheck newList newList (map snd expr) newIds
+
+    return (list, p)
 
   | otherwise = do
     fileCode <- ask
     let 
       l        = filter (\(e,p) -> typeE e `notElem` [TDummy,TPDummy,TNull]) expr
-      (e,_)    = head l
-      expected = typeE e
+      expected = typeE $ fst $ head l
       got      = head $ dropWhile (\(e,p) ->  typeE e == expected) l
       msg      = semmErrorMsg (show expected) (show $ typeE $ fst got) fileCode (snd got)
     
@@ -310,9 +352,7 @@ list expr p
 
   where
     exprs = map fst expr
-    -- p     = head $ snd e
-    types = map typeE exprs
-    t     = getTLists types
+    t     = getTLists $ map typeE exprs
 -------------------------------------------------------------------------------
 
 
@@ -618,6 +658,21 @@ read' (e,p) = do
     tell [semmErrorMsg "Runes" (show tE) fileCode p] >> return (Read e TError, p)
 -------------------------------------------------------------------------------
 
+{-Esta funcion se encarga de verificar que el tipo de la expresión del tamaño de un 
+array sea entero--}
+arrayLengthE :: (Expr , Pos) -> MonadSymTab Type
+arrayLengthE (e,p)
+  | te == TInt  = return $ TArray e TInt
+  | te == TPDummy  = do
+    ne <- updateExpr e TInt
+    return (TArray ne TInt)
+
+  | otherwise = do
+    fileCode <- ask
+    error (semmErrorMsg "TInt" (show te) fileCode p)
+    return $ TArray e TInt
+  where
+    te = typeE e
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------

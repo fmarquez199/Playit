@@ -598,7 +598,7 @@ Expression :: { (Expr,Pos) }
   | idType "{" Expressions "}" { % regUnion (getTk $1, getPos $1) (reverse $3) }
   | idType "{" "}"             { % regUnion (getTk $1, getPos $1) [] } -- By default
   
-  | "|)" Expressions "(|"         { % array $ reverse $2 }
+  | "|)" Expressions "(|"         { % array (reverse $2) }
   | "<<" Expressions ">>"         { % list (reverse $2) $3 }
   | "<<" ">>"                     { % list [] $2 }
   | new Type                      { (Unary New (IdType $2) (TPointer $2), $1) }
