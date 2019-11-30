@@ -38,22 +38,22 @@ checkExt [file]     = if strEndsWith file ".game" then Right file
 
 main :: IO ()
 main = do
-    -- Get arguments from terminal
-    args <- getArgs
+  -- Get arguments from terminal
+  args <- getArgs
 
-    case checkExt args of
-        Left msg -> putStrLn msg
-        Right checkedFile -> do
-            code <- readFile checkedFile
+  case checkExt args of
+    Left msg -> putStrLn msg
+    Right checkedFile -> do
+      code <- readFile checkedFile
 
-            if null code || isEmptyFile code then putStrLn "\nError: empty file\n"
-            else do
-                let tokens = alexScanTokens code
-                    (hasErr,pos) = lexerErrors tokens
-
-                if hasErr then putStrLn $ showLexerErrors (checkedFile,code) pos
-                else do
-                    -- mapM_ print tokens
-                    (ast,(st,_,_,_),errors) <- runRWST (parse tokens) (checkedFile,code) initState
-                    
-                    if null errors then print ast >> print st else print errors
+      if null code || isEmptyFile code then putStrLn "\nError: empty file\n"
+      else
+        let tokens = alexScanTokens code
+            (hasErr,pos) = lexerErrors tokens
+        in
+        if hasErr then putStrLn $ showLexerErrors (checkedFile,code) pos
+        else do
+          -- mapM_ print tokens
+          (ast,(st,_,_,_),errors) <- runRWST (parse tokens) (checkedFile,code) initState
+          
+          if null errors then print ast >> print st else mapM_ putStrLn errors

@@ -212,13 +212,18 @@ Declarations :: { [([(Type,Id)], InstrSeq)] }
 Declaration :: { ([(Type,Id)], InstrSeq) }
   : Type Identifiers
     { % do
-      let (ids,assigs) = $2
-          ids'         = map fst $ reverse ids
-          types        = replicate (length ids') $1
-          pos          = snd $ head ids
+      fileCode <- ask
+      let
+        (ids,assigs)   = $2
+        ids'           = map fst $ reverse ids
+        types          = replicate (length ids') $1
+        pos            = snd $ head ids
+        (assigs', msg) = checkAssigs assigs $1 pos fileCode
+
       insertDeclarations (reverse ids) $1 assigs
-      assigs <- checkAssigs assigs $1 pos
-      return (zip types ids', assigs)
+
+      if null msg then return (zip types ids', assigs')
+      else tell [msg] >> return (zip types ids', assigs')
     }
 
 -------------------------------------------------------------------------------
@@ -593,7 +598,7 @@ Expression :: { (Expr,Pos) }
   | idType "{" Expressions "}" { % regUnion (getTk $1, getPos $1) (reverse $3) }
   | idType "{" "}"             { % regUnion (getTk $1, getPos $1) [] } -- By default
   
-  | "|)" Expressions "(|"         { array $ reverse $2 }
+  | "|)" Expressions "(|"         { % array $ reverse $2 }
   | "<<" Expressions ">>"         { % list (reverse $2) $3 }
   | "<<" ">>"                     { % list [] $2 }
   | new Type                      { (Unary New (IdType $2) (TPointer $2), $1) }
@@ -648,7 +653,7 @@ Register :: { Id }
 DefineUnion :: { Id }
   : union idType ":" PushScope EndLines Declarations EndLines ".~"  
     { %
-      let extraInfo = [AST (concatMap snd $6), Params (concatMap fst $6)]
+      let extraInfo = [AST (concatMap snd $6), Params (concatMap fst $ reverse $6)]
       in defineRegUnion (getTk $2) TUnion extraInfo (getPos $2)
     }
   | union idType ":" PushScope EndLines ".~"                         

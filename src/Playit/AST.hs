@@ -44,20 +44,22 @@ var :: Id -> Pos -> MonadSymTab (Var,Pos)
 var id p = do
   (symTab, activeScopes, _, _) <- get
   fileCode <- ask
-  let infos = lookupInScopes activeScopes id symTab
+  let
+    infos = lookupInScopes activeScopes id symTab
+    vErr  = (Var id TError, p)
 
   if isJust infos then
-
-    let vars          = [Variables, Parameters Value, Parameters Reference]
-        isVar symInfo = getCategory symInfo `elem` vars
-        v             = filter isVar (fromJust infos)
+    let 
+      vars          = [Variables, Parameters Value, Parameters Reference]
+      isVar symInfo = getCategory symInfo `elem` vars
+      v             = filter isVar (fromJust infos)
     in
-    if null v then
-      error $ errorMsg "This is not a variable" fileCode p
-    else
-      return (Var id (getType $ head v), p)
-
-  else error $ errorMsg "Variable not declared in active scopes" fileCode p
+      if null v then
+        tell [errorMsg "This is not a variable" fileCode p] >> return vErr
+      else
+        return (Var id (getType $ head v), p)
+  else
+    tell [errorMsg "Variable not declared in active scopes" fileCode p] >> return vErr
 -------------------------------------------------------------------------------
 
 
@@ -65,10 +67,13 @@ var id p = do
 -- | Creates indexed variables node
 index :: (Var,Pos) -> (Expr,Pos) -> MonadSymTab (Var,Pos)
 index (var,pVar) (expr,pExpr) = do
-  (ok,tVar) <- checkIndex var (typeE expr) pVar pExpr
+  fileCode <- ask
+  let
+    (tVar, msg) = checkIndex var (typeE expr) pVar pExpr fileCode
+    var' = (Index var expr tVar, pVar)
   
-  if ok then return (Index var expr tVar, pVar)
-  else return (Index var expr TError, pVar)
+  if null msg then return var'
+  else tell [msg] >> return var'
 -------------------------------------------------------------------------------
 
 
@@ -80,31 +85,29 @@ field (var,pVar) field pField = do
   fileCode@(file,code) <- ask
   
   -- Verify type 'var' is register / union
-  let reg = case baseTypeVar var of 
-              (TNew name) -> name
-              _           -> ""
-  
-  if reg == "" then -- Type error
-    error $ errorMsg "Type of field isn't a register or union" fileCode pVar
+  let
+    reg = case baseTypeVar var of 
+            (TNew name) -> name
+            _           -> ""
+    err = Field var field TError
+    msg = errorMsg "Type of field isn't a register or union" fileCode pVar
 
+  if reg == "" then tell [msg] >> return (err, pField)    -- type error
   else
-
     --chequearTipo reg p
     
     let info = lookupInSymTab field symTab
     in
-    if isJust info then
-
-      let isInRegUnion (SymbolInfo _ _ c e) = c == Fields && getReg e == reg
+      if isJust info then
+        let
+          isInRegUnion (SymbolInfo _ _ c e) = c == Fields && getReg e == reg
           symbols = filter isInRegUnion (fromJust info )
-      in
-      if null symbols then
-        error $ errorMsg ("Field not in '"++reg++"'") fileCode pField
-      else 
-        return (Field var field (getType $ head symbols), pField)
-
-    else
-      error $ errorMsg "Field not declared" fileCode pField
+          msg'    = errorMsg ("Field not in '"++reg++"'") fileCode pField
+        in
+          if null symbols then tell [msg'] >> return (err, pField)
+          else return (Field var field (getType $ head symbols), pField)
+      else
+        tell [errorMsg "Field not declared" fileCode pField] >> return (err, pField)
 -------------------------------------------------------------------------------
 
 
@@ -112,10 +115,13 @@ field (var,pVar) field pField = do
 -- | Creates the desreferentiation variable node
 desref :: (Var,Pos) -> MonadSymTab (Var,Pos)
 desref (var,p) = do
-  (ok,tVar) <- checkDesref (typeVar var) p
+  fileCode <- ask
+  let
+    (tVar, msg) = checkDesref (typeVar var) p fileCode
+    var' = (Desref var tVar, p)
   
-  if ok then return (Desref var tVar, p)
-  else return (Desref var TError, p)
+  if null msg then return var'
+  else tell [msg] >> return var'
 -------------------------------------------------------------------------------
 
 
@@ -123,10 +129,12 @@ desref (var,p) = do
 -- | Creates the TNew type
 newType :: Id -> Pos -> MonadSymTab Type
 newType tName p = do
-  ok <- checkNewType tName p
+  (symTab, _, _, _) <- get
+  fileCode          <- ask
+  msg               <- checkNewType tName p symTab fileCode
   
-  if ok then return $ TNew tName
-  else return TError
+  if null msg then return $ TNew tName
+  else tell [msg] >> return TError
 -------------------------------------------------------------------------------
 
 
@@ -141,14 +149,14 @@ newType tName p = do
 -- | Creates an assignation node
 assig :: (Var,Pos) -> (Expr,Pos) -> MonadSymTab Instr
 assig (lval,pLval) (expr,pE) = do
-  iter <- checkIterVar lval
-  asig <- checkAssig (typeVar lval) expr pE
+  fileCode <- ask
+  iter     <- checkIterVar lval
+  expr'    <- updateExpr expr (typeVar lval)
+  let
+    msg = checkAssig (typeVar lval) expr' pE fileCode
 
-  if not iter && asig then do
-    expr' <- updateExpr expr (typeVar lval)
-    return $ Assig lval expr' TVoid
-
-  else return $ Assig lval (Literal EmptyVal TError) TError
+  if not iter && null msg then return (Assig lval expr' TVoid)
+  else tell [msg] >> return (Assig lval expr' TError)
 -------------------------------------------------------------------------------
 
 
@@ -156,16 +164,16 @@ assig (lval,pLval) (expr,pE) = do
 -- |
 regUnion :: (Id,Pos) -> [(Expr,Pos)] -> MonadSymTab (Expr,Pos)
 regUnion (name,p) e = do
+  (symTab, _, _, _) <- get
+  fileCode          <- ask
   let
-    exprs = map fst e
-    -- p     = snd $ head e
-  (ok, msj) <- checkRegUnion name exprs
+    exprs     = map fst e
+    -- p         = snd $ head e
+    msg       = checkRegUnion name exprs symTab fileCode
 
-  if ok then return (Literal (Register exprs) (TNew name), p)
-  else do
-    fileCode <- ask
-    return (Literal (Register exprs) TError, p)
-    error $ errorMsg msj fileCode p
+  if null msg then return (Literal (Register exprs) (TNew name), p)
+  else
+    tell [errorMsg msg fileCode p] >> return (Literal (Register exprs) TError, p)
 -------------------------------------------------------------------------------
 
 
@@ -179,11 +187,13 @@ regUnion (name,p) e = do
 -------------------------------------------------------------------------------
 -- | Creates the binary operator node
 binary :: BinOp -> (Expr,Pos) -> (Expr,Pos) -> Pos -> MonadSymTab (Expr,Pos)
-binary op e1 e2 p = do
-  (ok,bin) <- checkBinary op e1 e2 p
+binary op ep1@(e1,_) ep2@(e2,_) p = do
+  (bin, msg) <- checkBinary op ep1 ep2 p
+  let
+    e = (bin, p)
   
-  return (bin, p)
-  -- else return (Binary op e1 e2 TError, p)
+  if null msg then return e
+  else tell [msg] >> return e
 -------------------------------------------------------------------------------
 
 
@@ -191,10 +201,13 @@ binary op e1 e2 p = do
 -- | Creates the unary operator node
 unary :: UnOp -> (Expr,Pos) -> Type -> MonadSymTab (Expr,Pos)
 unary op (expr,p) tSpected = do
-  (ok,tOp) <- checkUnary op (typeE expr) tSpected p
+  fileCode <- ask
+  let
+    (tOp, msg) = checkUnary op (typeE expr) tSpected p fileCode
+    e          = (Unary op expr tOp, p)
   
-  if ok then return (Unary op expr tOp, p)
-  else return (Unary op expr TError, p)
+  if null msg then return e
+  else tell [msg] >> return e
 -------------------------------------------------------------------------------
 
 
@@ -207,66 +220,69 @@ unary op (expr,p) tSpected = do
 
 -------------------------------------------------------------------------------
 -- | Inserta en una lista un nuevo elemento en indice 0
-anexo :: BinOp -> (Expr,Pos) -> (Expr,Pos) -> MonadSymTab Expr
-anexo op (e1,p1) (e2,p2) = do
-  (ok,tOp) <- checkAnexo (e1,p1) (e2,p2)
+anexo :: BinOp -> (Expr,Pos) -> (Expr,Pos) -> Pos -> MonadSymTab (Expr, Pos)
+anexo op (e1,p1) (e2,p2) p = do
+  fileCode <- ask
+  let
+    (tOp, msg) = checkAnexo (e1,p1) (e2,p2) fileCode
+    e          = Binary op e1 e2 tOp
   
-  if ok then do
+  if null msg then do
 
-    let exprR = Binary op e1 e2 tOp
-
-    nexpr <- updateExpr exprR (fromJust $ getTLists [TList (typeE e1),typeE e2])
-
-    let allidsp = getRelatedPromises nexpr
+    newE <- updateExpr e (fromJust $ getTLists [TList (typeE e1),typeE e2])
+    let
+      related = getRelatedPromises newE
     
-    if not $ null allidsp then addLateCheck nexpr nexpr [p1,p2] allidsp >> return nexpr
-    else return exprR 
+    if not $ null related then addLateCheck newE newE [p1,p2] related >> return (newE,p)
+    else return (e, p)
 
-  else return $ Binary op e1 e2 TError -- change when no exit with first error encounter
+  else tell [msg] >> return (e, p)
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
 -- | Create concat 2 lists operator node
-concatLists :: BinOp -> (Expr,Pos) -> (Expr,Pos) -> Pos -> MonadSymTab Expr
+concatLists :: BinOp -> (Expr,Pos) -> (Expr,Pos) -> Pos -> MonadSymTab (Expr,Pos)
 concatLists op (e1,p1) (e2,p2) p 
-  | isList t1 && isList t2 && isJust tL  = do -- <<2>>:: <<>>
+  | isList t1 && isList t2 && isJust tL = do -- <<2>>:: <<>>
     let 
       exprR   = Binary Concat e1 e2 (fromJust tL)
-      allidsp = getRelatedPromises exprR
+      related = getRelatedPromises exprR
     
-    unless (null allidsp) $ do
-      addLateCheck exprR exprR [p1,p2,p] allidsp
+    unless (null related) $ do
+      addLateCheck exprR exprR [p1,p2,p] related
       --TODO: HAcer inferencias adentro de una lista
 
-    return exprR
+    return (exprR, p)
 
   | otherwise = do
-    (fileName,code) <- ask
-    --error $ semmErrorMsg (show baseT1) (show baseT2) fileCode p2
-    error ("\n\nError: " ++ show fileName ++ ": " ++ show p ++ "\n  "
-          ++ "Operation Concat needs expression '" ++ show e1 ++
-          "' and expression '" ++ show e2 ++ "' to be same-type lists.")
-    return $ Binary Concat e1 e2 TError
+    fileCode <- ask
+    tell [semmErrorMsg (show t1) (show t2) fileCode p2]
+    return (Binary Concat e1 e2 TError, p)
 
   where
-    t1 = typeE e1
-    t2 = typeE e2
-    tL = getTLists [t1,t2]
+    t1     = typeE e1
+    t2     = typeE e2
+    tL     = getTLists [t1,t2]
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
 -- | Creates the same type array node
-array :: [(Expr,Pos)] -> (Expr,Pos)
-array expr = (ArrayList e (TArray (Literal (Integer $ length e) TInt) t), p)
-
-  where
+array :: [(Expr,Pos)] -> MonadSymTab (Expr,Pos)
+array expr = do
+  fileCode <- ask
+  let
     e          = map fst expr
-    p          = snd $ head expr
+    p          = snd $ head expr -- change to pos of the expr that has the error. See example in 'list' func
     arrayTypes = map typeE e
     fstType    = head arrayTypes
     t          = if all (==fstType) arrayTypes then fstType else TError
+    arr        = (ArrayList e (TArray (Literal (Integer $ length e) TInt) t), p)
+    msg        = semmErrorMsg (show fstType) (show t) fileCode p
+  
+  if t /= TError then return arr
+  else tell [msg] >> return arr
 -------------------------------------------------------------------------------
 
 
@@ -276,8 +292,9 @@ list :: [(Expr,Pos)] -> Pos -> MonadSymTab (Expr,Pos)
 list [] p = return (ArrayList [] (TList TDummy), p) -- TODO : Recordar quitar el TDummy
 list expr p
   | isJust t =
-    let list = ArrayList exprs (TList (fromJust t))
-        ids  = getRelatedPromises list
+    let
+      list = ArrayList exprs (TList (fromJust t))
+      ids  = getRelatedPromises list
     in addLateCheck list list (map snd expr) ids >> return (list, p)
 
   | otherwise = do
@@ -287,14 +304,15 @@ list expr p
       (e,_)    = head l
       expected = typeE e
       got      = head $ dropWhile (\(e,p) ->  typeE e == expected) l
-
-    error $ semmErrorMsg (show expected) (show $ typeE $ fst got) fileCode (snd got)
+      msg      = semmErrorMsg (show expected) (show $ typeE $ fst got) fileCode (snd got)
+    
+    tell [msg] >> return (ArrayList exprs (typeE $ fst got), snd got)
 
   where
-    exprs     = map fst expr
-    -- p         = head $ snd e
-    listTypes = map typeE exprs
-    t         = getTLists listTypes
+    exprs = map fst expr
+    -- p     = head $ snd e
+    types = map typeE exprs
+    t     = getTLists types
 -------------------------------------------------------------------------------
 
 
@@ -320,10 +338,12 @@ if' cases p = if allSeqsVoid then IF cases TVoid else IF cases TError
 guard :: (Expr,Pos) -> InstrSeq -> MonadSymTab (Expr, InstrSeq)
 guard (cond,p) i = do
   fileCode <- ask
-  let tCond = typeE cond
+  let
+    tCond = typeE cond
+    cond' = (cond, i)
 
-  if tCond == TBool then return (cond, i)
-  else error $ semmErrorMsg "Battle" (show tCond) fileCode p-- change when no exit with first error encountered
+  if tCond == TBool then return cond'
+  else tell [semmErrorMsg "Battle" (show tCond) fileCode p] >> return cond'
 -------------------------------------------------------------------------------
 
 
@@ -332,10 +352,12 @@ guard (cond,p) i = do
 ifSimple :: (Expr,Pos) -> (Expr,Pos) -> (Expr,Pos) -> MonadSymTab (Expr,Pos)
 ifSimple (cond,pC) (true,pT) (false,pF) = do
   fileCode <- ask
-  (ok,t) <- checkIfSimple (typeE cond,pC) (typeE true,pT) (typeE false,pF) fileCode
+  let
+    (t,msg) = checkIfSimple (typeE cond,pC) (typeE true,pT) (typeE false,pF) fileCode
+    e       = (IfSimple cond true false t, pC)
 
-  if ok then return (IfSimple cond true false t, pC)
-  else return (IfSimple cond true false TError, pC)
+  if null msg then return e
+  else tell [msg] >> return e
 -------------------------------------------------------------------------------
 
 
@@ -354,18 +376,15 @@ for var (e1,pE1) (e2,pE2) i = do
   let 
     tE1 = typeE e1
     tE2 = typeE e2
+    err = For var e1 e2 i TError
 
   case typeE e1 of
     TInt -> case typeE e2 of
 
       TInt -> return $ For var e1 e2 i TVoid
-      _ ->
-        return $ For var e1 e2 i TError
-        -- error $ semmErrorMsg "Power" (show tE2) fileCode pE2
+      _ -> tell [semmErrorMsg "Power" (show tE2) fileCode pE2] >> return err
 
-    _ ->
-      return $ For var e1 e2 i TError
-      -- error $ semmErrorMsg "Power" (show tE1) fileCode pE1
+    _ -> tell [semmErrorMsg "Power" (show tE1) fileCode pE1] >> return err
 -------------------------------------------------------------------------------
 
 
@@ -383,22 +402,13 @@ forWhile var (e1,pE1) (e2,pE2) (e3,pE3) i = do
 
   case tE1 of
     TInt -> case tE2 of
-
       TInt -> case tE3 of
+        TBool -> if all isVoid i then return forOk else return forErr
+        _ -> tell [semmErrorMsg "Battle" (show tE3) fileCode pE3] >> return forErr
 
-        TBool ->
-          if all isVoid i then return forOk else return forErr
-        _ ->
-          return forErr
-          -- error $ semmErrorMsg "Battle" (show tE3) fileCode pE3
+      _ -> tell [semmErrorMsg "Power" (show tE2) fileCode pE2] >> return forErr
 
-      _ ->
-        return forErr
-        -- error $ semmErrorMsg "Power" (show tE2) fileCode pE2
-
-    _ ->
-      return forErr
-      -- error $ semmErrorMsg "Power" (show tE1) fileCode pE1
+    _ -> tell [semmErrorMsg "Power" (show tE1) fileCode pE1] >> return forErr
 -------------------------------------------------------------------------------
 
 
@@ -414,7 +424,7 @@ forEach var (e,p) i = do
     returnCheckedFor = if all isVoid i then return forOk else return forErr
   
   if isArray tE || isList tE then returnCheckedFor
-  else return forErr >> error (semmErrorMsg "Array or Kit" (show tE) fileCode p)
+  else tell [semmErrorMsg "Array or Kit" (show tE) fileCode p] >> return forErr
 -------------------------------------------------------------------------------
     
 
@@ -424,13 +434,13 @@ while :: (Expr,Pos) -> InstrSeq -> MonadSymTab Instr
 while (cond,p) i = do
   fileCode <- ask
   let 
-    tc         = typeE cond
-    whileOk    = While cond i TVoid
-    whileError = While cond i TError
+    tc       = typeE cond
+    whileOk  = While cond i TVoid
+    whileErr = While cond i TError
 
   case tc of
-    TBool -> if all isVoid i then return whileOk else return whileError 
-    _ -> return whileError >> error (semmErrorMsg "Battle" (show tc) fileCode p)
+    TBool -> if all isVoid i then return whileOk else return whileErr
+    _ -> tell [semmErrorMsg "Battle" (show tc) fileCode p] >> return whileErr
 -------------------------------------------------------------------------------
 
 
@@ -450,7 +460,8 @@ call subroutine args p = do
 
   (symTab, activeScopes, scopes, promises) <- get
   fileCode <- ask
-  let symInfos = lookupInScopes [1,0] subroutine symTab
+  let
+    symInfos = lookupInScopes [1,0] subroutine symTab
   
   if isJust symInfos then
     let
@@ -487,10 +498,11 @@ procCall (procedure@(Call name args), p) = do
   if isJust symInfos then
     let
       isProcedure symInfo = getCategory symInfo == Procedures
-      procedure'          = filter isProcedure (fromJust symInfos)
+      procedure' = filter isProcedure (fromJust symInfos)
+      msg        = errorMsg ("'" ++ name ++ "' is not a procedure") fileCode p
     in
       if null procedure' then
-        return (ProcCall procedure TError) >> error $ errorMsg ("'" ++ name  ++ "' is not a procedure") fileCode p
+        tell [msg] >> return (ProcCall procedure TError)
       else
         return $ ProcCall procedure TVoid
 
@@ -533,9 +545,10 @@ funcCall (function@(Call name args), p) = do
     let 
       isFunction symInfo = getCategory symInfo == Functions
       function' = filter isFunction (fromJust symInfos)
+      msg       = errorMsg ("'" ++ name  ++ "' is not a function") fileCode p
     in
       if null function' then
-        return (FuncCall function TError, p) >> error $ errorMsg ("'" ++ name  ++ "' is not a function") fileCode p
+        tell [msg] >> return (FuncCall function TError, p)
       else
         return (FuncCall function (getType $ head function'), p)
 
@@ -575,16 +588,15 @@ print' :: [(Expr,Pos)] -> Pos -> MonadSymTab Instr
 print' expr p
   | TError `notElem` exprsTypes = return $ Print exprs TVoid
   | otherwise = do
-    return $ Print exprs TError
-
     fileCode <- ask
     let 
       l        = filter (\(e,p) -> typeE e /= TDummy && typeE e /= TPDummy) expr
       (e,_)    = head l
       expected = typeE e
       got      = head $ dropWhile (\(e,p) -> typeE e == expected) l
+      msg      = semmErrorMsg "Runes" (show $ typeE $ fst got) fileCode (snd got)
 
-    error $ semmErrorMsg "Runes" (show $ typeE $ fst got) fileCode (snd got)
+    tell [msg] >> return (Print exprs TError)
 
   where
     exprs      = map fst expr
@@ -598,11 +610,12 @@ print' expr p
 read' :: (Expr,Pos) -> MonadSymTab (Expr,Pos)
 read' (e,p) = do
   fileCode <- ask
-  let tE = typeE e
+  let
+    tE = typeE e
 
   if tE == TStr then return (Read e TStr, p)
   else
-    return (Read e TError, p) >> error (semmErrorMsg "Runes" (show tE) fileCode p)
+    tell [semmErrorMsg "Runes" (show tE) fileCode p] >> return (Read e TError, p)
 -------------------------------------------------------------------------------
 
 
@@ -619,9 +632,11 @@ free :: Id -> Pos -> MonadSymTab Instr
 free var p = do
   (symTab, activeScopes, _, _) <- get
   fileCode <- ask
-  let infos = lookupInScopes activeScopes var symTab
+  let
+    infos = lookupInScopes activeScopes var symTab
+    msg   = errorMsg "Variable not declared in active scopes" fileCode p
   
   if isJust infos then return $ Free var TVoid
   else
-    return (Free var TError) >> error $ errorMsg "Variable not declared in active scopes" fileCode p
+    tell [msg] >> return (Free var TError)
 -------------------------------------------------------------------------------

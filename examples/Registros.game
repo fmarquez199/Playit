@@ -13,6 +13,10 @@ Inventory Potions: @ C
     
     PotionsHealth puff ph
 .~
+Items Potions2:
+    PotionsMana pm
+    PotionsHealth ph
+.~
 monster allocatePotions(Kit of (PotionsMana puff) ?p) (Potions puff):
     Potions puff ps = summon Potions
     ps spawn p = p
@@ -21,11 +25,15 @@ monster allocatePotions(Kit of (PotionsMana puff) ?p) (Potions puff):
 .~
 
 world %registros%:
+
     PotionsHealth ph1, ph2, ph3 @spawn p = 1
     ph3 spawn p = 1
     
     PotionsMana puff pm = summon PotionsMana
     puff pm = PotionsMana { 1'6, |)ph1,ph2,ph3(| }
+
+    Potions2 p2 = Potions2 {ph1}
+    p2 = Potions2 {puff pm} @ Esto debe dar error
     
     PotionsMana puff pm2 = summon PotionsMana
     puff pm2 = PotionsMana {1'0, |)PotionsHealth {},PotionsHealth {},PotionsHealth {}(| }
@@ -34,7 +42,6 @@ world %registros%:
 
     PotionsMana puff pm3@ = DeathZone @ para que funcione hay que modificar 'checkAssigs'
     pm3 = DeathZone
-
 
     Potions puff p = kill allocatePotions(puff pm2 spawn phs)
     Potions ps
