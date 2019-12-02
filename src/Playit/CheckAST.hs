@@ -54,33 +54,55 @@ checkDesref tVar p fileCode
 -- | Checks the new defined type
 -- TODO: Faltaba algo, pero no recuerdo que
 checkNewType :: Id -> Pos -> SymTab -> FileCodeReader -> MonadSymTab String
-checkNewType tName p symTab@(SymTab st) fileCode =
+checkNewType tName p symTab@(SymTab st) fileCode = do
+  (symTab, activeScopes, scopes, promises) <- get
   let
     infos = lookupInScopes [1] tName symTab
-  in
-    if isJust infos then
+  
+  if isJust infos then
 
-      let symIndex = M.findIndex tName st
-          sym = head . snd $ M.elemAt symIndex st -- its already checked that's not redefined
-      in
+    let symIndex = M.findIndex tName st
+        sym = head . snd $ M.elemAt symIndex st -- its already checked that's not redefined
+    in
       if getCategory sym == TypeConstructors then return ""
       else
         return (errorMsg ("This isn't a defined type\n"++tName++"\n"++show sym) fileCode p)
-    else
-      return (errorMsg "Type not defined" fileCode p)
+  else do
+    let
+      promise = getPromise tName promises
+
+    unless (isJust promise) $ do
+      -- Create the promise
+      let 
+        newProm     = PromiseUserDefinedType tName  p
+        newPromises = promises ++ [newProm]
+
+      put (symTab, activeScopes, scopes, newPromises)
+
+    return ""
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
 -- | Cheacks the assginations type in declarations
-checkAssigs :: InstrSeq -> Type -> Pos -> FileCodeReader -> (InstrSeq, String)
-checkAssigs assigs t p fileCode
-  | eqAssigsTypes updatedAssigs t = (updatedAssigs, "")
-  | otherwise                     = (updatedAssigs, msg)
-  
+checkAssigs :: [(Instr,Pos)] -> Type -> FileCodeReader -> MonadSymTab (InstrSeq, String)
+checkAssigs assigs t fileCode
+  | eqAssigsTypes updatedAssigs t = do
+    -- Actualiza los TPDummys
+    nexprs <- mapM (\(Assig _ e _) -> updateExpr e t) onlyassigs    
+    return ([Assig v ne ta | (Assig v e ta,ne) <- zip updatedAssigs nexprs ],"")
+
+  | otherwise = do
+    let
+      le  = map (\(Assig _ e _,p) -> (e,p)) assigs
+      got = head $ dropWhile (\(e,p) ->  isJust (getTLists [typeE e,t])) le
+      msg = semmErrorMsg (show t) (show $ typeE $ fst got) fileCode (snd got)
+
+    return (updatedAssigs, msg)
+
   where
-    updatedAssigs = map (changeTDummyAssigs t) assigs
-    msg = errorMsg ("Assignations expressions types isn't "++show t++"\n"++show assigs) fileCode p
+    onlyassigs  = map fst assigs
+    updatedAssigs = map (changeTDummyAssigs t) onlyassigs
 -------------------------------------------------------------------------------
 
 
@@ -88,20 +110,20 @@ checkAssigs assigs t p fileCode
 -- | Checks the assignation's types
 checkAssig :: Type -> Expr -> Pos -> FileCodeReader -> String
 checkAssig tLval expr p fileCode
-  | isRead || isNull || isInitReg || (tExpr == tLval) || isLists = ""
+  | isRead {-|| isNull-} || isInitReg || (tExpr == tLval) || isLists = ""
   | isArray tLval && isArray tExpr =
     -- Si son arrays y arrays del mismo tipo 
     --- TODO:  Faltaría verificar que tienen el mismo tamaño para arrays con expresiones no literales
     --          Ejemplo Power|)2(|  ==  Power|)1+1(|
     if isJust tarrays && e1 == e2 then "" else msg
   
-  | otherwise                                                    = msg
+  | otherwise = msg
 
   where
     tExpr       = typeE expr
-    isEmptyList = isList tExpr && baseTypeT tExpr == TDummy
-    isListLval  = isList tLval && isSimpleType (baseTypeT tLval)
-    isLists     = isEmptyList && isListLval && isJust (getTLists [tLval,tExpr])
+    -- isEmptyList = isList tExpr && baseTypeT tExpr == TDummy
+    -- isListLval  = isList tLval && isSimpleType (baseTypeT tLval)
+    isLists     = {-isEmptyList && isListLval &&-} isJust (getTLists [tLval,tExpr])
     isRead      = tExpr == TRead
     isNull      = tExpr == TNull
     isInitReg   = tExpr == TRegister
@@ -122,16 +144,6 @@ checkRegUnion name exprs symTab fileCode
   | noErr && isJust reg                            = msgBadTypes
   | noErr                                          = msgUndefined
   | otherwise                                      = msgTError
-
-{-  if noErr && isJust reg then
-    let
-    in
-      if typesOk && fieldsAmmountOK then 
-      else
-        if not (typesOk || fieldsAmmountOK) then
-        else
-  else 
--}    
 
   where
     reg          = lookupInSymTab name symTab
@@ -158,7 +170,7 @@ checkIterVar var = do
   (symtab, _, scope, _) <- get
   let cc s = getCategory s == IterationVariable && getScope s == scope
       name = getName var
-      cat = filter cc $ fromJust (lookupInSymTab name symtab)
+      cat  = filter cc $ fromJust (lookupInSymTab name symtab)
 
   return $ not $ null cat
 -------------------------------------------------------------------------------
@@ -166,8 +178,8 @@ checkIterVar var = do
 
 -------------------------------------------------------------------------------
 -- | Checks the binary's expression's types
-checkBinary :: BinOp -> (Expr,Pos) -> (Expr,Pos) -> Pos -> MonadSymTab (Expr,String)
-checkBinary op (e1,p1) (e2,p2) p = do
+checkBinary :: BinOp -> (Expr,Pos) -> (Expr,Pos) -> MonadSymTab (Expr,String)
+checkBinary op (e1,p1) (e2,p2) = do
   fileCode <- ask
   let
     tE1         = typeE e1
@@ -250,21 +262,33 @@ checkBinary op (e1,p1) (e2,p2) p = do
             else
               return (err, semmErrorMsg "Battle" (show tE1) fileCode p1)
 
-  else -- Tipos distintos  -- TODO : Falta más manejo de TPDummy
+  else -- Tipos distintos
     if op `elem` eqOps then
       if isTypeComparableEq tE1 && tE2 == TPDummy then do
         ne2 <- updateExpr e2 tE1
-        return (Binary op e1 ne2 TBool, "")
+        let
+          expr = Binary op e1 ne2 TBool
+          allidsp = getRelatedPromises expr
+
+        unless (null allidsp ) $
+          addLateCheck expr expr [p1,p2] allidsp
+        return (expr,"") 
 
       else 
         if tE1 == TPDummy && isTypeComparableEq tE2 then do
           ne1 <- updateExpr e1 tE2
-          return (Binary op ne1 e2 TBool, "")
+          let
+            expr = Binary op ne1 e2 TBool
+            allidsp = getRelatedPromises expr
+
+          unless (null allidsp ) $
+            addLateCheck expr expr [p1,p2] allidsp
+          return (expr,"")
         
         else 
           if isNull then
             -- TODO: Falta TDUmmy adentro de  punteros
-            return (Binary op e1 e2 TBool, "")
+            return (comp, "")
           else 
               if tE1 == TPDummy && tE2 == TNull then do
                 ne1 <- updateExpr e1 (TPointer TPDummy)
@@ -303,23 +327,23 @@ checkBinary op (e1,p1) (e2,p2) p = do
                             return (comp, "")
                 
                         else
-                          if isPointer tE1 && isPointer tE2  && isJust (getTPointer [tE1,tE2]) then
+                          if isPointer tE1 && isPointer tE2 && isJust (getTLists [tE1,tE2]) then
                             let
-                              typep = fromJust $ getTPointer [tE1,tE2] 
+                              typep = fromJust $ getTLists [tE1,tE2] 
                               allidsp = getRelatedPromises comp
                             in
-                            if not (null allidsp) then do
-                              ne1 <- updateExpr e1 typep
-                              ne2 <- updateExpr e2 typep
-                              let 
-                                newExpr = (Binary op ne1 ne2 TBool)
-                                newRelated = getRelatedPromises newExpr
-                              
-                              when (not $ null  newRelated) $
-                                addLateCheck newExpr newExpr [p1,p2] newRelated
-                              return (newExpr, "")
-                            else
-                              return (comp, "")
+                              if not (null allidsp) then do
+                                ne1 <- updateExpr e1 typep
+                                ne2 <- updateExpr e2 typep
+                                let 
+                                  newExpr = (Binary op ne1 ne2 TBool)
+                                  newRelated = getRelatedPromises newExpr
+                                
+                                when (not $ null  newRelated) $
+                                  addLateCheck newExpr newExpr [p1,p2] newRelated
+                                return (newExpr, "")
+                              else
+                                return (comp, "")
                           else
                             if isTypeComparableEq tE1 && isTypeComparableEq tE2 then
                               return (err,msgTE12P2)
@@ -339,7 +363,7 @@ checkBinary op (e1,p1) (e2,p2) p = do
             if op `elem` compOps then
               return (Binary op ne1 e2 TBool, "")
             else
-              return (Binary op ne1 e2 tE1, "")
+              return (Binary op ne1 e2 tE2, "")
           else 
             if isTypeNumber tE1 && not (isTypeNumber tE2) then return (err,msgTE12P2)
             else 
@@ -357,7 +381,7 @@ checkBinary op (e1,p1) (e2,p2) p = do
           else 
             if tE1 == TPDummy &&  tE2 == TInt then do
               ne1 <- updateExpr e1 tE2
-              return (Binary op ne1 e2 tE1, "")
+              return (Binary op ne1 e2 tE2, "")
             else 
               if tE1 == TInt then return (err,msgTE12P2)
               else 
@@ -379,39 +403,29 @@ checkBinary op (e1,p1) (e2,p2) p = do
                   if tE2 == TBool then return (err,msgTE21P1)
                   else return (err,semmErrorMsg "Battle" (show tE1) fileCode p1)
           else 
-            if op == Anexo then
-              -- TODO: Sin hacer anexo ni concatenación
-              error "Not implemented anexos "
-            else error "Internal error: Op not recognized "
-
-  {-
-    Anexo ->
-      if isSubtype tE1 tE2 &&not (isArray tE2) then return anex
-      else 
-        return (err, semmErrorMsg (show ste2) (show tE1) fileCode p1)
-  -}
+            error $ "Internal error checkbinary: "  ++ show op
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
 -- | Checks the unary's expression type is the spected
 checkUnary :: UnOp -> Type -> Type -> Pos -> FileCodeReader -> (Type, String)
-checkUnary op tExpr tSpected p fileCode =
+checkUnary op tExpr tExpected p fileCode =
   case op of
     Length ->
-      if isArray tExpr || isList tExpr then (TInt, "")
+      if isArray tExpr || isList tExpr || tExpr == TPDummy then (TInt, "")
       else
         (TError, semmErrorMsg "Array or Kit" (show tExpr) fileCode p)
 
     Negative ->
-      if tExpr `elem` [TInt, TFloat] then (tExpr, "")
+      if tExpr `elem` [TInt, TFloat, TPDummy] then (tExpr, "")
       else
         (TError, semmErrorMsg "Power or Skill" (show tExpr) fileCode p)
 
     _ | tExpr == TDummy   -> (TDummy, "")
       | tExpr == TPDummy  -> (TPDummy, "")
-      | tExpr == tSpected -> (tExpr, "")
-      | otherwise -> (TError, semmErrorMsg (show tSpected) (show tExpr) fileCode p)
+      | tExpr == tExpected -> (tExpr, "")
+      | otherwise -> (TError, semmErrorMsg (show tExpected) (show tExpr) fileCode p)
 -------------------------------------------------------------------------------
 
 
@@ -461,7 +475,7 @@ checkIfSimple (tCond,pCond) (tTrue,pTrue) (tFalse,pFalse) fileCode
 changeTDummyList :: Type -> Type-> Type
 changeTDummyList (TList TDummy) newT = TList newT
 changeTDummyList (TList t) newT      = TList (changeTDummyList t newT)
-changeTDummyList t newT               = t
+changeTDummyList t newT              = t
 
 changeTPDummyFunction :: Expr -> Type -> Expr
 changeTPDummyFunction (FuncCall c TPDummy) =  FuncCall c
@@ -471,15 +485,9 @@ changeTPDummyFunction (FuncCall c TPDummy) =  FuncCall c
 -- Cambia el TDummy de una variable en las declaraciones
 changeTDummyLvalAsigs :: Var -> Type -> Var
 changeTDummyLvalAsigs (Var n TDummy) t    = Var n t
-changeTDummyLvalAsigs (Index var e t') t  =
-    let newVar = changeTDummyLvalAsigs var t
-    in Index newVar e t'
-changeTDummyLvalAsigs (Desref var t') t   =
-    let newVar = changeTDummyLvalAsigs var t
-    in Desref newVar t'
-changeTDummyLvalAsigs (Field var id t') t =
-    let newVar = changeTDummyLvalAsigs var t
-    in Field newVar id t'
+changeTDummyLvalAsigs (Index var e t') t  = Index (changeTDummyLvalAsigs var t) e t'
+changeTDummyLvalAsigs (Desref var t') t   = Desref (changeTDummyLvalAsigs var t) t'
+changeTDummyLvalAsigs (Field var id t') t = Field (changeTDummyLvalAsigs var t) id t'
 changeTDummyLvalAsigs var _               = var
 -------------------------------------------------------------------------------
 

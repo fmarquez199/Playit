@@ -62,11 +62,11 @@ instance Show Type where
     show TError       = "Type error"   
     show TFloat       = "Skill"
     show TInt         = "Power"
-    show (TList t)    = "Kit of(" ++ show t ++ ")"
+    show (TList t)    = "Kit of (" ++ show t ++ ")"
     show (TNew str)   = str
     show TNull        = "DeathZone*"
-    show TPDummy      = "Subroutine promise"
-    show (TPointer t) = "(" ++ show t ++ "*)"
+    show TPDummy      = "Unknown return type"
+    show (TPointer t) = "" ++ show t ++ "*"
     show TRegister    = "Inventory"
     show TRead        = ""
     show TStr         = "Runes"
@@ -90,7 +90,7 @@ instance Show Var where
     show (Desref v t)      = {-"("++show t++")"++-}"puff (" ++ show v ++ ")"
     show (Var n t)         = {-"("++show t++")"++-}n
     show (Index v e t)     = {-"("++show t++")"++-}show v ++ " index: " ++ show e
-    show (Field v n t)     = {-"("++show t++") "++-}"("++show v ++ " spawn " ++ n
+    show (Field v n t)     = {-"("++show t++") "++"("++-}show v ++ " spawn " ++ n
 
 -- Specify if a parameter is by value or reference
 data Ref =
@@ -332,26 +332,52 @@ instance Show SymbolInfo where
 
 
 -- Subroutine promise for co-recursive subroutines
-data Promise = Promise {
-    getIdPromise :: Id,
-    getParamsPromise :: [(Type,Pos)],
-    getTypePromise :: Type,
-    getPosPromise :: Pos,
-    getLateChecksPromise :: [LateCheckPromise]
+data Promise = PromiseSubroutine {
+    getIdPromise           :: Id,
+    getParamsPromise       :: [(Type,Pos)],
+    getTypePromise         :: Type,
+    getCatPromise          :: Category,
+    getPosPromise          :: Pos,
+    getLateChecksPromise   :: [LateCheckPromise],
+    -- Llamadas a funciones que se deben chequear cuando se actualiza el tipo de 
+    -- retorno de esta promesa
+    -- esta promesa aparece en las expresiones de llamadas a funciones
+    getLateCheckOtherCalls :: [LateCheckPromise],
+    getLateCheckForEachs   :: [LateCheckPromise]
+    } | 
+    PromiseUserDefinedType {
+        getIdPromise  :: Id,
+        getPosPromise :: Pos
     }
-    deriving (Eq, Ord)
+    deriving (Eq, Ord,Show)
 
 type Promises = [Promise]
 -- 
 -- Powe a = a() > b()? 1:2
 -- Power a = #(a() :: b())==10 ? 1:2
 -- 
-data LateCheckPromise = LateCheckPromise {
-    getLCPromiseExpr :: Expr, -- Expresion que debe ser evaluada cuando se actualiza el tipo de la promesa
-    getLCPromisePosArgs :: [Pos],  -- Posiciones (linea,columna) de los argumentos necesarios para el check
-    getLCPromiseLinks :: [Id] -- Otras promesas enlazadas a este check (su relacionado)
+data LateCheckPromise = 
+    LateCheckPromiseSubroutine {
+        getLCPromiseExpr    :: Expr, -- Expresion que debe ser evaluada cuando se actualiza el tipo de la promesa
+        getLCPromisePosArgs :: [Pos],  -- Posiciones (linea,columna) de los argumentos necesarios para el check
+        getLCPromiseLinks   :: [Id] -- Otras promesas enlazadas a este check (su relacionado)
+    } | 
+    LateCheckPromiseCall {
+        getLCPromiseCall  :: Subroutine, -- Llamada que se debe evaluar
+        getLCPromiseLinks :: [Id] -- Promesas enlazadas
+    } | 
+    LateCheckPromiseForEach {
+        getLCPromiseForEachExpr    :: Expr, -- Llamada que se debe evaluar
+        getLCPromiseForEachLvarID  :: Id, -- Promesas enlazadas
+        getLCPromiseForEachLvar    :: Type, -- Promesas enlazadas
+        getLCPromiseForEachPosExpr :: Pos,
+        getLCPromiseForEachLinks   :: [Id] -- Otras promesas enlazadas a este check (su relacionado)
     }
     deriving (Eq, Ord,Show)
+
+data PromiseExtraInfo = PromiseExtraInfo{
+
+}
 
 
 {- | New type that represents the symbol table

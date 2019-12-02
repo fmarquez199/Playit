@@ -107,11 +107,12 @@ insertSymbols (n:ns) (info:infos) (SymTab table)
 
 -------------------------------------------------------------------------------
 -- | Insert the declared variables into symbol table
-insertDeclarations :: [(Id, Pos)] -> Type -> InstrSeq -> MonadSymTab InstrSeq
-insertDeclarations ids t asigs = do
+insertDeclarations :: [(Id, Pos)] -> Type -> [(Instr,Pos)] -> MonadSymTab InstrSeq
+insertDeclarations ids t asigspos = do
   (symTab, activeScopes@(activeScope:_), scope, promises) <- get
   fileCode <- ask
   let
+    asigs = map fst asigspos
     ids'    = (map fst ids)
     idsInfo = lookupInSymTab' ids' symTab
 
@@ -159,7 +160,7 @@ defineSubroutine id category p = do
     let info = [SymbolInfo TDummy 1 category []]
     in addToSymTab [id] info symTab activeScopes scope promises
   else
-    let promise = getPromiseSubroutine id promises
+    let promise = getPromise id promises
     in
       if isJust promise then
         let promise' = fromJust promise
@@ -208,8 +209,14 @@ defineRegUnion reg regType extraInfo p = do
     else
       tell [errorMsg "Redefined Items" fileCode p] >> return reg
   else
-    let info = [SymbolInfo regType 1 TypeConstructors extraInfo]
-    in addToSymTab [reg] info symTab activeScopes scope promises >> return reg
+    let
+      info      = [SymbolInfo regType 1 TypeConstructors extraInfo]
+      promise   =  getPromise reg promises
+      npromises = if isJust promise then
+          let promise' = fromJust promise in filter (/=promise') promises
+        else promises
+
+    in addToSymTab [reg] info symTab activeScopes scope npromises >> return reg
 -------------------------------------------------------------------------------
 
 
@@ -318,9 +325,25 @@ checkPromises = do
   (symTab, activeScopes, scopes , promises) <- get
   fileCode <- ask
 
-  forM_ promises $ \(Promise name args t p lc) ->
-    if t /= TPDummy then
-      tell [errorMsg ("Function '" ++ name ++ "' is not defined") fileCode p]
-    else 
-      tell [errorMsg ("Procedure '" ++ name ++ "' is not defined") fileCode p]
+  forM_ promises $ \t ->
+    case t of
+      PromiseSubroutine {} -> return ()
+        -- printErrorPromiseFunction p fileCode
+      (PromiseUserDefinedType name pos) -> 
+        tell [errorMsg ("Type '" ++ name ++ "' wasn't defined") fileCode pos]
 -------------------------------------------------------------------------------
+
+
+showParamsPF:: [(Type,Pos)] -> String
+showParamsPF [] = ""
+showParamsPF [(t,p)] = show t
+showParamsPF ((t,p):r)  = show t ++ "," ++ showParamsPF r
+
+
+printErrorPromiseFunction :: Promise -> FileCodeReader -> MonadSymTab ()
+printErrorPromiseFunction (PromiseSubroutine name args t cat pc _ _ _)  fileCode = 
+  if cat == Functions then
+    tell [errorMsg ("Function '" ++ name ++ "(" ++ showParamsPF args ++ ") ->" ++ show t ++ "'  wasn't defined") fileCode pc]
+  else 
+    tell [errorMsg ("Procedure '" ++ name ++ "(" ++ showParamsPF args ++ ")' wasn't defined") fileCode pc]
+

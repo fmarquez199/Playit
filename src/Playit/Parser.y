@@ -106,8 +106,8 @@ import Playit.PromisesHandler
   "!"               { TkNOT _ _ }
   upperCase         { TkUPPER _ _ }
   lowerCase         { TkLOWER _ _ }
-  "<<"              { TkOpenList _ _ }
-  ">>"              { TkCloseList _ $$ }
+  "<<"              { TkOpenList _ $$ }
+  ">>"              { TkCloseList _ _ }
   "|>"              { TkOpenListIndex _ _ }
   "<|"              { TkCloseListIndex _ _ }
   ":"               { TkANEXO _ $$ }
@@ -222,8 +222,8 @@ Declaration :: { ([(Type,Id)], InstrSeq) }
         (ids,assigs)   = $2
         ids'           = map fst $ reverse ids
         types          = replicate (length ids') $1
-        pos            = snd $ head ids
-        (assigs', msg) = checkAssigs assigs $1 pos fileCode
+
+      (assigs', msg) <- checkAssigs assigs $1 fileCode
 
       insertDeclarations (reverse ids) $1 assigs
 
@@ -237,7 +237,7 @@ Declaration :: { ([(Type,Id)], InstrSeq) }
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 
-Identifiers :: { ([(Id, Pos)], InstrSeq) }
+Identifiers :: { ([(Id, Pos)], [(Instr,Pos)]) }
   : Identifiers "," Identifier
   { 
     let ((ids,assigs), (id,asig)) = ($1,$3) in (id:ids, asig ++ assigs)
@@ -247,11 +247,11 @@ Identifiers :: { ([(Id, Pos)], InstrSeq) }
     let (id, assigs) = $1 in ([id], assigs)
   }
 
-Identifier :: { ((Id, Pos), InstrSeq) }
+Identifier :: { ((Id, Pos), [(Instr,Pos)]) }
   : id "=" Expression
     {
-      let (e, _) = $3
-      in ( (getTk $1,getPos $1), [Assig (Var (getTk $1) TDummy) e TVoid] )
+      let (e, p) = $3
+      in ( (getTk $1,getPos $1), [(Assig (Var (getTk $1) TDummy) e TVoid, p)] )
     }
   | id
     {
@@ -268,8 +268,8 @@ Identifier :: { ((Id, Pos), InstrSeq) }
 -- Lvalues
 Lvalue :: { (Var, Pos) }
   : Lvalue "." id                 { % field $1 (getTk $3) (getPos $3) }
-  | Lvalue "|)" Expression "(|"   { % index $1 $3 }
-  | Lvalue "|>" Expression "<|"   { % index $1 $3 }
+  | Lvalue "|)" Expression "(|"   { % indexArray $1 $3 }
+  | Lvalue "|>" Expression "<|"   { % indexList $1 $3 }
   | pointer Lvalue                { % desref $2 }
   | pointer "(" Lvalue ")"        { % desref $3 }
   | id                            { % var (getTk $1) (getPos $1) }
@@ -315,16 +315,8 @@ Instruction :: { Instr }
 -------------------------------------------------------------------------------
 Asignation :: { Instr }
   : Lvalue "=" Expression  { % assig $1 $3 }
-  | Lvalue "++"
-    { %
-      let expr = Binary Add (Variable (fst $1) TInt) (Literal (Integer 1) TInt) TInt
-      in assig $1 (expr, $2)
-    }
-  | Lvalue "--"
-    { %
-      let expr = Binary Minus (Variable (fst $1) TInt) (Literal (Integer 1) TInt) TInt
-      in assig $1 (expr, $2)
-    }
+  | Lvalue "++"            { % increDecreVar Add $1 }
+  | Lvalue "--"            { % increDecreVar Minus $1 }
 -------------------------------------------------------------------------------
 
 
@@ -474,6 +466,10 @@ Out :: { Instr }
 
 
 -------------------------------------------------------------------------------
+-- TODO : Checks para que 
+--        1 free id sea solo para punteros a una variable
+--        2 free "|}" "{|" id  sea solo para punteros a arreglos
+--        3 free "<<" ">>" id  sea solo para punteros a listas
 Free :: { Instr }
   : free id             { % free (getTk $2) (getPos $2) }
   | free "|}" "{|" id   { % free (getTk $4) (getPos $4) }
@@ -604,12 +600,12 @@ Expression :: { (Expr,Pos) }
   | idType "{" "}"             { % regUnion (getTk $1, getPos $1) [] } -- By default
   
   | "|)" Expressions "(|"         { % array (reverse $2) $1 }
-  | "<<" Expressions ">>"         { % list (reverse $2) $3 }
-  | "<<" ">>"                     { % list [] $2 }
+  | "<<" Expressions ">>"         { % list (reverse $2) $1 }
+  | "<<" ">>"                     { % list [] $1 }
   | new Type                      { (Unary New (IdType $2) (TPointer $2), $1) }
 
-  | input Expression %prec input  { % read' $2 }
-  | input                         { % read' (Literal EmptyVal TStr, $1) }
+  | input Expression %prec input  { % read' $2 $1 }
+  | input                         { % read' (Literal EmptyVal TStr, $1) $1 }
 
   -- Unary operators
   | "#" Expression                        { % unary Length $2 TVoid }

@@ -20,6 +20,7 @@ import Playit.Errors
 import Playit.Parser
 import Playit.Lexer
 import Playit.Types
+import Playit.PrintPromises
 -- import Playit.Print
 
 
@@ -54,6 +55,9 @@ main = do
         if hasErr then putStrLn $ showLexerErrors (checkedFile,code) pos
         else do
           -- mapM_ print tokens
-          (ast,(st,_,_,_),errors) <- runRWST (parse tokens) (checkedFile,code) initState
+          (ast,(st,_,_,promises),errs) <- runRWST (parse tokens) (checkedFile,code) initState
           
-          if null errors then print ast >> print st else mapM_ putStrLn errors
+          if null errs && null promises then print ast >> print st
+          else
+            if null promises then mapM_ putStrLn errs
+            else printPromises promises

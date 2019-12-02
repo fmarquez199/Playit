@@ -8,6 +8,7 @@
 -}
 module Playit.AuxFuncs where
 
+import Control.Monad (when,unless)
 import Data.Maybe
 import Playit.Types
 
@@ -91,8 +92,11 @@ areSameTExtInf _ _                      = False
 --      Reg a, Reg b
 --      Union r = {a}
 --      r = {b} -> error
+--      RegUnion r = {3,*r*}
 eqAssigsTypes :: InstrSeq -> Type -> Bool
-eqAssigsTypes assigs t = all (\(Assig _ expr _) -> typeE expr == t) assigs
+eqAssigsTypes assigs t = all (\(Assig _ expr _) -> compatibles expr t) assigs
+  where
+    compatibles e t = (typeE e == t) ||  isJust (getTLists [typeE e,t])
 -------------------------------------------------------------------------------
 
 
@@ -316,44 +320,65 @@ getTPointer ts
 -}
 getTLists:: [Type]-> Maybe Type
 getTLists [] = Just TDummy
-getTLists ts 
+getTLists ts
+  -- Contiene solo llamadas a funciones no definidas  ejem << kill f1(), kill f2() >>
   | all (== TPDummy) ts = return TPDummy
+    -- Contiene solo TDummy de listas vacias (TList TDummy)
+    -- ejem [ TDummy  , TDummy , TDummy ]
   | all (== TDummy) ts  = return TDummy
+  -- Contiene solo TDummy de listas vacias(TList TDummy) y/o llamdas a func no definidas 
+  -- ejem [ TDummy  ,kill f1() ]
+  | all (`elem` [TPDummy, TDummy]) ts = return TPDummy -- Contiene solo TDummy d elistas vacias y llamadas a 
+  -- Contiene solo arreglos y/o TPDummy llamadas a func no definidas 
+  -- ejem [ |)2,3,1(|,kill f1() ] -> resultado un puntero
+  | all (\t -> isArray t || t == TPDummy) ts = do
+    let 
+      listNoDummy           = filter (/= TPDummy) ts
+      tmb                   = getTLists (map (\(TArray e ta) -> ta) listNoDummy)
+      (TArray exprLength t) = head listNoDummy
 
-  | all (\t -> isList t || (t == TPDummy) || (t == TDummy)) ts = do
-    let listNoDummy = filter (\t  -> (t /= TPDummy) && (t /= TDummy)) ts
-    t <- getTLists $ map (\(TList t) -> t) listNoDummy
-
-    return (TList t)
-  | all (not . isList) ts =  -- [[int]] = Just [int]
-
-    if any (/= TDummy) ts then do
-      let 
-        listNoTDummy = filter (/= TDummy) ts
-        listNoDummy  = filter (/= TPDummy) listNoTDummy
-  
-      if not $ null listNoDummy then
-        let
-          listNoTNull = filter (/= TNull) listNoDummy
-        in
-        if not $ null listNoTNull then 
-          let 
-            tExpected = head listNoTNull
-          in
-            if isPointer tExpected then
-              maybe Nothing return (getTPointer listNoTNull)
-            else
-              let
-                isNull t      = t == TNull && isPointer tExpected
-                isTExpected t = t == tExpected || isNull t || t == TPDummy
-                typesR        = dropWhile isTExpected listNoTDummy
-              in if null typesR then return tExpected else Nothing
-        else 
-          return TNull
-      else
-        return TPDummy
+    if isJust tmb && all (\(TArray e _) -> e == exprLength) listNoDummy then
+      -- Si son de tipo equivalente los tipos de las expresiones y los tamanyos son los mismos
+      -- Siempre s epuede ver si los tamanyos son los mismos porque estos son 
+      -- literales de arrays  
+      return $ TArray exprLength (fromJust tmb)
     else 
-      return TDummy
+      Nothing
+  -- Contiene solo punteros y/o TDummy de punteros (TPointer TDummy) y/o llamdas a func no definidas 
+  -- ejem [ TNull, TDummy,Pointer Int ,kill f1() ] -> resultado un puntero
+  | all (\t -> isPointer t || t `elem` [TPDummy, TDummy, TNull]) ts = do
+    let 
+      listNoDummy = filter (`notElem` [TPDummy, TDummy, TNull]) ts
+
+    if null listNoDummy then 
+      return (TPointer TDummy)
+    else do
+      t <- getTLists $ map (\(TPointer t) -> t) listNoDummy
+      return (TPointer t)
+
+  -- Contiene solo listas y/o llamadas a func no definidas 
+  -- ejem [ <<>>,kill f1() ] -> resultado lista de algo
+  | all (\t -> isList t || (t == TPDummy) || (t == TDummy)) ts = do
+    let
+      listNoDummy = filter (`notElem` [TPDummy, TDummy]) ts
+
+    t <- getTLists $ map (\(TList t) -> t) listNoDummy
+    return (TList t)
+  -- Contiene solo TDummys de listas vacias y/0 tpdummys de llamadas a funciones y/o tipos simples
+  -- ejem [ <<>>,kill f1() ] -> resultado lista de algo
+  | all (not . isList) ts = 
+
+    let 
+      listNoDummy = filter (`notElem` [TPDummy, TDummy]) ts
+    in
+      if not $ null listNoDummy then do
+        let
+          tExpected = head listNoDummy
+        if all (==tExpected) listNoDummy then return tExpected 
+        else 
+          Nothing
+      else 
+        Nothing
           
   | otherwise = Nothing
 -------------------------------------------------------------------------------
@@ -372,6 +397,25 @@ getTListAnexo t1 (TList t2)
     | isList t1 && isList t2 = Just TList <*> getTListAnexo (typeArrLst t1) t2 -- [t] :[[t]] = recursivo t [t]
     | otherwise = Nothing
 getTListAnexo _ _ = Nothing
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+getTExpectedTGot :: [(Type,Pos)] -> (Type,(Type,Pos))
+getTExpectedTGot lts = (te,tgot)
+  where
+    accum (s,te,(tg,ptg)) (t,pt) =
+      if not s then
+        let tmb = getTLists [te,t]
+        in
+          if isJust tmb then (False,fromJust tmb, (t,pt) )
+          else
+            (True,te,(t,pt))
+      else
+        (s,te,(tg,ptg))
+    
+    (t1,pl1)    = head lts
+    (s,te,tgot) = foldl accum (False,t1,(t1,pl1)) lts
 -------------------------------------------------------------------------------
 
 
@@ -395,10 +439,11 @@ getTypeInstr (While _ _ t)          = t
 
 
 -------------------------------------------------------------------------------
-getPromiseSubroutine :: Id -> Promises -> Maybe Promise
-getPromiseSubroutine _ []                                    = Nothing
-getPromiseSubroutine name (promise@(Promise id _ _ _ _) : r) = 
-  if name == id then Just promise else getPromiseSubroutine name r
+getPromise :: Id -> Promises -> Maybe Promise
+getPromise _ []               = Nothing
+getPromise name (promise : r)
+  | name == getIdPromise promise = Just promise
+  | otherwise                    = getPromise name r
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
