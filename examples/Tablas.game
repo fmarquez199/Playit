@@ -3,7 +3,7 @@ world %Tablas%:
   Power i, numero
   
   play:
-    numero = joystick ~Introduzca un numero entero: ~
+    numero = kill portalRunesToPower(joystick ~Introduzca un numero entero: ~)
   
     drop ~La tabla de multiplicar del ~,kill portalPowerToRunes(numero),~ es:~
   

@@ -15,7 +15,7 @@ world %apts%:
     @ ( *( (**c).pointernombre)).flotante
     puff (puff (puff c) spawn pointernombre) spawn flotante = 2'2
     
-     puff c spawn pointernombre2 spawn flotante = 2'2 @ reg no tiene campo
+    @ puff c spawn pointernombre2 spawn flotante = 2'2 @ reg no tiene campo
     @ puff c spawn p spawn flotante = 2'2 @ campo no declarado
     
 
@@ -34,8 +34,8 @@ world %apts%:
     p = apt == apt5|>12<|
     p = puff apt == puff apt2|>12<|
    
-    Power|}2{||}2{| a
-    p = a|)0(| == a|)2(|
+    Power|}2{||}2{| a2
+    p = a2|)0(| == a2|)2(|
    
     p = apt == apt5|>12<|
     p = puff apt == puff puff apt3|>12<|

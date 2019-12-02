@@ -48,8 +48,8 @@ world %FragmentosDeCodigo%:
   Skill|}3{| indices = |)3'67, 3'20, 3'0(|
   Kit of Rune lista1 = <<*C*, *3*>>
   
-  Registro r2 = {0, *f*}
-  Contacto alex = {~Alex~, 15, Lose}
+  Registro r2 = Registro {0, *f*}
+  Contacto alex = Contacto {~Alex~, 15, Lose}
   Contacto sofia
   sofia spawn nombre = ~Sofia~
   sofia spawn edad = 29
@@ -61,7 +61,7 @@ world %FragmentosDeCodigo%:
   sh spawn c spawn centerY = 5'0
   sh spawn c spawn centerY = 5'0
   sh spawn c spawn radius = 15'0
-  drop ~el area del circulo es ~, kill areaCirculo(sh spawn c)
+  @drop ~el area del circulo es ~, kill areaCirculo(sh spawn c)
 
   Power|}5{| puff p1 = summon Power
   puff p1|)1(| = 15
@@ -103,5 +103,5 @@ world %FragmentosDeCodigo%:
 
   Producto p3
   p3 spawn precioReal = 1500
-  drop ~Ganancia de ~, kill calcularGanancia2(p3 spawn precioReal, 2000)
+  drop ~Ganancia de ~, kill calcularGanancia2(p3 "'spawn precioReal'", 2000)
 .~

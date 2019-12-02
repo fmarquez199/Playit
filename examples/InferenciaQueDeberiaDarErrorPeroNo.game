@@ -1,0 +1,15 @@
+monster f() Power:
+
+    Power c = kill f1(kill g()) @ aqui crea la promesa
+
+.~
+monster g() Power:
+
+.~
+
+monster f1(Skill a) Power:
+.~
+
+world %HolaMundo%:
+
+.~

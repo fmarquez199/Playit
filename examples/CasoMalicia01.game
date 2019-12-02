@@ -60,7 +60,7 @@ world %caso_malicia'M'%:
     Power a2 = 0,b20 = 1
     Power c2 = a2 + 1,d2 = a2*2
 
-    Skill a3 = 1,b31 = 1'0,abc = c2 + 1,d3 = c2*2
+    Skill a3 = 1,b31 = 1'0,abc = c2 + 1,d3 = 2'1
   Battle listab1 = <<2>> == <<>>
   Battle listab2 = <<>> == <<>>
   Battle listab3 = <<>> == <<2>>
@@ -107,7 +107,7 @@ world %caso_malicia'M'%:
     
     Power |}2{| abc2
 
-    Power|}2{| enteros1,enteros2 = |)a2,c2 + 2,(abc2|)0(| + 2 ) * (b2? a2 + 1 : abc2|)abc2|)2(| - 1(|) (|
+    Power|}2{| enteros1,enteros2 = |)c2 + 2,(abc2|)0(| + 2 ) * (b2? a2 + 1 : abc2|)abc2|)2(| - 1(|) (|
     
 
     abc2|)0(| = 0
@@ -121,11 +121,11 @@ world %caso_malicia'M'%:
 
     
     Kit of Power l1 = <<1,2,3,4,4>>
-    Contacto c = {<<l1,l1>>, a2}
-    c spawn n spawn n spawn nombre = joystick ~Dame un nombre YEH NOW BB~
+    Contacto c = Contacto {<<l1,l1>>, a2}
+    @c spawn n spawn n spawn nombre = joystick ~Dame un nombre YEH NOW BB~
     @c spawn lista1|>2<||>1<| = joystick ~HEY LOL~
     @c spawn lista1|>2<||>1<| = joystick ~HEY LOL~
-    c spawn tip = *c*    
+    @c spawn tip = *c*    
         
     Power puff p = summon Power
     
