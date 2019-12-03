@@ -11,7 +11,7 @@
 module Playit.Parser (parse, error) where
 
 import Control.Monad.Trans.RWS
-import Control.Monad (void)
+import Control.Monad (void,when)
 import Playit.SymbolTable
 import Playit.AuxFuncs
 import Playit.CheckAST
@@ -647,29 +647,32 @@ InitVar2 :: { (Id, (Expr,Pos) ) }
   : id "<-" Expression %prec "<-"
     { % do
       (symtab, activeScopes, scope, promises) <- get
-      let (e, _) = $3
-          id = getTk $1
-          tID = typeE e
-          t = if isArray tID || isList tID then baseTypeT tID else TError
-          varInfo = [SymbolInfo t scope IterationVariable []]
-          newSymTab = insertSymbols [id] varInfo symtab
+      let 
+        (e, _) = $3
+        id     = getTk $1
+        tID    = typeE e
+        t = if isArray tID || isList tID then baseTypeArrLst tID else if tID == TPDummy then TPDummy else TError
+        varInfo   = [SymbolInfo t scope IterationVariable []]
+        newSymTab = insertSymbols [id] varInfo symtab
+
+      when (t /= TPDummy) $ put (newSymTab, activeScopes, scope, promises)
       
-      v <- var id (getPos $1)
-      put (newSymTab, activeScopes, scope, promises)
+      -- v <- var id (getPos $1)
       -- return $ assig (v, getPos $1) $3
       return (id, $3)
     }
   | Type id "<-" Expression %prec "<-"
     { % do
       (symtab, activeScopes, scope, promises) <- get
-      let id = getTk $2
-          tE = typeE $ fst $4
-          baseTE = baseTypeT tE
-          -- isArryList
-          t = if isArray tE || isList tE then $1 else TError -- Check tipo base de Expr == Type, y Expr es Array/List
-          var = Var id $1
-          varInfo = [SymbolInfo $1 scope IterationVariable []]
-          newSymTab = insertSymbols [id] varInfo symtab
+      let
+        id        = getTk $2
+        tE        = typeE $ fst $4
+        matchT    = $1 == (baseTypeArrLst tE)
+        arrayl    = isArray tE || isList tE
+        t         = if arrayl && matchT then $1 else TError
+        var       = Var id $1
+        varInfo   = [SymbolInfo $1 scope IterationVariable []]
+        newSymTab = insertSymbols [id] varInfo symtab
 
       -- insertDeclarations [(id, getPos $2)] $1 []
       put (newSymTab, activeScopes, scope, promises)

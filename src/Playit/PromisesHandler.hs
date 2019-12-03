@@ -533,7 +533,13 @@ checkExprForEach promise tr = do
             tell [semmErrorMsg (TList tvar) tne1 fileCode pexpr]
         else
           when (isRealType tr && tvar == TPDummy) $
-            error "TODO: Crear variable en la tabla"
+            let
+              varInfo = [SymbolInfo (baseTypeArrLst tr) scope IterationVariable []]
+              newSymTab = insertSymbols [idvar] varInfo symTab
+            in
+              put (newSymTab, activeScopes, scope, promises)
+
+    (symTab, activeScopes, scope, promises) <- get
 
     lnp <- forM lids1 $ \idpl -> do
       let
