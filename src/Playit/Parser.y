@@ -602,7 +602,7 @@ Controller :: { Instr }
     }
   | for InitVar2 EndLines ".~"
     { %
-      let (v, (e, _)) = $2 in errorForEach "':'" v e [] $1
+      let (v, (e, _)) = $2 in errorForEach "You miss a ':'" v e [] $1
     }
   | for InitVar2 ":" ".~"
     { %
@@ -650,7 +650,7 @@ InitVar2 :: { (Id, (Expr,Pos) ) }
       let (e, _) = $3
           id = getTk $1
           tID = typeE e
-          t = if isArray tID || isList tID then tID else TError
+          t = if isArray tID || isList tID then baseTypeT tID else TError
           varInfo = [SymbolInfo t scope IterationVariable []]
           newSymTab = insertSymbols [id] varInfo symtab
       
@@ -970,19 +970,29 @@ Expression :: { (Expr, Pos) }
 DefineRegister :: { () }
   : Register ":" PushScope EndLines Declarations EndLines ".~"
     { %
-      let extraI = [AST (concatMap snd $ reverse $5), Params (concatMap fst $ reverse $5)]
-      in updatesDeclarationsCategory $1 >> updateExtraInfo $1 TypeConstructors extraI
+      let
+        extraI = [AST (concatMap snd $ reverse $5), Params (concatMap fst $ reverse $5)]
+        (reg, _) = $1
+      in
+        updatesDeclarationsCategory reg >> updateExtraInfo reg TypeConstructors extraI
     }
   | Register ":" PushScope EndLines ".~" { }
 -------------------------------Grammar Errors----------------------------------
   | Register PushScope EndLines Declarations EndLines ".~"
-    { %
-      tell ["Inventory " ++ $1 ++ "seems like it left a ':'"]
+    { % do
+      fileCode <- ask
+      let
+        (_, p) = $1
+      tell [errorMsg "This Inventory seems like it left a ':'" fileCode p]
     }
   | Register ":" PushScope Declarations EndLines ".~"
-    { %
-      let msg = "Inventory " ++ $1 ++ "seems like it left a "
-      in tell [msg ++ "break line before declarations"]
+    { % do
+      fileCode <- ask
+      let
+        (_, p) = $1
+        msg    = "This Inventory seems like it left a break line before declarations"
+
+      tell [errorMsg msg fileCode p]
     }
   -- | Register ":" PushScope Declarations EndLines ".~"
   --   { %
@@ -990,8 +1000,11 @@ DefineRegister :: { () }
   --     in tell ["break line after declarations"]
   --   } DA SHIFT REDUCE
   | Register PushScope EndLines ".~"
-    { %
-      tell ["Inventory " ++ $1 ++ "seems like it left a ':'"]
+    { % do
+      fileCode <- ask
+      let
+        (_, p) = $1
+      tell [errorMsg "This Inventory seems like it left a ':'" fileCode p]
     }
   -- | Register ":" PushScope EndLines ".~"
   --   { %
@@ -999,14 +1012,17 @@ DefineRegister :: { () }
   --     in tell [msg ++ "break line before declarations"]
   --   } DA SHIFT REDUCE
   | Register ":" PushScope ".~"
-    { %
-      let msg = "Inventory " ++ $1 ++ "seems like it left a "
-      in tell [msg ++ "break line before ending"]
+    { % do
+      fileCode <- ask
+      let
+        (_, p) = $1
+        msg    = "This Inventory seems like it left a break line before ending"
+      tell [errorMsg msg fileCode p]
     }
 
 
 -- Add register name first for recursives registers
-Register :: { Id }
+Register :: { (Id, Pos) }
   : register idType
     { %
       defineRegUnion (getTk $2) TRegister [] (getPos $2)
@@ -1029,27 +1045,35 @@ DefineUnion :: { () }
     }
 -------------------------------Grammar Errors----------------------------------
   | union idType PushScope EndLines Declarations EndLines ".~"
-    { %
-      tell ["Items " ++ (getTk $2) ++ "seems like it left a ':'"]
+    { % do
+      fileCode <- ask
+      tell [errorMsg "This Items seems like it left a ':'" fileCode (getPos $2)]
     }
   | union idType ":" PushScope Declarations EndLines ".~"
-    { %
-      let msg = "Items " ++ (getTk $2) ++ "seems like it left a "
-      in tell [msg ++ "break line before declarations"]
+    { % do
+      fileCode <- ask
+      let
+        msg = "This Items seems like it left a break line before declarations"
+      tell [errorMsg msg fileCode (getPos $2)]
     }
   | union idType ":" PushScope EndLines Declarations ".~"
-    { %
-      let msg = "Items " ++ (getTk $2) ++ "seems like it left a "
-      in tell [msg ++ "break line after declarations"]
+    { % do
+      fileCode <- ask
+      let
+        msg = "This Items seems like it left a break line after declarations"
+      tell [errorMsg msg fileCode (getPos $2)]
     }
   | union idType PushScope EndLines ".~"
-    { %
-      tell ["Items " ++ (getTk $2) ++ "seems like it left a ':'"]
+    { % do
+      fileCode <- ask
+      tell [errorMsg "This Items seems like it left a ':'" fileCode (getPos $2)]
     }
   | union idType ":" PushScope ".~"
-    { %
-      let msg = "Items " ++ (getTk $2) ++ "seems like it left a "
-      in tell [msg ++ "break line after declarations"]
+    { % do
+      fileCode <- ask
+      let
+        msg = "This Items seems like it left a break line before ending"
+      tell [errorMsg msg fileCode (getPos $2)]
     }
 -------------------------------------------------------------------------------
 

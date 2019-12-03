@@ -1,3 +1,14 @@
+monster f() Power:
+  controller Power i <- kill g():
+  .~
+  unlock 10
+  @unlock i you cant return an iter var
+.~
+monster g() Kit of Power:
+    Kit of Power kp
+    unlock kp
+.~
+
 world %HolaMundo%:
   drop ~HELLO WORLD!~
 .~

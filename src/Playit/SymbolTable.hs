@@ -197,7 +197,7 @@ defineParameter (Param name t ref) p = do
 
 -------------------------------------------------------------------------------
 -- | Inserts a register / union into symbol table
-defineRegUnion :: Id -> Type -> [ExtraInfo] -> Pos -> MonadSymTab Id
+defineRegUnion :: Id -> Type -> [ExtraInfo] -> Pos -> MonadSymTab (Id, Pos)
 defineRegUnion reg regType extraInfo p = do
   (symTab@(SymTab table), activeScopes, scope, promises) <- get
   fileCode <- ask
@@ -205,18 +205,19 @@ defineRegUnion reg regType extraInfo p = do
 
   if isJust regInfo then
     if regType == TRegister then
-      tell [errorMsg "Redefined Inventory" fileCode p] >> return reg
+      tell [errorMsg "Redefined Inventory" fileCode p] >> return (reg, p)
     else
-      tell [errorMsg "Redefined Items" fileCode p] >> return reg
+      tell [errorMsg "Redefined Items" fileCode p] >> return (reg, p)
   else
     let
       info      = [SymbolInfo regType 1 TypeConstructors extraInfo]
       promise   =  getPromise reg promises
-      npromises = if isJust promise then
+      npromises =
+        if isJust promise then
           let promise' = fromJust promise in filter (/=promise') promises
         else promises
-
-    in addToSymTab [reg] info symTab activeScopes scope npromises >> return reg
+    in
+      addToSymTab [reg] info symTab activeScopes scope npromises >> return (reg,p)
 -------------------------------------------------------------------------------
 
 
