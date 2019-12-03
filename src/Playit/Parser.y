@@ -47,7 +47,7 @@ import Playit.PromisesHandler
   "."               { TkSPAWN _ _ }
   new               { TkSUMMON _ $$ }
   -- If statement
-  if                { TkBUTTON _ $$ }
+  if                { TkBUTTON _ _ }
   else              { TkNotPressed _ _ }
   -- Subroutines
   call              { TkKILL _ _ }
@@ -169,7 +169,7 @@ Program :: { Instr }
   : ChekedDefinitions world program ":" EndLines Instructions EndLines ".~" PopScope
     { %
   -- Checkeo aquí porque en main también se crean promesas (aunque es más un error de nosotros)
-    checkPromises >> program (reverse $6)
+      checkPromises >> program (reverse $6)
     }
   | ChekedDefinitions world program ":" EndLines ".~" PopScope
     { %
@@ -181,6 +181,63 @@ Program :: { Instr }
     }
   | world program ":" EndLines ".~" PopScope
       { Program [] TVoid }
+-------------------------------Grammar Errors----------------------------------
+  | ChekedDefinitions world program EndLines Instructions EndLines ".~"  PopScope
+    { %
+      errorProg "After the program's name you have to put a colon" $5 $3 0
+    }
+  | ChekedDefinitions world program ":" Instructions EndLines ".~" PopScope
+    { %
+      errorProg "You have to write your program in a new line" $5 $3 1
+    }
+  | ChekedDefinitions world program ":" EndLines Instructions ".~" PopScope
+    { %
+      errorProg "End marker must be at the end, in its own line" $6 $7 0
+    }
+  -- | ChekedDefinitions world program ":" EndLines Instructions EndLines PopScope
+  --   { %
+  --     errorProg "You forgot putting '.~' at the end the program" $6 $3 0
+  --   }
+  | ChekedDefinitions world program EndLines ".~" PopScope
+    { %
+      errorProg "After the program's name you have to put a colon" [] $3 1
+    }
+  | ChekedDefinitions world program ":" ".~" PopScope
+    { %
+      errorProg "Empty Program but end marker must be in its own line" [] $3 0
+    }
+  -- | ChekedDefinitions world program ":" EndLines PopScope
+  --   { %
+  --     errorProg "You forgot putting '.~' at the end the program" [] $3 0
+  --   }
+  | world program EndLines Instructions EndLines ".~"  PopScope
+    { %
+      errorProg "After the program's name you have to put a colon" $4 $2 1
+    }
+  | world program ":" Instructions EndLines ".~"  PopScope
+    { %
+      errorProg "You have to write your program in a new line" $4 $2 1
+    }
+  | world program ":" EndLines Instructions ".~"  PopScope
+    { %
+      errorProg "End marker must be at the end, in its own line" $5 $6 0
+    }
+  -- | world program ":" EndLines Instructions EndLines PopScope
+  --   { %
+  --     errorProg "You forgot putting '.~' at the end the program" $6 $2 0
+  --   }
+  | world program EndLines ".~" PopScope
+    { %
+      errorProg "After the program's name you have to put a colon" [] $2 1
+    }
+  | world program ":" ".~" PopScope
+    { %
+      errorProg "Empty Program but end marker must be in its own line" [] $2 1
+    }
+  -- | world program ":" EndLines PopScope
+  --   { %
+  --     errorProg "You forgot putting '.~' at the end the program" [] $2 0
+  --   }
 
 
 ChekedDefinitions :: { () }
@@ -188,11 +245,16 @@ ChekedDefinitions :: { () }
   {  {-checkPromises comentado porque en main el usuario peude hacer llamadas a 
   funciones no definidas y estas no se detectarian, a menos que detectemos que estamos en main y cuando se llama a una
   función no se le crea una promesa, pero eso habría que modificar el estado so es un TODO -}}
-
+  | Definitions
+    { % tell ["After definitions must be one at least line break"] }
 
 Definitions :: { () }
   : Definitions EndLines Definition { }
-  | Definition                       { }
+  | Definitions Definition
+    { %
+      tell ["Definitions must be separated by at least one line break"]
+    }
+  | Definition                      { }
 
 
 Definition :: { () }
@@ -213,6 +275,8 @@ EndLines :: { () }
 
 Declarations :: { [([(Type,Id)], InstrSeq)] }
   : Declarations EndLines Declaration  { $3 : $1 }
+  -- | Declarations Declaration ESTO DA SHIFT REDUCE EN LA REGLA DEL INPUT WTF
+  --  { % tell ["Declarations must be separated by at least one line break"] }
   | Declaration                        { [$1] }
 
 Declaration :: { ([(Type,Id)], InstrSeq) }
@@ -253,6 +317,13 @@ Identifier :: { ((Id, Pos), [(Instr,Pos)]) }
     {
       let (e, p) = $3
       in ( (getTk $1,getPos $1), [(Assig (Var (getTk $1) TDummy) e TVoid, p)] )
+    }
+  | id "<-" Expression
+    { % do
+      fileCode <- ask
+      let (e, p) = $3
+      tell [errorMsg "Did you mean '=' ?" fileCode (getPos $1)]
+      return ((getTk $1,getPos $1), [(Assig (Var (getTk $1) TDummy) e TError,p)])
     }
   | id
     {
@@ -297,6 +368,8 @@ Type :: { Type }
 
 Instructions :: { InstrSeq }
   : Instructions EndLines Instruction  { $3 : $1 }
+  -- | Instructions Instruction DA SHIFT REDUCE
+  -- { % tell ["Instructions must be separated by at least one line break"] }
   | Instruction                        { [$1] }
 
 Instruction :: { Instr }
@@ -318,14 +391,50 @@ Asignation :: { Instr }
   : Lvalue "=" Expression  { % assig $1 $3 }
   | Lvalue "++"            { % increDecreVar Add $1 }
   | Lvalue "--"            { % increDecreVar Minus $1 }
+-------------------------------Grammar Errors----------------------------------
+  | Lvalue "<-" Expression
+    { % do
+      fileCode <- ask
+      let (v, p) = $1
+          (e, _) = $3
+      tell [errorMsg "Did you mean `=` ?" fileCode p]
+      return $ Assig v e TError
+    }
+  | "++" Lvalue
+    { % do
+      fileCode <- ask
+      let (v, p) = $2
+          e      = Binary Add (Variable v TInt) (Literal (Integer 1) TInt) TError
+      tell [errorMsg "'++' must be at the right" fileCode p]
+      return $ Assig v e TError
+    }
+  | "--" Lvalue
+    { % do
+      fileCode <- ask
+      let (v, p) = $2
+          e      = Binary Minus (Variable v TInt) (Literal (Integer 1) TInt) TError
+      tell [errorMsg "'--' must be at the right" fileCode p]
+      return $ Assig v e TError
+    }
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
 -- Selection
 Button :: { Instr }
-  : if ":" EndLines Guards ".~" PopScope { if' (reverse $4) $1 }
+  : if ":" EndLines Guards ".~" PopScope { if' (reverse $4) (getPos $1) }
+-------------------------------Grammar Errors----------------------------------
+  | if EndLines Guards ".~" PopScope
+    { %
+      errorIf "After button you have to put a colon" $3 $1
+    }
+  | if ":" Guards ".~" PopScope
+    { %
+      errorIf "Guards must be written in its own line" $3 $1
+    }
+  -- | if ":" EndLines Guards PopScope { % errorIf "You forgot putting '.~' at the end the Button" $4 $1 } DA SHIFT REDUCE
 
+    
 Guards :: { [(Expr, InstrSeq)] }
   : Guards PopScope Guard  { $3 : $1 }
   | Guard                  { [$1] }
@@ -347,6 +456,40 @@ Guard :: { (Expr, InstrSeq) }
     { %
       return ((Literal (Boolean True) TBool), $5)
     }
+-------------------------------Grammar Errors----------------------------------
+  -- | Expression "}" EndLines PushScope Instructions EndLines
+  --   { %
+  --     let (l, _) = getPos $2
+  --     in errorGuard "Guards must begin with '|'" $1 $5 (l, 1)
+  --   } DAN DEMASIADOS SHIFT REDUCE
+  -- | "|" Expression EndLines PushScope Instructions EndLines
+  --   { %
+  --     guard $2 $5
+  --   }
+  -- | Expression "}" PushScope Instructions EndLines
+  --   { %
+  --     guard $1 $4
+  --   }
+  -- | "|" Expression PushScope Instructions EndLines
+  --   { %
+  --     guard $2 $4
+  --   }
+  -- | else "}" EndLines PushScope Instructions EndLines
+  --   { %
+  --     return ((Literal (Boolean True) TBool), $6)
+  --   }
+  -- | "|" else EndLines PushScope Instructions EndLines
+  --   { %
+  --     return ((Literal (Boolean True) TBool), $6)
+  --   }
+  -- | else "}" PushScope Instructions EndLines
+  --   { %
+  --     return ((Literal (Boolean True) TBool), $5)
+  --   }
+  -- | "|" else PushScope Instructions EndLines
+  --   { %
+  --     return ((Literal (Boolean True) TBool), $5)
+  --   }
 -------------------------------------------------------------------------------
 
 
@@ -357,26 +500,116 @@ Controller :: { Instr }
     { %
       let (varIter, e1) = $2 in for varIter e1 $4 (reverse $7)
     }
- | for InitVar1 "->" Expression while Expression ":" EndLines Instructions EndLines ".~"
-    { %
-      let (varIter, e1) = $2 in forWhile varIter e1 $4 $6 (reverse $9)
-    }
- | for InitVar1 "->" Expression ":" EndLines ".~"
+  | for InitVar1 "->" Expression ":" EndLines ".~"
     { %
       let (varIter, e1) = $2 in for varIter e1 $4 []
     }
- | for InitVar1 "->" Expression while Expression ":" EndLines ".~"
+  | for InitVar1 "->" Expression while Expression ":" EndLines Instructions EndLines ".~"
+    { %
+      let (varIter, e1) = $2 in forWhile varIter e1 $4 $6 (reverse $9)
+    }
+  | for InitVar1 "->" Expression while Expression ":" EndLines ".~"
     { %
       let (varIter, e1) = $2 in forWhile varIter e1 $4 $6 []
     }
- | for InitVar2 ":" EndLines Instructions EndLines ".~"
+  | for InitVar2 ":" EndLines Instructions EndLines ".~"
     { %
       let (varIter, e1) = $2 in forEach varIter e1 (reverse $5)
     }
- | for InitVar2 ":" EndLines ".~"
+  | for InitVar2 ":" EndLines ".~"
     { %
       let (varIter, e1) = $2 in forEach varIter e1 []
     }
+-------------------------------Grammar Errors----------------------------------
+  -- | for InitVar1 Expression ":" EndLines Instructions EndLines ".~"
+  --   { %
+  --     let (v, (e, _)) = $2 in errorFor "'->'" v e (fst $3) (reverse $6) $1
+  --   } DA SHIFT REDUCE
+  | for InitVar1 "->" Expression EndLines Instructions EndLines ".~"
+    { %
+      let (v, (e, _)) = $2 in errorFor "':'" v e (fst $4) (reverse $6) $1
+    }
+  -- | for InitVar1 "->" Expression ":" Instructions EndLines ".~"
+  --   { %
+  --     let (v, (e, _)) = $2
+  --     in errorFor "a break line before statements" v e (fst $4) (reverse $6) $1
+  --   } ESTO DA REDUCE REDUCE
+  | for InitVar1 "->" Expression ":" EndLines Instructions ".~"
+    { %
+      let (v, (e, _)) = $2
+      in errorFor "a break line after statements" v e (fst $4) (reverse $7) $1
+    }
+  -- | for InitVar1 Expression ":" EndLines ".~"
+  --   { %
+  --     let (v, (e, _)) = $2 in errorFor "'->'" v e (fst $3) [] $1
+  --   } DA SHIFT REDUCE
+  | for InitVar1 "->" Expression EndLines ".~"
+    { %
+      let (v, (e, _)) = $2 in errorFor "':'" v e (fst $4) [] $1
+    }
+  | for InitVar1 "->" Expression ":" ".~"
+    { %
+      let (v, (e, _)) = $2
+      in errorFor "'.~' in its own line" v e (fst $4) [] $1
+    }
+  -- | for InitVar1 Expression while Expression ":" EndLines Instructions EndLines ".~"
+  --   { %
+  --     let (v, (e, _)) = $2
+  --     in errorForWhile "'->'" v e (fst $4) (fst $6) (reverse $8) $1
+  --   } DA SHIFT REDUCE
+  | for InitVar1 "->" Expression while Expression EndLines Instructions EndLines ".~"
+    { %
+      let (v, (e, _)) = $2 in
+      errorForWhile "':'" v e (fst $4) (fst $6) (reverse $8) $1
+    }
+  -- | for InitVar1 "->" Expression while Expression ":" Instructions EndLines ".~"
+  --   { %
+  --     let ((v, (e, _)), m) = ($2, "a break line before statements")
+  --     in errorForWhile m v e (fst $4) (fst $6) (reverse $8) $1
+  --   } DA REDUCE REDUCE
+  | for InitVar1 "->" Expression while Expression ":" EndLines Instructions ".~"
+    { %
+      let ((v, (e, _)), m) = ($2, "a break line after statements")
+      in errorForWhile m v e (fst $4) (fst $6) (reverse $9) $1
+    }
+  -- | for InitVar1 Expression while Expression ":" EndLines ".~"
+  --   { %
+  --     let (v, (e, _)) = $2
+  --     in errorForWhile "'->'" v e (fst $4) (fst $6) [] $1
+  --   } DA SHIFT REDUCE
+  | for InitVar1 "->" Expression while Expression EndLines ".~"
+    { %
+      let (v, (e, _)) = $2 in errorForWhile "':'" v e (fst $4) (fst $6) [] $1
+    }
+  | for InitVar1 "->" Expression while Expression ":" ".~"
+    { %
+      let (v, (e, _)) = $2
+      in errorForWhile "'.~' in its own line" v e (fst $4) (fst $6) [] $1
+    }
+  | for InitVar2 EndLines Instructions EndLines ".~"
+    { %
+      let (v, (e, _)) = $2 in errorForEach "':'" v e (reverse $4) $1
+    }
+  | for InitVar2 ":" Instructions EndLines ".~"
+    { %
+      let (v, (e, _)) = $2
+      in errorForEach "a break line before statements" v e (reverse $4) $1
+    }
+  | for InitVar2 ":" EndLines Instructions ".~"
+    { %
+      let (v, (e, _)) = $2
+      in errorForEach "a break line after statements" v e (reverse $5) $1
+    }
+  | for InitVar2 EndLines ".~"
+    { %
+      let (v, (e, _)) = $2 in errorForEach "':'" v e [] $1
+    }
+  | for InitVar2 ":" ".~"
+    { %
+      let (v, (e, _)) = $2
+      in errorForEach "'.~' in its own line" v e [] $1
+    }
+
 
 -- Add to symbol table the iteration variable with its initial value, before
 -- build the instruction tree
@@ -456,6 +689,46 @@ Play :: { Instr }
     { %
       while $5 []
     }
+-------------------------------Grammar Errors----------------------------------
+  | do EndLines Instructions EndLines while Expression EndLines ".~"
+    { %
+      let (e, _) = $6 in errorWhile "':'" e (reverse $3) $1
+    }
+  | do ":" Instructions EndLines while Expression EndLines ".~"
+    { %
+      let (e, _) = $6
+      in errorWhile "a break line before statements" e (reverse $3) $1
+    }
+  | do ":" EndLines Instructions while Expression EndLines ".~"
+    { %
+      let (e, _) = $6
+      in errorWhile "a break line after statements" e (reverse $4) $1
+    }
+  -- | do ":" EndLines Instructions EndLines Expression EndLines ".~"
+  --   { %
+  --     let (e, _) = $6 in errorWhile "lock" e (reverse $4) $1
+  --   } DA REDUCE REDUCE
+  | do ":" EndLines Instructions EndLines while Expression ".~"
+    { %
+      let (e, _) = $7
+      in errorWhile "'.~' in its own line" e (reverse $4) $1
+    }
+    | do EndLines while Expression EndLines ".~"
+    { %
+      let (e, _) = $4 in errorWhile "':'" e [] $1 
+    }
+  | do ":" while Expression EndLines ".~"
+    { %
+      let (e, _) = $4 in errorWhile "a break line before unlock" e [] $1 
+    }
+  -- | do ":" EndLines Expression EndLines ".~"
+  --   { %
+  --     let (e, _) = $6 in errorWhile "lock" e [] $1
+  --   } DA REDUCE REDUCE
+  | do ":" EndLines while Expression ".~"
+    { %
+      let (e, _) = $5 in errorWhile "'.~' in its own line" e [] $1
+    }
 -------------------------------------------------------------------------------
 
 
@@ -487,23 +760,73 @@ Free :: { Instr }
 DefineSubroutine :: { () }
   : Firma ":" EndLines Instructions EndLines ".~"
     { %
-      -- TODO: check existe al menos un return
-      let (id,category) = $1 in updateExtraInfo id category [AST (reverse $4)]
+      let ((id, category), tF) = $1
+          allReturn            = filter isReturn $ concat $ map getInstrSeq $4
+          rightTypeReturns     = all (== tF) $ map typeReturn allReturn
+          func                 = category == Functions
+      in
+        if (func && (not $ null allReturn) && rightTypeReturns) || not func then
+          updateExtraInfo id category [AST (reverse $4)]
+        else do
+          if null allReturn then
+            tell ["Monster " ++ id ++ " seems doesn't unlock anything, what's the deal in defeat it then?"]
+          else
+            tell ["Monster " ++ id ++ " does not unlock what it should"]
+          updateExtraInfo id category [AST (reverse $4)]
     }
-  | Firma ":" EndLines ".~"   { }
+  | Firma ":" EndLines ".~"
+    { %
+      let ((id, category), tF) = $1
+      in
+        if category == Procedures then updateExtraInfo id category [AST []]
+        else do
+          return $ putStrLn $ "Monster " ++ id ++ " seems doesn't unlock anything, what's the deal in defeat it then?"
+          updateExtraInfo id category [AST []]
+    }
+-------------------------------Grammar Errors----------------------------------
+  | Firma EndLines Instructions EndLines ".~"
+    { %
+      let ((id, category), _) = $1
+          msg                 = id ++ "seems like it left "
+      in
+        if category == Functions then
+          tell ["Monster " ++ msg ++ "':'"]
+        else
+          tell ["Boss " ++ msg ++ "':'"]
+    }
+  | Firma ":" Instructions EndLines ".~"
+    { %
+      let ((id, category), _) = $1
+          msg                 = id ++ "seems like it left "
+      in
+        if category == Functions then
+          tell ["Monster " ++ msg ++ "a break line before statements"]
+        else
+          tell ["Boss " ++ msg ++ "a break line before statements"]
+    }
+  | Firma ":" EndLines Instructions ".~"
+    { %
+      let ((id, category), _) = $1
+          msg                 = id ++ "seems like it left "
+      in
+        if category == Functions then
+          tell ["Monster " ++ msg ++ "a break line after statements"]
+        else
+          tell ["Boss " ++ msg ++ "a break line after statements"]
+    }
 
 
 -------------------------------------------------------------------------------
-Firma :: { (Id, Category) }
+Firma :: { ((Id, Category), Type) }
   : Name PushScope Params
   { %
     let (name,category) = $1
-    in updateInfoSubroutine name category $3 TVoid >> return $1
+    in updateInfoSubroutine name category $3 TVoid >> return ($1, TVoid)
   }
   | Name PushScope Params Type 
     { %
       let (name,category) = $1
-      in updateInfoSubroutine name category $3 $4 >> return $1
+      in updateInfoSubroutine name category $3 $4 >> return ($1, $4)
     }
 
 -------------------------------------------------------------------------------
@@ -522,15 +845,15 @@ Name :: { (Id, Category) }
 
 -------------------------------------------------------------------------------
 -- Subroutines parameters definitions
-Params ::{ [(Type,Id)] }
+Params ::{ [(Type, Id)] }
   : "(" DefineParams ")" { $2 }
   | "(" ")"              { [] }
 
-DefineParams :: { [(Type,Id)] }
+DefineParams :: { [(Type, Id)] }
   : DefineParams "," Param  { $3 : $1 }
   | Param                   { [$1] }
 
-Param :: { (Type,Id) }
+Param :: { (Type, Id) }
   : Type id       { % defineParameter (Param (getTk $2) $1 Value) (getPos $2) }
   | Type "?" id   { % defineParameter (Param (getTk $3) $1 Reference) (getPos $3) }
 -------------------------------------------------------------------------------
@@ -541,7 +864,7 @@ Param :: { (Type,Id) }
 ProcCall :: { Instr }
   : SubroutineCall                { % procCall $1 }
 
-FuncCall :: { (Expr,Pos) }
+FuncCall :: { (Expr, Pos) }
   : SubroutineCall                { % funcCall $1 }
 
 SubroutineCall :: { (Subroutine, Pos) }
@@ -556,7 +879,7 @@ Arguments :: { Params }
   : Arguments "," Argument   { $3 : $1 }
   | Argument                 { [$1] }
 
-Argument :: { (Expr,Pos) }
+Argument :: { (Expr, Pos) }
   : Expression               { $1 }
   | "?" Expression           { $2 }
 -------------------------------------------------------------------------------
@@ -568,11 +891,11 @@ Argument :: { (Expr,Pos) }
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 
-Expressions::{ [(Expr,Pos)] }
+Expressions::{ [(Expr, Pos)] }
   : Expressions "," Expression           { $3 : $1 }
   | Expression                           { [$1] }
 
-Expression :: { (Expr,Pos) }
+Expression :: { (Expr, Pos) }
   : Expression "+" Expression            { % binary Add $1 $3 $2 }
   | Expression "-" Expression            { % binary Minus $1 $3 $2 }
   | Expression "*" Expression            { % binary Mult $1 $3 $2 }
@@ -642,6 +965,36 @@ DefineRegister :: { () }
       in updatesDeclarationsCategory $1 >> updateExtraInfo $1 TypeConstructors extraI
     }
   | Register ":" PushScope EndLines ".~" { }
+-------------------------------Grammar Errors----------------------------------
+  | Register PushScope EndLines Declarations EndLines ".~"
+    { %
+      tell ["Inventory " ++ $1 ++ "seems like it left a ':'"]
+    }
+  | Register ":" PushScope Declarations EndLines ".~"
+    { %
+      let msg = "Inventory " ++ $1 ++ "seems like it left a "
+      in tell [msg ++ "break line before declarations"]
+    }
+  -- | Register ":" PushScope Declarations EndLines ".~"
+  --   { %
+  --     let msg = "Inventory/Items " ++ $1 ++ "seems like it left a "
+  --     in tell ["break line after declarations"]
+  --   } DA SHIFT REDUCE
+  | Register PushScope EndLines ".~"
+    { %
+      tell ["Inventory " ++ $1 ++ "seems like it left a ':'"]
+    }
+  -- | Register ":" PushScope EndLines ".~"
+  --   { %
+  --     let msg = "Inventory " ++ $1 ++ "seems like it left a "
+  --     in tell [msg ++ "break line before declarations"]
+  --   } DA SHIFT REDUCE
+  | Register ":" PushScope ".~"
+    { %
+      let msg = "Inventory " ++ $1 ++ "seems like it left a "
+      in tell [msg ++ "break line before ending"]
+    }
+
 
 -- Add register name first for recursives registers
 Register :: { Id }
@@ -664,6 +1017,30 @@ DefineUnion :: { () }
     { %
       let extraInfo = [AST [], Params []]
       in void $ defineRegUnion (getTk $2) TUnion extraInfo (getPos $2)
+    }
+-------------------------------Grammar Errors----------------------------------
+  | union idType PushScope EndLines Declarations EndLines ".~"
+    { %
+      tell ["Items " ++ (getTk $2) ++ "seems like it left a ':'"]
+    }
+  | union idType ":" PushScope Declarations EndLines ".~"
+    { %
+      let msg = "Items " ++ (getTk $2) ++ "seems like it left a "
+      in tell [msg ++ "break line before declarations"]
+    }
+  | union idType ":" PushScope EndLines Declarations ".~"
+    { %
+      let msg = "Items " ++ (getTk $2) ++ "seems like it left a "
+      in tell [msg ++ "break line after declarations"]
+    }
+  | union idType PushScope EndLines ".~"
+    { %
+      tell ["Items " ++ (getTk $2) ++ "seems like it left a ':'"]
+    }
+  | union idType ":" PushScope ".~"
+    { %
+      let msg = "Items " ++ (getTk $2) ++ "seems like it left a "
+      in tell [msg ++ "break line after declarations"]
     }
 -------------------------------------------------------------------------------
 
