@@ -34,7 +34,7 @@ world %test%:
 
     (Power puff)|}3{| h @ array de punteros a enteros
     Power puff p
-    @h = |)DeathZone , (summon Power),DeathZone(|
+    @h = |)DeathZone, (summon Power),DeathZone(|
     h = |)p,p,p(|
 
     @ array de punteros a listas de punteros a listas de punteros a enteros

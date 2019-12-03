@@ -218,7 +218,7 @@ updateInfoSubroutine name cat p t = do
     if  any (/=True) [isJust (getTLists [t1 , t2]) | ((t1,_),(t2,_)) <- l ] then do
       let               
         ((tgot,pgot),(texpected,_)) = head $ dropWhile (\((t1,_),(t2,_)) -> isJust (getTLists [t1 , t2])) l
-      tell [semmErrorMsg (show texpected) (show tgot) fileCode pgot]
+      tell [semmErrorMsg texpected tgot fileCode pgot]
 
     else
 
@@ -230,8 +230,8 @@ updateInfoSubroutine name cat p t = do
 
       else
         if isNothing (getTLists [typeP,t]) then
-          when (typeP /= TError && t /= TError) $
-            tell [semmErrorMsg (show typeP) (show t) fileCode posp]
+          when (typeP `notElem` [TError,TPDummy] && t `notElem` [TError,TPDummy]) $
+            tell [semmErrorMsg typeP t fileCode posp]
         else do
           checkExpr promise' t
           checkExprCalls promise' t -- TODO: No se chequean cuando se infiere?
@@ -456,8 +456,8 @@ checkExprCalls promise tr = do
     -- Dado la nueva expresión cno el tipo de la promesa cambiado
     newParamsCall <- forM listParams $ \(t,ne,p) -> do
       when (isNothing (getTLists [typeE ne,t])) $
-        when (t /= TError && typeE ne /= TError) $
-          tell [semmErrorMsg (show t) (show ne) fileCode p]
+        when (t `notElem` [TError,TPDummy] && typeE ne `notElem` [TError,TPDummy]) $
+          tell [semmErrorMsg t (typeE ne) fileCode p]
       return (ne,p) 
 
     let 
@@ -526,11 +526,11 @@ checkExprForEach promise tr = do
     when (tne1 /= TPDummy) $
       if not (isArray tne1) && not (isList tne1) then
         when (tne1 /= TError) $
-          tell [semmErrorMsg "List or Array" (show tne1) fileCode pexpr]
+          tell [forEachErrorMsg tne1 fileCode pexpr]
       else
         if tvar /= TPDummy && isNothing (getTLists [TList tvar,tne1]) then
-          when (tne1 /= TError) $
-            tell [semmErrorMsg (show (TList tvar)) (show tne1) fileCode pexpr]
+          when (tne1 /= TError && tvar /= TError) $
+            tell [semmErrorMsg (TList tvar) tne1 fileCode pexpr]
         else
           when (isRealType tr && tvar == TPDummy) $
             error "TODO: Crear variable en la tabla"
@@ -641,13 +641,13 @@ checkUnaryExpr op e t p = do
 
   if op == Length then
     unless (isArray te || isList te) $
-      when (te /= TError) $
-        tell [semmErrorMsg "Array or Kit" (show te) fileCode p]
+      when (te `notElem` [TError,TPDummy]) $
+        tell [arrLstErrorMsg te fileCode p]
   else 
     when (op == Negative) $
       unless (te == TInt || te == TFloat) $
-        when (te /= TError) $
-          tell [semmErrorMsg "Power or Skill" (show te) fileCode p]
+        when (te `notElem` [TError,TPDummy]) $
+          tell [aritErrorMsg te fileCode p]
 -------------------------------------------------------------------------------
 
 
@@ -669,111 +669,119 @@ checkBinaryExpr op e1 p1 e2 p2 = do
     if op `elem` eqOps then
       
       if isTypeComparableEq tE1 &&  not (isTypeComparableEq tE2) then
-        when (tE1 /= TError && tE2 /= TError) $
-          tell [semmErrorMsg (show tE1) (show tE2) fileCode p2]
+        when (tE1 `notElem` [TError,TPDummy] && tE2 `notElem` [TError,TPDummy]) $
+          tell [semmErrorMsg tE1 tE2 fileCode p2]
       else 
         if not (isTypeComparableEq tE1) &&  isTypeComparableEq tE2 then
-          when (tE1 /= TError && tE2 /= TError) $
-            tell [semmErrorMsg (show tE2) (show tE1) fileCode p1]
+          when (tE1 `notElem` [TError,TPDummy] && tE2 `notElem` [TError,TPDummy]) $
+            tell [semmErrorMsg tE2 tE1 fileCode p1]
         else
           if isTypeComparableEq tE1 && isTypeComparableEq tE2 then
             when (isNothing (getTLists [tE1,tE2])) $
-              when (tE1 /= TError && tE2 /= TError) $
-                tell [semmErrorMsg (show tE1) (show tE2) fileCode p2]
+              when (tE1 `notElem` [TError,TPDummy] && tE2 `notElem` [TError,TPDummy]) $
+                tell [semmErrorMsg tE1 tE2 fileCode p2]
           else 
-            when (tE1 /= TError) $
-              tell [semmErrorMsg "Tipo comparable" (show tE1) fileCode p1]
+            when (tE1 `notElem` [TError,TPDummy]) $
+              tell [compErrorMsg tE1 fileCode p1]
 
     else 
 
       if (op `elem` compOps ) || (op `elem` aritOps )then
 
         if isTypeNumber tE1 &&  not (isTypeNumber tE2) then
-          when (tE1 /= TError && tE2 /= TError) $
-            tell [semmErrorMsg (show tE1) (show tE2) fileCode p2]
+          when (tE1 `notElem` [TError,TPDummy] && tE2 `notElem` [TError,TPDummy]) $
+            tell [semmErrorMsg tE1 tE2 fileCode p2]
         else 
           if not (isTypeNumber tE1) &&  isTypeNumber tE2 then
-            when (tE1 /= TError && tE2 /= TError) $
-              tell [semmErrorMsg (show tE2) (show tE1) fileCode p1]
+            when (tE1 `notElem` [TError,TPDummy] && tE2 `notElem` [TError,TPDummy]) $
+              tell [semmErrorMsg tE2 tE1 fileCode p1]
           else 
             if isTypeNumber tE1  && isTypeNumber tE2 then
-              when (tE1 /= TError && tE2 /= TError) $
-                tell [semmErrorMsg (show tE1) (show tE2) fileCode p2]
+              when (tE1 `notElem` [TError,TPDummy] && tE2 `notElem` [TError,TPDummy]) $
+                tell [semmErrorMsg tE1 tE2 fileCode p2]
             else 
-              when (tE1 /= TError) $
-                tell [semmErrorMsg "Power or Skill" (show tE1) fileCode p1]
+              when (tE1 `notElem` [TError,TPDummy]) $
+                tell [aritErrorMsg tE1 fileCode p1]
 
       else 
         if op `elem` aritInt then
 
           if tE1 == TInt then
-            when (tE1 /= TError && tE2 /= TError) $
-              tell [semmErrorMsg (show tE1) (show tE2) fileCode p2]
+            when (tE1 `notElem` [TError,TPDummy] && tE2 `notElem` [TError,TPDummy]) $
+              tell [semmErrorMsg tE1 tE2 fileCode p2]
           else 
-            if tE2 == TInt && tE1 /= TError then
-              tell [semmErrorMsg (show tE2) (show tE1) fileCode p1]
+            if tE2 == TInt && tE1 `notElem` [TError,TPDummy] then
+              tell [semmErrorMsg tE2 tE1 fileCode p1]
             else
-              when (tE1 /= TError) $
-                tell [semmErrorMsg "Power" (show tE1) fileCode p1]
+              when (tE1 `notElem` [TError,TPDummy]) $
+                tell [semmErrorMsg TInt tE1 fileCode p1]
 
         else 
           if op `elem` boolOps then
 
-            if tE1 == TBool && tE2 /= TError then
-              tell [semmErrorMsg (show tE1) (show tE2) fileCode p2]
+            if tE1 == TBool && tE2 `notElem` [TError,TPDummy] then
+              tell [semmErrorMsg tE1 tE2 fileCode p2]
             else 
-              if tE1 /= TBool && tE2 == TBool && tE1 /= TError && tE2 /= TError then
-                tell [semmErrorMsg (show tE2) (show tE1) fileCode p1]
+              if tE1 /= TBool && tE2 == TBool && tE1 `notElem` [TError,TPDummy]
+                && tE2 `notElem` [TError,TPDummy] then
+                  tell [semmErrorMsg tE2 tE1 fileCode p1]
               else
-                when (tE1 /= TError) $
-                  tell [semmErrorMsg "Battle" (show tE1) fileCode p1]
+                when (tE1 `notElem` [TError,TPDummy]) $
+                  tell [semmErrorMsg TBool tE1 fileCode p1]
 
           else do
             when (op == Anexo) $
               let typeR = fromMaybe TError (getTLists [TList tE1,tE2])
               in
-                when (typeR == TError && tE2 /= TError) $
-                  tell [semmErrorMsg (show (TList tE1)) (show tE2) fileCode p2]
+                when (typeR == TError && tE1 `notElem` [TError,TPDummy] &&
+                  baseTypeT tE2 `notElem` [TError,TPDummy]) $
+                    tell [semmErrorMsg (TList tE1) tE2 fileCode p2]
 
             when (op == Concat) $ 
               if isList tE1 && not (isList tE2) then
-                when (tE2 /= TError) $
-                  tell [semmErrorMsg "List" (show tE2) fileCode p2]
+                when (tE2 `notElem` [TError,TPDummy]) $
+                  tell [semmErrorMsg tE1 tE2 fileCode p2]
               else
-                if (isList tE1 && not (isList tE2)) || (not (isList tE1) && not (isList tE2)) then
-                  when (tE1 /= TError) $
-                    tell [semmErrorMsg "List" (show tE1) fileCode p1]
+                if not (isList tE1) && not (isList tE2) then
+                  when (baseTypeT tE1 `notElem` [TError,TPDummy] &&
+                    baseTypeT tE2 `notElem` [TError,TPDummy]) $
+                      tell [concatErrorMsg tE1 tE2 fileCode p2]
                 else 
-                  when (isList tE1 && isList tE2 && isNothing (getTLists [tE1,tE2]) && tE1 /= TError && tE2 /= TError) $
-                    tell [semmErrorMsg (show tE1) (show tE2) fileCode p2]
+                  when (isList tE1 && isList tE2 && isNothing (getTLists [tE1,tE2])
+                    && baseTypeT tE1 `notElem` [TError,TPDummy] &&
+                      baseTypeT tE2 `notElem` [TError,TPDummy]) $
+                        tell [semmErrorMsg tE1 tE2 fileCode p2]
 
   else --- Si son iguales los tipos de las expresiones 
     if op `elem` eqOps then
       unless (isTypeComparableEq tE1) $           
-        when (tE1 /= TError) $
-          tell [semmErrorMsg "Tipo comparable" (show tE1) fileCode p1]
+        when (tE1 `notElem` [TError,TPDummy]) $
+          tell [compErrorMsg tE1 fileCode p1]
       
     else
       if op `elem` compOps || op `elem` aritOps then
-        when (tE1 /= TInt && tE1 /= TFloat && tE1 /= TError) $
-          tell [semmErrorMsg "Power or Skill" (show tE1) fileCode p1]
+        when (tE1 /= TInt && tE1 /= TFloat && tE1 `notElem` [TError,TPDummy]) $
+          tell [aritErrorMsg tE1 fileCode p1]
       else
         if op `elem` aritInt then
-          when (tE1 /= TInt && tE1 /= TError) $
-            tell [semmErrorMsg "Power" (show tE1) fileCode p1]
+          when (tE1 /= TInt && tE1 `notElem` [TError,TPDummy]) $
+            tell [semmErrorMsg TInt tE1 fileCode p1]
         else
           if op `elem` boolOps then
-            when (tE1 /= TBool && tE1 /= TError) $
-              tell [semmErrorMsg "Battle" (show tE1) fileCode p1]
+            when (tE1 /= TBool && tE1 `notElem` [TError,TPDummy]) $
+              tell [semmErrorMsg TBool tE1 fileCode p1]
           else do
             when (op == Anexo) $
               let typeR = fromMaybe TError (getTLists [TList tE1,tE2])
               in
-                when (typeR == TError && tE2 /= TError) $
-                  tell [semmErrorMsg (show (TList tE1)) (show tE2) fileCode p2]
+                when (typeR == TError && tE1 `notElem` [TError,TPDummy] &&
+                  baseTypeT tE2 `notElem` [TError,TPDummy]) $
+                    tell [semmErrorMsg (TList tE1) tE2 fileCode p2]
 
-            when (op == Concat && not (isList tE1) && not (isList tE2) && tE1 /= TError) $
-              tell [semmErrorMsg "List" (show tE1) fileCode p1]
+            when (op == Concat && not (isList tE1) && not (isList tE2) &&
+              baseTypeT tE1 `notElem` [TError,TPDummy] &&
+                baseTypeT tE1 `notElem` [TError,TPDummy]) $
+                  tell [concatErrorMsg tE1 tE2 fileCode p1]
 
   return ()
 -------------------------------------------------------------------------------
@@ -800,28 +808,28 @@ checkLateCheck (IfSimple e1 e2 e3 _) lpos = do
   let 
     tE1 = typeE e1
     tE2 = typeE e2
-    te3 = typeE e3
+    tE3 = typeE e3
 
-  when (tE1 /= TPDummy && tE2 /= TPDummy && te3 /= TPDummy) $ do
+  when (tE1 /= TPDummy && tE2 /= TPDummy && tE3 /= TPDummy) $ do
     fileCode <- ask
 
     if tE1 == TBool then
-      let mbTypeR = getTLists [tE2,te3] -- Simula crear una lista que contiene esos dos tipos para ahorrar calculos
+      let mbTypeR = getTLists [tE2,tE3] -- Simula crear una lista que contiene esos dos tipos para ahorrar calculos
       in
       when (isNothing mbTypeR) $
-        if isRealType tE2 && not (isRealType te3) then
-          when (tE2 /= TError && te3 /= TError) $
-            tell [semmErrorMsg (show tE2) (show te3) fileCode (lpos !! 2)]
+        if isRealType tE2 && not (isRealType tE3) then
+          when (tE2 /= TError && tE3 /= TError) $
+            tell [semmErrorMsg tE2 tE3 fileCode (lpos !! 2)]
         else
-          if not (isRealType tE2) && isRealType te3 then
-            when (tE2 /= TError && te3 /= TError) $
-              tell [semmErrorMsg (show te3) (show tE2) fileCode (lpos !! 1)]
+          if not (isRealType tE2) && isRealType tE3 then
+            when (tE2 /= TError && tE3 /= TError) $
+              tell [semmErrorMsg tE3 tE2 fileCode (lpos !! 1)]
           else
-            when (tE2 /= TError && te3 /= TError) $
-              tell [semmErrorMsg (show tE2) (show te3) fileCode (lpos !! 2)]
+            when (tE2 /= TError && tE3 /= TError) $
+              tell [semmErrorMsg tE2 tE3 fileCode (lpos !! 2)]
     else
       when (tE1 /= TError) $
-        tell [semmErrorMsg "Battle" (show tE1) fileCode (head lpos)]
+        tell [semmErrorMsg TBool tE1 fileCode (head lpos)]
 
 checkLateCheck (ArrayList exprs _) pos = do
   let
@@ -833,9 +841,11 @@ checkLateCheck (ArrayList exprs _) pos = do
     let 
       exprsP = zip exprs pos
       (tExpected, (tGot,ptGot)) = getTExpectedTGot (map (\(e,pe) -> (typeE e,pe)) exprsP)
-      msg = semmErrorMsg (show tExpected) (show tGot) fileCode ptGot
+      msg = semmErrorMsg tExpected tGot fileCode ptGot
 
-    tell [msg]
+    when (baseTypeT tExpected `notElem` [TError,TPDummy] &&
+      baseTypeT tGot `notElem` [TError,TPDummy]) $
+        tell [msg]
 -------------------------------------------------------------------------------
 
 

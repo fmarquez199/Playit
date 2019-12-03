@@ -34,7 +34,7 @@ errorRuler c = "\t\x1b[1;93m" ++ replicate (c-1) '.' ++ "\x1b[5;31m^\x1b[0m\n"
 -- | Message of the error
 errorMsg :: String -> FileCodeReader -> Pos -> String
 errorMsg msg (file,code) (l,c) = "\n\n\x1b[1;36m" ++ msg ++ "\x1b[94m: " ++
-  file ++ ":\n" ++ "\x1b[93m| " ++ show l ++ "\t\x1b[0;96m" ++
+  file ++ ":\n" ++ "\x1b[93m|\n| " ++ show l ++ "\t\x1b[0;96m" ++
   errorLine code l ++ errorRuler c
 -------------------------------------------------------------------------------
 
@@ -169,8 +169,89 @@ errorWhile msg e i tk = tellParserError msg tk >> return (While e i TError)
 
 -------------------------------------------------------------------------------
 -- | Message of the semmantic error
-semmErrorMsg :: String -> String -> FileCodeReader -> Pos -> String
+semmErrorMsg :: Type -> Type -> FileCodeReader -> Pos -> String
 semmErrorMsg t1 t2 (file,code) (l,c) = "\n\n\x1b[1;36mMismatched types\x1b[94m:"
-  ++ file ++ ":\n" ++ "Expected: " ++ t1 ++ "    Got: " ++ t2 ++
+  ++ file ++ ":\n" ++ "Expected: " ++ show t1 ++ "    Got: " ++ show t2 ++
+  "\n\x1b[93m|\n| " ++ show l ++ "\t\x1b[0;96m" ++ errorLine code l ++ errorRuler c
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+fieldErrorMsg :: Type -> FileCodeReader -> Pos -> String
+fieldErrorMsg t (file,code) (l,c) =
+  "\n\n\x1b[1;36mType of field isn't a register or union\x1b[94m:"
+  ++ file ++ ":\n" ++ "Field's type: " ++ show t ++ "\n\x1b[93m|\n| " ++
+  show l ++ "\t\x1b[0;96m" ++ errorLine code l ++ errorRuler c
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+listErrorMsg :: Type -> FileCodeReader -> Pos -> String
+listErrorMsg t (file,code) (l,c) =
+  "\n\n\x1b[1;36mThis kind of indexation is for Kits\x1b[94m:"
+  ++ file ++ ":\n" ++ "Variable's type: " ++ show t ++ "\n\x1b[93m|\n| " ++
+  show l ++ "\t\x1b[0;96m" ++ errorLine code l ++ errorRuler c
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+indexErrorMsg :: Type -> FileCodeReader -> Pos -> String
+indexErrorMsg t (file,code) (l,c) =
+  "\n\n\x1b[1;36mAn index should be a Power\x1b[94m:"
+  ++ file ++ ":\n" ++ "Index's type: " ++ show t ++ "\n\x1b[93m|\n| " ++
+  show l ++ "\t\x1b[0;96m" ++ errorLine code l ++ errorRuler c
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+arrayErrorMsg :: Type -> FileCodeReader -> Pos -> String
+arrayErrorMsg t (file,code) (l,c) =
+  "\n\n\x1b[1;36mThis is not an array neither Runes\x1b[94m:"
+  ++ file ++ ":\n" ++ "Variable's type: " ++ show t ++ "\n\x1b[93m|\n| " ++
+  show l ++ "\t\x1b[0;96m" ++ errorLine code l ++ errorRuler c
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+forEachErrorMsg :: Type -> FileCodeReader -> Pos -> String
+forEachErrorMsg t (file,code) (l,c) =
+  "\n\n\x1b[1;36mYou should iterate through an array or Kit\x1b[94m:"
+  ++ file ++ ":\n" ++ "Variable's type: " ++ show t ++ "\n\x1b[93m|\n| " ++
+  show l ++ "\t\x1b[0;96m" ++ errorLine code l ++ errorRuler c
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+aritErrorMsg :: Type -> FileCodeReader -> Pos -> String
+aritErrorMsg t (file,code) (l,c) =
+  "\n\n\x1b[1;36mThis operation is just for Power and Skill\x1b[94m:"
+  ++ file ++ ":\n" ++ "Expression's type: " ++ show t ++ "\n\x1b[93m|\n| " ++
+  show l ++ "\t\x1b[0;96m" ++ errorLine code l ++ errorRuler c
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+compErrorMsg :: Type -> FileCodeReader -> Pos -> String
+compErrorMsg t (file,code) (l,c) =
+  "\n\n\x1b[1;36mThis should be comparable\x1b[94m:"
+  ++ file ++ ":\n" ++ "Expression's type: " ++ show t ++ "\n\x1b[93m|\n| " ++
+  show l ++ "\t\x1b[0;96m" ++ errorLine code l ++ errorRuler c
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+arrLstErrorMsg :: Type -> FileCodeReader -> Pos -> String
+arrLstErrorMsg t (file,code) (l,c) =
+  "\n\n\x1b[1;36mThis operation is just for arrays and Kits\x1b[94m:"
+  ++ file ++ ":\n" ++ "Expression's type: " ++ show t ++ "\n\x1b[93m|\n| " ++
+  show l ++ "\t\x1b[0;96m" ++ errorLine code l ++ errorRuler c
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+concatErrorMsg :: Type -> Type -> FileCodeReader -> Pos -> String
+concatErrorMsg t1 t2 (file,code) (l,c) =
+  "\n\n\x1b[1;36mYou can only concatenate two Kits\x1b[94m:" ++ file ++ ":\n"
+  ++ "Expression's type 1: " ++ show t1 ++ "    Expression's type 2: " ++ show t2 ++
   "\n\x1b[93m|\n| " ++ show l ++ "\t\x1b[0;96m" ++ errorLine code l ++ errorRuler c
 -------------------------------------------------------------------------------

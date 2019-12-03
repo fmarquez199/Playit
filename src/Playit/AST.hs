@@ -50,7 +50,7 @@ var id p = do
 
   if isJust infos then
     let 
-      vars          = [Variables, Parameters Value, Parameters Reference]
+      vars = [Variables,IterationVariable,Parameters Value,Parameters Reference]
       isVar symInfo = getCategory symInfo `elem` vars
       v             = filter isVar (fromJust infos)
     in
@@ -70,9 +70,10 @@ indexArray (var,pVar) (expr,pExpr)
   | not (isArray tVar) && tVar /= TStr = do
     fileCode <- ask
     when (tVar /= TError) $
-      tell [semmErrorMsg "Array or Str" (show tVar) fileCode pVar]
+      tell [arrayErrorMsg tVar fileCode pVar]
     return (Index var expr TError, pVar) -- Maybe luego sera necesario distinguir en el nodo array/lista/string
 
+  -- | tVar == TStr && 
   | tExpr == TPDummy || tExpr == TInt = do
     nexpr <- updateExpr expr TInt
     let tindex = if tVar == TStr then TChar else baseTypeArrLst (typeVar var)
@@ -81,7 +82,7 @@ indexArray (var,pVar) (expr,pExpr)
   | tExpr /= TInt = do
     fileCode <- ask
     when (tExpr /= TError) $
-      tell [semmErrorMsg "Power" (show tExpr) fileCode pExpr]
+      tell [indexErrorMsg tExpr fileCode pExpr]
     return (Index var expr TError, pVar) 
 
   where
@@ -94,7 +95,7 @@ indexList (var,pVar) (expr,pExpr)
   | not (isList tVar) = do
     fileCode <- ask
     when (tVar /= TError) $
-      tell [semmErrorMsg "List" (show tVar) fileCode pVar]
+      tell [listErrorMsg tVar fileCode pVar]
     return (Index var expr TError, pVar) -- Maybe luego sera necesario distinguir en el nodo array/lista/string
 
   | tExpr == TPDummy || tExpr == TInt = do
@@ -104,12 +105,12 @@ indexList (var,pVar) (expr,pExpr)
   | tExpr /= TInt = do
     fileCode <- ask
     when (tExpr /= TError) $
-      tell [semmErrorMsg "Power" (show tExpr) fileCode pExpr]
+      tell [indexErrorMsg tExpr fileCode pExpr]
     return (Index var expr TError, pVar) -- Maybe luego sera necesario distinguir en el nodo array/lista/string
 
   where
     tExpr = typeE expr
-    tVar = typeVar var
+    tVar  = typeVar var
 -------------------------------------------------------------------------------
 
 
@@ -118,19 +119,21 @@ indexList (var,pVar) (expr,pExpr)
 field :: (Var,Pos) -> Id -> Pos -> MonadSymTab (Var,Pos)
 field (var,pVar) field pField = do
   (symTab, _, _, promises) <- get
-  fileCode@(file,code) <- ask
+  fileCode@(file,code)     <- ask
   
   -- Verify type 'var' is register / union
   -- La existencia de "name" fue verificada ya en un parse anterior
   -- Nota: Puede no existir en la tabla pero sí en una promesa
   let
-    reg = case baseTypeVar var of 
+    tVar = typeVar var
+    err  = Field var field TError
+    tErr = fieldErrorMsg tVar fileCode pVar
+    reg  = case baseTypeVar var of 
             (TNew name) -> name
             _           -> ""
-    err = Field var field TError
-    msg = errorMsg "Type of field isn't a register or union" fileCode pVar
 
-  if reg == "" then tell [msg] >> return (err, pField)    -- type error
+  if reg == "" then -- type error
+    when (tVar /= TError) (tell [tErr]) >> return (err, pField)
   else
     --chequearTipo reg p
     
@@ -139,19 +142,22 @@ field (var,pVar) field pField = do
       if isJust info then
         let
           isInRegUnion (SymbolInfo _ _ c e) = c == Fields && getReg e == reg
-          symbols = filter isInRegUnion (fromJust info )
-          msg'    = errorMsg ("Field not in '"++reg++"'") fileCode pField
+          symbols = filter isInRegUnion (fromJust info)
+          noField = errorMsg ("Field not in '" ++ reg ++ "'") fileCode pField
         in
-          if null symbols then tell [msg'] >> return (err, pField)
-          else return (Field var field (getType $ head symbols), pField)
+          if null symbols then tell [noField] >> return (err, pField)
+          else
+            return (Field var field (getType $ head symbols), pField)
       else
-        let promise = getPromise reg promises
+        let
+          promise = getPromise reg promises
+          fNoDecl = [errorMsg "Field not declared" fileCode pField]
+          noDecl  = [errorMsg ("'"++ reg ++"' was not declared yet. Incorrect use.") fileCode pField]
         in
           if isNothing promise then
-            tell [errorMsg "Field not declared" fileCode pField] >> return (err, pField)
-          else do
-            tell [errorMsg ("'" ++ reg ++  "' was not declared yet. Incorrect use.") fileCode pField]
-            return (err, pField)
+            tell fNoDecl >> return (err, pField)
+          else
+            tell noDecl >> return (err, pField)
 -------------------------------------------------------------------------------
 
 
@@ -204,8 +210,8 @@ assig (lval,pLval) (e,pE) = do
     when iter $
       tell [errorMsg "You can't modify an iteration variable" fileCode pLval]
     
-    if typeE e /= TError then tell [msg] >> return (Assig lval e' TError)
-    else return (Assig lval e' TError)
+    when (typeVar lval /= TError && typeE e' /= TError) $ tell [msg]
+    return (Assig lval e' TError)
 -------------------------------------------------------------------------------
 
 
@@ -219,7 +225,7 @@ increDecreVar op (var,pos) = do
 
   unless (tVar == TInt) $
     when (typeVar var /= TError) $
-      tell [semmErrorMsg "Power" (show tVar) fileCode pos]
+      tell [semmErrorMsg TInt tVar fileCode pos]
 
   assig (var,pos) (expr, pos)
 -------------------------------------------------------------------------------
@@ -315,7 +321,9 @@ anexo (e1,p1) (e2,p2) p = do
     else
       return (e, p)
 
-  else tell [msg] >> return (e, p)
+  else do
+    when (typeE e1 /= TError && baseTypeE e2 /= TError) $ tell [msg]
+    return (e, p)
 -------------------------------------------------------------------------------
 
 
@@ -340,14 +348,15 @@ concatLists (e1,p1) (e2,p2) p
 
     if isList t1 && not (isList t2) then do
       when (t1 /= TError && t2 /= TError) $
-        tell [semmErrorMsg (show t1) (show t2) fileCode p2]
+        tell [semmErrorMsg t1 t2 fileCode p2]
       return (err, p2)
     else do
-      if (not (isList t1) && isList t2) || (isList t1 && isList t2) then
-        when (t1 /= TError && t2 /= TError) $
-          tell [semmErrorMsg (show t2) (show t1) fileCode p1]
+      if (not (isList t1) && isList t2) {-|| (isList t1 && isList t2)-} then
+        when (baseTypeT t1 /= TError && baseTypeT t2 /= TError) $
+          tell [semmErrorMsg t2 t1 fileCode p1]
       else
-        when (t1 /= TError) $ tell [semmErrorMsg "List" (show t1) fileCode p1]
+        when (baseTypeT t1 /= TError && baseTypeT t2 /= TError) $
+          tell [concatErrorMsg t1 t2 fileCode p]
 
       return (err, p1)
 
@@ -383,7 +392,8 @@ array expr p
     let 
       (tExpected, (tGot,pTGot)) = getTExpectedTGot (map (\(e,p) -> (typeE e,p)) expr)
   
-    tell [semmErrorMsg (show tExpected) (show tGot) fileCode pTGot]
+    when (tExpected /= TError && tGot /= TError) $
+      tell [semmErrorMsg tExpected tGot fileCode pTGot]
     return (arr, p)
 
   where
@@ -418,9 +428,10 @@ list expr p
     fileCode <- ask
     let
       (tExpected, (tGot,pTGot)) = getTExpectedTGot (map (\(e,pe) -> (typeE e,pe)) expr)
-      msg = semmErrorMsg (show tExpected) (show tGot) fileCode pTGot
 
-    tell [msg] >> return (ArrayList exprs TError, pTGot)
+    when (tExpected /= TError && tGot /= TError) $
+      tell [semmErrorMsg tExpected tGot fileCode pTGot]
+    return (ArrayList exprs TError, pTGot)
 
   where
     exprs = map fst expr
@@ -460,7 +471,7 @@ guard (cond,p) i = do
       ncond <- updateExpr cond TBool
       return (ncond, i)
     else do
-    when (tCond /= TError) $ tell [semmErrorMsg "Battle" (show tCond) fileCode p]
+    when (tCond /= TError) $ tell [semmErrorMsg TBool tCond fileCode p]
     return cond'
 -------------------------------------------------------------------------------
 
@@ -517,11 +528,11 @@ for var (e1,pE1) (e2,pE2) i = do
     tE2 = typeE e2
 
   if tE1 /= TInt && tE1 /= TPDummy then do
-    when (tE1 /= TError) $ tell [semmErrorMsg "Power" (show tE1) fileCode pE1]
+    when (tE1 /= TError) $ tell [semmErrorMsg TInt tE1 fileCode pE1]
     return $ For var e1 e2 i TError
   else
     if tE2 /= TInt && tE2 /= TPDummy then do
-      when (tE2 /= TError) $ tell [semmErrorMsg "Power" (show tE2) fileCode pE2]
+      when (tE2 /= TError) $ tell [semmErrorMsg TInt tE2 fileCode pE2]
       ne1 <- updateExpr e1 TInt
       return $ For var ne1 e2 i TError
     else do
@@ -545,16 +556,16 @@ forWhile var (e1,pE1) (e2,pE2) (e3,pE3) i = do
     tE3 = typeE ne3
     
   if tE1 /= TInt then do
-    when (tE1 /= TError) $ tell [semmErrorMsg "Power" (show tE1) fileCode pE1]
+    when (tE1 /= TError) $ tell [semmErrorMsg TInt tE1 fileCode pE1]
     return $ ForWhile var ne1 ne2 ne3 i TError
   else
     if tE2 /= TInt then do
-      when (tE2 /= TError) $ tell [semmErrorMsg "Power" (show tE2) fileCode pE2]
+      when (tE2 /= TError) $ tell [semmErrorMsg TInt tE2 fileCode pE2]
       ne1 <- updateExpr e1 TInt
       return $ ForWhile var ne1 ne2 ne3 i TError
     else
       if tE3 /= TBool then do
-        when (tE3 /= TError) $ tell [semmErrorMsg "Bool" (show tE3) fileCode pE3]
+        when (tE3 /= TError) $ tell [semmErrorMsg TBool tE3 fileCode pE3]
         return $ ForWhile var ne1 ne2 ne3 i TError
       else 
         return $ ForWhile var ne1 ne2 ne3 i TVoid
@@ -581,7 +592,7 @@ forEach var (e,p) i = do
       forM_ related (\id -> addLateCheckForEach id var e p related)
       returnCheckedFor
     else do
-      when (tE /= TError) $ tell [semmErrorMsg "Array or Kit" (show tE) fileCode p]
+      when (tE /= TError) $ tell [forEachErrorMsg tE fileCode p]
       return forErr
 -------------------------------------------------------------------------------
     
@@ -592,16 +603,16 @@ while :: (Expr,Pos) -> InstrSeq -> MonadSymTab Instr
 while (cond,p) i = do
   fileCode <- ask
   let 
-    tc = typeE cond
+    tCond = typeE cond
 
-  if tc == TBool || tc == TPDummy then do
-    ncond <- updateExpr cond TBool
+  if tCond == TBool || tCond == TPDummy then do
+    newCond <- updateExpr cond TBool
     if all isVoid i then
-      return $ While ncond i TVoid
+      return $ While newCond i TVoid
     else
-      return $ While ncond i TError
+      return $ While newCond i TError
   else do
-    when (tc /= TError) $ tell [semmErrorMsg "Battle" (show tc) fileCode p]
+    when (tCond /= TError) $ tell [semmErrorMsg TBool tCond fileCode p]
     return $ While cond i TError
 -------------------------------------------------------------------------------
 
@@ -646,7 +657,7 @@ call subroutine args p = do
               ( _ , ((e,pe),(t,_))) = head $ dropWhile (isJust.fst) l
 
             when (t /= TError && typeE e /= TError) $
-              tell [semmErrorMsg (show t) (show (typeE e)) fileCode pe]
+              tell [semmErrorMsg t (typeE e) fileCode pe]
             return sub
           else do                
 
@@ -761,10 +772,11 @@ print' expr p
   | otherwise = do
     fileCode <- ask
     let 
-      (errore,pe) = head $ dropWhile (\(e,p) -> typeE e /= TError) expr
-      msg         = semmErrorMsg "Runes" (show $ typeE errore) fileCode pe
+      (errExpr,pExpr) = head $ dropWhile (\(e,p) -> typeE e /= TError) expr
+      msg             = semmErrorMsg TStr (typeE errExpr) fileCode pExpr
 
-    tell [msg] >> return (Print exprs TError)
+    when (typeE errExpr /= TError) $ tell [msg]
+    return (Print exprs TError)
 
   where
     exprs      = map fst expr
@@ -788,7 +800,7 @@ read' (e,pe) p = do
       return (Read ne TStr, p) -- TRead para casts implicitos?
     else do
       when (typeE e /= TError) $
-        tell [semmErrorMsg "Runes" (show tE) fileCode p]
+        tell [semmErrorMsg TStr tE fileCode p]
       return (Read e TError, p)
 -------------------------------------------------------------------------------
 
@@ -804,7 +816,7 @@ tArray (e,p) t
   | otherwise = do
     fileCode <- ask
     when (typeE e /= TError) $
-      tell [semmErrorMsg "TInt" (show te) fileCode p]
+      tell [semmErrorMsg TInt te fileCode p]
     
     return (TArray e t)
 

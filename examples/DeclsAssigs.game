@@ -10,7 +10,7 @@ Items Estudiante:
   Power v
 .~
 
-world %Caso6%:
+world %DeclsAssigs%:
   Power int = 2
   Skill float = 1'5
 
@@ -22,9 +22,8 @@ world %Caso6%:
   Rune|}2{| r = |)*H*,*i*(|
   Kit of Skill l = <<2'7999, 2'8000, 2'9999, 3'0000, 4'2500, 4'2501, 4'7499>>
   
-  @Trimestre abril_Julio_2019 = { Lose, 0, 4'1416, ~12-11163~ } @El tipo que tiene rval es Inventory
-  Trimestre abril_Julio_2019
-  @abril_Julio_2019 = { Lose, 0, 4'1416, ~12-11163~ } @El tipo que tiene rval es Inventory
+  Trimestre abril_Julio_2019 = Trimestre { Lose, 0, 4'1416, ~12-11163~ }
+  abril_Julio_2019 = Trimestre { Lose, 0, 4'1416, ~12-11163~ }
   
   Estudiante estudiante'
   estudiante' spawn f = Win

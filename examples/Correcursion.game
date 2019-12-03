@@ -1,12 +1,12 @@
 boss f():
-    @kill g() @ No se puede tener correcursion de procedimientos?
+    kill g() @ No se puede tener correcursion de procedimientos?
 .~
 boss g():
     kill f()
 .~
 monster f2() Power:
-    @Skill r = kill g2() @ El tipo de g2 es una promesa (TPDummy)
-    Skill r
+    Skill r = kill g2() @ El tipo de g2 es una promesa (TPDummy)
+    @Skill r
     r = 2'6 + kill g2()
 
     Power puff p

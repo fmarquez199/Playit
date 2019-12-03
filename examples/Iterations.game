@@ -3,13 +3,30 @@ world %iterations%:
     Power i
     controller Power i=0->10:
         Skill x
-        i=9 @ No
+@        i=9 @ No
     .~
 
     Power|}5{| powers = |)1,2,3,4,5(|
     controller Power i <- powers:
         Skill x
-        i=9 @No
+ @       i=9 @No
     .~
+
+    @ Variables not declared in active scope
+
+@    x = 0'1
+
+@    play:
+@        Skill s = 0'6
+@        Runes r = ~runes~
+@        s++
+@    lock s == 20'0
+@    .~
+@
+@    s = 20'0
+@    drop kill portalSkillToRunes(s)
+@
+@    r = ~runes2~
+@    drop r
 .~
     

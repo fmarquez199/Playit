@@ -28,14 +28,16 @@ import Playit.PromisesHandler
 
 
 -------------------------------------------------------------------------------
+-- TODO: colocar los chekeos de checkArray/Index. NO se usa
 -- | Checks the type of the index(ed) expression / variable.
 checkIndex :: Var -> Type -> Pos -> Pos -> FileCodeReader -> (Type, String)
 checkIndex var tExpr pVar pExpr fileCode
   | typeVar var == TError =
-    (TError, semmErrorMsg "Array or List" "Type Error" fileCode pVar)
+    --(TError, semmErrorMsg "Array or List" "Type Error" fileCode pVar)
+    (TError, "")
 
   | tExpr /= TInt =
-    (TError, semmErrorMsg "Power" (show tExpr) fileCode pExpr)
+    (TError, semmErrorMsg TInt tExpr fileCode pExpr)
 
   | otherwise = (baseTypeArrLst (typeVar var), "")
 -------------------------------------------------------------------------------
@@ -96,9 +98,10 @@ checkAssigs assigs t fileCode
     let
       le  = map (\(Assig _ e _,p) -> (e,p)) assigs
       got = head $ dropWhile (\(e,p) ->  isJust (getTLists [typeE e,t])) le
-      msg = semmErrorMsg (show t) (show $ typeE $ fst got) fileCode (snd got)
+      msg = semmErrorMsg t (typeE $ fst got) fileCode (snd got)
 
-    return (updatedAssigs, msg)
+    if typeE (fst got) /= TError then return (updatedAssigs, msg)
+    else return (updatedAssigs, "")
 
   where
     onlyassigs  = map fst assigs
@@ -120,17 +123,17 @@ checkAssig tLval expr p fileCode
   | otherwise = msg
 
   where
-    tExpr       = typeE expr
+    tExpr         = typeE expr
     -- isEmptyList = isList tExpr && baseTypeT tExpr == TDummy
     -- isListLval  = isList tLval && isSimpleType (baseTypeT tLval)
-    isLists     = {-isEmptyList && isListLval &&-} isJust (getTLists [tLval,tExpr])
-    isRead      = tExpr == TRead
-    isNull      = tExpr == TNull
-    isInitReg   = tExpr == TRegister
-    msg         = semmErrorMsg (show tLval) (show tExpr) fileCode p
+    isLists       = {-isEmptyList && isListLval &&-} isJust (getTLists [tLval,tExpr])
+    isRead        = tExpr == TRead
+    isNull        = tExpr == TNull
+    isInitReg     = tExpr == TRegister
+    msg           = semmErrorMsg tLval tExpr fileCode p
     (TArray e1 _) = tLval
     (TArray e2 _) = tExpr
-    tarrays        = getTLists [baseTypeArrLst tLval,baseTypeArrLst tExpr]
+    tarrays       = getTLists [baseTypeArrLst tLval,baseTypeArrLst tExpr]
 -------------------------------------------------------------------------------
 
 
@@ -205,10 +208,9 @@ checkBinary op (e1,p1) (e2,p2) = do
     isNull      = (nullE1 || nullE2) || (tE1 == TNull && tE2 == TNull)
     notRegUnion = "Neither Register nor Union"
     regUnion    = "Register or Union"
-    powerSkill  = "Power or Skill"
-    msgTE12P2   = semmErrorMsg (show tE1) (show tE2) fileCode p2
-    msgTE21P1   = semmErrorMsg (show tE2) (show tE1) fileCode p1
-    msgComp     = semmErrorMsg "Tipo comparable" (show tE1) fileCode p1
+    msgTE12P2   = semmErrorMsg tE1 tE2 fileCode p2
+    msgTE21P1   = semmErrorMsg tE2 tE1 fileCode p1
+    msgComp     = compErrorMsg tE1 fileCode p1
 
   if tE1 == tE2 then
     case op of
@@ -231,7 +233,7 @@ checkBinary op (e1,p1) (e2,p2) = do
               let related = getRelatedPromises comp
               in addLateCheck comp comp [p1,p2] related >> return (comp, "")
             else
-              return (err, semmErrorMsg "Power or Skill" (show tE1) fileCode p1)
+              return (err, aritErrorMsg tE1 fileCode p1)
 
       x | x `elem` aritOps ->
           if tE1 == TInt || tE2 == TFloat then return (arit, "")
@@ -240,7 +242,7 @@ checkBinary op (e1,p1) (e2,p2) = do
               let related = getRelatedPromises arit
               in addLateCheck arit arit [p1,p2] related >> return (arit, "")
             else 
-              return (err, semmErrorMsg powerSkill (show tE1) fileCode p1)
+              return (err, aritErrorMsg tE1 fileCode p1)
 
       x | x `elem` aritInt ->
           if tE1 == TInt then return (arit, "")
@@ -250,7 +252,7 @@ checkBinary op (e1,p1) (e2,p2) = do
               ne2 <- updateExpr e2 TInt
               return (Binary op ne1 ne2 TInt, "")
             else
-              return (err, semmErrorMsg "Power" (show tE1) fileCode p1)
+              return (err, semmErrorMsg TInt tE1 fileCode p1)
 
       x | x `elem` boolOps ->
           if tE1 == TBool then return (comp, "")
@@ -260,7 +262,7 @@ checkBinary op (e1,p1) (e2,p2) = do
               ne2 <- updateExpr e2 TBool
               return (Binary op ne1 ne2 TBool, "")
             else
-              return (err, semmErrorMsg "Battle" (show tE1) fileCode p1)
+              return (err, semmErrorMsg TBool tE1 fileCode p1)
 
   else -- Tipos distintos
     if op `elem` eqOps then
@@ -371,7 +373,7 @@ checkBinary op (e1,p1) (e2,p2) = do
               else  
                 if isTypeNumber tE1  && isTypeNumber tE2 then return (err,msgTE12P2)
                 else 
-                  return (err,semmErrorMsg powerSkill (show tE1) fileCode p1)
+                  return (err, aritErrorMsg tE1 fileCode p1)
 
       else 
         if op `elem` aritInt then
@@ -386,7 +388,7 @@ checkBinary op (e1,p1) (e2,p2) = do
               if tE1 == TInt then return (err,msgTE12P2)
               else 
                 if tE2 == TInt then return (err,msgTE21P1)
-                else return (err,semmErrorMsg "Power" (show tE1) fileCode p1)
+                else return (err, semmErrorMsg TInt tE1 fileCode p1)
         
         else 
           if op `elem` boolOps then
@@ -401,7 +403,7 @@ checkBinary op (e1,p1) (e2,p2) = do
                 if tE1 == TBool then return (err,msgTE12P2)
                 else 
                   if tE2 == TBool then return (err,msgTE21P1)
-                  else return (err,semmErrorMsg "Battle" (show tE1) fileCode p1)
+                  else return (err, semmErrorMsg TBool tE1 fileCode p1)
           else 
             error $ "Internal error checkbinary: "  ++ show op
 -------------------------------------------------------------------------------
@@ -415,17 +417,17 @@ checkUnary op tExpr tExpected p fileCode =
     Length ->
       if isArray tExpr || isList tExpr || tExpr == TPDummy then (TInt, "")
       else
-        (TError, semmErrorMsg "Array or Kit" (show tExpr) fileCode p)
+        (TError, arrLstErrorMsg tExpr fileCode p)
 
     Negative ->
       if tExpr `elem` [TInt, TFloat, TPDummy] then (tExpr, "")
       else
-        (TError, semmErrorMsg "Power or Skill" (show tExpr) fileCode p)
+        (TError, aritErrorMsg tExpr fileCode p)
 
     _ | tExpr == TDummy   -> (TDummy, "")
       | tExpr == TPDummy  -> (TPDummy, "")
       | tExpr == tExpected -> (tExpr, "")
-      | otherwise -> (TError, semmErrorMsg (show tExpected) (show tExpr) fileCode p)
+      | otherwise -> (TError, semmErrorMsg tExpected tExpr fileCode p)
 -------------------------------------------------------------------------------
 
 
@@ -440,7 +442,7 @@ checkAnexo (e1,p1) (e2,p2) fileCode
         tE1   = typeE e1
         tE2   = typeE e2
         typeR = fromMaybe TError (getTLists [TList tE1,tE2])
-        msg   = semmErrorMsg (show (TList tE1)) (show tE2) fileCode p2
+        msg   = semmErrorMsg (TList tE1) tE2 fileCode p2
 -------------------------------------------------------------------------------
 
 
@@ -450,15 +452,15 @@ checkIfSimple (tCond,pCond) (tTrue,pTrue) (tFalse,pFalse) fileCode
 
   | tCond `elem` [TBool,TPDummy] && isJust tResult = (fromJust tResult, "")
   | tCond /= TBool = 
-    (TError, semmErrorMsg "Battle" (show tCond) fileCode pCond)
+    (TError, semmErrorMsg TBool tCond fileCode pCond)
 
   | isRealType tTrue && not (isRealType tFalse) =
-    (TError, semmErrorMsg (show tTrue) (show tFalse) fileCode pFalse)
+    (TError, semmErrorMsg tTrue tFalse fileCode pFalse)
 
   | not (isRealType tTrue) && isRealType tFalse =
-    (TError, semmErrorMsg (show tFalse) (show tTrue) fileCode pTrue)
+    (TError, semmErrorMsg tFalse tTrue fileCode pTrue)
 
-  | otherwise = (TError, semmErrorMsg (show tTrue) (show tFalse) fileCode pFalse)
+  | otherwise = (TError, semmErrorMsg tTrue tFalse fileCode pFalse)
 
   where
     tResult = getTLists [tTrue, tFalse]

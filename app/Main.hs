@@ -57,7 +57,6 @@ main = do
           -- mapM_ print tokens
           (ast,(st,_,_,promises),errs) <- runRWST (parse tokens) (checkedFile,code) initState
           
-          if null errs && null promises then print ast >> print st
+          if null errs then print ast >> print st >> printPromises promises
           else
-            if null promises then mapM_ putStrLn errs
-            else printPromises promises
+            mapM_ putStrLn errs

@@ -23,13 +23,12 @@ monster suma(Power a , Power b) Power :
   s  = joystick (kill f2())
 
   Button:
-| kill fasd()::kill fasd() }
-  Power a = 2
-.~
+  | kill fasd()::kill fasd() }
+    Power a = 2
+  .~
 
   Power puff ppp
   @ppp++
-
 
   Battle bool
 
@@ -37,8 +36,6 @@ monster suma(Power a , Power b) Power :
   @ FALTA CONSIDERAR MÁS TARRAY PARA PROMESAS
   @ FALTA EN LATECHECKS Y ACTUALIzACIONES DE EXPRESIONES
   @ PROBLEMA VIENE PORQUE ADMITIMOS ARRAYS |) 1,2,3,3(| COMO UNA EXPRESIÓN EN CUALQUIER LADO
-
-
 .~
 
 world %HolaMundo%:

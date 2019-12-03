@@ -46,13 +46,12 @@ spec = describe "Instructions" $ do
             ]) -> True)
 
     it "accepts registers initialization program" $
-        pendingWith "Colocar el tipo que es en la inicializacion del registro"
-        {-runTestForValidProgram initReg (\(Program [
+        runTestForValidProgram initReg (\(Program [
             Assigs [Assig (Var "p" (TNew "Potions")) 
-                (Literal (Register [(Literal (Integer 10) TInt),(Literal (Floatt 10.5) TFloat)]) (TNew "Potions"))],
+                (Literal (Register [Literal (Integer 10) TInt,Literal (Floatt 10.5) TFloat]) (TNew "Potions"))],
             Assig (Var "p'" (TNew "Potions"))
-            (Literal (Register [(Literal (Integer 5) TInt),(Literal (Floatt 6.5) TFloat)]) (TNew "Potions"))
-            ]) -> True)-}
+            (Literal (Register [Literal (Integer 5) TInt,Literal (Floatt 6.5) TFloat]) (TNew "Potions"))
+            ]) -> True)
 
 
 helloWorld :: String

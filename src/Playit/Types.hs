@@ -149,7 +149,7 @@ instance Show Instr where
 data Subroutine = Call Id Params    deriving (Eq, Ord)
 
 instance Show Subroutine where
-    show (Call n p ) = n ++ "(" ++ intercalate "," (map show p) ++ ")"
+    show (Call n p ) = n ++ "(" ++ intercalate "," (map (show . fst) p) ++ ")"
 
 
 -- Expressions

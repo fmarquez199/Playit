@@ -11,6 +11,7 @@
 module Playit.Parser (parse, error) where
 
 import Control.Monad.Trans.RWS
+import Control.Monad (void)
 import Playit.SymbolTable
 import Playit.AuxFuncs
 import Playit.CheckAST
@@ -167,7 +168,7 @@ ProgramWrapper :: { Instr }
 Program :: { Instr }
   : ChekedDefinitions world program ":" EndLines Instructions EndLines ".~" PopScope
     { %
--- Checkeo aquí porque en main también se crean promesas (aunque es más un error de nosotros)
+  -- Checkeo aquí porque en main también se crean promesas (aunque es más un error de nosotros)
     checkPromises >> program (reverse $6)
     }
   | ChekedDefinitions world program ":" EndLines ".~" PopScope
@@ -598,6 +599,7 @@ Expression :: { (Expr,Pos) }
   -- Registers / Unions initialization
   | idType "{" Expressions "}" { % regUnion (getTk $1, getPos $1) (reverse $3) }
   | idType "{" "}"             { % regUnion (getTk $1, getPos $1) [] } -- By default
+  -- | idType "{" id ":" Expression "}" {  }
   
   | "|)" Expressions "(|"         { % array (reverse $2) $1 }
   | "<<" Expressions ">>"         { % list (reverse $2) $1 }
@@ -651,16 +653,17 @@ Register :: { Id }
 
 
 -------------------------------------------------------------------------------
-DefineUnion :: { Id }
+DefineUnion :: { () }
   : union idType ":" PushScope EndLines Declarations EndLines ".~"  
-    { %
+    { % do
       let extraInfo = [AST (concatMap snd $6), Params (concatMap fst $ reverse $6)]
-      in defineRegUnion (getTk $2) TUnion extraInfo (getPos $2)
+      defineRegUnion (getTk $2) TUnion extraInfo (getPos $2)
+      updatesDeclarationsCategory (getTk $2)
     }
   | union idType ":" PushScope EndLines ".~"                         
     { %
       let extraInfo = [AST [], Params []]
-      in defineRegUnion (getTk $2) TUnion extraInfo (getPos $2)
+      in void $ defineRegUnion (getTk $2) TUnion extraInfo (getPos $2)
     }
 -------------------------------------------------------------------------------
 
