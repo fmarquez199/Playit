@@ -1,5 +1,5 @@
 boss f():
-    kill g() @ No se puede tener correcursion de procedimientos?
+    kill g()
 .~
 boss g():
     kill f()
@@ -12,26 +12,29 @@ monster f2() Power:
     Power puff p
     Battle bool
 
-    bool = ( << << 2'2 >> >> :: << << kill f() >> >> == kill f3()) ? Win : Lose
+    @bool = ( << << 2'2 >> >> :: << << kill f() >> >> == kill f3()) ? Win : Lose
 
     unlock 1
 .~
 monster g2() Skill:
     Power r = kill f2()
-    unlock 1'0
+    unlock 1'6
 .~
 monster suma(Power a,Power b) Power:
-  Power t = (kill entero1()  > kill entero2()) ? 2:3
+  Power t @= (kill entero1()  > kill entero2()) ? 2:3
   unlock t
 .~
 
 monster entero1() Power:
+    unlock 2
 .~
 monster entero2() Rune:
+    unlock *a*
 .~
 
 world %Correcursion%:
     kill f()
     Power f2' = kill f2()
     Skill g2' = kill g2()
+    kill f()
 .~

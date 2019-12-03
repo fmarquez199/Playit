@@ -760,87 +760,97 @@ Free :: { Instr }
 DefineSubroutine :: { () }
   : Firma ":" EndLines Instructions EndLines ".~"
     { %
-      let ((id, category), tF) = $1
-          allReturn            = filter isReturn $ concat $ map getInstrSeq $4
-          rightTypeReturns     = all (== tF) $ map typeReturn allReturn
-          func                 = category == Functions
+      let ((id', category, p), tF) = $1
+          allReturn               = filter isReturn $ concatMap getInstrSeq $4
+          rightTypeReturns        = all (== tF) $ map typeReturn allReturn
+          func                    = category == Functions
       in
         if (func && (not $ null allReturn) && rightTypeReturns) || not func then
-          updateExtraInfo id category [AST (reverse $4)]
+          updateExtraInfo id' category [AST (reverse $4)]
         else do
+          fileCode <- ask
+
           if null allReturn then
-            tell ["Monster " ++ id ++ " seems doesn't unlock anything, what's the deal in defeat it then?"]
+            tell [errorMsg "This monster doesn't unlock anything, what's the deal in defeat it then?" fileCode p]
           else
-            tell ["Monster " ++ id ++ " does not unlock what it should"]
-          updateExtraInfo id category [AST (reverse $4)]
+            tell [returnErrorMsg tF fileCode p]
+
+          updateExtraInfo id' category [AST (reverse $4)]
     }
   | Firma ":" EndLines ".~"
     { %
-      let ((id, category), tF) = $1
+      let ((id', category, p), tF) = $1
       in
-        if category == Procedures then updateExtraInfo id category [AST []]
+        if category == Procedures then updateExtraInfo id' category [AST []]
         else do
-          return $ putStrLn $ "Monster " ++ id ++ " seems doesn't unlock anything, what's the deal in defeat it then?"
-          updateExtraInfo id category [AST []]
+          fileCode <- ask
+          tell [errorMsg "This monster doesn't unlock anything, what's the deal in defeat it then?" fileCode p]
+          updateExtraInfo id' category [AST []]
     }
 -------------------------------Grammar Errors----------------------------------
   | Firma EndLines Instructions EndLines ".~"
-    { %
-      let ((id, category), _) = $1
-          msg                 = id ++ "seems like it left "
-      in
-        if category == Functions then
-          tell ["Monster " ++ msg ++ "':'"]
-        else
-          tell ["Boss " ++ msg ++ "':'"]
+    { % do
+      fileCode <- ask
+      let
+        ((id, category, p), _) = $1
+        msg                    = id ++ "seems like it left ':'"
+      
+      if category == Functions then
+        tell [errorMsg ("This monster " ++ msg) fileCode p]
+      else
+        tell [errorMsg ("This boss " ++ msg) fileCode p]
     }
   | Firma ":" Instructions EndLines ".~"
-    { %
-      let ((id, category), _) = $1
-          msg                 = id ++ "seems like it left "
-      in
-        if category == Functions then
-          tell ["Monster " ++ msg ++ "a break line before statements"]
-        else
-          tell ["Boss " ++ msg ++ "a break line before statements"]
+    { % do
+      fileCode <- ask
+      let
+        ((id, category, p), _) = $1
+        msg = id ++ "seems like it left a break line before statements"
+      
+      if category == Functions then
+        tell [errorMsg ("This monster " ++ msg) fileCode p]
+      else
+        tell [errorMsg ("This boss " ++ msg) fileCode p]
     }
   | Firma ":" EndLines Instructions ".~"
-    { %
-      let ((id, category), _) = $1
-          msg                 = id ++ "seems like it left "
-      in
-        if category == Functions then
-          tell ["Monster " ++ msg ++ "a break line after statements"]
-        else
-          tell ["Boss " ++ msg ++ "a break line after statements"]
+    { % do
+      fileCode <- ask
+      let
+        ((id, category, p), _) = $1
+        msg = id ++ "seems like it left a break line after statements"
+      
+      if category == Functions then
+        tell [errorMsg ("This monster " ++ msg) fileCode p]
+      else
+        tell [errorMsg ("This boss " ++ msg) fileCode p]
     }
 
 
 -------------------------------------------------------------------------------
-Firma :: { ((Id, Category), Type) }
+Firma :: { ((Id, Category, Pos), Type) }
   : Name PushScope Params
   { %
-    let (name,category) = $1
+    let (name, category, _) = $1
     in updateInfoSubroutine name category $3 TVoid >> return ($1, TVoid)
   }
   | Name PushScope Params Type 
     { %
-      let (name,category) = $1
+      let (name, category, _) = $1
       in updateInfoSubroutine name category $3 $4 >> return ($1, $4)
     }
 
 -------------------------------------------------------------------------------
 -- Subroutine name, insert first into symbol table because of recursiveness
-Name :: { (Id, Category) }
+Name :: { (Id, Category, Pos) }
   : proc id
     { % do
       defineSubroutine (getTk $2) Procedures (getPos $2)
-      return ((getTk $2), Procedures)
+      return ((getTk $2), Procedures, (getPos $2))
     }
   | func id
     { % do
       defineSubroutine (getTk $2) Functions (getPos $2)
-      return ((getTk $2), Functions)
+      return ((getTk $2), Functions, (getPos $2))
     }
 
 -------------------------------------------------------------------------------
@@ -922,7 +932,6 @@ Expression :: { (Expr, Pos) }
   -- Registers / Unions initialization
   | idType "{" Expressions "}" { % regUnion (getTk $1, getPos $1) (reverse $3) }
   | idType "{" "}"             { % regUnion (getTk $1, getPos $1) [] } -- By default
-  -- | idType "{" id ":" Expression "}" {  }
   
   | "|)" Expressions "(|"         { % array (reverse $2) $1 }
   | "<<" Expressions ">>"         { % list (reverse $2) $1 }

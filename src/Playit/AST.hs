@@ -239,7 +239,6 @@ regUnion (name,p) e = do
   fileCode          <- ask
   let
     exprs = map fst e
-    -- p     = snd $ head e
     msg   = checkRegUnion name exprs symTab fileCode
 
   if null msg then return (Literal (Register exprs) (TNew name), p)
@@ -407,7 +406,7 @@ array expr p
 -------------------------------------------------------------------------------
 -- | Creates the same type list node
 list :: [(Expr,Pos)] -> Pos -> MonadSymTab (Expr,Pos)
-list [] p = return (ArrayList [] (TList TDummy), p) -- TODO : Recordar quitar el TDummy
+list [] p = return (ArrayList [] (TList TDummy), p) -- TODO : Recordar TDummy -> TListEmpty.
 list expr p
   | isJust t = do
     let

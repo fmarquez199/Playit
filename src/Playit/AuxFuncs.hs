@@ -328,7 +328,7 @@ getTLists ts
   | all (== TDummy) ts  = return TDummy
   -- Contiene solo TDummy de listas vacias(TList TDummy) y/o llamdas a func no definidas 
   -- ejem [ TDummy  ,kill f1() ]
-  | all (`elem` [TPDummy, TDummy]) ts = return TPDummy -- Contiene solo TDummy d elistas vacias y llamadas a 
+  | all (`elem` [TPDummy, TDummy]) ts = return TPDummy
   -- Contiene solo arreglos y/o TPDummy llamadas a func no definidas 
   -- ejem [ |)2,3,1(|,kill f1() ] -> resultado un puntero
   | all (\t -> isArray t || t == TPDummy) ts = do

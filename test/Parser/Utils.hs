@@ -16,8 +16,4 @@ runTestForValidProgram program predicate = do
 runTestForInvalidProgram :: String -> IO ()
 runTestForInvalidProgram program = do
   let tokens = alexScanTokens program
-  (ast, _, errs) <- runRWST (parse tokens) ("TestInvalidProgram.game",program) initState
-  if null errs && null promises then print ast >> print st
-  else
-    if null promises then mapM_ putStrLn errs
-    else printPromises promises `shouldBe` mapM_ putStrLn errs 
+  runRWST (parse tokens) ("TestInvalidProgram.game",program) initState `shouldThrow` anyException

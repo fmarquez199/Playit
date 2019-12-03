@@ -113,7 +113,7 @@ checkAssigs assigs t fileCode
 -- | Checks the assignation's types
 checkAssig :: Type -> Expr -> Pos -> FileCodeReader -> String
 checkAssig tLval expr p fileCode
-  | isRead {-|| isNull-} || isInitReg || (tExpr == tLval) || isLists = ""
+  | isRead || isNull || isInitReg || (tExpr == tLval) || isLists = ""
   | isArray tLval && isArray tExpr =
     -- Si son arrays y arrays del mismo tipo 
     --- TODO:  Faltaría verificar que tienen el mismo tamaño para arrays con expresiones no literales
@@ -124,9 +124,9 @@ checkAssig tLval expr p fileCode
 
   where
     tExpr         = typeE expr
-    -- isEmptyList = isList tExpr && baseTypeT tExpr == TDummy
-    -- isListLval  = isList tLval && isSimpleType (baseTypeT tLval)
-    isLists       = {-isEmptyList && isListLval &&-} isJust (getTLists [tLval,tExpr])
+    isEmptyList   = isList tExpr && baseTypeT tExpr == TDummy
+    isListLval    = isList tLval && isSimpleType (baseTypeT tLval)
+    isLists       = isEmptyList && isListLval && isJust (getTLists [tLval,tExpr])
     isRead        = tExpr == TRead
     isNull        = tExpr == TNull
     isInitReg     = tExpr == TRegister
@@ -141,10 +141,10 @@ checkAssig tLval expr p fileCode
 -- types ok, cantidad == #campos
 checkRegUnion :: Id -> [Expr] -> SymTab -> FileCodeReader -> String
 checkRegUnion name exprs symTab fileCode
-  | noErr && isJust reg && (isRegister || isUnion) = ""
-  | noErr && isJust reg && not isUnion             = msgNoUnion
-  | noErr && isJust reg && not isRegister          = msNroFields
-  | noErr && isJust reg                            = msgBadTypes
+  | noErr && isJust reg && typesOK && (isRegister || isUnion) = ""
+  | noErr && isJust reg && (isRegister || isUnion)            = msgBadTypes
+  | noErr && isJust reg && not isUnion  = msgNoUnion
+  | noErr && isJust reg && not isRegister  = msNroFields
   | noErr                                          = msgUndefined
   | otherwise                                      = msgTError
 
@@ -154,12 +154,11 @@ checkRegUnion name exprs symTab fileCode
     (Params p)   = getExtraInfo (head $ fromJust reg) !! 1
     typesE       = map typeE exprs
     typesP       = map fst p
-    typesOk      = null typesE || typesE == typesP
-    nroFieldsOK  = null exprs || length exprs == length p
-    isRegister   = typesOk && nroFieldsOK
-    isUnion      = any isRegUnion typesE && length exprs == 1
-    msgNoUnion   = name ++ " is an union" 
-    msNroFields = "Mismatched ammount of fields initialized for " ++ name
+    typesOK      = null typesE || typesE == typesP || any isRegUnion typesE
+    isRegister   = null exprs || length exprs == length p
+    isUnion      = (null exprs || length exprs == 1) -- && any isRegUnion typesE
+    msgNoUnion   = name ++ " is an union"
+    msNroFields  = "Mismatched ammount of fields initialized for " ++ name
     msgBadTypes  = "Mismatched types initializating " ++ name
     msgUndefined = "Undefined register or union " ++ name
     msgTError    = "Type error in initialization expressions " ++ show exprs

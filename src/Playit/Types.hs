@@ -43,6 +43,7 @@ data Type =
     TFloat           |
     TInt             |
     TList Type       |
+    TListEmpty       |
     TNew Id          |
     TNull            |
     TPDummy          | -- Temp for when the subroutine is promised to be defined later
@@ -63,6 +64,7 @@ instance Show Type where
     show TFloat       = "Skill"
     show TInt         = "Power"
     show (TList t)    = "Kit of (" ++ show t ++ ")"
+    show TListEmpty   = "Empty Kit"
     show (TNew str)   = str
     show TNull        = "DeathZone*"
     show TPDummy      = "Unknown return type"

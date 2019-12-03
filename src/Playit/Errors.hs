@@ -255,3 +255,12 @@ concatErrorMsg t1 t2 (file,code) (l,c) =
   ++ "Expression's type 1: " ++ show t1 ++ "    Expression's type 2: " ++ show t2 ++
   "\n\x1b[93m|\n| " ++ show l ++ "\t\x1b[0;96m" ++ errorLine code l ++ errorRuler c
 -------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+returnErrorMsg :: Type -> FileCodeReader -> Pos -> String
+returnErrorMsg t (file,code) (l,c) =
+  "\n\n\x1b[1;36mThis monster doesn't unlock what it should\x1b[94m:"
+  ++ file ++ ":\n" ++ "Should unlock: " ++ show t ++ "\n\x1b[93m|\n| " ++
+  show l ++ "\t\x1b[0;96m" ++ errorLine code l ++ errorRuler c
+-------------------------------------------------------------------------------

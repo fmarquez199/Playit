@@ -17,12 +17,12 @@ Items Potions2:
     PotionsMana pm
     PotionsHealth ph
 .~
-monster allocatePotions(Kit of (PotionsMana puff) ?p) (Potions puff):
-    Potions puff ps = summon Potions
-    ps spawn p = p
-    
-    unlock ps
-.~
+@monster allocatePotions(Kit of (PotionsMana puff) ?p) (Potions puff):
+@    Potions puff ps = summon Potions
+@    ps spawn p = p
+@    
+@    unlock ps
+@.~
 
 world %registros%:
 
@@ -33,21 +33,26 @@ world %registros%:
     puff pm = PotionsMana { 1'6, |)ph1,ph2,ph3(| }
 
     Potions2 p2 = Potions2 {ph1}
-    p2 = Potions2 {puff pm} @ Esto debe dar error
+    p2 = Potions2 {pm} @ type error, 
+    p2 = Potions2 {pm,pm} @ is an union, ammount no ok
+    p2 = Potions2 {puff pm,pm} @ is an union, ammount no ok
+    p2 = Potions2 {puff pm,puff pm} @ is an union, ammount no ok
+    p2 = Potions2 {puff pm,ph1} @ is an union, ammount no ok
+    p2 = Potions2 {ph1,ph1} @ is an union, ammount no ok
     
-    PotionsMana puff pm2 = summon PotionsMana
-    puff pm2 = PotionsMana {1'0, |)PotionsHealth {},PotionsHealth {},PotionsHealth {}(| }
-    puff pm2 spawn p = 2'5
-    puff pm2 spawn phs = |)ph1, ph2, ph3(|
+    @PotionsMana puff pm2 = summon PotionsMana
+    @puff pm2 = PotionsMana {1'0, |)PotionsHealth {},PotionsHealth {},PotionsHealth {}(| }
+    @puff pm2 spawn p = 2'5
+    @puff pm2 spawn phs = |)ph1, ph2, ph3(|
 
-    PotionsMana puff pm3@ = DeathZone @ para que funcione hay que modificar 'checkAssigs'
-    pm3 = DeathZone
+    @PotionsMana puff pm3 = DeathZone
+    @pm3 = DeathZone
 
-    Potions ps
-    Potions puff p = kill allocatePotions(ps spawn p)
-    ps spawn p = <<pm,pm2>>
-    puff p spawn p = <<pm,pm2>>
-    puff(puff p spawn p |>2<|) spawn p = 5'4
-    puff(puff p spawn p |>2<|) spawn phs |)1(| = ph1
-    puff(puff p spawn p |>2<|) spawn phs |)1(| spawn p = 10
+    @Potions ps
+    @Potions puff p = kill allocatePotions(ps spawn p)
+    @ps spawn p = <<pm,pm2>>
+    @puff p spawn p = <<pm,pm2>>
+    @puff(puff p spawn p |>2<|) spawn p = 5'4
+    @puff(puff p spawn p |>2<|) spawn phs |)1(| = ph1
+    @puff(puff p spawn p |>2<|) spawn phs |)1(| spawn p = 10
 .~
