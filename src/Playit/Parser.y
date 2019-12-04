@@ -1078,7 +1078,7 @@ DefineUnion :: { () }
 Union :: { (Id, Pos) }
   : union idType
     { %
-      defineRegUnion (getTk $2) TRegister [] (getPos $2)
+      defineRegUnion (getTk $2) TUnion [] (getPos $2)
     }
 -------------------------------------------------------------------------------
 

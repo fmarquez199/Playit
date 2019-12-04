@@ -183,7 +183,7 @@ checkRegUnion name exprs symTab fileCode p
       if typeR == TRegister then
         if not (null typesE) then
           if nexprs == length fields then
-            if (nexprs == 0 && null fields) &&
+            if (nexprs == 0 && null fields) ||
               all (==True) [isJust (getTLists [te,tp]) | (te,tp) <- zip typesE typesP] then
                 -- TODO: No se esta actualizando el nodo
                 -- nexprs <- mapM (\((e,p),tp) -> updateExpr e tp)  (zip exprs typesP)
