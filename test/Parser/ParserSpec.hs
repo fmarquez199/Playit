@@ -64,6 +64,14 @@ spec = describe "Instructions" $ do
       ProcCall (Call "g" []) TVoid
       ] TVoid) -> True)
 
+  -- it "rejects a bad typed program" $
+  --   runTestForBadTypes badAdd (\(Program [
+  --     Assigs [Assig (Var "a" TInt)
+  --         (Binary Add (Literal (Integer 5) TInt) (Literal (Character 'a') TChar)
+  --         TError) TError]
+  --       TError
+  --     ] TError) -> True)
+
 
 helloWorld :: String
 helloWorld = "world %HolaMundo%:\n\
@@ -117,4 +125,7 @@ correcursion =
   \  kill g()\n\
   \.~"
 
-
+badAdd :: String
+badAdd = "world %BadAdd%:\n\
+  \Power a = 5 + *a*\n\
+  \.~"
