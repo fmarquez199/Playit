@@ -73,9 +73,12 @@ updateExpr (Binary Concat e1 e2 _) tl@(TList t) = do
 
 --   return (Binary op ne1 ne2 TBool)
 
-updateExpr (FuncCall (Call name args) tf ) t = do
+updateExpr (FuncCall (Call name args) tf) t = do
+  (symTab, _, _, _) <- get
   let
-    nt = if t == TNull then TPointer TDummy else t
+    nt  = if t == TNull then TPointer TDummy else t
+    info = fromJust $ lookupInSymTab name symTab
+
   ntf <- updatePromise name nt tf
   return (FuncCall (Call name args) ntf)
 
@@ -181,7 +184,7 @@ updatePromise name t tf = do
       promise'    = fromJust promise
       typePromise = getTypePromise promise'
 
-    if not (isRealType typePromise) &&  isJust (getTLists [typePromise,t]) then do
+    if not (isRealType typePromise) && isJust (getTLists [typePromise,t]) then do
       let modifyTypePromise prom = 
             if getIdPromise prom == name then 
               let (PromiseSubroutine id p _ cat pos ch ch2 ch3) = prom 
@@ -212,12 +215,13 @@ updateInfoSubroutine name cat p t = do
       promise' = fromJust promise
       paramsP  = getParamsPromise promise'
       typeP    = getTypePromise promise'
+      c    = getCatPromise promise'
       l        = zip paramsP paramsF
       posp     = getPosPromise promise'
 
-    if  any (/=True) [isJust (getTLists [t1 , t2]) | ((t1,_),(t2,_)) <- l ] then do
+    if any (/=True) [isJust (getTLists [t1,t2]) | ((t1,_),(t2,_)) <- l ] then do
       let               
-        ((tgot,pgot),(texpected,_)) = head $ dropWhile (\((t1,_),(t2,_)) -> isJust (getTLists [t1 , t2])) l
+        ((tgot,pgot),(texpected,_)) = head $ dropWhile (\((t1,_),(t2,_)) -> isJust (getTLists [t1,t2])) l
       tell [semmErrorMsg texpected tgot fileCode pgot]
 
     else
@@ -236,11 +240,11 @@ updateInfoSubroutine name cat p t = do
           checkExpr promise' t
           checkExprCalls promise' t -- TODO: No se chequean cuando se infiere?
           checkExprForEach promise' t
-          (symTab, activeScopes, scopes, promises) <- get
           put(symTab, activeScopes, scopes ,filter (\p -> getIdPromise p /= name) promises)
 
   updateExtraInfo name cat [Params paramsF]
   updateType name 1 t
+  updateCategory name 1 cat
   return ()
 -------------------------------------------------------------------------------
 

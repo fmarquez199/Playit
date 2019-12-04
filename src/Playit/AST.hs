@@ -239,11 +239,11 @@ regUnion (name,p) e = do
   fileCode          <- ask
   let
     exprs = map fst e
-    msg   = checkRegUnion name exprs symTab fileCode
+    msg   = checkRegUnion name e symTab fileCode p
 
   if null msg then return (Literal (Register exprs) (TNew name), p)
   else
-    tell [errorMsg msg fileCode p] >> return (Literal (Register exprs) TError, p)
+    tell [msg] >> return (Literal (Register exprs) TError, p)
 -------------------------------------------------------------------------------
 
 
@@ -675,7 +675,8 @@ call subroutine args p = do
             updatePromiseLateChecksCalls callf nparams
             return (callf,p)
         else
-          let msj = "Amount of arguments: " ++ show nArgs ++ " not equal to expected:" ++ show nParams
+          let msj = "Amount of arguments: " ++ show nArgs ++ 
+                " not equal to expected:" ++ show nParams
           in tell [errorMsg msj fileCode p] >> return sub
   else
     -- Add a promise to create subroutine
@@ -697,7 +698,7 @@ procCall (procedure@(Call name args), p) = do
     let
       isProcedure symInfo = getCategory symInfo == Procedures
       procedure' = filter isProcedure (fromJust symInfos)
-      msg        = errorMsg ("'" ++ name ++ "' is not a procedure") fileCode p
+      msg        = errorMsg ("'" ++ name ++ "' is not a procedure"++show symInfos) fileCode p
     in
       if null procedure' then
         tell [msg] >> return (ProcCall procedure TError)

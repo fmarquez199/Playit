@@ -171,7 +171,7 @@ defineSubroutine id category p = do
           when (getTypePromise promise' == TVoid && category == Functions) $
             tell [errorMsg ("'"++id++"' is not a procedure") fileCode (getPosPromise promise')]
       else
-        tell [errorMsg "Redefined subroutine" fileCode p]
+        tell [errorMsg ("Redefined subroutine"++show infos) fileCode p]
 
   return ()
 -------------------------------------------------------------------------------
@@ -297,6 +297,25 @@ updateType symbol scope t = do
 
 
 -------------------------------------------------------------------------------
+-- | Updates the symbol category
+updateCategory :: Id -> Scope -> Category -> MonadSymTab ()
+updateCategory symbol scope cat = do
+  (symTab@(SymTab table), activeScopes, scopes, promises) <- get
+  fileCode <- ask
+  let
+    infos = lookupInSymTab symbol symTab
+
+  when (isJust infos) $ do
+    let
+      isTarget symbol' = getScope symbol' == scope
+      updateCategory' = fmap (\sym -> if isTarget sym then modifyCategory sym cat else sym)
+      updatedSymTab = SymTab $ M.adjust updateCategory' symbol table
+
+    put(updatedSymTab, activeScopes, scopes, promises)
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
 -- | Updates the symbol extra info, depends of its category
 updateExtraInfo :: Id -> Category -> [ExtraInfo] -> MonadSymTab ()
 updateExtraInfo sym category extraInfo = do
@@ -328,8 +347,7 @@ checkPromises = do
 
   forM_ promises $ \t ->
     case t of
-      PromiseSubroutine {} -> return ()
-        -- printErrorPromiseFunction p fileCode
+      PromiseSubroutine {} -> printErrorPromiseFunction t fileCode
       (PromiseUserDefinedType name pos) -> 
         tell [errorMsg ("Type '" ++ name ++ "' wasn't defined") fileCode pos]
 -------------------------------------------------------------------------------

@@ -12,7 +12,7 @@ module Playit.CheckAST where
 import Control.Monad.Trans.RWS
 import Control.Monad (when,unless)
 import qualified Data.Map as M
-import Data.Maybe (isJust,fromJust,fromMaybe)
+import Data.Maybe (isJust,fromJust,fromMaybe,maybe)
 import Playit.AuxFuncs
 import Playit.Errors
 import Playit.SymbolTable
@@ -139,31 +139,89 @@ checkAssig tLval expr p fileCode
 
 -------------------------------------------------------------------------------
 -- types ok, cantidad == #campos
-checkRegUnion :: Id -> [Expr] -> SymTab -> FileCodeReader -> String
-checkRegUnion name exprs symTab fileCode
-  | noErr && isJust reg && typesOK && (isRegister || isUnion) = ""
-  | noErr && isJust reg && (isRegister || isUnion)            = msgBadTypes
-  | noErr && isJust reg && not isUnion  = msgNoUnion
-  | noErr && isJust reg && not isRegister  = msNroFields
-  | noErr                                          = msgUndefined
-  | otherwise                                      = msgTError
+-- checkRegUnion :: Id -> [Expr] -> SymTab -> FileCodeReader -> String
+-- checkRegUnion name exprs symTab fileCode
+--   | noErr && regOK && typesOK && (isRegister || isUnion) = ""
+--   | noErr && regOK && not isUnion  = msgNoUnion
+--   | noErr && regOK && not isRegister  = msNroFields
+--   | noErr && regOK            = msgBadTypes
+--   | noErr                                          = msgUndefined
+--   | otherwise                                      = msgTError
 
-  where
-    reg          = lookupInSymTab name symTab
-    noErr        = TError `notElem` map typeE exprs
-    (Params p)   = getExtraInfo (head $ fromJust reg) !! 1
-    typesE       = map typeE exprs
-    typesP       = map fst p
-    typesOK      = null typesE || typesE == typesP || any isRegUnion typesE
-    isRegister   = null exprs || length exprs == length p
-    isUnion      = (null exprs || length exprs == 1) -- && any isRegUnion typesE
-    msgNoUnion   = name ++ " is an union"
-    msNroFields  = "Mismatched ammount of fields initialized for " ++ name
-    msgBadTypes  = "Mismatched types initializating " ++ name
-    msgUndefined = "Undefined register or union " ++ name
-    msgTError    = "Type error in initialization expressions " ++ show exprs
+--   where
+--     reg          = lookupInSymTab name symTab
+--     regOK        = isJust reg
+--     typesE       = map typeE exprs
+--     t            = getType (head $ fromJust reg)
+--     isRegister   = t == TRegister
+--     isUnion      = t == TUnion
+--     n            = length exprs
+--     noErr        = TError `notElem` typesE
+--     (Params p)   = getExtraInfo (head $ fromJust reg) !! 1
+--     typesP       = map fst p
+
+--     typesOK      = null typesE || typesE == typesP || any isRegUnion typesE
+--     msgNoUnion   = name ++ " is an union"
+--     msNroFields  = "Mismatched ammount of fields initialized for " ++ name
+--     msgBadTypes  = "Mismatched types initializating " ++ name
+--     msgUndefined = "Undefined register or union " ++ name
+--     msgTError    = "Type error in initialization expressions " ++ show exprs
 -------------------------------------------------------------------------------
 
+checkRegUnion :: Id -> [(Expr,Pos)] -> SymTab -> FileCodeReader -> Pos -> String
+checkRegUnion name exprs symTab fileCode p
+  | noErr =
+    let symReg = lookupInSymTab name symTab
+    in
+    if isJust symReg then do
+      let 
+        registerUnionSym = head $ fromJust symReg
+        typeR = getType registerUnionSym
+        fields = fromJust $ getParams (getExtraInfo registerUnionSym)
+        typesP       = map fst fields
+      
+      if typeR == TRegister then
+        if not (null typesE) then
+          if nexprs == length fields then
+            if (nexprs == 0 && null fields) &&
+              all (==True) [isJust (getTLists [te,tp]) | (te,tp) <- zip typesE typesP] then
+                -- TODO: No se esta actualizando el nodo
+                -- nexprs <- mapM (\((e,p),tp) -> updateExpr e tp)  (zip exprs typesP)
+                ""
+            else
+              let 
+                ((tGot,pTGot),tExpected) = head $ dropWhile (\((te,p),tp) -> isJust (getTLists [te,tp])) [((typeE e,p),tp) | ((e,p),tp) <- zip exprs typesP]
+              in
+                semmErrorMsg tExpected tGot fileCode pTGot
+          else
+            if nexprs /= 0 then
+               errorMsg "You must provide a value for each field!" fileCode p
+            else ""
+        else ""
+      else
+        if not (null typesE) then
+          if nexprs > 1 then
+              errorMsg "You have to use just one value to initialize an Item" fileCode p
+          else
+            if null fields then
+               errorMsg "This union doesnt have any field" fileCode p
+            else if True `elem` [isJust (getTLists [te,tp]) | te <- typesE , tp <- typesP] then 
+              -- TODO: No se esta actualizando el nodo
+              -- let (e,tp) = head $ filter (\(e,tp) -> isJust (getTLists [typeE e,tp]))  [(e,tp) | (e,_) <- exprs , tp <- typesP]
+              -- nexpr <- updateExpr e tp
+              ""
+            else
+               errorMsg  ("Type: '" ++ show (head typesE) ++ "' doesn't belong to any Item field!") fileCode p
+        else ""
+    else
+       errorMsg ("Undefined register or union " ++ name) fileCode p
+
+  | otherwise = ""
+
+  where
+    typesE = map (\(e,_) -> typeE e) exprs
+    nexprs = length exprs
+    noErr  = TError `notElem` typesE
 
 -------------------------------------------------------------------------------
 -- | Checks if var is an Iteration's Variable.
@@ -172,7 +230,9 @@ checkIterVar var = do
   (symtab, _, scope, _) <- get
   let cc s = getCategory s == IterationVariable && getScope s == scope
       name = getName var
-      cat  = filter cc $ fromJust (lookupInSymTab name symtab)
+      sym = lookupInSymTab name symtab
+      cat = maybe [] (filter cc) sym
+      -- cat  = filter cc $ fromJust (lookupInSymTab name symtab)
 
   return $ not $ null cat
 -------------------------------------------------------------------------------

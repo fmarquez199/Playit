@@ -62,6 +62,13 @@ modifyType (SymbolInfo _ s c ei) newT = SymbolInfo newT s c ei
 
 
 -------------------------------------------------------------------------------
+-- | Modify the symbol category
+modifyCategory :: SymbolInfo -> Category -> SymbolInfo
+modifyCategory (SymbolInfo t s _ ei) newC = SymbolInfo t s newC ei
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
 -- | Modify the symbol extra info
 modifyExtraInfo :: SymbolInfo -> [ExtraInfo] -> SymbolInfo
 modifyExtraInfo (SymbolInfo t s c []) ei      =  SymbolInfo t s c ei
@@ -94,9 +101,9 @@ areSameTExtInf _ _                      = False
 --      r = {b} -> error
 --      RegUnion r = {3,*r*}
 eqAssigsTypes :: InstrSeq -> Type -> Bool
-eqAssigsTypes assigs t = all (\(Assig _ expr _) -> compatibles expr t) assigs
+eqAssigsTypes assigs t = all (\(Assig _ expr _) -> compatibles expr) assigs
   where
-    compatibles e t = (typeE e == t) ||  isJust (getTLists [typeE e,t])
+    compatibles e = (typeE e == t) || isJust (getTLists [typeE e, t])
 -------------------------------------------------------------------------------
 
 

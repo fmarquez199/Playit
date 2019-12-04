@@ -14,12 +14,12 @@ monster f() Power:
 
 @ hace que de error linea 8 porque el arg fue inferenciado como una lista y aqui dice que es un entero
 monster f1(Power a) Skill :
-
+unlock 2354'76
 .~
 
 @ hace que de error linea 2 porque espera una Kit of(Kit of(Kit of(Power)))  y no una skill
 monster g(Power a) Skill: 
-
+unlock 2'6
 .~
 
 world %HolaMundo%:
