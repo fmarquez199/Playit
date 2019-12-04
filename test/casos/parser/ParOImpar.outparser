@@ -1,8 +1,0 @@
-
-world:
-  numero = joystick "~Introduzca un numero entero: ~"
-  IF:
-    ((numero % 2) == 0) }
-      drop ["~es par~"]True }
-      drop ["~es impar~"]
-

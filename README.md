@@ -251,7 +251,7 @@ Shape sh
 sh spawn c spawn centerX = 2'1
 sh spawn c spawn centerY = 5'0
 sh spawn c spawn centerY = 5'0
-sh spawn c spawn radius = 15
+sh spawn c spawn radius  = 15'0
 ```
 
 ---
@@ -786,8 +786,8 @@ free p
 ```
 **Ejemplo puntero a array de enteros**
 ```sh
-Power puff p = summon Power|}20{|
-puff p|}1{| = 15
+Power|}20{| puff p = summon Power
+puff p|)1(| = 15
 free|}{| p
 ```
 

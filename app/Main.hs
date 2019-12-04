@@ -1,5 +1,5 @@
-{-
- *  Entrada principal al compilador del Lenguaje  Playit
+{- |
+ *  Main module
  *
  * Copyright : (c) 
  *  Manuel Gonzalez     11-10390
@@ -20,40 +20,43 @@ import Playit.Errors
 import Playit.Parser
 import Playit.Lexer
 import Playit.Types
+import Playit.PrintPromises
 -- import Playit.Print
 
 
--- Determina si un archivo esta vacio
+-- | Determines if an file is empty
 isEmptyFile :: String -> Bool
 isEmptyFile = all (== '\n')
 
 
--- Determina que el archivo tenga la extension '.game'
+-- | Determines that '.game' is the extension of the file
 checkExt :: [String] -> Either String String
-checkExt []         = Left "\nError: debe indicar un archivo\n"
-checkExt (file:_:_) = Left "\nError: solo se puede indicar un archivo\n"
+checkExt []         = Left "\nError: no file given\n"
+checkExt (file:_:_) = Left "\nError: more than one file given\n"
 checkExt [file]     = if strEndsWith file ".game" then Right file
-                      else  Left "\nError: archivo no es .game\n"
+                      else  Left "\nError: extension for file not valid\n"
 
 
 main :: IO ()
 main = do
-    -- Tomar argumentos del terminal.
-    args <- getArgs
+  -- Get arguments from terminal
+  args <- getArgs
 
-    case checkExt args of
-        Left msg -> putStrLn msg
-        Right checkedFile -> do
-            code <- readFile checkedFile
+  case checkExt args of
+    Left msg -> putStrLn msg
+    Right checkedFile -> do
+      code <- readFile checkedFile
 
-            if null code || isEmptyFile code then putStrLn "\nEmptyFile\n"
-            else do
-                let tokens = alexScanTokens code
-                    (hasErr,pos) = lexerErrors tokens
-
-                if hasErr then putStrLn $ showLexerErrors (checkedFile,code) pos
-                else do
-                    -- mapM_ print tokens
-                    (ast,(st,_,_),errors) <- runRWST (parse tokens) (checkedFile,code) initState
-                    
-                    if null errors then print ast >> print st else print errors                    
+      if null code || isEmptyFile code then putStrLn "\nError: empty file\n"
+      else
+        let tokens = alexScanTokens code
+            (hasErr,pos) = lexerErrors tokens
+        in
+        if hasErr then putStrLn $ showLexerErrors (checkedFile,code) pos
+        else do
+          -- mapM_ print tokens
+          (ast,(st,_,_,promises),errs) <- runRWST (parse tokens) (checkedFile,code) initState
+          
+          if null errs then print ast >> print st >> printPromises promises
+          else
+            mapM_ putStrLn errs

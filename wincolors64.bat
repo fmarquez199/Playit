@@ -1,0 +1,1 @@
+ansicolorswindow\x64\ansicon.exe -i

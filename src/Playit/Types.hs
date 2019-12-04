@@ -1,10 +1,10 @@
-{-
-* Representacion de la gramatica para el analisis sintactico
-*
-* Copyright : (c) 
-*  Manuel Gonzalez     11-10390
-*  Francisco Javier    12-11163
-*  Natascha Gamboa     12-11250
+{- |
+ * Grammatical types
+ *
+ * Copyright : (c) 
+ *  Manuel Gonzalez     11-10390
+ *  Francisco Javier    12-11163
+ *  Natascha Gamboa     12-11250
 -}
 module Playit.Types where
 
@@ -15,332 +15,387 @@ import Data.List (intercalate,elemIndex)
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
---             Tipos de datos que representan la estructura del AST
+--                       AST representation data types
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 
 
--- Identificador de variable, registros, uniones y subrutinas
-type Nombre = String
+-- | Program Variables, registers, unions and subroutines ids
+type Id = String
 
--- Identificador del nombre de un programa
-type Programa = String
+-- Instruction's position
+type Pos = (Int, Int)
 
--- Posicion donde se encuentra la instruccion
-type Posicion = (Int, Int)
+-- Subroutine's parameters / arguments 
+type Params = [(Expr,Pos)]
 
-type Parametros = [Expr]
+-- Instruction sequence
+type InstrSeq = [Instr]
 
-type SecuenciaInstr = [Instr]
-
-
--- Categorias a las que pertenecen los simbolos de la tabla de simbolos
-data Categoria  = 
-    Apuntadores        |
-    Campos             |
-    Constantes         |
-    ConstructoresTipos |
-    Funciones          |
-    Parametros Ref     |
-    Procedimientos     |
-    Tipos              |
-    Variable
-    deriving (Eq, Ord)
-
-instance Show Categoria where
-    show Apuntadores        = "Apuntadores"
-    show Campos             = "Campos"
-    show Constantes         = "Constantes"
-    show ConstructoresTipos = "Constructores de Tipos"
-    show Funciones          = "Funciones"
-    show (Parametros r)     = "Parametros por " ++ show r
-    show Procedimientos     = "Procedimientos"
-    show Tipos              = "Tipos"
-    show Variable           = "Variables"
-
-
-data ExtraInfo =
-    AST SecuenciaInstr    |
-    Params [Nombre{-,Tipo-}] | -- Para verif tipos [(Nombre,Tipo)]
-    FromReg Nombre       -- Registro o union al que pertenece el campo/variable
-    deriving (Eq, Ord)
-
-instance Show ExtraInfo where
-    show (AST s)     = "    AST:\n      " ++ intercalate "\t  " (map show s)
-    show (Params p)  = "    Parametros: " ++ show p ++ "\n"
-    show (FromReg n) = "    Campo del registro: " ++ show n
 
 -- Tipo de dato que pueden ser las expresiones
-data Tipo = 
-    TApuntador Tipo  |
-    TArray Expr Tipo |
+data Type = 
+    TArray Expr Type |
     TBool            |
     TChar            |
-    TDummy           | -- Tipo temporal cuando todavia no se lee el tipo de la
-                       -- variable en una asignacion en las declaraciones o no
-                       -- esta inicializada todavia (no tiene valor asignado)
-    TError           | -- Tipo error, no machean los tipos como deben
+    TDummy           | -- Temp for when the type its still unknown
+    TError           | -- Error type, type checks fail
     TFloat           |
     TInt             |
-    TLista Tipo      |
-    TNuevo String    |
-    TRegistro        |
+    TList Type       |
+    TListEmpty       |
+    TNew Id          |
+    TNull            |
+    TPDummy          | -- Temp for when the subroutine is promised to be defined later
+    TPointer Type    |
+    TRead            | -- Cableado para que el input corra
+    TRegister        |
     TStr             |
     TUnion           |
-    TVoid              -- Tipo de los procedimientos
+    TVoid              -- Procedures type by default
     deriving(Eq, Ord)
 
+instance Show Type where
+    show (TArray e t) = show t ++ "|}" ++ show e ++ "{|"
+    show TBool        = "Battle"
+    show TChar        = "Rune"
+    show TDummy       = "Type unkown"
+    show TError       = "Type error"   
+    show TFloat       = "Skill"
+    show TInt         = "Power"
+    show (TList t)    = "Kit of (" ++ show t ++ ")"
+    show TListEmpty   = "Empty Kit"
+    show (TNew str)   = str
+    show TNull        = "DeathZone*"
+    show TPDummy      = "Unknown return type"
+    show (TPointer t) = "" ++ show t ++ "*"
+    show TRegister    = "Inventory"
+    show TRead        = ""
+    show TStr         = "Runes"
+    show TUnion       = "Items"
+    show TVoid        = "Void"
 
-instance Show Tipo where
-    show (TApuntador t) = "Apt(" ++ show t ++ ")"
-    show (TArray e t)   = show t ++ "|}" ++ show e ++ "{| "
-    show TBool          = "Battle"
-    show TChar          = "Rune"
-    show TDummy         = "Sin tipo aun"
-    show TError         = "Mal tipado"   
-    show TFloat         = "Skill"
-    show TInt           = "Power"
-    show (TLista t)     = "Kit of(" ++ show t ++ ")"
-    show (TNuevo str)   = str
-    show TRegistro      = "Inventory"
-    show TStr           = "Runes"
-    show TUnion         = "Items"
-    show TVoid          = "Void"
-
-
-data Vars =
-    Param Nombre Tipo Ref         |
-    PuffValue Vars Tipo           | -- Variable desreferenciada con puff
-    Var Nombre Tipo               |
-    VarIndex Vars Expr Tipo       | -- Indice para array, listas
-    VarCompIndex Vars Nombre Tipo   -- Campos de los registros y uniones
+    
+-- Kinds of variables
+data Var =
+    Param Id Type Ref   |
+    Desref Var Type     | -- Desreferenced variable
+    Var Id Type         |
+    Index Var Expr Type | -- Indexed variable
+    Field Var Id Type     -- Registers / unions field
     deriving (Eq, Ord)
 
-instance Show Vars where
-    show (Param n t Valor)    = "Parametro: " ++ {-"("++show t++")"++-}n
-    show (Param n t _)        = "Parametro: ?" ++ {-"("++show t ++")?"++-}n
-    show (PuffValue v t)      = {-"("++show t++")"++-}"puff (" ++ show v ++ ")"
-    show (Var n t)            = {-"("++show t++")"++-}n
-    show (VarIndex v e t)     = {-"("++show t++")"++-}show v ++ " index: " ++ show e
-    show (VarCompIndex v n t) = {-"("++show t++") ("++-}show v ++ " spawn " ++ n
 
--- Especifica si un parametro es pasado como valor o por referencia
+instance Show Var where
+    show (Param n t Value) = "Parameter: " ++ {-"("++show t++")"++-}n
+    show (Param n t _)     = "Parameter: ?" ++ {-"("++show t++")"++-}n
+    show (Desref v t)      = {-"("++show t++")"++-}"puff (" ++ show v ++ ")"
+    show (Var n t)         = {-"("++show t++")"++-}n
+    show (Index v e t)     = {-"("++show t++")"++-}show v ++ " index: " ++ show e
+    show (Field v n t)     = {-"("++show t++") "++"("++-}show v ++ " spawn " ++ n
+
+-- Specify if a parameter is by value or reference
 data Ref =
-    Referencia |
-    Valor
+    Reference |
+    Value
     deriving(Eq, Show, Ord)
 
-
+-- Instructions
 data Instr  = 
-    Asignacion Vars Expr                          |
-    Break                                         |
-    Continue                                      |
-    For Nombre Expr Expr SecuenciaInstr           |
-    ForEach Nombre Expr SecuenciaInstr            |
-    ForWhile Nombre Expr Expr Expr SecuenciaInstr |
-    Free Nombre                                   |
-    Print Expr                                    |
-    ProcCall Subrutina                            |
-    Programa SecuenciaInstr                       |
-    Return Expr                                   |
-    Asignaciones SecuenciaInstr                   |
-    IF [(Expr, SecuenciaInstr)]                   |
-    While Expr SecuenciaInstr
+    Assig Var Expr Type                      |
+    Assigs InstrSeq Type                     |
+    Break Type                               |
+    Continue Type                            |
+    For Id Expr Expr InstrSeq Type           |
+    ForEach Id Expr InstrSeq Type            |
+    ForWhile Id Expr Expr Expr InstrSeq Type |
+    Free Id Type                             |
+    IF [(Expr, InstrSeq)] Type               |
+    Print [Expr] Type                        |
+    ProcCall Subroutine Type                 |
+    Program InstrSeq Type                    |
+    Return Expr Type                         |
+    While Expr InstrSeq Type
     deriving (Eq,Ord)
 
 instance Show Instr where
--- Esto imprime el tipo de instruccion pero no imprime la secuenciaInstr
-    show (Asignacion v e)        = "  " ++ show v ++ " = " ++ show e ++ "\n"
-    show Break                   = "  GameOver\n"
-    show Continue                = "  KeepPlaying\n"
-    show (For n e1 e2 s)         = "  For " ++ n ++ " = " ++ show e1 ++ " -> "
-        ++ show e2 ++ ":\n    " ++ intercalate "    " (map show s) ++ "\n"
+    show (Assig v e _)             = "  " ++ show v ++ " = " ++ show e ++ "\n"
+    show (Assigs s _)              = intercalate "  " (map show s)
+    show (Break _)                 = "  GameOver\n"
+    show (Continue _)              = "  KeepPlaying\n"
+    show (For n e1 e2 s _)         = "  controller " ++ n ++ " = " ++ show e1 ++ " -> "
+        ++ show e2 ++ ":\n  " ++ intercalate "  " (map show s) ++ "\n  .~\n"
 
-    show (ForEach n e s)         = "  ForEach " ++ n ++ " <- " ++ show e ++
-        ":\n    " ++ intercalate "    " (map show s) ++ "\n"
+    show (ForEach n e s _)         = "  controller " ++ n ++ " <- " ++ show e ++
+        ":\n  " ++ intercalate "  " (map show s) ++ "\n  .~\n"
 
-    show (ForWhile n e1 e2 e3 s) = "  For " ++ n ++ " = " ++ show e1 ++ " -> " ++
-        show e2 ++ " while: " ++ show e3 ++ ":\n    " ++ 
-        intercalate "    " (map show s) ++ "\n"
+    show (ForWhile n e1 e2 e3 s _) = "  controller " ++ n ++ " = " ++ show e1 ++ " -> " ++
+        show e2 ++ " lock " ++ show e3 ++ ":\n  " ++ 
+        intercalate "  " (map show s) ++ "\n  .~\n"
 
-    show (Free n)                = "  free " ++ n ++ "\n"
-    show (Print e)               = "  drop " ++ show e
-    show (ProcCall s)            = "  kill " ++ show s ++ "\n"
-    show (Programa s)            = "\nworld:\n" ++ concatMap show s ++ "\n"
-    show (Return e)              = "  unlock " ++ show e
-    show (Asignaciones s)        = intercalate "  " (map show s)
-    show (IF s)                  = "  IF:\n    " ++ concat guardias
+    show (Free n _)                = "  free " ++ n ++ "\n"
+    show (IF s _)                  = "  Button:\n  " ++ concatMap (++"\n  ") guards ++ ".~\n"
         where
             conds = map (show . fst) s
             instrs =  map (concatMap show . snd) s
-            guardias = [c ++ " }\n    " ++ i | c <- conds, i <- instrs, elemIndex c conds == elemIndex i instrs]
+            guards = ["| "++c++" }\n    "++i | c<-conds,i<-instrs,elemIndex c conds==elemIndex i instrs]
 
-    show (While e s)             = "  While " ++ show e ++ ":\n    " ++
-        intercalate "    " (map show s) ++ "\n"
-
-
--- 
-data Subrutina = SubrutinaCall Nombre Parametros
-                deriving (Eq, Ord)
-
-instance Show Subrutina where
-    show (SubrutinaCall n p) = n ++ "(" ++ intercalate "," (map show p) ++ ")"
+    show (Print e _)               = "  drop " ++ show e ++ "\n"
+    show (ProcCall s _)            = "  kill " ++ show s ++ "\n"
+    show (Program s _)             = "\nworld:\n" ++ concatMap show s ++ ".~\n"
+    show (Return e _)              = "  unlock " ++ show e
+    show (While e s _)             = "  play:\n    " ++
+        intercalate "    " (map show s) ++ "  lock " ++ show e ++ "\n  .~\n"
 
 
+data Subroutine = Call Id Params    deriving (Eq, Ord)
+
+instance Show Subroutine where
+    show (Call n p ) = n ++ "(" ++ intercalate "," (map (show . fst) p) ++ ")"
+
+
+-- Expressions
 data Expr   = 
-    ArrLstExpr [Expr] Tipo         |
-    FuncCall Subrutina Tipo        |
-    IdTipo Tipo                    |
-    IfSimple Expr Expr Expr Tipo   |
-    Literal Literal Tipo           |
-    Null                           | -- tipo: compatible con apt de lo que sea o que el contexto lo diga
-    OpBinario BinOp Expr Expr Tipo |
-    OpUnario UnOp Expr Tipo        |
-    Read Expr                      |
-    Variables Vars Tipo
+    ArrayList [Expr] Type        |
+    Binary BinOp Expr Expr Type  |
+    FuncCall Subroutine Type     |
+    IdType Type                  |
+    IfSimple Expr Expr Expr Type |
+    Literal Literal Type         |
+    Null                         | -- tipo: compatible con apt de lo que sea o que el contexto lo diga
+    Unary UnOp Expr Type         |
+    Read Expr Type               |
+    Variable Var Type
     deriving (Eq, Ord)
 
 instance Show Expr where
-    show (ArrLstExpr lst _)     = "[" ++ intercalate "," (map show lst) ++ "]"
-    show (FuncCall s _)         = "kill " ++ show s
-    show (IdTipo t)             = show t
-    show (IfSimple e1 e2 e3 _)  = show e1 ++ " ? " ++ show e2 ++ " : " ++ show e3
-    show (Literal lit _)        = show lit
-    show Null                   = "DeathZone"
-    show (OpBinario op e1 e2 _) = "(" ++ show e1 ++ show op ++ show e2 ++ ")"
-    show (OpUnario op e1 _)     = show op ++ show e1
-    show (Read e1)              = "joystick " ++ show e1
-    show (Variables vars _)     = show vars
+    show (ArrayList lst t)     = {-"("++show t++")"++-}"[" ++ intercalate "," (map show lst) ++ "]"
+    show (FuncCall s t)        = {-"("++show t++")"++-}"kill " ++ show s
+    show (IdType t)            = show t
+    show (IfSimple e1 e2 e3 t) = {-"("++show t++")"++-}show e1 ++ " ? " ++ show e2 ++ " : " ++ show e3
+    show (Literal lit t)       = {-"("++show t++")"++-}show lit
+    show Null                  = "DeathZone"
+    show (Binary op e1 e2 t)   = {-"("++show t++")"++-}"(" ++ show e1 ++ show op ++ show e2 ++ ")"
+    show (Unary op e1 t)       = {-"("++show t++")"++-}show op ++ show e1
+    show (Read e t)            = "joystick " ++ show e
+    show (Variable var t)      = {-"E("++show t++")"++-}show var
 
 data Literal =
-    ArrLst [Literal] | -- >> Arreglos y listas
-    Booleano Bool    |
-    Caracter Char    |
-    Entero Int       |
-    Flotante Float   |
-    Str String       |
-    ValorVacio
+    ArrLst [Literal] | -- >> Arrays and lists
+    Boolean Bool     |
+    Character Char   |
+    EmptyVal         |
+    Floatt Float     |
+    Integer Int      |
+    Register [Expr]  |
+    Str String       
     deriving (Eq, Ord)
 
 instance Show Literal where
-    show (ArrLst l@(ArrLst _:_))   = show $ map show l 
-    show (ArrLst l@(Booleano _:_)) = show $ map ((\x->read x::Bool) . show) l
-    show (ArrLst l@(Caracter _:_)) = show $ map ((\x->read x::Char) . show) l
-    show (ArrLst l@(Entero _:_))   = show $ map ((\x->read x::Int) . show) l
-    show (ArrLst l@(Flotante _:_)) = show $ map ((\x->read x::Float) . show) l
-    show (ArrLst l)                = concatMap show l
-    show (Booleano val)            = show val
-    show (Caracter val)            = show val
-    show (Entero val)              = show val
-    show (Flotante val)            = show val
-    show (Str val)                 = show val
-    show ValorVacio                = "Valor vacio"
+    show (ArrLst l@(ArrLst _:_))    = show $ map show l 
+    show (ArrLst l@(Boolean _:_))   = show $ map ((\x->read x::Bool) . show) l
+    show (ArrLst l@(Character _:_)) = show $ map ((\x->read x::Char) . show) l
+    show (ArrLst l@(Integer _:_))   = show $ map ((\x->read x::Int) . show) l
+    show (ArrLst l@(Floatt _:_))    = show $ map ((\x->read x::Float) . show) l
+    show (Register inits)           = "{" ++ intercalate "," (map show inits) ++ "}"
+    show (ArrLst l)                 = concatMap show l
+    show (Boolean val)              = show val
+    show (Character val)            = show val
+    show (Integer val)              = show val
+    show (Floatt val)               = show val
+    show (Str val)                  = val
+    show EmptyVal                   = "Empty Value"
 
 
--- Operadores binarios
+-- Binary operators
 data BinOp =
-    And            |
-    Anexo          |
-    Concatenacion  |
-    Desigual       |
-    DivEntera      |
-    Division       |
-    Igual          |
-    Mayor          |
-    MayorIgual     |
-    Menor          |
-    MenorIgual     |
-    Modulo         |
-    Multiplicacion |
-    Or             |
-    Resta          |
-    Suma
+    And         |
+    Anexo       |
+    Concat      |
+    NotEq       |
+    DivEntera   |
+    Division    |
+    Eq          |
+    Greater     |
+    GreaterEq   |
+    Less        |
+    LessEq      |
+    Module      |
+    Mult        |
+    Or          |
+    Minus       |
+    Add
     deriving (Eq, Ord)
 
 instance Show BinOp where
-    show And            = " && "
-    show Anexo          = " : "
-    show Concatenacion  = " :: "
-    show Desigual       = " != "
-    show DivEntera      = " // "
-    show Division       = " / "
-    show Igual          = " == "
-    show Mayor          = " > "
-    show MayorIgual     = " >= "
-    show Menor          = " < "
-    show MenorIgual     = " <= "
-    show Modulo         = " % "
-    show Multiplicacion = " * "
-    show Or             = " || "
-    show Resta          = " - "
-    show Suma           = " + "
+    show And       = " && "
+    show Anexo     = " : "
+    show Concat    = " :: "
+    show NotEq     = " != "
+    show DivEntera = " // "
+    show Division  = " / "
+    show Eq        = " == "
+    show Greater   = " > "
+    show GreaterEq = " >= "
+    show Less      = " < "
+    show LessEq    = " <= "
+    show Module    = " % "
+    show Mult      = " * "
+    show Or        = " || "
+    show Minus     = " - "
+    show Add       = " + "
 
 
--- Operadores unarios
+-- Unary operators
 data UnOp =
-    Desreferenciar |
-    Longitud       |
-    LowerCase      |
-    Negativo       |
-    New            |
-    Not            |
+    Length    |
+    LowerCase |
+    Negative  |
+    New       |
+    Not       |
     UpperCase
     deriving (Eq, Ord)
 
 instance Show UnOp where
-    show Desreferenciar = "puff " -- no es un operador??
-    show Longitud       = "#"
-    show LowerCase      = "."
-    show Negativo       = "-"
-    show New            = "summon "
-    show Not            = "!"
-    show UpperCase      = "^"
+    show Length    = "#"
+    show LowerCase = "."
+    show Negative  = "-"
+    show New       = "summon "
+    show Not       = "!"
+    show UpperCase = "^"
 
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
---             Tipos de datos que representan la tabla de simbolos
+--                          Symbol table data types
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 
+-- Id scope
+type Scope = Integer
 
--- Alcance de un identificador
-type Alcance = Integer
+-- Static chain
+type ActiveScopes = [Scope]
 
--- Lista con los alcances activos que pueden ser accedidos. Cadena estática
-type ActiveScopes = [Alcance]
+-- Symbols categories
+data Category  = 
+    Constants         |
+    Fields            |
+    Functions         |
+    IterationVariable |
+    Parameters Ref    |
+    Pointers          |
+    Procedures        |
+    TypeConstructors  |
+    Types             |
+    Variables
+    deriving (Eq, Ord)
 
--- Informacion pertinente a la entrada de la tabla de simbolos
+instance Show Category where
+    show Constants         = "Constants"
+    show Fields            = "Fields"
+    show Functions         = "Functions"
+    show IterationVariable = "Iteration's Variable"
+    show (Parameters r)    = "Parameters by " ++ show r
+    show Pointers          = "Pointers"
+    show Procedures        = "Procedures"
+    show TypeConstructors  = "Type Constructors"
+    show Types             = "Types"
+    show Variables         = "Variables"
+
+-- Symbol extra information
+data ExtraInfo =
+    AST InstrSeq       |
+    Params [(Type,Id)] |
+    FromReg Id         -- Register / union al que pertenece el campo/variable
+    deriving (Eq, Ord)
+
+instance Show ExtraInfo where
+    show (AST s)     = "    AST:\n      " ++ intercalate "\t  " (map show s)
+    show (Params p)  = "    Parameters: " ++ show p ++ "\n"
+    show (FromReg n) = "    Campo del registro: " ++ show n
+
+
+-- Symbol related information in the symbol table entry
 data SymbolInfo = SymbolInfo {
-    getType :: Tipo,
-    getScope :: Alcance,
-    getCategory :: Categoria,
+    getType :: Type,
+    getScope :: Scope,
+    getCategory :: Category,
     getExtraInfo :: [ExtraInfo]
     }
     deriving (Eq, Ord)
 
 instance Show SymbolInfo where
-    show (SymbolInfo t s c i) = "\n  Tipo: " ++ show t ++ " | Alcance: " ++
-        show s ++ " | Categoria: "++ show c ++
+    show (SymbolInfo t s c i) = "\n  Type: " ++ show t ++ " | Scope: " ++
+        show s ++ " | Category: "++ show c ++
         if not (null i) then
             "\n    Extra:\n  " ++ intercalate "  " (map show i) ++ "\n"
         else ""
 
 
-{- Nuevo tipo de dato para representar la tabla de simbolos
-* Tabla de hash:
-*   Key: Nombre
-*   Value: Lista de la informacion pertinente
+-- Subroutine promise for co-recursive subroutines
+data Promise = PromiseSubroutine {
+    getIdPromise           :: Id,
+    getParamsPromise       :: [(Type,Pos)],
+    getTypePromise         :: Type,
+    getCatPromise          :: Category,
+    getPosPromise          :: Pos,
+    getLateChecksPromise   :: [LateCheckPromise],
+    -- Llamadas a funciones que se deben chequear cuando se actualiza el tipo de 
+    -- retorno de esta promesa
+    -- esta promesa aparece en las expresiones de llamadas a funciones
+    getLateCheckOtherCalls :: [LateCheckPromise],
+    getLateCheckForEachs   :: [LateCheckPromise]
+    } | 
+    PromiseUserDefinedType {
+        getIdPromise  :: Id,
+        getPosPromise :: Pos
+    }
+    deriving (Eq, Ord,Show)
+
+type Promises = [Promise]
+-- 
+-- Powe a = a() > b()? 1:2
+-- Power a = #(a() :: b())==10 ? 1:2
+-- 
+data LateCheckPromise = 
+    LateCheckPromiseSubroutine {
+        getLCPromiseExpr    :: Expr, -- Expresion que debe ser evaluada cuando se actualiza el tipo de la promesa
+        getLCPromisePosArgs :: [Pos],  -- Posiciones (linea,columna) de los argumentos necesarios para el check
+        getLCPromiseLinks   :: [Id] -- Otras promesas enlazadas a este check (su relacionado)
+    } | 
+    LateCheckPromiseCall {
+        getLCPromiseCall  :: Subroutine, -- Llamada que se debe evaluar
+        getLCPromiseLinks :: [Id] -- Promesas enlazadas
+    } | 
+    LateCheckPromiseForEach {
+        getLCPromiseForEachExpr    :: Expr, -- Llamada que se debe evaluar
+        getLCPromiseForEachLvarID  :: Id, -- Promesas enlazadas
+        getLCPromiseForEachLvar    :: Type, -- Promesas enlazadas
+        getLCPromiseForEachPosExpr :: Pos,
+        getLCPromiseForEachLinks   :: [Id] -- Otras promesas enlazadas a este check (su relacionado)
+    }
+    deriving (Eq, Ord,Show)
+
+data PromiseExtraInfo = PromiseExtraInfo{
+
+}
+
+
+{- | New type that represents the symbol table
+ * Hash table:
+ *   Key: Id
+ *   Value: Symbol information
 -}
-newtype SymTab  = SymTab { getSymTab :: M.Map Nombre [SymbolInfo] }
+newtype SymTab  = SymTab { getSymTab :: M.Map Id [SymbolInfo] }
                 deriving (Eq)
 
 instance Show SymTab where
     show (SymTab st) = header ++ info ++ symbols
         where
-            header = "\n------------\n Tabla de simbolos \n------------\n"
-            info = "- Simbolo | Informacion asociada \n------------\n"
-            tabla = M.toList st
+            header = "\n------------\n Symbol table \n------------\n"
+            info = "- Symbol | Related information \n------------\n"
+            table = M.toList st
             stWithScopes = M.map (map getScope) st
             symbols' = map fst $ M.toList $ M.filter (any (>0)) stWithScopes
             showInfo i = if getScope i > 0 then show i else ""
@@ -348,37 +403,14 @@ instance Show SymTab where
                 if k `elem` symbols' then
                     k ++ " -> " ++ concatMap showInfo (reverse v) ++ "\n"
                 else ""
-            symbols = concatMap showTable tabla
+            symbols = concatMap showTable table
 
-type SymTabState = (SymTab, ActiveScopes, Alcance)
 
+-- State that stores the symbol table, active scopes, total scopes and subroutines promises
+type SymTabState = (SymTab, ActiveScopes, Scope, Promises)
+
+-- Reader that stores the file name and the code for better show of errors
 type FileCodeReader = (String,String)
 
--- Transformador monadico para crear y manejar la tabla de simbolos junto con 
--- la pila de alcances y cuales estan activos
+-- Symbol table, active scopes and total scopes monad transformer handler
 type MonadSymTab a = RWST FileCodeReader [String] SymTabState IO a
-
-
--------------------------------------------------------------------------------
--------------------------------------------------------------------------------
---                           Funciones auxiliares
--------------------------------------------------------------------------------
--------------------------------------------------------------------------------
-
-
--------------------------------------------------------------------------------
--- Determina si el simbolo es de un registro o union
-getRegName :: [ExtraInfo] -> String
-getRegName [] = ""
-getRegName (FromReg rname:_) = rname
-getRegName (_:rs) = getRegName rs
--------------------------------------------------------------------------------
-
-
--------------------------------------------------------------------------------
--- Obtiene la cantidad de parametros
-getNParams :: [ExtraInfo] -> Maybe Int
-getNParams [] = Nothing
-getNParams (Params p:_) = Just $ length p
-getNParams (_:rs) = getNParams rs
--------------------------------------------------------------------------------

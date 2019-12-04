@@ -1,0 +1,27 @@
+
+boss suma() :
+  
+  Battle bool 
+  bool = ((kill f2():kill f3())::kill f4() == kill f5()) ? bool : bool
+  
+  Power a = kill f2()
+  Power b 
+  b= kill f3() @ Error , f3 es inferido como una lista
+.~
+
+monster f4() Power: @ Error en linea 4, porque f4 fue inferido como una lista
+
+.~
+
+world %HolaMundo%:
+
+  Power p = kill f1(3,DeathZone,<<>>)
+  
+  Skill p2 = kill f1(3,DeathZone,<<>>) @ Error, f1 fue inferido como power
+
+  Kit of Power c = <<kill f6()>>
+
+  c|>0<| = kill f6() + 1'1 @ Error f6 fue inferido como entero
+
+  
+.~

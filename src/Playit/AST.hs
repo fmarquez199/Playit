@@ -1,575 +1,846 @@
-{-
-* Modulo para la creacion del arbol sintactico abstracto y
-* la verificacion de tipos
-*
-* Copyright : (c) 
-*  Manuel Gonzalez     11-10390
-*  Francisco Javier    12-11163
-*  Natascha Gamboa     12-11250
+{- |
+ * Creates de abstract syntax tree with type checks
+ *
+ * Copyright : (c) 
+ *  Manuel Gonzalez     11-10390
+ *  Francisco Javier    12-11163
+ *  Natascha Gamboa     12-11250
 -}
 module Playit.AST where
 
-import Control.Monad (void)
+import Control.Monad (void,when,unless,forM,forM_)
 import Control.Monad.Trans.RWS
 import qualified Data.Map as M
-import Data.Maybe (fromJust, isJust, isNothing)
+import Data.Maybe (fromJust,isJust,isNothing,fromMaybe)
+import Playit.AuxFuncs
 import Playit.CheckAST
 import Playit.Errors
+import Playit.PromisesHandler
 import Playit.SymbolTable
 import Playit.Types
 
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
---                        Crear nodos del AST
+--                           Create AST nodes
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
--- Crea el nodo para identificadores de variables y verifica que estén declarados
-crearIdvar :: Nombre -> Posicion -> MonadSymTab Vars
-crearIdvar name p = do
-    (symTab, scopes, _) <- get
+-- | Creates whole statements block
+program :: InstrSeq -> MonadSymTab Instr
+program i =
+  if all isVoid i then
+    return $ Program i TVoid
+  else
+    return $ Program i TError
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-- | Creates variables ids node
+var :: Id -> Pos -> MonadSymTab (Var,Pos)
+var id p = do
+  (symTab, activeScopes, _, _) <- get
+  fileCode <- ask
+  let
+    infos = lookupInScopes activeScopes id symTab
+    vErr  = (Var id TError, p)
+
+  if isJust infos then
+    let 
+      vars = [Variables,IterationVariable,Parameters Value,Parameters Reference]
+      isVar symInfo = getCategory symInfo `elem` vars
+      v             = filter isVar (fromJust infos)
+    in
+      if null v then
+        tell [errorMsg "This is not a variable" fileCode p] >> return vErr
+      else
+        return (Var id (getType $ head v), p)
+  else
+    tell [errorMsg "Variable not declared in active scopes" fileCode p] >> return vErr
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-- | Creates indexed variables node
+indexArray :: (Var,Pos) -> (Expr,Pos) -> MonadSymTab (Var,Pos)
+indexArray (var,pVar) (expr,pExpr)
+  | not (isArray tVar) && tVar /= TStr = do
     fileCode <- ask
-    let infos = lookupInScopes scopes name symTab
+    when (tVar /= TError) $
+      tell [arrayErrorMsg tVar fileCode pVar]
+    return (Index var expr TError, pVar) -- Maybe luego sera necesario distinguir en el nodo array/lista/string
 
-    if isJust infos then do
-        let vars = [Variable,Parametros Valor,Parametros Referencia]
-            isVar si = getCategory si `elem` vars
-            var = filter isVar (fromJust infos)
+  -- | tVar == TStr && 
+  | tExpr == TPDummy || tExpr == TInt = do
+    nexpr <- updateExpr expr TInt
+    let tindex = if tVar == TStr then TChar else baseTypeArrLst (typeVar var)
+    return (Index var nexpr tindex, pVar)
 
-        if null var then
-            error $ errorMessage "This is not a variable" fileCode p
-        else
-            return $ Var name (getType $ head var)
+  | tExpr /= TInt = do
+    fileCode <- ask
+    when (tExpr /= TError) $
+      tell [indexErrorMsg tExpr fileCode pExpr]
+    return (Index var expr TError, pVar) 
 
-    else error $ errorMessage "Variable not declared in active scopes" fileCode p
+  where
+    tExpr = typeE expr
+    tVar = typeVar var
+
+
+indexList :: (Var,Pos) -> (Expr,Pos) -> MonadSymTab (Var,Pos)
+indexList (var,pVar) (expr,pExpr)
+  | not (isList tVar) = do
+    fileCode <- ask
+    when (tVar /= TError) $
+      tell [listErrorMsg tVar fileCode pVar]
+    return (Index var expr TError, pVar) -- Maybe luego sera necesario distinguir en el nodo array/lista/string
+
+  | tExpr == TPDummy || tExpr == TInt = do
+    nexpr <- updateExpr expr TInt
+    return (Index var nexpr (baseTypeArrLst (typeVar var)), pVar)
+
+  | tExpr /= TInt = do
+    fileCode <- ask
+    when (tExpr /= TError) $
+      tell [indexErrorMsg tExpr fileCode pExpr]
+    return (Index var expr TError, pVar) -- Maybe luego sera necesario distinguir en el nodo array/lista/string
+
+  where
+    tExpr = typeE expr
+    tVar  = typeVar var
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
--- Crea el nodo para variables de indexacion
-crearVarIndex :: Vars -> Expr -> Vars
-crearVarIndex v e = 
-    let t = case typeVar v of 
-                tipo@(TArray _ _) -> typeArrLst tipo
-                tipo@(TLista _) -> typeArrLst tipo
-                tipo@(TApuntador t) -> t
-                _ -> TError
-    in VarIndex v e t
--------------------------------------------------------------------------------
+-- | Creates the registers / unions fields
+field :: (Var,Pos) -> Id -> Pos -> MonadSymTab (Var,Pos)
+field (var,pVar) field pField = do
+  (symTab, _, _, promises) <- get
+  fileCode@(file,code)     <- ask
+  
+  -- Verify type 'var' is register / union
+  -- La existencia de "name" fue verificada ya en un parse anterior
+  -- Nota: Puede no existir en la tabla pero sí en una promesa
+  let
+    tVar = typeVar var
+    err  = Field var field TError
+    tErr = fieldErrorMsg tVar fileCode pVar
+    reg  = case baseTypeVar var of 
+            (TNew name) -> name
+            _           -> ""
 
-
--------------------------------------------------------------------------------
--- Crea el nodo para los campos de los registros y uniones
-crearCampo :: Vars -> Nombre -> Posicion -> MonadSymTab Vars
-crearCampo v campo p = do
-    (symTab, _, _) <- get
-    fileCode@(file,code) <- ask
+  if reg == "" then -- type error
+    when (tVar /= TError) (tell [tErr]) >> return (err, pField)
+  else
+    --chequearTipo reg p
     
-    -- Verificar que 'v' tiene como tipo un reg
-    let reg = case typeVar' v of 
-            (TNuevo name) -> name
-            _ -> ""
+    let info = lookupInSymTab field symTab
+    in
+      if isJust info then
+        let
+          isInRegUnion (SymbolInfo _ _ c e) = c == Fields && getReg e == reg
+          symbols = filter isInRegUnion (fromJust info)
+          noField = errorMsg ("Field not in '" ++ reg ++ "'") fileCode pField
+        in
+          if null symbols then tell [noField] >> return (err, pField)
+          else
+            return (Field var field (getType $ head symbols), pField)
+      else
+        let
+          promise = getPromise reg promises
+          fNoDecl = [errorMsg "Field not declared" fileCode pField]
+          noDecl  = [errorMsg ("'"++ reg ++"' was not declared yet. Incorrect use.") fileCode pField]
+        in
+          if isNothing promise then
+            tell fNoDecl >> return (err, pField)
+          else
+            tell noDecl >> return (err, pField)
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-- | Creates the desreferentiation variable node
+desref :: (Var,Pos) -> MonadSymTab (Var,Pos)
+desref (var,p) = do
+  fileCode <- ask
+  let
+    (tVar, msg) = checkDesref (typeVar var) p fileCode
+    var' = (Desref var tVar, p)
+  
+  if null msg then return var'
+  else tell [msg] >> return var'
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-- | Creates the TNew type
+newType :: Id -> Pos -> MonadSymTab Type
+newType tName p = do
+  (symTab, _, _, _) <- get
+  fileCode          <- ask
+  msg               <- checkNewType tName p symTab fileCode
+  
+  if null msg then return $ TNew tName
+  else tell [msg] >> return TError
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+--                  Create assignations instructions nodes
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-- | Creates an assignation node
+assig :: (Var,Pos) -> (Expr,Pos) -> MonadSymTab Instr
+assig (lval,pLval) (e,pE) = do
+  fileCode <- ask
+  iter     <- checkIterVar lval
+  e'       <- updateExpr e (typeVar lval)
+  let
+    msg = checkAssig (typeVar lval) e' pE fileCode
+
+  if not iter && null msg then return (Assig lval e' TVoid)
+  else do
+    when iter $
+      tell [errorMsg "You can't modify an iteration variable" fileCode pLval]
     
-    if reg == "" then -- Error de tipo
-        error ("\n\nError: " ++ file ++ ": " ++ show p ++ "\n\t'" ++ show v ++ 
-            "' no es registro o union.\n")
+    when (typeVar lval /= TError && typeE e' /= TError) $ tell [msg]
+    return (Assig lval e' TError)
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+increDecreVar :: BinOp -> (Var,Pos) -> MonadSymTab Instr
+increDecreVar op (var,pos) = do
+  fileCode <- ask
+  let
+    tVar = typeVar var
+    expr = Binary op (Variable var TInt) (Literal (Integer 1) TInt) TInt
+
+  unless (tVar == TInt) $
+    when (typeVar var /= TError) $
+      tell [semmErrorMsg TInt tVar fileCode pos]
+
+  assig (var,pos) (expr, pos)
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-- |
+regUnion :: (Id,Pos) -> [(Expr,Pos)] -> MonadSymTab (Expr,Pos)
+regUnion (name,p) e = do
+  (symTab, _, _, _) <- get
+  fileCode          <- ask
+  let
+    exprs = map fst e
+    msg   = checkRegUnion name e symTab fileCode p
+
+  if null msg then return (Literal (Register exprs) (TNew name), p)
+  else
+    tell [msg] >> return (Literal (Register exprs) TError, p)
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+--                  Create operators instructions nodes
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-- | Creates the binary operator node
+binary :: BinOp -> (Expr,Pos) -> (Expr,Pos) -> Pos -> MonadSymTab (Expr,Pos)
+binary op ep1@(e1,_) ep2@(e2,_) p = do
+  (bin, msg) <- checkBinary op ep1 ep2
+  let
+    e = (bin, p)
+  
+  if null msg then return e
+  else
+    if typeE e1 /= TError && typeE e2 /= TError then tell [msg] >> return e
+    else return e
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-- | Creates the unary operator node
+unary :: UnOp -> (Expr,Pos) -> Type -> MonadSymTab (Expr,Pos)
+unary op (expr,p) tExpected = do
+  fileCode <- ask
+  let
+    (tOp, msg) = checkUnary op (typeE expr) tExpected p fileCode
+    e          = Unary op expr tOp
+    related    = getRelatedPromises expr
+  
+  if null msg then
+    if not (null related) then
+      if tExpected /= TVoid then do
+        newExpr <- updateExpr expr tExpected
+        return (Unary op newExpr tOp, p)
+      else
+        addLateCheck e e [p] related >> return (e, p)
+    else
+      return (e, p)
+  else
+    if typeE expr /= TError then tell [msg] >> return (e, p)
+    else return (e, p)
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+--                  Create arrays / lists instructions nodes
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-- | Inserta en una lista un nuevo elemento en indice 0
+anexo :: (Expr,Pos) -> (Expr,Pos) -> Pos -> MonadSymTab (Expr, Pos)
+anexo (e1,p1) (e2,p2) p = do
+  fileCode <- ask
+  let
+    (tOp, msg) = checkAnexo (e1,p1) (e2,p2) fileCode
+    e          = Binary Anexo e1 e2 tOp
+  
+  if null msg then do
+    newE <- updateExpr e (fromJust $ getTLists [TList (typeE e1),typeE e2])
+    let
+      related = getRelatedPromises newE
+    
+    if not $ null related then
+      addLateCheck newE newE [p1,p2] related >> return (newE,p)
+    else
+      return (e, p)
+
+  else do
+    when (typeE e1 /= TError && baseTypeE e2 /= TError) $ tell [msg]
+    return (e, p)
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-- | Create concat 2 lists operator node
+concatLists :: (Expr,Pos) -> (Expr,Pos) -> Pos -> MonadSymTab (Expr,Pos)
+concatLists (e1,p1) (e2,p2) p 
+  | (isList t1 || t1 == TPDummy) && (isList t2 || t2 == TPDummy) && isJust tL = do -- <<2>>:: <<>>
+    let
+      typel   = fromJust tL
+      exprR   = Binary Concat e1 e2 typel
+
+    newE <- updateExpr exprR typel
+    let
+      related = getRelatedPromises newE
+    
+    unless (null related) $ addLateCheck newE newE [p1,p2,p] related
+    return (newE, p)
+
+  | otherwise = do
+    fileCode <- ask
+
+    if isList t1 && not (isList t2) then do
+      when (t1 /= TError && t2 /= TError) $
+        tell [semmErrorMsg t1 t2 fileCode p2]
+      return (err, p2)
     else do
-        
-        --chequearTipo reg p
-        
-        let info = lookupInSymTab campo symTab
-        if isJust info then do
+      if (not (isList t1) && isList t2) {-|| (isList t1 && isList t2)-} then
+        when (baseTypeT t1 /= TError && baseTypeT t2 /= TError) $
+          tell [semmErrorMsg t2 t1 fileCode p1]
+      else
+        when (baseTypeT t1 /= TError && baseTypeT t2 /= TError) $
+          tell [concatErrorMsg t1 t2 fileCode p]
 
-            let isInRegUnion (SymbolInfo _ _ c e) = c == Campos && getRegName e == reg
-                symbols = filter isInRegUnion (fromJust info ) -- Debería tener un elemento o ninguno
-                        
-            if null symbols then
-                error $ errorMessage ("Field not in '"++reg++"'") fileCode p
-            else 
-                return $ VarCompIndex v campo (getType $ head symbols) 
-        else
-            error $ errorMessage "Field not declared" fileCode p
--------------------------------------------------------------------------------
+      return (err, p1)
 
+    return (err, p)
 
--------------------------------------------------------------------------------
--- Crear el nodo para asignar a un identificador de variable una expresion
--- TODO: Modificar para que asigne el primer elemento de un arreglo/lista a la variable
-crearAsignacion :: Vars -> Expr -> Posicion -> Instr
--- crearAsignacion lval (ArrLstExpr [] _)
-crearAsignacion lval e (_,_) = Asignacion lval e
--- | tE == tV = Asignacion lval e
-    -- | otherwise =
-    --     error ("\n\nError semantico en la asignacion: '" ++ var ++
-    --             " <- " ++ expr ++ "'.\nEl tipo de la variable: " ++
-    --             showType tV' ++ ",\n\tno es igual al de la expresion: " ++
-    --             showType tE' ++ ".\nEn la linea: " ++ show line ++ "\n")
-
-    -- where
-    --     expr   = showE e
-    --     var    = showVar lval
-    --     tE'    = typeE e
-    --     tE     =
-    --         case tE' of
-    --             t@(TArray _ _) -> typeArray t
-    --             _ -> tE'
-    --     tV'    = typeVar lval
-    --     tV     = 
-    --         case tV' of
-    --             t@(TArray _ _) -> typeArray t
-    --             _ -> tV'
+  where
+    t1  = typeE e1
+    t2  = typeE e2
+    tL  = getTLists [t1,t2]
+    err = Binary Concat e1 e2 TError
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
--- TODO: Ver si es realmente necesario
--- crearIncremento :: Vars -> Posicion -> Instr
--- crearIncremento lval (line, _) = Asignacion lval (crearSuma (Variables lval TInt) (Literal (Entero 1) TInt))
--- {-    | typeVar lval == TInt =
---         Asignacion lval (crearSuma (Variables lval TInt) (Literal (Entero 1) TInt))
---     | otherwise = error("Error semantico en el incremento, variable no es de tipo Entero, en la linea " ++ show line)
--- -}
+-- | Creates the same type array node
+array :: [(Expr,Pos)] -> Pos -> MonadSymTab (Expr,Pos)
+array expr p
+  | t /= TError = do
+    let
+      ids = getRelatedPromises arr
 
--- crearDecremento :: Vars -> Posicion -> Instr
--- crearDecremento lval (line, _) = Asignacion lval (crearResta (Variables lval TInt) (Literal (Entero 1) TInt))
--- {-    | typeVar lval == TInt =
---         Asignacion lval (crearResta (Variables lval TInt) (Literal (Entero 1) TInt))
---     | otherwise = error("Error semantico en el decremento, variable no es de tipo Entero, en la linea " ++ show line)
--- -}
--------------------------------------------------------------------------------
-
-
--------------------------------------------------------------------------------
--- Crea el nodo para un operador binario
-crearOpBin :: BinOp -> Expr -> Expr -> Tipo -> Tipo -> Tipo -> Expr
-crearOpBin op e1 e2 t1 t2 tOp = OpBinario op e1 e2 tOp
-    -- OpBinario op e1 e2 (checkBin e1 e2 t1 t2 tOp)
--------------------------------------------------------------------------------
-
-
--------------------------------------------------------------------------------
--- Crea el nodo para un operador unario
-crearOpUn :: UnOp -> Expr -> Tipo -> Tipo -> Expr
-crearOpUn op e t tOp = OpUnario op e tOp
-    -- OpUnario op e (checkUn e t tOp)
--------------------------------------------------------------------------------
-
-
--------------------------------------------------------------------------------
--------------------------------------------------------------------------------
---              Crear Nodos de las instrucciones con arreglos y listas
--------------------------------------------------------------------------------
--------------------------------------------------------------------------------
-
-
--------------------------------------------------------------------------------
--- Crea el nodo para el operador concatenar 2 listas
-crearOpConcat :: BinOp -> Expr -> Expr -> Expr
-crearOpConcat op e1 e2 = 
-    OpBinario op e1 e2 tr
-
-    where
-        t1 = typeE e1
-        t2 = typeE e2
-        tr = if t1 == t2 then case t1 of
-                                (TLista _) -> t1
-                                _ -> TError
-             else TError
--------------------------------------------------------------------------------
-
-
--------------------------------------------------------------------------------
--- Crea el nodo para el operador agregar un elemento al inicio de la lista
-crearOpAnexo :: BinOp -> Expr -> Expr -> Expr
-crearOpAnexo op e1 e2 =
-    OpBinario op e1 e2 t
-
-    where
-        t2 = typeE e2
-        t = if isList t2 then t2 else TError 
--------------------------------------------------------------------------------
-
-
--------------------------------------------------------------------------------
--- Crea el nodo para el operador tamaño de array o lista
-crearOpLen :: UnOp -> Expr -> Expr
-crearOpLen op e =
-    OpUnario op e tr
-    
-    where
-        t = typeE e
-        tr = if isArray t || isList t then t else TError
--------------------------------------------------------------------------------
-
-
--------------------------------------------------------------------------------
--- TODO
--- Crea el nodo para representar arreglos o lista de expresiones del mismo tipo <---(*)
-crearArrLstExpr :: [Expr] -> Expr
-crearArrLstExpr [] = ArrLstExpr [] (TArray (Literal (Entero 0) TInt) TDummy)
-crearArrLstExpr e =
-    ArrLstExpr e (TArray (Literal (Entero $ length e) TInt) tipo)
-    where
-        mapaTipos = map typeE e
-        tipoPrimero = head mapaTipos
-        tipo = if all (== tipoPrimero) mapaTipos then tipoPrimero else TError
--------------------------------------------------------------------------------
-
-
--------------------------------------------------------------------------------
--------------------------------------------------------------------------------
---              Crear Nodos de las instrucciones de condicionales
--------------------------------------------------------------------------------
--------------------------------------------------------------------------------
-
-
--------------------------------------------------------------------------------
--- Crea el nodo para una instruccion If
-crearGuardiaIF :: Expr -> SecuenciaInstr -> Posicion -> (Expr, SecuenciaInstr)
-crearGuardiaIF exprCond seqInstrs (line, _) = (exprCond, seqInstrs)
-{-crearGuardiaIF exprCond seqInstrs (line,_)
-    | tExpreCondicional == TBool = IF [(exprCond, seqInstrs)]
-    | otherwise = 
-        error ("\n\nError semantico en la expresion del if: '" ++ showE exprCond
-                ++ "', de tipo: " ++ showType tExpreCondicional ++ ". En la linea: "
-                ++ show line ++ "\n")
-
-    where
-        tExpreCondicional = typeE exprCond-}
--------------------------------------------------------------------------------
-
-
--------------------------------------------------------------------------------
-crearIfSimple :: Expr -> Expr -> Expr -> Tipo ->  Posicion -> Expr
-crearIfSimple cond v f t p = IfSimple cond v f t
--------------------------------------------------------------------------------
-
-
--------------------------------------------------------------------------------
-crearIF :: [(Expr, SecuenciaInstr)] -> Posicion -> Instr
-crearIF casos (line, col) = IF casos
--------------------------------------------------------------------------------
-
-
--------------------------------------------------------------------------------
--------------------------------------------------------------------------------
---              Crear Nodos de las instrucciones de iteraciones
--------------------------------------------------------------------------------
--------------------------------------------------------------------------------
-
-
--------------------------------------------------------------------------------
--- Crea el nodo para una instruccion For
-crearFor :: Nombre -> Expr -> Expr -> SecuenciaInstr -> SymTab -> Alcance -> Posicion 
-            -> MonadSymTab Instr
-crearFor var e1 e2 i st scope pos@(line,_) = return $ For var e1 e2 i
--- | tE1 == TInt && tE2 == TInt =
-    --     do
-    --         let newI = map (changeTDummyFor TInt st scope) i
-    --         checkInfSup e1 e2 pos st
-    --         return $ For var e1 e2 newI
-    -- --------------------------------------------------------------------------
-    -- | tE1 == TInt =
-    --     error ("\n\nError semantico en segunda la expresion del 'for': '"
-    --             ++ expr2 ++ "', de tipo: " ++ showType tE2
-    --             ++ ". En la linea: " ++ show line ++ "\n")
-    -- --------------------------------------------------------------------------
-    -- | tE2 == TInt =
-    --     error ("\n\nError semantico en la primera expresion del 'for': '"
-    --             ++ expr1 ++ "', de tipo: " ++ showType tE1 ++ ". En la linea: "
-    --             ++ show line ++ "\n")
-    -- --------------------------------------------------------------------------
-    -- | otherwise =
-    --     error ("\n\nError semantico en la primera expresion: '" ++ expr1 ++
-    --             "', de tipo: " ++ showType tE1 ++ ", y segunda expresion: '"
-    --             ++ expr2 ++ "', de tipo: " ++ showType tE2 ++
-    --             ", del 'for'. En la linea: " ++ show line ++ "\n")
-
-    -- where
-    --     expr1 = showE e1
-    --     expr2 = showE e2
-    --     tE1 = typeE e1
-    --     tE2 = typeE e2
--------------------------------------------------------------------------------
-
--------------------------------------------------------------------------------
--- Crea el nodo para la instruccion de for con condicion
-crearForWhile :: Nombre -> Expr -> Expr -> Expr -> SecuenciaInstr -> SymTab
-    -> Alcance -> Posicion  -> MonadSymTab Instr
-crearForWhile var e1 e2 e3 i st scope pos@(line,_) = return $ ForWhile var e1 e2 e3 i
-{-crearForWhile var e1 e2 e3 i st scope pos@(line,_)
-    | tE1 == TInt && tE2 == TInt && tE3 == TBool =
-        do
-            let newI = map (changeTDummyFor TInt st scope) i
-            checkInfSup e1 e2 pos st
-            return $ For var e1 e2 newI st
-    --------------------------------------------------------------------------
-    | tE1 == TInt =
-        error ("\n\nError semantico en segunda la expresion del 'for': '"
-                ++ expr2 ++ "', de tipo: " ++ showType tE2
-                ++ ". En la linea: " ++ show line ++ "\n")
-    --------------------------------------------------------------------------
-    | tE2 == TInt =
-        error ("\n\nError semantico en la primera expresion del 'for': '"
-                ++ expr1 ++ "', de tipo: " ++ showType tE1 ++ ". En la linea: "
-                ++ show line ++ "\n")
-    --------------------------------------------------------------------------
-    | tE3 == TBool =
-        error ("\n\nError semantico en la primera expresion: '" ++ expr1 ++
-                "', de tipo: " ++ showType tE1 ++ ", y segunda expresion: '"
-                ++ expr2 ++ "', de tipo: " ++ showType tE2 ++
-                ", del 'for'. En la linea: " ++ show line ++ "\n")
-    --------------------------------------------------------------------------
-    | otherwise =
-        error ("\n\nError semantico en la primera expresion: '" ++ expr1 ++
-                "', de tipo: " ++ showType tE1 ++ ", segunda expresion: '"
-                ++ expr2 ++ "', de tipo: " ++ showType tE2 ++
-                ", y tercera expresion: '" ++ expr3 ++ "', de tipo: " ++ showType tE3 ++
-                ", del 'for'. En la linea: " ++ show line ++ "\n")
-
-    where
-        expr1 = showE e1
-        expr2 = showE e2
-        expr3 = showE e3
-        tE1 = typeE e1
-        tE2 = typeE e2
-        tE3 = typeE e3 -}
-
-
--------------------------------------------------------------------------------
--- Crea el nodo para una instruccion ForEach
-crearForEach :: Nombre -> Expr -> SecuenciaInstr -> Posicion -> MonadSymTab Instr
-crearForEach var e i pos@(line,_) =
-    return $ ForEach var e i
--------------------------------------------------------------------------------
-    
-
--------------------------------------------------------------------------------
--- Crea el nodo para una instruccion While
--- crearWhile' = observe "Que pasa con while " crearWhile
-crearWhile :: Expr -> SecuenciaInstr -> Posicion -> Instr
-crearWhile e i (line,_) = While e i
-{-    | tE == TBool = While e i
-    | otherwise = 
-        error ("\n\nError semantico en la expresion del 'while': '" ++
-                showE e ++ "', de tipo: " ++ showType tE ++
-                ". En la linea: " ++ show line ++ "\n")
-    where
-        tE = typeE e
-        -}
--------------------------------------------------------------------------------
-
-
--------------------------------------------------------------------------------
--------------------------------------------------------------------------------
---        Definiciones e instrucciones de procedimientos y funciones
--------------------------------------------------------------------------------
--------------------------------------------------------------------------------
-
-
--------------------------------------------------------------------------------
--- Actualiza el tipo y  la informacion extra de la subrutina
-definirSubrutina' :: Nombre -> SecuenciaInstr -> Categoria -> MonadSymTab ()
-definirSubrutina' n i c = void $ updateExtraInfo n c [AST i]
--------------------------------------------------------------------------------
-
-
--------------------------------------------------------------------------------
--- Agrega el nombre de la subrutina a la tabla de símbolos.
-definirSubrutina :: Nombre -> Categoria -> Posicion -> MonadSymTab ()
-definirSubrutina nombre categoria p = do
-    (symTab, activeScopes, scope) <- get
+    unless (null ids) $ do
+      newArray <- updateExpr arr t
+      let 
+        nids = getRelatedPromises newArray
+      
+      unless (null nids) $ addLateCheck newArray newArray (map snd expr) nids
+      
+    return (arr, p)
+  
+  | otherwise = do
     fileCode <- ask
-    let info = lookupInSymTab nombre symTab
+    let 
+      (tExpected, (tGot,pTGot)) = getTExpectedTGot (map (\(e,p) -> (typeE e,p)) expr)
+  
+    when (tExpected /= TError && tGot /= TError) $
+      tell [semmErrorMsg tExpected tGot fileCode pTGot]
+    return (arr, p)
 
-    if isNothing info then 
-        let i = [SymbolInfo TDummy 1 categoria []]
-        in addToSymTab [nombre] i symTab activeScopes scope
+  where
+    e          = map fst expr
+    arrayTypes = map typeE e
+    t          = fromMaybe TError (getTLists arrayTypes)
+    arr        = ArrayList e (TArray (Literal (Integer $ length e) TInt) t)
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-- | Creates the same type list node
+list :: [(Expr,Pos)] -> Pos -> MonadSymTab (Expr,Pos)
+list [] p = return (ArrayList [] (TList TDummy), p) -- TODO : Recordar TDummy -> TListEmpty.
+list expr p
+  | isJust t = do
+    let
+      typel = TList (fromJust t)
+      list  = ArrayList exprs typel
+      ids   = getRelatedPromises list
+
+    unless (null ids) $ do
+      newList <- updateExpr list typel
+      let 
+        newIds  = getRelatedPromises newList
+      
+      unless (null newIds) $ addLateCheck newList newList (map snd expr) newIds
+
+    return (list, p)
+
+  | otherwise = do
+    fileCode <- ask
+    let
+      (tExpected, (tGot,pTGot)) = getTExpectedTGot (map (\(e,pe) -> (typeE e,pe)) expr)
+
+    when (tExpected /= TError && tGot /= TError) $
+      tell [semmErrorMsg tExpected tGot fileCode pTGot]
+    return (ArrayList exprs TError, pTGot)
+
+  where
+    exprs = map fst expr
+    t     = getTLists $ map typeE exprs
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+--                  Creates the selection instructions nodes
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-- | Creates the selection instruction node
+if' :: [(Expr, InstrSeq)] -> Pos -> Instr
+if' cases p = if allSeqsVoid then IF cases TVoid else IF cases TError
+  where
+    seqs        = map snd cases
+    allSeqsVoid = all (all isVoid) seqs
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-- | Creates the guards of the selection instruction node
+guard :: (Expr,Pos) -> InstrSeq -> MonadSymTab (Expr, InstrSeq)
+guard (cond,p) i = do
+  fileCode <- ask
+  let
+    tCond = typeE cond
+    cond' = (cond, i)
+
+  if tCond == TBool then return cond'
+  else
+    if tCond == TPDummy then do
+      ncond <- updateExpr cond TBool
+      return (ncond, i)
+    else do
+    when (tCond /= TError) $ tell [semmErrorMsg TBool tCond fileCode p]
+    return cond'
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-- | Creates the simple if instruction node
+ifSimple :: (Expr,Pos) -> (Expr,Pos) -> (Expr,Pos) -> MonadSymTab (Expr,Pos)
+ifSimple (cond,pC) (true,pT) (false,pF) = do
+  fileCode <- ask
+  let
+    tCond   = typeE cond
+    tTrue   = typeE true
+    tFalse  = typeE false
+    (t,msg) = checkIfSimple (tCond,pC) (tTrue,pT) (tFalse,pF) fileCode
+    e       = (IfSimple cond true false t, pC)
+
+  if null msg then do
+    ncond <- updateExpr cond TBool
+    ntrue <- updateExpr true t
+    nfalse <- updateExpr false t
+
+    let (_,msg2) = checkIfSimple (typeE ncond,pC) (typeE ntrue,pT) (typeE nfalse,pF) fileCode
+    
+    if null msg2 then do
+      let
+        exprR = IfSimple ncond ntrue nfalse t
+        ids  = getRelatedPromises exprR
+
+      unless (null ids) $ addLateCheck exprR exprR [pC,pT,pF] ids
+      return (exprR, pC)
+    else do
+      when (tCond /= TError && tTrue /= TError && tFalse /= TError) $ tell [msg2]
+      return (IfSimple ncond ntrue nfalse TError, pC)      
+  else do
+    when (tCond /= TError && tTrue /= TError && tFalse /= TError) $ tell [msg]
+    return (IfSimple cond true false TError, pC)
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+--                 Creates the iterations instructions nodes
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-- | Creates the determined iteration instruction node
+for :: Id -> (Expr,Pos) -> (Expr,Pos) -> InstrSeq  -> MonadSymTab Instr
+for var (e1,pE1) (e2,pE2) i = do
+  fileCode <- ask
+  let 
+    tE1 = typeE e1
+    tE2 = typeE e2
+
+  if tE1 /= TInt && tE1 /= TPDummy then do
+    when (tE1 /= TError) $ tell [semmErrorMsg TInt tE1 fileCode pE1]
+    return $ For var e1 e2 i TError
+  else
+    if tE2 /= TInt && tE2 /= TPDummy then do
+      when (tE2 /= TError) $ tell [semmErrorMsg TInt tE2 fileCode pE2]
+      ne1 <- updateExpr e1 TInt
+      return $ For var ne1 e2 i TError
+    else do
+      ne1 <- updateExpr e1 TInt
+      ne2 <- updateExpr e2 TInt
+      return $ For var ne1 ne2 i TVoid
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-- | Creates the determined conditional iteration instruction node
+forWhile :: Id -> (Expr,Pos) -> (Expr,Pos) -> (Expr,Pos) -> InstrSeq -> MonadSymTab Instr
+forWhile var (e1,pE1) (e2,pE2) (e3,pE3) i = do
+  fileCode <- ask
+  ne1 <- updateExpr e1 TInt
+  ne2 <- updateExpr e2 TInt
+  ne3 <- updateExpr e3 TBool
+  let 
+    tE1 = typeE ne1
+    tE2 = typeE ne2
+    tE3 = typeE ne3
+    
+  if tE1 /= TInt then do
+    when (tE1 /= TError) $ tell [semmErrorMsg TInt tE1 fileCode pE1]
+    return $ ForWhile var ne1 ne2 ne3 i TError
+  else
+    if tE2 /= TInt then do
+      when (tE2 /= TError) $ tell [semmErrorMsg TInt tE2 fileCode pE2]
+      ne1 <- updateExpr e1 TInt
+      return $ ForWhile var ne1 ne2 ne3 i TError
     else
-        error $ errorMessage "Redefined subroutine" fileCode p
-    return ()
+      if tE3 /= TBool then do
+        when (tE3 /= TError) $ tell [semmErrorMsg TBool tE3 fileCode pE3]
+        return $ ForWhile var ne1 ne2 ne3 i TError
+      else 
+        return $ ForWhile var ne1 ne2 ne3 i TVoid
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
--- Define el parametro en la tabla de simbolos
-definirParam :: Vars -> MonadSymTab Nombre
-definirParam (Param name t ref) = do
-    (symtab, activeScopes@(activeScope:_), scope) <- get
-    let info = [SymbolInfo t activeScope (Parametros ref) []]
-    addToSymTab [name] info symtab activeScopes scope
-    return name
--------------------------------------------------------------------------------
+-- | Creates the determined iteration instruction node for arrays / list
+forEach :: Id -> (Expr,Pos) -> InstrSeq -> MonadSymTab Instr
+forEach var (e,p) i = do
+  fileCode <- ask
+  let 
+    tE               = typeE e
+    forOk            = ForEach var e i TVoid
+    forErr           = ForEach var e i TError
+    returnCheckedFor = if all isVoid i then return forOk else return forErr
+  
+  if isArray tE || isList tE then returnCheckedFor
+  else
+    if tE == TPDummy then do
+      let
+        related    = getRelatedPromises e
 
-
+      forM_ related (\id -> addLateCheckForEach id var e p related)
+      returnCheckedFor
+    else do
+      when (tE /= TError) $ tell [forEachErrorMsg tE fileCode p]
+      return forErr
 -------------------------------------------------------------------------------
--- Crea el nodo para la instruccion que llama a la subrutina
-crearSubrutinaCall :: Nombre -> Parametros -> Posicion
-                    -> MonadSymTab (Subrutina,Posicion)
-crearSubrutinaCall nombre args p = do
-    (symtab, _, _) <- get
-    fileCode <- ask
-    let symInfos = lookupInScopes [1,0] nombre symtab
     
-    if isJust symInfos then do
-        let isSubroutine si = getCategory si `elem` [Procedimientos,Funciones]
-            subroutine = filter isSubroutine (fromJust symInfos)
 
-        if null subroutine then
-            error $ errorMessage "This is not a subroutine" fileCode p
-        else do
-            let nParams = fromJust $ getNParams $ getExtraInfo $ head subroutine
-                nArgs = length args
+-------------------------------------------------------------------------------
+-- | Creates the indetermined iteration instruction node
+while :: (Expr,Pos) -> InstrSeq -> MonadSymTab Instr
+while (cond,p) i = do
+  fileCode <- ask
+  let 
+    tCond = typeE cond
+
+  if tCond == TBool || tCond == TPDummy then do
+    newCond <- updateExpr cond TBool
+    if all isVoid i then
+      return $ While newCond i TVoid
+    else
+      return $ While newCond i TError
+  else do
+    when (tCond /= TError) $ tell [semmErrorMsg TBool tCond fileCode p]
+    return $ While cond i TError
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+--                   Procedures / Functions calls nodes
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-- | Creates subroutine call instruction node
+-- Considerar quitar esta función
+call :: Id -> Params -> Pos -> MonadSymTab (Subroutine,Pos)
+call subroutine args p = do
+
+  (symTab, activeScopes, scopes, promises) <- get
+  fileCode <- ask
+  let
+    symInfos = lookupInScopes [1,0] subroutine symTab
+    sub      = (Call subroutine args, p)
+  
+  if isJust symInfos then
+    let
+      isSubroutine si = getCategory si `elem` [Procedures, Functions]
+      subroutine'     = filter isSubroutine (fromJust symInfos)
+    in
+      if null subroutine' then
+        tell [errorMsg "This is not a subroutine" fileCode p] >> return sub
+      else do
+        let 
+          extraInfoF = getExtraInfo $ head subroutine'
+          params     = fromJust $ getParams extraInfoF
+          nParams    = length params
+          nArgs      = length args          
+          l = [(getTLists [typeE e, tp],((e,pe),(tp,id))) | ((e,pe),(tp,id)) <-  zip args params]
+
+        if nArgs == nParams then 
+          if  any (isNothing.fst) l then do
+            let               
+              ( _ , ((e,pe),(t,_))) = head $ dropWhile (isJust.fst) l
+
+            when (t /= TError && typeE e /= TError) $
+              tell [semmErrorMsg t (typeE e) fileCode pe]
+            return sub
+          else do                
+
+            -- Hacemos inferencia para las expresiones en los argumentos
+            newargs <- forM l $ \(Just nt,((e,p),(_,_))) -> do
+              -- Inferencia para una llamada a función como argumento
+              ne <- updateExpr e nt 
+              return (ne,p)
             
-            if nArgs == nParams then
-                return (SubrutinaCall nombre args,p)
-            else
-                let msj = "Amount of arguments: " ++ show nArgs ++
-                        " not equal to spected:" ++ show nParams
-                in error $ errorMessage msj fileCode p
-    else
-        error $ errorMessage "Not defined subroutine" fileCode p
+            -- Registramos como late checks a la llamada a la función 
+            --si un argumento no es un tipo definido
+            let 
+              callf = Call subroutine newargs
+              nparams = map (\(Just nt,((_,p),(_,_))) -> (nt, p)) l
+
+            updatePromiseLateChecksCalls callf nparams
+            return (callf,p)
+        else
+          let msj = "Amount of arguments: " ++ show nArgs ++ 
+                " not equal to expected:" ++ show nParams
+          in tell [errorMsg msj fileCode p] >> return sub
+  else
+    -- Add a promise to create subroutine
+    -- Si no existe construimos la llamada igual para que procCall o funcCall creen la promesa
+    -- put(symTab, activeScopes, scopes, promises ++ [Promise subroutine (map typeE args) TPDummy p] )
+    return sub
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
--- Crea el nodo para la instruccion que llama a la funcion
--- NOTA: Se supone que ya se verifico que la subrutina este definida con
---      crearSubrutinaCall, pues se ejecuta primero
-crearFuncCall :: Subrutina -> Posicion -> MonadSymTab Expr
-crearFuncCall subrutina@(SubrutinaCall nombre _) p = do
-    (symtab, _, _) <- get
+procCall:: (Subroutine,Pos) -> MonadSymTab Instr
+procCall (procedure@(Call name args), p) = do
+
+  (symTab, activeScopes, scope, promises) <- get
+  fileCode <- ask
+  let symInfos = lookupInScopes [1,0] name symTab
+  
+  if isJust symInfos then
+    let
+      isProcedure symInfo = getCategory symInfo == Procedures
+      procedure' = filter isProcedure (fromJust symInfos)
+      msg        = errorMsg ("'" ++ name ++ "' is not a procedure"++show symInfos) fileCode p
+    in
+      if null procedure' then
+        tell [msg] >> return (ProcCall procedure TError)
+      else
+        return $ ProcCall procedure TVoid
+
+  else do
+    let
+      nparams     = map (\(e,p) -> (typeE e,p)) args 
+      extraInfo   = Params [(typeE e,show i)| ((e,p),i) <- zip args [1..]]
+      newProc     = [SymbolInfo TVoid 1 Procedures [extraInfo]]
+      newProm     = PromiseSubroutine name nparams TVoid Procedures p [] [] []
+      newPromises = promises ++ [newProm]
+      newSymTab   = insertSymbols [name] newProc symTab
+
+    put (newSymTab, activeScopes, scope, newPromises)
+    updatePromiseLateChecksCalls procedure nparams
+    return $ ProcCall procedure TVoid
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-- | Creates function call expresion node
+-- NOTE: Its already verified that subroutine's defined with 'call', because
+--      its excuted first
+funcCall :: (Subroutine,Pos) -> MonadSymTab (Expr,Pos)
+funcCall (function@(Call name args), p) = do
+
+  (symTab, activeScopes, scope, promises) <- get
+  fileCode <- ask
+  let symInfos = lookupInScopes [1,0] name symTab
+  
+  if isJust symInfos then
+    let 
+      isFunction symInfo = getCategory symInfo == Functions
+      function' = filter isFunction (fromJust symInfos)
+      msg       = errorMsg ("'" ++ name  ++ "' is not a function") fileCode p
+    in
+      if null function' then
+        tell [msg] >> return (FuncCall function TError, p)
+      else
+        return (FuncCall function (getType $ head function'), p)
+
+  else do
+    let
+      nparams     = map (\(e,p) -> (typeE e,p)) args
+      extraInfo   = Params [(typeE e,show i)| ((e,p),i) <- zip args [1..]]
+      newFunc     = [SymbolInfo TPDummy 1 Functions [extraInfo]]
+      newProm     = PromiseSubroutine name nparams TPDummy Functions p [] [] []
+      newPromises = promises ++ [newProm]
+      newSymTab   = insertSymbols [name] newFunc symTab
+
+    put (newSymTab, activeScopes, scope, newPromises)
+    updatePromiseLateChecksCalls function nparams
+    return (FuncCall function TPDummy, p)
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+--                          I/O instructions nodes
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-- | Creates the print instruction node
+print' :: [(Expr,Pos)] -> Pos -> MonadSymTab Instr
+print' expr p
+  | TError `notElem` exprsTypes = return $ Print exprs TVoid -- Si hay un tpdummy aqui no hay forma de actualizar este nodo luego
+  | otherwise = do
     fileCode <- ask
-    let infos = fromJust $ lookupInScopes [1] nombre symtab
-        isFunc si = getCategory si == Funciones
-        func = filter isFunc infos
+    let 
+      (errExpr,pExpr) = head $ dropWhile (\(e,p) -> typeE e /= TError) expr
+      msg             = semmErrorMsg TStr (typeE errExpr) fileCode pExpr
+
+    when (typeE errExpr /= TError) $ tell [msg]
+    return (Print exprs TError)
+
+  where
+    exprs      = map fst expr
+    exprsTypes = map typeE exprs
+    tE         = fromMaybe TError (getTLists exprsTypes)  
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-- | Creates the read instruction node
+read' :: (Expr,Pos) -> Pos -> MonadSymTab (Expr,Pos)
+read' (e,pe) p = do
+  fileCode <- ask
+  let
+    tE = typeE e
+
+  if tE == TStr then return (Read e TStr, p)
+  else
+    if tE == TPDummy then do
+      ne <- updateExpr e TStr
+      return (Read ne TStr, p) -- TRead para casts implicitos?
+    else do
+      when (typeE e /= TError) $
+        tell [semmErrorMsg TStr tE fileCode p]
+      return (Read e TError, p)
+-------------------------------------------------------------------------------
+
+{-Esta funcion se encarga de verificar que el tipo de la expresión del tamaño de un 
+array sea entero--}
+tArray :: (Expr, Pos) -> Type -> MonadSymTab Type
+tArray (e,p) t
+  | te == TInt  = return $ TArray e t
+  | te == TPDummy  = do
+    ne <- updateExpr e TInt
+    return (TArray ne t)
+
+  | otherwise = do
+    fileCode <- ask
+    when (typeE e /= TError) $
+      tell [semmErrorMsg TInt te fileCode p]
     
-    if null func then
-        error $ errorMessage "This is not a function" fileCode p
-    else
-        return $ FuncCall subrutina (getType $ head func)
--------------------------------------------------------------------------------
+    return (TArray e t)
 
+  where
+    te = typeE e
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
---                   Definiciones de registros y uniones
--------------------------------------------------------------------------------
--------------------------------------------------------------------------------
-
-
--------------------------------------------------------------------------------
--- Definicion de union
-definirRegistro :: Nombre -> Posicion -> MonadSymTab ()
-definirRegistro reg p = do
-    (symTab@(SymTab table), activeScopes@(activeScope:_), scope) <- get
-    fileCode <- ask
-    let regInfo = lookupInScopes [1] reg symTab
-
-    if isJust regInfo then
-        error $ errorMessage "Redefined Inventory" fileCode p
-    else
-        let modifySym (SymbolInfo t s _ _) = SymbolInfo t s Campos [FromReg reg]
-            updtSym = 
-                map (\sym -> if getScope sym == activeScope then modifySym sym else sym)
-
-            newSymTab = SymTab $ M.map updtSym table
-            info = [SymbolInfo TRegistro 1 Tipos []]
-
-        in void $ addToSymTab [reg] info newSymTab activeScopes scope
--------------------------------------------------------------------------------
-
-
--------------------------------------------------------------------------------
--- Definicion de union
-definirUnion :: Nombre -> Posicion -> MonadSymTab ()
-definirUnion reg p = do
-    (symTab@(SymTab table), activeScopes@(activeScope:_), scope) <- get
-    fileCode <- ask
-    let regInfo = lookupInScopes [1] reg symTab
-
-    if isJust regInfo then
-        error $ errorMessage "Redefined Items" fileCode p
-    else
-        let modifySym (SymbolInfo t s _ _) = SymbolInfo t s Campos [FromReg reg]
-            updSym = 
-                map (\sym -> if getScope sym == activeScope then modifySym sym else sym)
-
-            newSymTab = SymTab $ M.map updSym table
-            info = [SymbolInfo TUnion 1 Tipos []]
-        in void $ addToSymTab [reg] info newSymTab activeScopes scope
--------------------------------------------------------------------------------
-
-
--------------------------------------------------------------------------------
--------------------------------------------------------------------------------
---              Crear Nodos de las instrucciones de entrada y salida
+--                        Pointers instructions nodes
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
--- Crea el nodo para una instruccion Print
-crearPrint :: Expr -> Posicion -> MonadSymTab Instr
-crearPrint e p
-    | tE /= TError = return $ Print e
-    | otherwise = do
-        (file,code) <- ask
-        error ("\n\nError: " ++ file ++ ": " ++ show p ++
-                "\nExpresion del 'print': '" ++
-                show e ++ "', de tipo: " ++ show tE ++ "\n")
-    where
-        tE = typeE e
+-- | Creates the free memory instruction node
+free :: Id -> Pos -> MonadSymTab Instr
+free var p = do
+  (symTab, activeScopes, _, _) <- get
+  fileCode <- ask
+  let
+    infos = lookupInScopes activeScopes var symTab
+    msg   = errorMsg "Variable not declared in active scopes" fileCode p
+  
+  if isJust infos then return $ Free var TVoid
+  else
+    tell [msg] >> return (Free var TError)
 -------------------------------------------------------------------------------
-
-
--------------------------------------------------------------------------------
--- Crea el nodo para una instruccion Read
-crearRead :: Expr -> Posicion -> Expr
-crearRead e _ = Read e
--------------------------------------------------------------------------------
-
-
--------------------------------------------------------------------------------
--------------------------------------------------------------------------------
---              Crear Nodos de las instrucciones de apuntadores
--------------------------------------------------------------------------------
--------------------------------------------------------------------------------
-
-
--------------------------------------------------------------------------------
--- Crea el tipo que tenga uno o mas apuntadores a otro tipo
-crearTApuntador :: Tipo -> Tipo -> Tipo
-crearTApuntador (TApuntador TDummy) t = TApuntador t
-crearTApuntador (TApuntador t') t = TApuntador $ crearTApuntador t' t
--------------------------------------------------------------------------------
-
-
--------------------------------------------------------------------------------
--- Crea el nodo para una instruccion Free
-crearFree :: Nombre -> Posicion -> MonadSymTab Instr
-crearFree var p = do
-    (symtab, activeScope:_, _) <- get
-    fileCode <- ask
-    let info = lookupInSymTab var symtab
-    
-    if isJust info then
-        let scopeOk = activeScope `elem` map getScope (fromJust info) in
-        
-        if scopeOk then return $ Free var
-        else error $ errorMessage "Variable out of scope" fileCode p
-    else
-        error $ errorMessage "Variable not defined" fileCode p
--------------------------------------------------------------------------------
-
-
--------------------------------------------------------------------------------
--------------------------------------------------------------------------------
---                           Funciones auxiliares
--------------------------------------------------------------------------------
--------------------------------------------------------------------------------
-
-

@@ -1,6 +1,5 @@
-{-
-Modulo para imprimir el AST y la Tabla de Simbolos
-
+{- |
+ * Modulo para imprimir el AST y la Tabla de Simbolos
  * Copyright : (c) 
  *  Manuel Gonzalez     11-10390
  *  Francisco Javier    12-11163
@@ -26,13 +25,13 @@ printAST :: Int -> Instr -> IO()
 printAST n instr = 
     case instr of
         -- Asginacion de expresion
-        (Asignacion vars exp) -> do
+        (Assig vars exp) -> do
             putStrLn $ t ++ "Asignacion:"
             putStrLn (t ++ "  Destino: ") >> printVar (n + 2) vars
             putStrLn (t ++ "  Valor: ") >> printExpr (n + 2) exp
         -----------------------------------------------------------------------
         -- Bloque de instrucciones
-        (Programa seq symTab) -> do
+        (Program seq symTab) -> do
             putStrLn (t ++ "Bloque:") >> printSymTab symTab t
             printSeq (n + 1) seq
         -----------------------------------------------------------------------
@@ -100,7 +99,7 @@ printAST n instr =
         (Print exp) -> putStrLn (t ++ "Impresion:") >> printExpr (n + 1) exp
         -----------------------------------------------------------------------
         -- Leer valor
-        (Asignaciones seq symTab) ->
+        (Assigs seq symTab) ->
             --printSymTab symTab t >>
             if not $ isEmptySequence seq then
                 putStrLn (t ++ "  Declaraciones:") >> printSeq (n + 2) seq
@@ -110,20 +109,20 @@ printAST n instr =
         -- Retornar de una función.
         (Return exp) -> putStrLn (t ++ "Retorno:") >> printExpr (n + 1) exp
         -----------------------------------------------------------------------
-        -- Procedimientos.
+        -- Procedures.
         (Proc name params seq symTab) -> do
             putStrLn (t ++ "Procedimiento: ")
             printSymTab symTab t
             putStrLn (t ++ "Nombre: " ++ name)
-            putStrLn (t ++ "Parametros: ") >> printExprs (n + 1) params
+            putStrLn (t ++ "Parameters: ") >> printExprs (n + 1) params
             putStrLn (t ++ "Instrucciones: ") >> printSeq (n + 1) seq
         -----------------------------------------------------------------------
-        -- Funciones.
+        -- Functions.
         (Func name params returnT seq symTab) -> do
             putStrLn (t ++ "Funcion: ")
             printSymTab symTab t
             putStrLn (t ++ "Nombre: " ++ name)
-            putStrLn (t ++ "Parametros: ") >> printExprs (n + 1) params
+            putStrLn (t ++ "Parameters: ") >> printExprs (n + 1) params
             putStrLn (t ++ "Tipo de retorno: " ++ showType returnT)
             putStrLn (t ++ "Instrucciones: ") >> printSeq (n + 1) seq
     
@@ -146,7 +145,7 @@ isEmptySequence s = s == []
 
 -------------------------------------------------------------------------------
 -- Subrutina para imprimir secuencias de guardias
-printButtonGuardia :: Int -> (Expr, SecuenciaInstr) -> IO()
+printButtonGuardia :: Int -> (Expr, InstrSeq) -> IO()
 printButtonGuardia n (cond,seq) =  do
     putStrLn (t ++ "Condicion: ") >> printExpr (n + 1) cond
     putStrLn (t ++ "Instrucciones: ") >> mapM_ (printAST $ n + 1) seq
@@ -154,7 +153,7 @@ printButtonGuardia n (cond,seq) =  do
     where t = replicate (2 * n) ' '
 
 
-printSeqButtonGuardias :: Int -> [(Expr, SecuenciaInstr)] -> IO()
+printSeqButtonGuardias :: Int -> [(Expr, InstrSeq)] -> IO()
 printSeqButtonGuardias n bloques = 
     putStrLn (t ++ "Guardias IF: ") >> mapM_ (printButtonGuardia (n + 1)) bloques
     
@@ -163,24 +162,24 @@ printSeqButtonGuardias n bloques =
 
 ------------------------------------------------------------------------------
 -- Subrutina para imprimir variables simples y arreglos
-printVar :: Int -> Vars -> IO()
+printVar :: Int -> Var -> IO()
 printVar n vars = 
     case vars of
         -- Variable simple
         (Var name _) -> putStrLn $ t ++ "Variable: " ++ name
         -----------------------------------------------------------------------
         -- Arreglo variable
-        (VarIndex vars exp _) -> do
+        (Index vars exp _) -> do
             putStrLn (t ++ "Variable de indexacion:") >> printVar (n + 1) vars
             putStrLn $ t ++ "  Indice: " ++ showE exp
         -----------------------------------------------------------------------
         (Param name typ r) -> putStrLn $ t ++ "Variable: " ++ name ++ " de tipo: " ++ showType typ ++ " pasado por: " ++ show r
         -----------------------------------------------------------------------
-        (PuffValue vars typ) -> do
+        (Desref vars typ) -> do
             putStrLn (t ++ "Variable a deferenciar:") >> printVar (n + 1) vars
             putStrLn $ t ++ "Tipo: " ++ showType typ
         -----------------------------------------------------------------------
-        (VarCompIndex vars nombre typ) -> do
+        (Field vars nombre typ) -> do
             putStrLn (t ++ "Variable contenedora:") >> printVar (n + 1) vars
             putStrLn (t ++ "Variable a acceder:" ++ nombre) 
             putStrLn $ t ++ "Tipo: " ++ showType typ
@@ -191,7 +190,7 @@ printVar n vars =
 
 -------------------------------------------------------------------------------
 -- Subrutina para imprimir identificadores
-printId :: Int -> Nombre -> IO()
+printId :: Int -> Id -> IO()
 printId n name = putStrLn $ t ++ "Variable: " ++ name
     
     where t = replicate (2 * n) ' '
@@ -204,32 +203,32 @@ printExpr :: Int -> Expr -> IO()
 printExpr n e =
     case e of
         -- Expresion variable
-        (Variables vars _) ->
+        (Variable vars _) ->
             putStrLn (t ++ "Identificador:") >> printVar (n + 1) vars
         -----------------------------------------------------------------------
         -- Expresion literal
         (Literal l _) -> putStrLn (t ++ "Literal:") >> printLiteral (n + 1) l
         -----------------------------------------------------------------------
         -- Expresion de operacion binaria
-        (OpBinario op exp1 exp2 _) -> do
+        (Binary op exp1 exp2 _) -> do
             putStrLn $ t ++ "Operador Binario: " ++ show op
             putStrLn (t ++ "Operando Izquierdo: ") >> printExpr (n + 1) exp1
             putStrLn (t ++ "Operando Derecho: ") >> printExpr (n + 1) exp2
         -----------------------------------------------------------------------
         -- Expresion de operaicion unaria
-        (OpUnario op exp _) -> do
+        (Unary op exp _) -> do
             putStrLn $ t ++ "Operador Unario: " ++ show op
             putStrLn (t ++ "Operando: ") >> printExpr (n + 1) exp
         -----------------------------------------------------------------------
         -- Expresion de arreglo explicito
-        (ArrLstExpr exps _) ->
+        (ArrayList exps _) ->
             putStrLn (t ++ "Arreglo:") >> mapM_ (printExpr $ n + 1) exps
         -----------------------------------------------------------------------
         -- Leer valor
         (Read expre) -> putStrLn (t ++ "Lectura con prompt:") >> printExpr (n + 1) expre
         -----------------------------------------------------------------------
         -- Invocación subrutina
-        (SubrutinaCall nom exps _) -> putStrLn (t ++ "Subrutina: " ++ show nom ++ " de parametros: ") >> p exps
+        (Call nom exps _) -> putStrLn (t ++ "Subrutina: " ++ show nom ++ " de parametros: ") >> p exps
         -----------------------------------------------------------------------
         -- Condicion ? valor1 : valor2
         -- IfSimple Expr Expr Expr    
@@ -270,7 +269,6 @@ printSymTab (SymTab (table, father)) tab = do
     putStrLn $ tab ++ "------------------------------------------\n"
 
 
-printSymbol :: String -> (Nombre, IdInfo) -> IO()
+printSymbol :: String -> (Id, IdInfo) -> IO()
 printSymbol tab (n, IdInfo t val _) = 
     putStrLn $ tab ++ "Simbolo: " ++ n ++ "  | Tipo: " ++ showType t
-
