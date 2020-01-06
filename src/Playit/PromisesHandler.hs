@@ -11,7 +11,7 @@
 module Playit.PromisesHandler where
 
 
-import Control.Monad (void,when,unless,void,forM,forM_)
+import Control.Monad (when,unless,forM)
 import Control.Monad.Trans.RWS
 import Data.Set as S (fromList,toList)
 import Data.Maybe (isJust,isNothing,fromJust,fromMaybe)

@@ -8,7 +8,6 @@
 -}
 module Playit.AuxFuncs where
 
-import Control.Monad (when,unless)
 import Data.Maybe
 import Playit.Types
 
@@ -455,7 +454,7 @@ getPromise name (promise : r)
 
 -------------------------------------------------------------------------------
 getInstrSeq :: Instr -> InstrSeq
-getInstrSeq (Assigs is t)           = is
+getInstrSeq (Assigs is _)           = is
 getInstrSeq (For _ _ _ is _)        = is
 getInstrSeq (ForEach _ _ is _)      = is
 getInstrSeq (ForWhile _ _ _ _ is _) = is

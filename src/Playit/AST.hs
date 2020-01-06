@@ -8,9 +8,8 @@
 -}
 module Playit.AST where
 
-import Control.Monad (void,when,unless,forM,forM_)
+import Control.Monad (when,unless,forM,forM_)
 import Control.Monad.Trans.RWS
-import qualified Data.Map as M
 import Data.Maybe (fromJust,isJust,isNothing,fromMaybe)
 import Playit.AuxFuncs
 import Playit.CheckAST
@@ -119,7 +118,7 @@ indexList (var,pVar) (expr,pExpr)
 field :: (Var,Pos) -> Id -> Pos -> MonadSymTab (Var,Pos)
 field (var,pVar) field pField = do
   (symTab, _, _, promises) <- get
-  fileCode@(file,code)     <- ask
+  fileCode                 <- ask
   
   -- Verify type 'var' is register / union
   -- La existencia de "name" fue verificada ya en un parse anterior
@@ -781,14 +780,14 @@ print' expr p
   where
     exprs      = map fst expr
     exprsTypes = map typeE exprs
-    tE         = fromMaybe TError (getTLists exprsTypes)  
+    -- tE         = fromMaybe TError (getTLists exprsTypes)  
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
 -- | Creates the read instruction node
 read' :: (Expr,Pos) -> Pos -> MonadSymTab (Expr,Pos)
-read' (e,pe) p = do
+read' (e, pe) p = do
   fileCode <- ask
   let
     tE = typeE e

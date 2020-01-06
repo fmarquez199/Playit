@@ -56,7 +56,7 @@ checkDesref tVar p fileCode
 -- | Checks the new defined type
 -- TODO: Faltaba algo, pero no recuerdo que
 checkNewType :: Id -> Pos -> SymTab -> FileCodeReader -> MonadSymTab String
-checkNewType tName p symTab@(SymTab st) fileCode = do
+checkNewType tName p (SymTab st) fileCode = do
   (symTab, activeScopes, scopes, promises) <- get
   let
     infos = lookupInScopes [1] tName symTab
@@ -92,12 +92,12 @@ checkAssigs assigs t fileCode
   | eqAssigsTypes updatedAssigs t = do
     -- Actualiza los TPDummys
     nexprs <- mapM (\(Assig _ e _) -> updateExpr e t) onlyassigs    
-    return ([Assig v ne ta | (Assig v e ta,ne) <- zip updatedAssigs nexprs ],"")
+    return ([Assig v ne ta | (Assig v _ ta,ne) <- zip updatedAssigs nexprs ],"")
 
   | otherwise = do
     let
       le  = map (\(Assig _ e _,p) -> (e,p)) assigs
-      got = head $ dropWhile (\(e,p) ->  isJust (getTLists [typeE e,t])) le
+      got = head $ dropWhile (\(e,_) ->  isJust (getTLists [typeE e,t])) le
       msg = semmErrorMsg t (typeE $ fst got) fileCode (snd got)
 
     if typeE (fst got) /= TError then return (updatedAssigs, msg)
@@ -190,7 +190,7 @@ checkRegUnion name exprs symTab fileCode p
                 ""
             else
               let 
-                ((tGot,pTGot),tExpected) = head $ dropWhile (\((te,p),tp) -> isJust (getTLists [te,tp])) [((typeE e,p),tp) | ((e,p),tp) <- zip exprs typesP]
+                ((tGot,pTGot),tExpected) = head $ dropWhile (\((te,_),tp) -> isJust (getTLists [te,tp])) [((typeE e,p),tp) | ((e,p),tp) <- zip exprs typesP]
               in
                 semmErrorMsg tExpected tGot fileCode pTGot
           else

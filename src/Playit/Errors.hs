@@ -19,7 +19,7 @@ import Playit.Types
 -------------------------------------------------------------------------------
 -- | Code line of the error
 errorLine :: String -> Int -> String
-errorLine code l = head (drop (l-1) (splitOn "\n" code)) ++ "\n"
+errorLine code l = (splitOn "\n" code !! max 0 (l - 1)) ++ "\n"
 -------------------------------------------------------------------------------
 
 
@@ -73,7 +73,7 @@ tkError = errorMsg "\x1b[1;94m¡¡¡PLAYIT FATALITY!!!\n"
 -------------------------------------------------------------------------------
 -- | Show all lexical errors
 showLexerErrors :: FileCodeReader -> [Pos] -> String
-showLexerErrors fileCode [] = ""
+showLexerErrors _ [] = ""
 showLexerErrors fileCode ((-1, -1):pos) = showLexerErrors fileCode pos
 showLexerErrors fileCode (p:pos) = concat $ tkError fileCode p : [showLexerErrors fileCode pos]
 -------------------------------------------------------------------------------

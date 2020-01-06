@@ -9,7 +9,7 @@
 -}
 module Playit.SymbolTable where
 
-import Control.Monad (void,when,forM_)
+import Control.Monad (when,forM_)
 import Control.Monad.Trans.RWS
 import Data.List (findIndices)
 import qualified Data.Map as M
@@ -199,7 +199,7 @@ defineParameter (Param name t ref) p = do
 -- | Inserts a register / union into symbol table
 defineRegUnion :: Id -> Type -> [ExtraInfo] -> Pos -> MonadSymTab (Id, Pos)
 defineRegUnion reg regType extraInfo p = do
-  (symTab@(SymTab table), activeScopes, scope, promises) <- get
+  (symTab, activeScopes, scope, promises) <- get
   fileCode <- ask
   let regInfo = lookupInScopes [1] reg symTab
 
@@ -224,7 +224,7 @@ defineRegUnion reg regType extraInfo p = do
 -------------------------------------------------------------------------------
 updatesDeclarationsCategory :: Id -> MonadSymTab ()
 updatesDeclarationsCategory reg = do
-  (symTab@(SymTab table), activeScopes@(activeScope:_), scope, promises) <- get
+  (SymTab table, activeScopes@(activeScope:_), scope, promises) <- get
   let
     modifySym (SymbolInfo t s _ _) = SymbolInfo t s Fields [FromReg reg]
     updtSym = 
