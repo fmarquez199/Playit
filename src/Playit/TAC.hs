@@ -6,7 +6,6 @@
  *  Francisco Javier    12-11163
  *  Natascha Gamboa     12-11250
 -}
-{-# LANGUAGE DatatypeContexts #-}
 module Playit.TAC where
 
 import Playit.Types
@@ -14,3 +13,6 @@ import Playit.Types
 
 gen :: Instr -> SymTab -> ThreeAddressCode
 gen i st = ThreeAddressCode (Operation) (Lval) (Rval1) (Rval2)
+
+genExpr :: Expr -> ThreeAddressCode
+genExpr Binary op e1 e2 = ThreeAddressCode

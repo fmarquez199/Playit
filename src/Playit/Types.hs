@@ -11,6 +11,7 @@ module Playit.Types where
 import Control.Monad.Trans.RWS
 import qualified Data.Map as M
 import Data.List (intercalate,elemIndex)
+import Playit.TACType
 
 
 -------------------------------------------------------------------------------
@@ -334,10 +335,6 @@ instance Show SymbolInfo where
         else ""
 
 
-class SymEntryCompatible where
-  getSymID :: a -> String
-
-
 {- | New type that represents the symbol table
  * Hash table:
  *   Key: Id
@@ -429,24 +426,3 @@ data LateCheckPromise =
 data PromiseExtraInfo = PromiseExtraInfo{
 
 }
-
-
--------------------------------------------------------------------------------
--------------------------------------------------------------------------------
---                             TAC data types
--------------------------------------------------------------------------------
--------------------------------------------------------------------------------
-
-
-data ThreeAddressCode = ThreeAddressCode
-  { tacOperand :: Operation,
-    tacLvalue  :: Maybe Operand,
-    tacRvalue1 :: Maybe Operand,
-    tacRvalue2 :: Maybe Operand
-  }
-
-
-data SymEntryCompatible a => Operand a = Variable a | Constant a
-
-
-data Operation = Add | Mul -- | 
