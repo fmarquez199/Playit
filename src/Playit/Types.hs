@@ -318,6 +318,7 @@ instance Show ExtraInfo where
 
 -- Symbol related information in the symbol table entry
 data SymbolInfo = SymbolInfo {
+    getId :: Id,
     getType :: Type,
     getScope :: Scope,
     getCategory :: Category,
@@ -331,6 +332,54 @@ instance Show SymbolInfo where
         if not (null i) then
             "\n    Extra:\n  " ++ intercalate "  " (map show i) ++ "\n"
         else ""
+
+
+class SymEntryCompatible where
+  getSymID :: a -> String
+
+
+{- | New type that represents the symbol table
+ * Hash table:
+ *   Key: Id
+ *   Value: Symbol information
+-}
+newtype SymTab  = SymTab { getSymTab :: M.Map Id [SymbolInfo] }
+                deriving (Eq)
+
+instance Show SymTab where
+    show (SymTab st) = header ++ info ++ symbols
+        where
+            header = "\n------------\n Symbol table \n------------\n"
+            info = "- Symbol | Related information \n------------\n"
+            table = M.toList st
+            stWithScopes = M.map (map getScope) st
+            symbols' = map fst $ M.toList $ M.filter (any (>0)) stWithScopes
+            showInfo i = if getScope i > 0 then show i else ""
+            showTable (k,v) = 
+                if k `elem` symbols' then
+                    k ++ " -> " ++ concatMap showInfo (reverse v) ++ "\n"
+                else ""
+            symbols = concatMap showTable table
+
+instance SymEntryCompatible SymTab where
+    getSymID symInfo = getId symInfo
+
+
+-- State that stores the symbol table, active scopes, total scopes and subroutines promises
+type SymTabState = (SymTab, ActiveScopes, Scope, Promises)
+
+-- Reader that stores the file name and the code for better show of errors
+type FileCodeReader = (String,String)
+
+-- Symbol table, active scopes and total scopes monad transformer handler
+type MonadSymTab a = RWST FileCodeReader [String] SymTabState IO a
+
+
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+--                           Promises data types
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 
 -- Subroutine promise for co-recursive subroutines
@@ -382,35 +431,22 @@ data PromiseExtraInfo = PromiseExtraInfo{
 }
 
 
-{- | New type that represents the symbol table
- * Hash table:
- *   Key: Id
- *   Value: Symbol information
--}
-newtype SymTab  = SymTab { getSymTab :: M.Map Id [SymbolInfo] }
-                deriving (Eq)
-
-instance Show SymTab where
-    show (SymTab st) = header ++ info ++ symbols
-        where
-            header = "\n------------\n Symbol table \n------------\n"
-            info = "- Symbol | Related information \n------------\n"
-            table = M.toList st
-            stWithScopes = M.map (map getScope) st
-            symbols' = map fst $ M.toList $ M.filter (any (>0)) stWithScopes
-            showInfo i = if getScope i > 0 then show i else ""
-            showTable (k,v) = 
-                if k `elem` symbols' then
-                    k ++ " -> " ++ concatMap showInfo (reverse v) ++ "\n"
-                else ""
-            symbols = concatMap showTable table
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+--                             TAC data types
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 
--- State that stores the symbol table, active scopes, total scopes and subroutines promises
-type SymTabState = (SymTab, ActiveScopes, Scope, Promises)
+data ThreeAddressCode = ThreeAddressCode
+  { tacOperand :: Operation,
+    tacLvalue  :: Maybe Operand,
+    tacRvalue1 :: Maybe Operand,
+    tacRvalue2 :: Maybe Operand
+  }
 
--- Reader that stores the file name and the code for better show of errors
-type FileCodeReader = (String,String)
 
--- Symbol table, active scopes and total scopes monad transformer handler
-type MonadSymTab a = RWST FileCodeReader [String] SymTabState IO a
+data SymEntryCompatible a => Operand a = Variable a | Constant a
+
+
+data Operation = Add | Mul -- | 
