@@ -140,7 +140,7 @@ field (var,pVar) field pField = do
     in
       if isJust info then
         let
-          isInRegUnion (SymbolInfo _ _ c e) = c == Fields && getReg e == reg
+          isInRegUnion (SymbolInfo _ _ _ c e) = c == Fields && getReg e == reg
           symbols = filter isInRegUnion (fromJust info)
           noField = errorMsg ("Field not in '" ++ reg ++ "'") fileCode pField
         in
@@ -708,7 +708,7 @@ procCall (procedure@(Call name args), p) = do
     let
       nparams     = map (\(e,p) -> (typeE e,p)) args 
       extraInfo   = Params [(typeE e,show i)| ((e,p),i) <- zip args [1..]]
-      newProc     = [SymbolInfo TVoid 1 Procedures [extraInfo]]
+      newProc     = [SymbolInfo name TVoid 1 Procedures [extraInfo]]
       newProm     = PromiseSubroutine name nparams TVoid Procedures p [] [] []
       newPromises = promises ++ [newProm]
       newSymTab   = insertSymbols [name] newProc symTab
@@ -745,7 +745,7 @@ funcCall (function@(Call name args), p) = do
     let
       nparams     = map (\(e,p) -> (typeE e,p)) args
       extraInfo   = Params [(typeE e,show i)| ((e,p),i) <- zip args [1..]]
-      newFunc     = [SymbolInfo TPDummy 1 Functions [extraInfo]]
+      newFunc     = [SymbolInfo name TPDummy 1 Functions [extraInfo]]
       newProm     = PromiseSubroutine name nparams TPDummy Functions p [] [] []
       newPromises = promises ++ [newProm]
       newSymTab   = insertSymbols [name] newFunc symTab

@@ -56,23 +56,23 @@ getParams (_:rs)       = getParams rs
 -------------------------------------------------------------------------------
 -- | Modify the symbol type
 modifyType :: SymbolInfo -> Type -> SymbolInfo
-modifyType (SymbolInfo _ s c ei) newT = SymbolInfo newT s c ei
+modifyType (SymbolInfo id _ s c ei) newT = SymbolInfo id newT s c ei
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
 -- | Modify the symbol category
 modifyCategory :: SymbolInfo -> Category -> SymbolInfo
-modifyCategory (SymbolInfo t s _ ei) newC = SymbolInfo t s newC ei
+modifyCategory (SymbolInfo id t s _ ei) newC = SymbolInfo id t s newC ei
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
 -- | Modify the symbol extra info
 modifyExtraInfo :: SymbolInfo -> [ExtraInfo] -> SymbolInfo
-modifyExtraInfo (SymbolInfo t s c []) ei      =  SymbolInfo t s c ei
-modifyExtraInfo (SymbolInfo t s c ei) (ex:r)  = 
-    SymbolInfo t s c (map (\einf -> if areSameTExtInf einf ex then ex else einf ) ei)
+modifyExtraInfo (SymbolInfo id t s c []) ei      =  SymbolInfo id t s c ei
+modifyExtraInfo (SymbolInfo id t s c ei) (ex:r)  = 
+    SymbolInfo id t s c (map (\einf -> if areSameTExtInf einf ex then ex else einf ) ei)
     
 areSameTExtInf :: ExtraInfo -> ExtraInfo -> Bool
 areSameTExtInf (Params _ ) (Params _)   = True

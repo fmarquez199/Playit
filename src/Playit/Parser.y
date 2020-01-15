@@ -620,7 +620,7 @@ InitVar1 :: { (Id, (Expr,Pos) ) }
       let (e, _) = $3
           id = getTk $1
           t = (\s -> if s == TInt then TInt else TError) $ typeE e
-          varInfo = [SymbolInfo t scope IterationVariable []]
+          varInfo = [SymbolInfo id t scope IterationVariable []]
           newSymTab = insertSymbols [id] varInfo symtab
 
       v <- var id (getPos $1)
@@ -634,7 +634,7 @@ InitVar1 :: { (Id, (Expr,Pos) ) }
       let id = getTk $2
           t = if $1 == TInt then TInt else TError
           var = Var id t
-          varInfo = [SymbolInfo t scope IterationVariable []]
+          varInfo = [SymbolInfo id t scope IterationVariable []]
           newSymTab = insertSymbols [id] varInfo symtab
       
       -- insertDeclarations [(id, getPos $2)] $1 []
@@ -652,7 +652,7 @@ InitVar2 :: { (Id, (Expr,Pos) ) }
         id     = getTk $1
         tID    = typeE e
         t = if isArray tID || isList tID then baseTypeArrLst tID else if tID == TPDummy then TPDummy else TError
-        varInfo   = [SymbolInfo t scope IterationVariable []]
+        varInfo   = [SymbolInfo id t scope IterationVariable []]
         newSymTab = insertSymbols [id] varInfo symtab
 
       when (t /= TPDummy) (put (newSymTab, activeScopes, scope, promises))
@@ -671,7 +671,7 @@ InitVar2 :: { (Id, (Expr,Pos) ) }
         arrayl    = isArray tE || isList tE
         t         = if arrayl && matchT then $1 else TError
         var       = Var id $1
-        varInfo   = [SymbolInfo $1 scope IterationVariable []]
+        varInfo   = [SymbolInfo id $1 scope IterationVariable []]
         newSymTab = insertSymbols [id] varInfo symtab
 
       -- insertDeclarations [(id, getPos $2)] $1 []

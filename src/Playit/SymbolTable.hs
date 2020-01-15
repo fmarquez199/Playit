@@ -41,23 +41,23 @@ createInitSymTab st = (insertSymbols symbols info st, [1,0], 1,[])
     info = [power, skill, rune, runes, battle, inventory, items, listOf,
         win, lose, apt, portalSC, portalCS, portalIS, portalFS,
         portalSI, portalSF]
-    power     = SymbolInfo TInt 0 Types []
-    skill     = SymbolInfo TFloat 0 Types []
-    rune      = SymbolInfo TChar 0 Types []
-    runes     = SymbolInfo TStr 0 Types []
-    battle    = SymbolInfo TBool 0 Types []
-    listOf    = SymbolInfo (TList TDummy) 0 TypeConstructors [] -- Tipo?
-    inventory = SymbolInfo TRegister 0 TypeConstructors []
-    items     = SymbolInfo TUnion 0 TypeConstructors []
-    win       = SymbolInfo TBool 0 Constants []
-    lose      = SymbolInfo TBool 0 Constants []
-    apt       = SymbolInfo (TPointer TDummy) 0 Pointers [] -- Tipo?
-    portalCS  = SymbolInfo TStr 0 Functions [Params [(TChar,"rune")]]
-    portalIS  = SymbolInfo TStr 0 Functions [Params [(TInt,"power")]]
-    portalFS  = SymbolInfo TStr 0 Functions [Params [(TFloat,"skill")]]
-    portalSI  = SymbolInfo TInt 0 Functions [Params [(TStr,"runes")]]
-    portalSC  = SymbolInfo TChar 0 Functions [Params [(TStr,"runes")]]
-    portalSF  = SymbolInfo TFloat 0 Functions [Params [(TStr,"runes")]]
+    power     = SymbolInfo "Power" TInt 0 Types []
+    skill     = SymbolInfo "Skill" TFloat 0 Types []
+    rune      = SymbolInfo "Rune" TChar 0 Types []
+    runes     = SymbolInfo "Runes" TStr 0 Types []
+    battle    = SymbolInfo "Battle" TBool 0 Types []
+    listOf    = SymbolInfo "Kit of" (TList TDummy) 0 TypeConstructors [] -- Tipo?
+    inventory = SymbolInfo "Inventory" TRegister 0 TypeConstructors []
+    items     = SymbolInfo "Items" TUnion 0 TypeConstructors []
+    win       = SymbolInfo "Win" TBool 0 Constants []
+    lose      = SymbolInfo "Lose" TBool 0 Constants []
+    apt       = SymbolInfo "DeathZone" (TPointer TDummy) 0 Pointers [] -- Tipo?
+    portalCS  = SymbolInfo "portalRuneToRunes" TStr 0 Functions [Params [(TChar,"rune")]]
+    portalIS  = SymbolInfo "portalPowerToRunes" TStr 0 Functions [Params [(TInt,"power")]]
+    portalFS  = SymbolInfo "portalSkillToRunes" TStr 0 Functions [Params [(TFloat,"skill")]]
+    portalSI  = SymbolInfo "portalRunesToPower" TInt 0 Functions [Params [(TStr,"runes")]]
+    portalSC  = SymbolInfo "portalRunesToRune" TChar 0 Functions [Params [(TStr,"runes")]]
+    portalSF  = SymbolInfo "portalRunesToSkill" TFloat 0 Functions [Params [(TStr,"runes")]]
 -------------------------------------------------------------------------------
 
 
@@ -119,7 +119,7 @@ insertDeclarations ids t asigspos = do
   if all (==Nothing) idsInfo then
   -- Add ids if none var declared
     let 
-      idInfo = SymbolInfo t activeScope Variables []
+      idInfo = SymbolInfo {-TODO verga este id-} t activeScope Variables []
       idsInfo' = replicate (length ids) idInfo
 
     in addToSymTab ids' idsInfo' symTab activeScopes scope promises
@@ -140,7 +140,7 @@ insertDeclarations ids t asigspos = do
       else
         let
           idsInScope = [i | i<-ids',index<-redefsIndexs,i== ids' !! index]
-          idInfo = SymbolInfo t activeScope Variables []
+          idInfo = SymbolInfo {-TODO verga este id-} t activeScope Variables []
           idsInfo' = replicate (length ids) idInfo
         in addToSymTab idsInScope idsInfo' symTab activeScopes scope promises
 
@@ -157,7 +157,7 @@ defineSubroutine id category p = do
   let infos = lookupInSymTab id symTab
 
   if isNothing infos then 
-    let info = [SymbolInfo TDummy 1 category []]
+    let info = [SymbolInfo id TDummy 1 category []]
     in addToSymTab [id] info symTab activeScopes scope promises
   else
     let promise = getPromise id promises
@@ -190,7 +190,7 @@ defineParameter (Param name t ref) p = do
   if isJust infos then
     tell [errorMsg "Redefined parameter" fileCode p] >> return param
   else
-    let info = [SymbolInfo t activeScope (Parameters ref) []]
+    let info = [SymbolInfo name t activeScope (Parameters ref) []]
     in addToSymTab [name] info symTab activeScopes scope promises >> return param
 -------------------------------------------------------------------------------
 
@@ -210,7 +210,7 @@ defineRegUnion reg regType extraInfo p = do
       tell [errorMsg "Redefined Items" fileCode p] >> return (reg, p)
   else
     let
-      info      = [SymbolInfo regType 1 TypeConstructors extraInfo]
+      info      = [SymbolInfo reg regType 1 TypeConstructors extraInfo]
       promise   =  getPromise reg promises
       npromises =
         if isJust promise then
@@ -226,7 +226,7 @@ updatesDeclarationsCategory :: Id -> MonadSymTab ()
 updatesDeclarationsCategory reg = do
   (SymTab table, activeScopes@(activeScope:_), scope, promises) <- get
   let
-    modifySym (SymbolInfo t s _ _) = SymbolInfo t s Fields [FromReg reg]
+    modifySym (SymbolInfo reg t s _ _) = SymbolInfo reg t s Fields [FromReg reg]
     updtSym = 
       map (\sym -> if getScope sym == activeScope then modifySym sym else sym)
 

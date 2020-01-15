@@ -538,7 +538,7 @@ checkExprForEach promise tr = do
         else
           when (isRealType tr && tvar == TPDummy) $
             let
-              varInfo = [SymbolInfo (baseTypeArrLst tr) scope IterationVariable []]
+              varInfo = [SymbolInfo name (baseTypeArrLst tr) scope IterationVariable []]
               newSymTab = insertSymbols [idvar] varInfo symTab
             in
               put (newSymTab, activeScopes, scope, promises)
