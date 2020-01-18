@@ -11,7 +11,7 @@ module Playit.Types where
 import Control.Monad.Trans.RWS
 import qualified Data.Map as M
 import Data.List (intercalate,elemIndex)
-import Playit.TACType
+import qualified Playit.TACType as TAC
 
 
 -------------------------------------------------------------------------------
@@ -328,7 +328,7 @@ data SymbolInfo = SymbolInfo {
     deriving (Eq, Ord)
 
 instance Show SymbolInfo where
-    show (SymbolInfo t s c i) = "\n  Type: " ++ show t ++ " | Scope: " ++
+    show (SymbolInfo _ t s c i) = "\n  Type: " ++ show t ++ " | Scope: " ++
         show s ++ " | Category: "++ show c ++
         if not (null i) then
             "\n    Extra:\n  " ++ intercalate "  " (map show i) ++ "\n"
@@ -358,7 +358,7 @@ instance Show SymTab where
                 else ""
             symbols = concatMap showTable table
 
-instance SymEntryCompatible SymTab where
+instance TAC.SymEntryCompatible SymbolInfo where
     getSymID symInfo = getId symInfo
 
 

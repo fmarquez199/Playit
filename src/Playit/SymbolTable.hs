@@ -119,10 +119,9 @@ insertDeclarations ids t asigspos = do
   if all (==Nothing) idsInfo then
   -- Add ids if none var declared
     let 
-      idInfo = SymbolInfo {-TODO verga este id-} t activeScope Variables []
-      idsInfo' = replicate (length ids) idInfo
+      idsInfo (x:xs) = SymbolInfo x t activeScope Variables [] : idsInfo xs
 
-    in addToSymTab ids' idsInfo' symTab activeScopes scope promises
+    in addToSymTab ids' (idsInfo ids') symTab activeScopes scope promises
   else
   -- Get the first id from all declared vars in active scope
     let
@@ -140,9 +139,8 @@ insertDeclarations ids t asigspos = do
       else
         let
           idsInScope = [i | i<-ids',index<-redefsIndexs,i== ids' !! index]
-          idInfo = SymbolInfo {-TODO verga este id-} t activeScope Variables []
-          idsInfo' = replicate (length ids) idInfo
-        in addToSymTab idsInScope idsInfo' symTab activeScopes scope promises
+          idsInfo (x:xs) = SymbolInfo x t activeScope Variables [] : idsInfo xs
+        in addToSymTab idsInScope (idsInfo ids') symTab activeScopes scope promises
 
   return asigs
 -------------------------------------------------------------------------------
