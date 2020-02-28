@@ -10,6 +10,15 @@ Inventory Contacto2:
 .~
 
 world %Apts%:
+  Power y
+  Power puff aptY
+
+  y = 5
+  "' deberia estar bien, regresar la dir de memoria. O en la verificacion de tipos 
+  cuando se tenga apt = y hacerlo compatible'"
+  @ aptY = ? y 
+  puff aptY = y
+
   Contacto puff puff c = summon Contacto puff @, c2, c3
   
   @ ( *( (**c).pointernombre)).flotante

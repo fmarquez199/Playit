@@ -627,7 +627,6 @@ while (cond,p) i = do
 -- Considerar quitar esta función
 call :: Id -> Params -> Pos -> MonadSymTab (Subroutine,Pos)
 call subroutine args p = do
-
   SymTabState{symTab = st} <- get
   fileCode <- ask
   let
@@ -647,14 +646,14 @@ call subroutine args p = do
           params     = fromJust $ getParams extraInfoF
           nParams    = length params
           nArgs      = length args          
-          l = [(getTLists [typeE e, tp],((e,pe),(tp,id))) | ((e,pe),(tp,id)) <-  zip args params]
+          l = [(getTLists [typeE e,tp], ((e,pe),(tp,id))) | ((e,pe),(tp,id)) <-  zip args params]
 
         if nArgs == nParams then 
-          if  any (isNothing.fst) l then do
+          if any (isNothing.fst) l then do
             let               
-              ( _ , ((e,pe),(t,_))) = head $ dropWhile (isJust.fst) l
+              (_ , ((e,pe),(t,_))) = head $ dropWhile (isJust.fst) l
 
-            when (t /= TError && typeE e /= TError) $
+            when (t == TError || typeE e == TError) $
               tell [semmErrorMsg t (typeE e) fileCode pe]
             return sub
           else do                

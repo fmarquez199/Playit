@@ -97,7 +97,7 @@ precedida por una cantidad no nula de `0`, es decir, son enteros:
 ```sh
 01
 003
-0000000000000000000000000000000000000005
+0000000000005
 ```
 
 ---
