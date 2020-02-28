@@ -406,9 +406,9 @@ genLiteral l typeL = do
 -}
 genVar :: Var -> Type -> TACMonad TACOP
 genVar var tVar = do
-  -- actO <- pushOffset (getWidth tVar)
-  -- lv   <- newTemp actO
-  rv   <- pushVariable var {- lv -}
+  actO <- pushOffset (getWidth tVar)
+  lv   <- newTemp actO
+  rv   <- pushVariable var lv actO
 
   -- let
     -- refVS = M.insert (getRefVar var) lv vs -- var o *var?
@@ -437,7 +437,7 @@ genVar var tVar = do
   --     else
   --       put state{vars = newVS} >> return ([T.TACC T.Ref lv rv Nothing], lv)
   --   -- Field v f t   -> 
-    _     -> {- tell (assign lv rv) >>  -}return rv
+    _     -> {- tell (assign lv rv) >> -} return lv
 
 
 -- 
@@ -771,7 +771,7 @@ genUnOp op e tOp = do
 newTemp :: OffSet -> TACMonad TACOP
 newTemp actO = do
   state@Operands{temps = ts} <- get
-  let t = Temp (show $ M.size ts) actO
+  let t = Temp (show $ M.size ts - 3) actO
   put state{temps = M.insert t True ts}
   return $ tacVariable t
 
@@ -798,12 +798,12 @@ pushLiteral l operand = do
   put state{lits = M.insert l operand ls}
 
 
-pushVariable :: Var -> {- TACOP -> -} TACMonad TACOP
-pushVariable var {- temp -} = do
-  state@Operands{{- vars = vs, -} astST = st} <- get
-  actO <- pushOffset (getWidth $ typeVar var)
+-- NOTA: si se guarda en un temporal no se accede a memoria. 
+pushVariable :: Var -> TACOP -> OffSet -> TACMonad TACOP
+pushVariable var temp actO = do
+  state@Operands{vars = vs, astST = st} <- get
   let info = head . fromJust $ lookupInSymTab (getName var) st
-  -- put state{vars = M.insert var temp vs}
+  put state{vars = M.insert var temp vs}
   return $ tacVariable $ TACVar info actO
 
 

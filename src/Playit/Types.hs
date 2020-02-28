@@ -469,7 +469,7 @@ instance Show Operands where
     "\n vars: " ++ show vs ++ "\n temps: " ++ show ts ++
     "\n lits: " ++ show ls ++ "\n labels: " ++ show lbs ++
     "\n break: " ++ show brk ++ "\n continue: " ++ show con ++
-    "\n offsets: " ++ show offs ++ show st
+    "\n offsets: " ++ show offs -- ++ show st
 
 -- Monad para manejar los operandos, writer tiene la lista de las instrucciones
 -- de tres direcciones, reader tiene el AST que sale del parser
