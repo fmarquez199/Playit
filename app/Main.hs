@@ -67,7 +67,7 @@ main = do
             -- putStrLn $ "\nOffSets: " ++ show (offSets state)
             -- putStrLn $ "\nActual offset: " ++ show (actOffS state)
             (_,state,tac) <- runRWST (gen ast) ast (tacInitState (symTab state))
-            print state
+            -- print state
             mapM_ print tac
           else
             mapM_ putStrLn errs

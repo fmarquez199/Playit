@@ -326,8 +326,8 @@ genAssig var e = do
 genExpr :: Expr -> TACMonad TACOP
 genExpr e = case e of
   (Literal l t)         -> genLiteral l t
-  -- (Variable v t)        -> genVar v t
-  -- (Unary u e t)         -> genUnOp u e t
+  (Variable v t)        -> genVar v t
+  (Unary u e t)         -> genUnOp u e t
   -- (Binary b e1 e2 t)    -> genBinOp b e1 e2 t
   -- (IfSimple eB eT eF t) -> genTerOp eB eT eF t
   -- (ArrayList es t)      -> genArrayList es t
@@ -353,8 +353,9 @@ genExpr e = case e of
 -}
 genLiteral :: Literal -> Type -> TACMonad TACOP
 genLiteral l typeL = do
-  lv <- newTemp (getWidth typeL)
-  pushLiteral l lv
+  -- pushOffset (getWidth typeL)
+  -- lv   <- newTemp actO
+  -- pushLiteral l lv
   -- let
   
   case l of
@@ -394,8 +395,7 @@ genLiteral l typeL = do
     -- EmptyVal -> return ([T.TACC T.Assign lv rv Nothing], lv)
     -- (Register es) -> return ([T.TACC T.Assign lv rv Nothing], lv)
     _ -> do
-      tell $ assign lv (tacConstant (show l, typeL))
-      return lv
+      return $ tacConstant (show l, typeL)
 
 
 -- 
@@ -406,9 +406,9 @@ genLiteral l typeL = do
 -}
 genVar :: Var -> Type -> TACMonad TACOP
 genVar var tVar = do
-  actO <- pushOffset (getWidth tVar)
-  lv   <- newTemp actO
-  rv   <- pushVariable var lv
+  -- actO <- pushOffset (getWidth tVar)
+  -- lv   <- newTemp actO
+  rv   <- pushVariable var {- lv -}
 
   -- let
     -- refVS = M.insert (getRefVar var) lv vs -- var o *var?
@@ -437,57 +437,47 @@ genVar var tVar = do
   --     else
   --       put state{vars = newVS} >> return ([T.TACC T.Ref lv rv Nothing], lv)
   --   -- Field v f t   -> 
-    _     -> tell (assign lv rv) >> return lv
+    _     -> {- tell (assign lv rv) >>  -}return rv
 
 
 -- 
 -- ISSUE: fromJust Nothing con New para Registros
--- genUnOp :: UnOp -> Expr -> Type -> MTACExpr
--- genUnOp op e tOp = do
---   (eCode,eTemp) <- genExpr e
---   state@Operands{temps = ts, labs = ls, offS = os@(actO:_), astST = st} <- get
---   let
---     le    = length ls
---     t     = "$t" ++ show (M.size ts)
---     tInfo = head . fromJust $ lookupInSymTab (show tOp) st
---     newO  = (fst actO, snd actO + getWidth tInfo tOp)
---     lv    = tacVariable $ SymbolInfo t tOp (-1) TempReg actO []
---     c     = tacConstant ("32", TInt)
---     l0    = tacLabel le
---     l1    = tacLabel $ le + 1
---     l2    = tacLabel $ le + 2
-
---   put state{temps = M.insert t True ts, labs = le+2:le+1:le:ls, offS = newO:os}
+genUnOp :: UnOp -> Expr -> Type -> TACMonad TACOP
+genUnOp op e tOp = do
+  actO  <- pushOffset (getWidth tOp)
+  lv    <- newTemp actO
+  rv    <- genExpr e
+  l0    <- newLabel
+  l1    <- newLabel
+  l2    <- newLabel
+  let
+    c0    = tacConstant ("0", TInt)
+    c25   = tacConstant ("25", TInt)
+    c32   = tacConstant ("32", TInt)
+    check = gte lv c0 l0 ++ goto l2 ++ tacNewLabel l0 ++ sub lv rv c25
+    goNew = goto l2 ++ tacNewLabel l1
   
---   case op of
---     Length    -> return (eCode ++ [T.TACC T.Length lv eTemp Nothing], lv)
---     Negative  -> return (eCode ++ [T.TACC T.Minus lv eTemp Nothing], lv)
---     New       -> return (eCode ++ [T.TACC T.New lv eTemp Nothing], lv)
+  case op of
+    Length    -> tell (len lv rv)   >> return lv
+    Negative  -> tell (minus lv rv) >> return lv
+    New       -> tell (new lv rv)   >> return lv
 --     Not       -> return (eCode ++ [T.TACC T.Not lv eTemp Nothing], lv)
---     UpperCase -> return (eCode ++ [
---         T.TACC T.Sub eTemp eTemp (tacConstant ("97", TInt)),
---         T.TACC T.Gte eTemp (tacConstant ("0", TInt)) l0,
---         tacGoTo l2,
---         T.TACC T.NewLabel l0 Nothing Nothing,
---         T.TACC T.Sub eTemp eTemp (tacConstant ("25", TInt)),
---         T.TACC T.Lte eTemp (tacConstant ("0", TInt)) l1,
---         tacGoTo l2,
---         T.TACC T.NewLabel l1 Nothing Nothing,
---         T.TACC T.Sub lv eTemp c,
---         T.TACC T.NewLabel l2 Nothing Nothing
---       ], lv)
---     LowerCase -> return (eCode ++ [
---         T.TACC T.Sub eTemp eTemp (tacConstant ("65", TInt)),
---         T.TACC T.Gte eTemp (tacConstant ("0", TInt)) l0,
---         tacGoTo l2,
---         T.TACC T.NewLabel l0 Nothing Nothing,
---         T.TACC T.Sub eTemp eTemp (tacConstant ("25", TInt)),
---         T.TACC T.Lte eTemp (tacConstant ("0", TInt)) l1,
---         tacGoTo l2,
---         T.TACC T.NewLabel l1 Nothing Nothing,
---         T.TACC T.Add lv eTemp c,
---         T.TACC T.NewLabel l2 Nothing Nothing
---       ], lv)
+    UpperCase -> do
+      tell (sub lv rv $ tacConstant ("97", TInt))
+      tell check
+      tell (gte lv c0 l0)
+      tell goNew
+      tell (sub lv rv c32)
+      tell (tacNewLabel l2)
+      return lv
+    LowerCase -> do
+      tell (sub lv rv $ tacConstant ("65", TInt))
+      tell check
+      tell (lte lv c0 l0)
+      tell goNew
+      tell (add lv rv c32)
+      tell (tacNewLabel l2)
+      return lv
 
 
 -- 
@@ -786,6 +776,14 @@ newTemp actO = do
   return $ tacVariable t
 
 
+newLabel :: TACMonad TACOP
+newLabel = do
+  state@Operands{labs = ls} <- get
+  let newL = length ls
+  put state{labs = newL:ls}
+  return $ tacLabel $ show newL
+
+
 pushOffset :: Int -> TACMonad OffSet
 pushOffset width = do
   state@Operands{offS = os@(actO:_)} <- get
@@ -800,12 +798,12 @@ pushLiteral l operand = do
   put state{lits = M.insert l operand ls}
 
 
-pushVariable :: Var -> TACOP -> TACMonad TACOP
-pushVariable var temp = do
-  state@Operands{vars = vs, astST = st} <- get
+pushVariable :: Var -> {- TACOP -> -} TACMonad TACOP
+pushVariable var {- temp -} = do
+  state@Operands{{- vars = vs, -} astST = st} <- get
   actO <- pushOffset (getWidth $ typeVar var)
   let info = head . fromJust $ lookupInSymTab (getName var) st
-  put state{vars = M.insert var temp vs}
+  -- put state{vars = M.insert var temp vs}
   return $ tacVariable $ TACVar info actO
 
 
