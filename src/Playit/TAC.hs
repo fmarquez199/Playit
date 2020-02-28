@@ -424,20 +424,18 @@ genVar var tVar = do
     else
       adrr := base/fp[var.offset + field.offset]
   -}
-  -- liftIO $ print var
-  -- liftIO $ print tv
   case var of
-  --   Desref _ t  -> put state{vars = refVS, temps = newTS, offS = newOS} >> return deref
-  --   Index _ e _ -> do
-  --     (eCode,eTemp) <- genExpr e
-  --     put state{vars = newVS, offS = newOS}
-  --     return (eCode ++ [T.TACC T.Get lv rv eTemp], lv)
-  --   Param n t ref -> -- no llega aaqui. T.T ==>> Asociar la Var que se le pasa como Parametro
-  --     if ref == Value then return ([T.TACC T.Param Nothing rv Nothing], Nothing)
-  --     else
-  --       put state{vars = newVS} >> return ([T.TACC T.Ref lv rv Nothing], lv)
-  --   -- Field v f t   -> 
-    _     -> {- tell (assign lv rv) >> -} return lv
+    -- Desref _ t  -> tell (deref lv rv) >> return lv
+    -- Index _ e _ -> do
+    --   (eCode,eTemp) <- genExpr e
+    --   put state{vars = newVS, offS = newOS}
+    --   return (eCode ++ [T.TACC T.Get lv rv eTemp], lv)
+    -- Param n t ref -> -- no llega aaqui. T.T ==>> Asociar la Var que se le pasa como Parametro
+    --   if ref == Value then return ([T.TACC T.Param Nothing rv Nothing], Nothing)
+    --   else
+    --     put state{vars = newVS} >> return ([T.TACC T.Ref lv rv Nothing], lv)
+    -- -- Field v f t   -> 
+    _     -> return lv
 
 
 -- 
@@ -458,10 +456,10 @@ genUnOp op e tOp = do
     goNew = goto l2 ++ tacNewLabel l1
   
   case op of
-    Length    -> tell (len lv rv)   >> return lv
-    Negative  -> tell (minus lv rv) >> return lv
-    New       -> tell (new lv rv)   >> return lv
---     Not       -> return (eCode ++ [T.TACC T.Not lv eTemp Nothing], lv)
+    Length    -> tell (len lv rv)    >> return lv
+    Negative  -> tell (minus lv rv)  >> return lv
+    New       -> tell (new lv rv)    >> return lv
+    Not       -> tell (tacNot lv rv) >> return lv
     UpperCase -> do
       tell (sub lv rv $ tacConstant ("97", TInt))
       tell check

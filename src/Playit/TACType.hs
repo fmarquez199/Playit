@@ -66,7 +66,7 @@ instance (SymEntryCompatible a, Show a, Show b) => Show (ThreeAddressCode a b) w
 -- Castings
   show (TACC (Cast _ toT) (Just x) (Just y) _)  = show x ++ " := " ++ toT ++ "(" ++ show y ++ ")"
 -- Operator no recognized
-  show tac = show (tacLvalue tac) ++ " := " ++ show (tacRvalue1 tac) ++ " (?) " ++ show (tacRvalue2 tac)
+  show tac = show (tacLvalue tac) ++ " := " ++ show (tacRvalue1 tac) ++ show (tacOperand tac) ++ show (tacRvalue2 tac)
 
 
 data (SymEntryCompatible a) => Operand a b = 
