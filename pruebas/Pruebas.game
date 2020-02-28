@@ -1,2 +1,85 @@
+@  Inventory Inv:
+@    Power a = 0
+@    Skill b = 2'4
+@    Battle c
+@  .~
+@  Items It:
+@    Power a
+@    Skill b
+@    Battle c
+@  .~
+@  boss b(Inv i, Skill ? x):
+@    x = 10'5
+@  .~
+@  monster m(Skill s) Power:
+@    Power i = 0
+@    unlock i
+@  .~
+
 world %Pruebas%:
+@  Runes s = joystick ~Here we go~
+@  drop 1
+
+  Power x = 50
+@  Power y = -5
+@  Power i = x + 1
+  Skill f = 2'0
+
+@  kill b( kill portalRunesToPower(joystick) ,f)
+
+@  Runes  s = ~3g~
+@  Rune   c = *4*
+@  Rune  up = ^*x*
+@  Rune low = .*x*
+
+@  Battle b = !Win
+@  b = Win || Lose
+@  Battle p = 3 > 6
+
+@  Skill f = Win ? 6'0 : 3'0
+
+@  Power|}2{| array = |)2,3(|
+@  array|)0(| = 0
+
+@  Power a = #array
+@  Kit of Power list = <<10, 21, 3>> :: (<<2>> :: <<0>>) @ This is a problem
+@  Kit of Power list1 = <<4,2>>
+@  Kit of Power empty = << >>
+@  list1|>0<| = 10
+
+@  Power puff pointer = summon Power
+@  puff pointer = 1
+@  free pointer
+
+@  Inv inv = Inv {10 , 1'8}
+@  kill b( inv , 1'0)
+
+@  Power elem = inv spawn a, x
+@  Inv puff inv2 = summon Inv
+
+@  Button:
+@   | Lose } Power factorial = 0
+@   | 6 > 3 } Power factorial = 1
+@   | i == 3*4 } Power factorial = 1
+@   | Win } Power factorial = 30
+@   | notPressed } Power factorial = 720
+@  .~
+
+@  play:
+@    Power x = 2
+@   gameOver
+@    Power i = 9
+@   keepPlaying
+@  lock (5 > 2)
+@  .~
+
+@  controller Power elem <- |)2,3(|:
+@    Power i = elem
+@  .~
+@  controller Power x = 0 -> 10: @ lock x % 2 == 0:
+@    Button:
+@      | Win || Lose } keepPlaying
+@    .~
+@    Power a = x * 2
+@  .~
 .~

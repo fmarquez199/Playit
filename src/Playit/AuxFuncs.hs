@@ -494,12 +494,6 @@ typeReturn _            = TError
 
 
 -------------------------------------------------------------------------------
-concatTAC :: MTACInstr -> MTACInstr -> MTACInstr
-concatTAC x y = ((++) <$> x) <*> y
--------------------------------------------------------------------------------
-
-
--------------------------------------------------------------------------------
 -- Gets the TAC's label operand
 getLout :: TAC -> TACOP
 getLout (T.TACC T.NewLabel out Nothing Nothing) = out
@@ -551,6 +545,10 @@ tacGoTo label   = T.TACC T.GoTo Nothing Nothing label
 -------------------------------------------------------------------------------
 
 
+assign :: TACOP -> TACOP -> [TAC]
+assign lv rv = [T.TACC T.Assign lv rv Nothing]
+
+
 -------------------------------------------------------------------------------
 -- Gets the with of the Type
 getWidth :: Type -> Int
@@ -592,5 +590,4 @@ modifyOffSet :: TACInfo -> OffSet -> TACInfo
 modifyOffSet (Temp n _) newO      = Temp n newO
 modifyOffSet (TACVar info _) newO = TACVar info newO
 -------------------------------------------------------------------------------
-
 

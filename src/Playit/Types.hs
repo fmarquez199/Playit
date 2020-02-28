@@ -438,14 +438,12 @@ type TempReg    = String
 type OffSet     = Int
 type TAC        = TAC.ThreeAddressCode TACInfo Type
 type TACOP      = Maybe (TAC.Operand TACInfo Type)
-type MTACInstr  = TACMonad [TAC]
-type MTACExpr   = TACMonad ([TAC], TACOP)
 
 data TACInfo = Temp Id OffSet | TACVar SymbolInfo OffSet  deriving (Eq, Ord)
 
 instance TAC.SymEntryCompatible TACInfo where
-  getSymID (Temp n o)      = "fp[" ++ show o ++ "] $" ++ show n
-  getSymID (TACVar info o) = "fp[" ++ show o ++ "] " ++ symId info
+  getSymID (Temp n o)      = "fp[" ++ show o ++ "]($t" ++ n ++ ")"
+  getSymID (TACVar info o) = "fp[" ++ show o ++ "](" ++ symId info ++ ")"
 
 instance Show TACInfo where
   show = TAC.getSymID
@@ -457,7 +455,7 @@ instance Show TACInfo where
 -}
 data Operands = Operands {
   vars  :: M.Map Var TACOP,
-  temps :: M.Map TempReg Bool,
+  temps :: M.Map TACInfo Bool,
   lits  :: M.Map Literal TACOP,
   labs  :: [Int],
   brkL  :: Int,

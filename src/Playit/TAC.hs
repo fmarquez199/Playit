@@ -21,28 +21,31 @@ import qualified Playit.TACType as T
 
 --
 tacInitState :: SymTab -> Operands
-tacInitState = Operands M.empty temps M.empty [] (-1) (-1) []
+tacInitState = Operands M.empty temps M.empty [] (-1) (-1) [0]
   where
-    temps = M.fromList [("$print",False), ("$read",False), ("$null",False), ("$fp",False)]
+    printReg = Temp "_print" (-1)
+    readReg  = Temp "_read" (-1)
+    nullReg  = Temp "_null" (-1)
+    temps    = M.fromList [(printReg,False), (readReg,False), (nullReg,False)]
 
 
 -- 
-gen :: Instr -> MTACInstr
+gen :: Instr -> TACMonad ()
 gen i = case i of
-  (Assig v e _)              -> return [] -- genAssig v e
-  (Assigs is _)              -> return [] -- foldl concatTAC (return []) (map gen is)
-  (Break _)                  -> return [] -- genBreak
-  (Continue _)               -> return [] -- genContinue
-  (For n e1 e2 is _)         -> return [] -- genFor n e1 e2 is
-  (ForEach n e is _)         -> return [] -- genForEach n e is
-  (ForWhile n e1 e2 e3 is _) -> return [] -- genForWhile n e1 e2 e3 is
-  (IF gs _)                  -> return [] -- genIF gs >>= backpatch
-  (Program is _)             -> return [] -- foldl concatTAC (return []) (map gen is)
-  (While e is _)             -> return [] -- genWhile e is
-  (Print es _)               -> return [] -- genPrint es
-  (Free id _)                -> return [] -- genFree id
-  (ProcCall s _)             -> return [] -- genProcCall s
-  (Return e _)               -> return [] -- genReturn e
+  (Assig v e _)              -> genAssig v e
+  (Assigs is _)              -> mapM_ gen is
+  (Break _)                  -> return () -- genBreak
+  (Continue _)               -> return () -- genContinue
+  (For n e1 e2 is _)         -> return () -- genFor n e1 e2 is
+  (ForEach n e is _)         -> return () -- genForEach n e is
+  (ForWhile n e1 e2 e3 is _) -> return () -- genForWhile n e1 e2 e3 is
+  (IF gs _)                  -> return () -- genIF gs >>= backpatch
+  (Program is _)             -> mapM_ gen is
+  (While e is _)             -> return () -- genWhile e is
+  (Print es _)               -> return () -- genPrint es
+  (Free id _)                -> return () -- genFree id
+  (ProcCall s _)             -> return () -- genProcCall s
+  (Return e _)               -> return () -- genReturn e
 
 
 -------------------------------------------------------------------------------
@@ -53,18 +56,18 @@ gen i = case i of
 
 
 -- 
--- genAssig :: Var -> Expr -> MTACInstr
--- genAssig var e = do
---   (eCode,eTemp) <- genExpr e
---   (_,vTemp)     <- genVar var (typeVar var)
+genAssig :: Var -> Expr -> TACMonad ()
+genAssig var e = do
+  eTemp <- genExpr e
+  vTemp <- genVar var (typeVar var)
 
---   {- 
---     if var.scope == 0 then lo que hice
---     else
---       base/fp[var.offset] := e
---   -}
+  {- 
+    if var.scope == 0 then lo que hice
+    else
+      base/fp[var.offset] := e
+  -}
 
---   return $ eCode ++ [T.TACC T.Assign vTemp eTemp Nothing]
+  tell $ assign vTemp eTemp
 
 
 -- -- 
@@ -320,18 +323,19 @@ gen i = case i of
 -- -------------------------------------------------------------------------------
 
 
--- genExpr :: Expr -> MTACExpr
--- genExpr e = case e of
---   (Literal l t)         -> genLiteral l t
---   (Variable v t)        -> genVar v t
---   (Unary u e t)         -> genUnOp u e t
---   (Binary b e1 e2 t)    -> genBinOp b e1 e2 t
---   (IfSimple eB eT eF t) -> genTerOp eB eT eF t
---   (ArrayList es t)      -> genArrayList es t
---   Null                  -> genNull
---   (Read e _)            -> genRead e
---   (FuncCall s _)        -> genFuncCall s
---   (IdType t)            -> genType t
+genExpr :: Expr -> TACMonad TACOP
+genExpr e = case e of
+  (Literal l t)         -> genLiteral l t
+  -- (Variable v t)        -> genVar v t
+  -- (Unary u e t)         -> genUnOp u e t
+  -- (Binary b e1 e2 t)    -> genBinOp b e1 e2 t
+  -- (IfSimple eB eT eF t) -> genTerOp eB eT eF t
+  -- (ArrayList es t)      -> genArrayList es t
+  -- Null                  -> genNull
+  -- (Read e _)            -> genRead e
+  -- (FuncCall s _)        -> genFuncCall s
+  -- (IdType t)            -> genType t
+  _ -> return Nothing
 
 
 -- -- 
@@ -342,114 +346,102 @@ gen i = case i of
 --   return ([T.TACC T.Assign pointer Nothing Nothing], pointer)
 
 
--- -- | Generates the TAC code for literals
--- {- TODO:
---   EmptyVal -> Usado cuando no se coloca msj en el read
---   Register
--- -}
--- genLiteral :: Literal -> Type -> MTACExpr
--- genLiteral l typeL = do
---   state@Operands{temps = ts, lits = ls, offS = os@(actO:_), astST = st} <- get
---   let
---     t     = "$t" ++ show (M.size ts)
---     lInfo = head . fromJust $ lookupInSymTab (show typeL) st
---     newO  = (fst actO, snd actO + getWidth lInfo typeL)
---     lv    = tacVariable $ SymbolInfo t typeL (-1) TempReg actO []
---     rv    = tacConstant (show l, typeL)
---     newTS = M.insert t True ts
---     newLS = M.insert l lv ls
+-- | Generates the TAC code for literals
+{- TODO:
+  EmptyVal -> Usado cuando no se coloca msj en el read
+  Register
+-}
+genLiteral :: Literal -> Type -> TACMonad TACOP
+genLiteral l typeL = do
+  lv <- newTemp (getWidth typeL)
+  pushLiteral l lv
+  -- let
   
---   case l of
--- {-
---     ArrLst elems -> do
---       let
---         len   = length elems - 1
---         tArr  = typeArrLst typeL
---         tArrW = getWidth tInfo tArr
---         tInfo = head . fromJust $ lookupInSymTab (show tArr) st
---         osi   = zip (replicate (len + 1) (fst actO)) [(snd actO)..(len * tArrW)]
---         newOS = (fst actO, (len + 1) * tArrW) : os
---         lvi o = tacVariable $ SymbolInfo t tArr (-1) TempReg o []
---         lit x = elems !! x
---         rvi x = tacConstant (show (lit x), tArr)
---         idx i = tacConstant (show i, tArr)
---         arrL  = [T.TACC T.Set (lvi o) (idx x) (rvi x) | (x,o) <- zip [0..len] osi]
+  case l of
+{-
+    ArrLst elems -> do
+      let
+        len   = length elems - 1
+        tArr  = typeArrLst typeL
+        tArrW = getWidth tInfo tArr
+        tInfo = head . fromJust $ lookupInSymTab (show tArr) st
+        osi   = zip (replicate (len + 1) (fst actO)) [(snd actO)..(len * tArrW)]
+        newOS = (fst actO, (len + 1) * tArrW) : os
+        lvi o = tacVariable $ SymbolInfo t tArr (-1) TempReg o []
+        lit x = elems !! x
+        rvi x = tacConstant (show (lit x), tArr)
+        idx i = tacConstant (show i, tArr)
+        arrL  = [T.TACC T.Set (lvi o) (idx x) (rvi x) | (x,o) <- zip [0..len] osi]
       
---       put state{temps = newTS, lits = newLS, offS = newOS}
---       return (arrL, lv)
---     Str s -> do
---       let
---         len   = length s - 1
---         strW  = getWidth tInfo TChar
---         tInfo = head . fromJust $ lookupInSymTab (show TChar) st
---         osi   = zip (replicate (len + 1) (fst actO)) [(snd actO)..len]
---         newOS = (fst actO, len + 1) : os
---         lvi o = tacVariable $ SymbolInfo t TChar (-1) TempReg o []
---         ch  x = s !! x
---         rvi x = tacConstant (show (ch x), TChar)
---         idx i = tacConstant (show i, TChar)
---         str   = [T.TACC T.Set (lvi o) (idx x) (rvi x) | (x,o) <- zip [0..len] osi]
+      put state{temps = newTS, lits = newLS, offS = newOS}
+      return (arrL, lv)
+    Str s -> do
+      let
+        len   = length s - 1
+        strW  = getWidth tInfo TChar
+        tInfo = head . fromJust $ lookupInSymTab (show TChar) st
+        osi   = zip (replicate (len + 1) (fst actO)) [(snd actO)..len]
+        newOS = (fst actO, len + 1) : os
+        lvi o = tacVariable $ SymbolInfo t TChar (-1) TempReg o []
+        ch  x = s !! x
+        rvi x = tacConstant (show (ch x), TChar)
+        idx i = tacConstant (show i, TChar)
+        str   = [T.TACC T.Set (lvi o) (idx x) (rvi x) | (x,o) <- zip [0..len] osi]
       
---       put state{temps = newTS, lits = newLS, offS = newOS}
---       return (str, lv)
+      put state{temps = newTS, lits = newLS, offS = newOS}
+      return (str, lv)
+-}
+    -- EmptyVal -> return ([T.TACC T.Assign lv rv Nothing], lv)
+    -- (Register es) -> return ([T.TACC T.Assign lv rv Nothing], lv)
+    _ -> do
+      tell $ assign lv (tacConstant (show l, typeL))
+      return lv
 
--- -}
---     -- EmptyVal -> return ([T.TACC T.Assign lv rv Nothing], lv)
---     -- (Register es) -> return ([T.TACC T.Assign lv rv Nothing], lv)
---     _ -> do
---       put state{temps = newTS, lits = newLS, offS = newO:os}
---       return ([T.TACC T.Assign lv rv Nothing], lv)
 
+-- 
+{- TODO:
+  casos bloques anidados que acceden a los ids
+  Param Id Type Ref
+  Field Var Id Type
+-}
+genVar :: Var -> Type -> TACMonad TACOP
+genVar var tVar = do
+  actO <- pushOffset (getWidth tVar)
+  lv   <- newTemp actO
+  rv   <- pushVariable var lv
 
--- -- 
--- {- TODO:
---   casos bloques anidados que acceden a los ids
---   Param Id Type Ref
---   Field Var Id Type
--- -}
--- genVar :: Var -> Type -> MTACExpr
--- genVar var tv = do
---   state@Operands{vars = vs, temps = ts, offS = os@(actO:_), astST = st} <- get
---   let
---     temp  = "$t" ++ show (M.size ts)
---     vInfo = head . fromJust $ lookupInSymTab (getName var) st
---     lv    = tacVariable $ SymbolInfo temp tv (-1) TempReg actO []
---     rv    = tacVariable vInfo
---     newVS = M.insert var rv vs
---     refVS = M.insert (getRefVar var) lv vs -- var o *var?
---     newTS = M.insert temp True ts
---     newO  = (fst actO, snd actO + getWidth vInfo tv)
---     newOS = newO:os
---     deref = ([T.TACC T.Deref lv rv Nothing], lv)
+  -- let
+    -- refVS = M.insert (getRefVar var) lv vs -- var o *var?
+    -- deref = ([T.TACC T.Deref lv rv Nothing], lv)
   
---   {- 
---     if var.scope == 0 then lo que hice
---     else
---       adrr := base/fp[var.offset]
+  {- 
+    if var.scope == 0 then lo que hice
+    else
+      adrr := base/fp[var.offset]
     
---     acceso a campos
---     if var.scope == 0 then adrr := var[field.offset]
---     else
---       adrr := base/fp[var.offset + field.offset]
---   -}
---   -- liftIO $ print var
---   -- liftIO $ print tv
---   case var of
---     Desref _ t  -> put state{vars = refVS, temps = newTS, offS = newOS} >> return deref
---     Index _ e _ -> do
---       (eCode,eTemp) <- genExpr e
---       put state{vars = newVS, offS = newOS}
---       return (eCode ++ [T.TACC T.Get lv rv eTemp], lv)
---     Param n t ref -> -- no llega aaqui. T.T ==>> Asociar la Var que se le pasa como Parametro
---       if ref == Value then return ([T.TACC T.Param Nothing rv Nothing], Nothing)
---       else
---         put state{vars = newVS} >> return ([T.TACC T.Ref lv rv Nothing], lv)
---     -- Field v f t   -> 
---     _     -> put state{vars = newVS} >> return ([], rv)
+    acceso a campos
+    if var.scope == 0 then adrr := var[field.offset]
+    else
+      adrr := base/fp[var.offset + field.offset]
+  -}
+  -- liftIO $ print var
+  -- liftIO $ print tv
+  case var of
+  --   Desref _ t  -> put state{vars = refVS, temps = newTS, offS = newOS} >> return deref
+  --   Index _ e _ -> do
+  --     (eCode,eTemp) <- genExpr e
+  --     put state{vars = newVS, offS = newOS}
+  --     return (eCode ++ [T.TACC T.Get lv rv eTemp], lv)
+  --   Param n t ref -> -- no llega aaqui. T.T ==>> Asociar la Var que se le pasa como Parametro
+  --     if ref == Value then return ([T.TACC T.Param Nothing rv Nothing], Nothing)
+  --     else
+  --       put state{vars = newVS} >> return ([T.TACC T.Ref lv rv Nothing], lv)
+  --   -- Field v f t   -> 
+    _     -> tell (assign lv rv) >> return lv
 
 
--- -- 
--- -- ISSUE: fromJust Nothing con New para Registros
+-- 
+-- ISSUE: fromJust Nothing con New para Registros
 -- genUnOp :: UnOp -> Expr -> Type -> MTACExpr
 -- genUnOp op e tOp = do
 --   (eCode,eTemp) <- genExpr e
@@ -498,7 +490,7 @@ gen i = case i of
 --       ], lv)
 
 
--- -- 
+-- 
 -- genBinOp :: BinOp -> Expr -> Expr -> Type -> MTACExpr
 -- genBinOp op e1 e2 tOp = do
 --   (e1Code,e1Temp) <- genExpr e1
@@ -524,7 +516,8 @@ gen i = case i of
 --     Minus     -> return (e1Code ++ e2Code ++ [T.TACC T.Sub lvt e1Temp e2Temp], lvt)
 --     Module    -> return (e1Code ++ e2Code ++ [T.TACC T.Mod lvt e1Temp e2Temp], lvt)
 --     Mult      -> return (e1Code ++ e2Code ++ [T.TACC T.Mult lvt e1Temp e2Temp], lvt)
---   -- Booleans
+--     _ -> return Nothing
+  -- Booleans
 --     And       -> return (e1Code ++ e2Code ++
 --       [
 --         T.TACC T.If Nothing e1Temp lF,
@@ -783,6 +776,37 @@ gen i = case i of
 -- -------------------------------------------------------------------------------
 -- -------------------------------------------------------------------------------
 -- --- Auxiliares que deben ir en este archivo
+
+
+newTemp :: OffSet -> TACMonad TACOP
+newTemp actO = do
+  state@Operands{temps = ts} <- get
+  let t = Temp (show $ M.size ts) actO
+  put state{temps = M.insert t True ts}
+  return $ tacVariable t
+
+
+pushOffset :: Int -> TACMonad OffSet
+pushOffset width = do
+  state@Operands{offS = os@(actO:_)} <- get
+  let newO = actO + width
+  put state{offS = newO:os}
+  return actO
+
+
+pushLiteral :: Literal -> TACOP -> TACMonad ()
+pushLiteral l operand = do
+  state@Operands{lits = ls} <- get
+  put state{lits = M.insert l operand ls}
+
+
+pushVariable :: Var -> TACOP -> TACMonad TACOP
+pushVariable var temp = do
+  state@Operands{vars = vs, astST = st} <- get
+  actO <- pushOffset (getWidth $ typeVar var)
+  let info = head . fromJust $ lookupInSymTab (getName var) st
+  put state{vars = M.insert var temp vs}
+  return $ tacVariable $ TACVar info actO
 
 
 -- -------------------------------------------------------------------------------
