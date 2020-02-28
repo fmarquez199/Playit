@@ -3,7 +3,7 @@ module Playit.ParserSpec (spec) where
 import Test.Hspec
 import Control.Monad.Trans.RWS
 import Playit.Parser
-import Playit.SymbolTable(initState)
+import Playit.SymbolTable(stInitState)
 import Playit.Lexer(alexScanTokens, Token)
 import Playit.Types
 
@@ -113,7 +113,7 @@ comments' :: [Token]
 comments' = alexScanTokens comments
 
 -- run :: [Token] -> String -> (Instr, (SymTab, ActiveScopes, Alcance), [String])
--- run f n = runRWST (parse f) n initState
+-- run f n = runRWST (parse f) n stInitState
 
 apuntadores :: String
 apuntadores = "Inventory Nombre:\n  Skill flotante\n.~\n\nInventory Contacto:\n  Nombre puff pointernombre\n.~\n\nInventory Contacto2:\n  Nombre pointernombre2\n.~\n\nworld %apts%:\n  Contacto puff puff c = summon Contacto @, c2, c3\n\n  @ ( *( (**c).pointernombre)).flotante\n  puff (puff (puff c) spawn pointernombre) spawn flotante = 2'2\n\n  @ puff c spawn pointernombre2 spawn flotante = 2'2 @ reg no tiene campo\n  @ puff c spawn p spawn flotante = 2'2 @ campo no declarado\n\n\n  Power puff apt\n  Kit of Power puff apt2\n  Kit of Power puff puff apt3\n  Kit of Power puff puff puff apt4\n\n  c = puff apt == puff apt2|>12<|\n  c = puff apt == puff puff apt3|>12<|\n  c = puff apt == puff puff puff apt4|>12<|\n\n.~"

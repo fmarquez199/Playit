@@ -2,9 +2,6 @@ module ParserSpec where
 
 import Test.Hspec
 import Utils
--- import Playit.Lexer
--- import Playit.Parser
--- import Playit.SymbolTable
 import Playit.Types
 
 

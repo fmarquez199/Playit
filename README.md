@@ -4,7 +4,7 @@
 
 **Diseñado por:**
 
-* Manuel Gonzalez 11-10390
+* Manuel Gonzalez 11-10390  (Fase I)
 * Francisco Javier 12-11163
 * Natascha Gamboa 12-11250
 
@@ -858,7 +858,13 @@ stack build
 ### Ejecutar el compilador
 
 ```sh
-stack exec playit-exe test/casos/<resto de ruta al archivo>.game 
+stack exec playit-exe test/<nombre archivo>.game 
+```
+
+### Compilar y Ejecutar el compilador
+
+```sh
+stack run test/<nombre archivo>.game
 ```
 
 ### Ejecutar las pruebas

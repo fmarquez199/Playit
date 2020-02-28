@@ -10,6 +10,7 @@ module Playit.AuxFuncs where
 
 import Data.Maybe
 import Playit.Types
+import qualified Playit.TACType as T
 
 
 -------------------------------------------------------------------------------
@@ -56,30 +57,45 @@ getParams (_:rs)       = getParams rs
 -------------------------------------------------------------------------------
 -- | Modify the symbol type
 modifyType :: SymbolInfo -> Type -> SymbolInfo
-modifyType (SymbolInfo id _ s c ei) newT = SymbolInfo id newT s c ei
+modifyType symInfo newT = symInfo{symType = newT}
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
 -- | Modify the symbol category
 modifyCategory :: SymbolInfo -> Category -> SymbolInfo
-modifyCategory (SymbolInfo id t s _ ei) newC = SymbolInfo id t s newC ei
+modifyCategory symInfo newC = symInfo{category = newC}
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
 -- | Modify the symbol extra info
+-- TODO: Fix correctly
 modifyExtraInfo :: SymbolInfo -> [ExtraInfo] -> SymbolInfo
-modifyExtraInfo (SymbolInfo id t s c []) ei      =  SymbolInfo id t s c ei
-modifyExtraInfo (SymbolInfo id t s c ei) (ex:r)  = 
-    SymbolInfo id t s c (map (\einf -> if areSameTExtInf einf ex then ex else einf ) ei)
+modifyExtraInfo (SymbolInfo n t s c []) ei      =  SymbolInfo n t s c ei
+modifyExtraInfo info@(SymbolInfo n t s c ei) newI = newInfo
+  where
+    newInfo = SymbolInfo n t s c (newI ++ ei)
+
+
+modifyExtraInfoProm :: SymbolInfo -> [ExtraInfo] -> SymbolInfo
+-- modifyExtraInfoProm (SymbolInfo n t s c []) []      =  SymbolInfo n t s c []
+modifyExtraInfoProm (SymbolInfo n t s c []) ei      =  SymbolInfo n t s c ei
+-- modifyExtraInfoProm info [] = info
+modifyExtraInfoProm info@(SymbolInfo n t s c ei) (ex:r) = newInfo
+  where
+    modInfo i = if sameEI i ex then ex else i
+    newInfo   = SymbolInfo n t s c (map modInfo ei)
+
+-- modifyExtraInfo symInfo@(SymbolInfo _ _ _ _ []) ei      = symInfo{extraInfo = ei}
+-- modifyExtraInfo symInfo@SymbolInfo{extraInfo = ei} (ex:r) = 
+--     symInfo{extraInfo = map (\einf -> if sameEI einf ex then ex else einf) ei}
     
-areSameTExtInf :: ExtraInfo -> ExtraInfo -> Bool
-areSameTExtInf (Params _ ) (Params _)   = True
-areSameTExtInf (FromReg _ ) (FromReg _) = True
-areSameTExtInf (AST _ ) (AST _)         = True
-areSameTExtInf _ _                      = False
--------------------------------------------------------------------------------
+sameEI :: ExtraInfo -> ExtraInfo -> Bool
+sameEI (Params _) (Params _)   = True
+sameEI (FromReg _) (FromReg _) = True
+sameEI (AST _) (AST _)         = True
+sameEI _ _                     = False-------------------------------------------------------------------------------
 
 
 
@@ -91,14 +107,15 @@ areSameTExtInf _ _                      = False
 
 
 -------------------------------------------------------------------------------
--- | Checks the all's assignations types is the same
--- TODO: modificar para que se pueda hacer:
---      Kit of Power l = << >>, l2
---      Power puff x = DeathZone
---      Reg a, Reg b
---      Union r = {a}
---      r = {b} -> error
---      RegUnion r = {3,*r*}
+{- | Checks the all's assignations types is the same
+  TODO: modificar para que se pueda hacer:
+    Kit of Power l = << >>, l2
+    Power puff x = DeathZone
+    Reg a, Reg b
+    Union r = {a}
+    r = {b} -> error
+    RegUnion r = {3,*r*}
+-}
 eqAssigsTypes :: InstrSeq -> Type -> Bool
 eqAssigsTypes assigs t = all (\(Assig _ expr _) -> compatibles expr) assigs
   where
@@ -116,36 +133,36 @@ isSimpleType t
 
 -------------------------------------------------------------------------------
 isArray :: Type -> Bool
-isArray (TArray _ _) = True
-isArray _            = False
+isArray TArray{} = True
+isArray _        = False
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
 isList :: Type -> Bool
-isList (TList _) = True
-isList _         = False
+isList TList{} = True
+isList _       = False
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
 isPointer :: Type -> Bool
-isPointer (TPointer _) = True
-isPointer _            = False
+isPointer TPointer{} = True
+isPointer _          = False
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
 isRegUnion :: Type -> Bool
-isRegUnion (TNew _) = True
-isRegUnion _        = False
+isRegUnion TNew{} = True
+isRegUnion _      = False
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
 isFunctionCall :: Expr -> Bool
-isFunctionCall (FuncCall _ _) = True
-isFunctionCall _              = False
+isFunctionCall FuncCall{} = True
+isFunctionCall _          = False
 -------------------------------------------------------------------------------
 
 
@@ -180,26 +197,7 @@ isTypeComparableEq t = isTypeNumber t || isList t || isPointer t || (t == TBool)
 -------------------------------------------------------------------------------
 -- | Determines if the type isn't undefined
 isRealType :: Type -> Bool
-isRealType t =  baseTypeT t `notElem` [TPDummy, TDummy, TNull]
--------------------------------------------------------------------------------
-
-
--------------------------------------------------------------------------------
--- Determina si la variable a cambiar su TDummy es la de iteracion
---isVarIter :: Var -> SymTab -> Scope -> Bool
---isVarIter (Var name _) symTab scope
---    | (getScope $ fromJust info) < scope = False
---    | otherwise = True
-    
---    where info = lookupInSymTab name symTab
---isVarIter (Index var _ _) symTab scope = isVarIter var symTab scope
-
---isVarIter :: Var -> SymTab -> Scope -> Bool
-isVarIter (Var name _) symTab scope  = False
---    | otherwise = True
-    
---    where info = lookupInSymTab name symTab
---isVarIter (Index var _ _) symTab scope = isVarIter var symTab scope
+isRealType t = baseTypeT t `notElem` [TPDummy, TDummy, TNull]
 -------------------------------------------------------------------------------
 
 
@@ -289,6 +287,13 @@ typeArrLst (TList t)                 = t
 
 
 -------------------------------------------------------------------------------
+isArrLst :: Expr -> Bool
+isArrLst ArrayList{} = True
+isArrLst _           = False
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
 baseTypeArrLst :: Type -> Type
 baseTypeArrLst (TArray _ t) = t
 baseTypeArrLst (TList t)    = t
@@ -303,7 +308,7 @@ getTPointer ts
     | all (== TDummy)   ts  = return TDummy
     | all (== TPDummy)  ts  = return TPDummy
     | all (\t -> isPointer t || (t == TPDummy) || (t == TDummy)) ts = do
-        let listNoDummy = filter (\t  -> (t /= TPDummy) && (t /= TDummy)) ts
+        let listNoDummy = filter (\t -> (t /= TPDummy) && (t /= TDummy)) ts
         t <- getTPointer $ map (\(TPointer t) -> t) listNoDummy
 
         return (TPointer t)
@@ -391,9 +396,10 @@ getTLists ts
 
 
 -------------------------------------------------------------------------------
--- | Dado un tipo y una lista (List t) regresa el t(si t es una lista recursiona),
--- si no es de esa forma regresa Nothing
--- Util Para el problema de <<2>>:<< <<>> >> 
+{- | Dado un tipo y una lista (List t) regresa el t(si t es una lista recursiona),
+  si no es de esa forma regresa Nothing
+  Util Para el problema de <<2>>:<< <<>> >> 
+-}
 getTListAnexo:: Type -> Type -> Maybe Type
 getTListAnexo t1 (TList t2) 
     | isSimpleType t1 && isSimpleType t2 && t1 == t2 = Just (TList t1) -- int : [int] = Just int
@@ -448,11 +454,12 @@ getTypeInstr (While _ _ t)          = t
 getPromise :: Id -> Promises -> Maybe Promise
 getPromise _ []               = Nothing
 getPromise name (promise : r)
-  | name == getIdPromise promise = Just promise
-  | otherwise                    = getPromise name r
+  | name == promiseId promise = Just promise
+  | otherwise                 = getPromise name r
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
+-- | Gets the statements of each instruction
 getInstrSeq :: Instr -> InstrSeq
 getInstrSeq (Assigs is _)           = is
 getInstrSeq (For _ _ _ is _)        = is
@@ -477,3 +484,113 @@ typeReturn :: Instr -> Type
 typeReturn (Return e _) = typeE e
 typeReturn _            = TError
 -------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+--                                 TAC related
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+concatTAC :: MTACInstr -> MTACInstr -> MTACInstr
+concatTAC x y = ((++) <$> x) <*> y
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-- Gets the TAC's label operand
+getLout :: TAC -> TACOP
+getLout (T.TACC T.NewLabel out Nothing Nothing) = out
+getLout _                                       = Nothing
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-- Gets the value of the label operand
+getLabel :: TACOP -> String
+getLabel Nothing            = ""
+getLabel (Just (T.Label l)) = l
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-- 
+sizeArray :: Type -> Int
+sizeArray (TArray (Literal (Integer i) _) _) = i
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-- Creates the TAC's variable operand
+tacVariable :: TACInfo -> TACOP
+tacVariable v = Just $ T.Variable v
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-- Creates the TAC's constant operand
+tacConstant :: (String, Type) -> TACOP
+tacConstant c = Just $ T.Constant c
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-- Creates the TAC's label operand
+tacLabel :: String -> TACOP
+tacLabel l = Just $ T.Label l
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-- Creates the TAC's GoTo
+tacGoTo :: TACOP -> TAC
+tacGoTo Nothing = T.TACC T.GoTo Nothing Nothing Nothing
+tacGoTo label   = T.TACC T.GoTo Nothing Nothing label
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-- Gets the with of the Type
+getWidth :: Type -> Int
+getWidth array@(TArray _ t) = sizeArray array * getWidth t
+getWidth TBool              = 1
+getWidth TChar              = 1
+getWidth TFloat             = 8
+getWidth TInt               = 4
+getWidth (TList t)          = getWidth t -- ?
+getWidth TListEmpty         = 1 -- como base?
+getWidth (TNew n)           = 0 -- Reg or Union
+getWidth (TPointer t)       = 4 * getWidth t -- Una palabra del procesador
+getWidth TNull              = 4 -- Reservemos ese espacio asi igual
+-- getWidth TStr               = 1 -- Se calcula cuando se tiene el valor del string
+-- getWidth TRegister          = 1 -- Suma de los witdth de cada campo. Esto esta en su offset
+-- getWidth TUnion             = 1 -- witdth mayor. Esto esta en su offset
+getWidth _                  = -1 -- This shouldn't happen
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+getAST :: [ExtraInfo] -> InstrSeq
+getAST []        = []
+getAST (AST i:_) = i
+getAST (_:rs)    = getAST rs
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+getRefVar :: Var -> Var
+getRefVar (Desref v _) = v
+getRefVar var          = var
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-- | Modify the symbol offset
+modifyOffSet :: TACInfo -> OffSet -> TACInfo
+modifyOffSet (Temp n _) newO      = Temp n newO
+modifyOffSet (TACVar info _) newO = TACVar info newO
+-------------------------------------------------------------------------------
+
+

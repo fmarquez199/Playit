@@ -8,20 +8,21 @@
 -}
 module Main where
 
-import Data.Strings (strEndsWith)
-import Control.Monad.Trans.RWS
-import Control.Monad (mapM_)
+import Control.Monad.Trans.RWS (runRWST)
+import Control.Monad           (mapM_)
 import Control.Exception
-import System.Environment
+import Data.Strings            (strEndsWith)
+import System.Environment      (getArgs)
 import System.IO.Error
-import System.IO (readFile)
+import System.IO               (readFile)
 import Playit.SymbolTable
 import Playit.Errors
 import Playit.Parser
 import Playit.Lexer
+import Playit.TAC
+import Playit.TACType
 import Playit.Types
 import Playit.PrintPromises
--- import Playit.Print
 
 
 -- | Determines if an file is empty
@@ -43,20 +44,30 @@ main = do
   args <- getArgs
 
   case checkExt args of
-    Left msg -> putStrLn msg
+    Left  msg         -> putStrLn msg
     Right checkedFile -> do
       code <- readFile checkedFile
 
       if null code || isEmptyFile code then putStrLn "\nError: empty file\n"
       else
-        let tokens = alexScanTokens code
+        let tokens       = alexScanTokens code
             (hasErr,pos) = lexerErrors tokens
+            fileCode     = (checkedFile,code)
+            parseCode    = parse tokens
         in
-        if hasErr then putStrLn $ showLexerErrors (checkedFile,code) pos
+        if hasErr then putStrLn $ showLexerErrors fileCode pos
         else do
           -- mapM_ print tokens
-          (ast,(st,_,_,promises),errs) <- runRWST (parse tokens) (checkedFile,code) initState
+          (ast,state@SymTabState{symTab = st},errs) <- runRWST parseCode fileCode stInitState
           
-          if null errs then print ast >> print st >> printPromises promises -- >> genTAC ast st
+          if null errs then do
+            print ast -- >> print st >> printPromises (proms state)
+            -- putStrLn $ "\nActive scopes: " ++ show (actS state)
+            -- putStrLn $ "\nActual scope:" ++ show (stScope state)
+            -- putStrLn $ "\nOffSets: " ++ show (offSets state)
+            -- putStrLn $ "\nActual offset: " ++ show (actOffS state)
+            -- (_,state,tac) <- runRWST (gen ast) ast (tacInitState (symTab state))
+            -- mapM_ print tac
+            -- print state
           else
             mapM_ putStrLn errs

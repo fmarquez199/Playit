@@ -10,14 +10,14 @@
 module Playit.CheckAST where
 
 import Control.Monad.Trans.RWS
-import Control.Monad (when,unless)
-import qualified Data.Map as M
-import Data.Maybe (isJust,fromJust,fromMaybe,maybe)
+import Control.Monad           (when,unless)
+import Data.Maybe              (isJust,fromJust,fromMaybe,maybe)
 import Playit.AuxFuncs
 import Playit.Errors
+import Playit.PromisesHandler
 import Playit.SymbolTable
 import Playit.Types
-import Playit.PromisesHandler
+import qualified Data.Map as M
 
 
 -------------------------------------------------------------------------------
@@ -56,19 +56,19 @@ checkDesref tVar p fileCode
 -- | Checks the new defined type
 -- TODO: Faltaba algo, pero no recuerdo que
 checkNewType :: Id -> Pos -> SymTab -> FileCodeReader -> MonadSymTab String
-checkNewType tName p (SymTab st) fileCode = do
-  (symTab, activeScopes, scopes, promises) <- get
+checkNewType tName p (SymTab t) fileCode = do
+  state@SymTabState{symTab = st, proms = promises} <- get
   let
-    infos = lookupInScopes [1] tName symTab
+    infos = lookupInScopes [1] tName st
   
   if isJust infos then
-
-    let symIndex = M.findIndex tName st
-        sym = head . snd $ M.elemAt symIndex st -- its already checked that's not redefined
+    let
+      symIndex = M.findIndex tName t
+      sym      = head . snd $ M.elemAt symIndex t -- its already checked that's not redefined
     in
-      if getCategory sym == TypeConstructors then return ""
+      if category sym == TypeConstructors then return ""
       else
-        return (errorMsg ("This isn't a defined type\n"++tName++"\n"++show sym) fileCode p)
+        return (errorMsg ("This isn't a defined type\n"++tName++"\n") fileCode p)
   else do
     let
       promise = getPromise tName promises
@@ -76,10 +76,10 @@ checkNewType tName p (SymTab st) fileCode = do
     unless (isJust promise) $ do
       -- Create the promise
       let 
-        newProm     = PromiseUserDefinedType tName  p
+        newProm     = PromiseT tName  p
         newPromises = promises ++ [newProm]
 
-      put (symTab, activeScopes, scopes, newPromises)
+      put state{proms = newPromises}
 
     return ""
 -------------------------------------------------------------------------------
@@ -152,12 +152,12 @@ checkAssig tLval expr p fileCode
 --     reg          = lookupInSymTab name symTab
 --     regOK        = isJust reg
 --     typesE       = map typeE exprs
---     t            = getType (head $ fromJust reg)
+--     t            = symType (head $ fromJust reg)
 --     isRegister   = t == TRegister
 --     isUnion      = t == TUnion
 --     n            = length exprs
 --     noErr        = TError `notElem` typesE
---     (Params p)   = getExtraInfo (head $ fromJust reg) !! 1
+--     (Params p)   = extraInfo (head $ fromJust reg) !! 1
 --     typesP       = map fst p
 
 --     typesOK      = null typesE || typesE == typesP || any isRegUnion typesE
@@ -176,9 +176,9 @@ checkRegUnion name exprs symTab fileCode p
     if isJust symReg then do
       let 
         registerUnionSym = head $ fromJust symReg
-        typeR = getType registerUnionSym
-        fields = fromJust $ getParams (getExtraInfo registerUnionSym)
-        typesP       = map fst fields
+        typeR            = symType registerUnionSym
+        fields           = fromJust $ getParams (extraInfo registerUnionSym)
+        typesP           = map fst fields
       
       if typeR == TRegister then
         if not (null typesE) then
@@ -227,12 +227,12 @@ checkRegUnion name exprs symTab fileCode p
 -- | Checks if var is an Iteration's Variable.
 checkIterVar :: Var -> MonadSymTab Bool
 checkIterVar var = do
-  (symtab, _, scope, _) <- get
-  let cc s = getCategory s == IterationVariable && getScope s == scope
+  SymTabState{symTab = st, currS = s'} <- get
+  let cc s = category s == IterationVariable && scope s == s'
       name = getName var
-      sym = lookupInSymTab name symtab
-      cat = maybe [] (filter cc) sym
-      -- cat  = filter cc $ fromJust (lookupInSymTab name symtab)
+      sym  = lookupInSymTab name st
+      cat  = maybe [] (filter cc) sym
+      -- cat  = filter cc $ fromJust (lookupInSymTab name st)
 
   return $ not $ null cat
 -------------------------------------------------------------------------------
@@ -257,6 +257,7 @@ checkBinary op (e1,p1) (e2,p2) = do
     boolOps     = [And, Or]
     anexo       = Binary op e1 e2 tE2
     arit        = Binary op e1 e2 tE1
+    div         = Binary op e1 e2 TFloat
     comp        = Binary op e1 e2 TBool
     err         = Binary op e1 e2 TError
     noTError    = tE1 /= TError && tE2 /= TError -- TODO : Agregar a las comparaciones cuando no salga en el primer error
@@ -295,7 +296,8 @@ checkBinary op (e1,p1) (e2,p2) = do
               return (err, aritErrorMsg tE1 fileCode p1)
 
       x | x `elem` aritOps ->
-          if tE1 == TInt || tE2 == TFloat then return (arit, "")
+          if tE1 == TInt || tE2 == TFloat then
+            if op == Division then return (div, "") else return (arit, "")
           else 
             if tE1 == TPDummy then
               let related = getRelatedPromises arit
@@ -378,10 +380,10 @@ checkBinary op (e1,p1) (e2,p2) = do
                             ne1 <- updateExpr e1 typel
                             ne2 <- updateExpr e2 typel
                             let 
-                              newExpr = (Binary op ne1 ne2 TBool)
+                              newExpr = Binary op ne1 ne2 TBool
                               newRelated = getRelatedPromises newExpr
                             
-                            when (not $ null  newRelated) $
+                            unless (null newRelated) $
                               addLateCheck newExpr newExpr [p1,p2] newRelated
                             return (newExpr, "")
                           else 
@@ -397,10 +399,10 @@ checkBinary op (e1,p1) (e2,p2) = do
                                 ne1 <- updateExpr e1 typep
                                 ne2 <- updateExpr e2 typep
                                 let 
-                                  newExpr = (Binary op ne1 ne2 TBool)
+                                  newExpr = Binary op ne1 ne2 TBool
                                   newRelated = getRelatedPromises newExpr
                                 
-                                when (not $ null  newRelated) $
+                                unless (null newRelated) $
                                   addLateCheck newExpr newExpr [p1,p2] newRelated
                                 return (newExpr, "")
                               else
@@ -508,21 +510,18 @@ checkAnexo (e1,p1) (e2,p2) fileCode
 -------------------------------------------------------------------------------
 checkIfSimple :: (Type,Pos) -> (Type,Pos) -> (Type,Pos) -> FileCodeReader -> (Type,String)
 checkIfSimple (tCond,pCond) (tTrue,pTrue) (tFalse,pFalse) fileCode
-
   | tCond `elem` [TBool,TPDummy] && isJust tResult = (fromJust tResult, "")
-  | tCond /= TBool = 
-    (TError, semmErrorMsg TBool tCond fileCode pCond)
-
-  | isRealType tTrue && not (isRealType tFalse) =
-    (TError, semmErrorMsg tTrue tFalse fileCode pFalse)
-
-  | not (isRealType tTrue) && isRealType tFalse =
-    (TError, semmErrorMsg tFalse tTrue fileCode pTrue)
-
-  | otherwise = (TError, semmErrorMsg tTrue tFalse fileCode pFalse)
+  | tCond /= TBool                                 = (TError, errCond)
+  | isRealType tTrue && not (isRealType tFalse)    = (TError, errFalse)
+  | not (isRealType tTrue) && isRealType tFalse    = (TError, errTrue)
+  | otherwise                                      = (TError, otherErr)
 
   where
-    tResult = getTLists [tTrue, tFalse]
+    tResult  = getTLists [tTrue, tFalse]
+    errCond  = semmErrorMsg TBool tCond fileCode pCond
+    errFalse = semmErrorMsg tTrue tFalse fileCode pFalse
+    errTrue  = semmErrorMsg tFalse tTrue fileCode pTrue
+    otherErr = semmErrorMsg tTrue tFalse fileCode pFalse
 -------------------------------------------------------------------------------
 
 
@@ -538,9 +537,11 @@ changeTDummyList (TList TDummy) newT = TList newT
 changeTDummyList (TList t) newT      = TList (changeTDummyList t newT)
 changeTDummyList t newT              = t
 
+
 changeTPDummyFunction :: Expr -> Type -> Expr
 changeTPDummyFunction (FuncCall c TPDummy) =  FuncCall c
 -- Error: otherwise
+
 
 -------------------------------------------------------------------------------
 -- Cambia el TDummy de una variable en las declaraciones
@@ -560,111 +561,8 @@ changeTDummyAssigs t (Assig lval e _) =
     Assig (changeTDummyLvalAsigs lval t) (changeTRead e t) TVoid
 -------------------------------------------------------------------------------
 
+
 -- Cableado para que el input corra
 changeTRead :: Expr -> Type -> Expr
 changeTRead (Read e _) t = Read e t
 changeTRead e _ = e
-
-
--------------------------------------------------------------------------------
--------------------------------------------------------------------------------
---          Cambiar el tipo 'TDummy' en las instrucciones del 'for'
--------------------------------------------------------------------------------
--------------------------------------------------------------------------------
-
-
-{--------------------------------------------------------------------------------
--- Cambia el TDummy de la variable de iteracion en el 'for'
-changeTDummyLval :: Var -> Type -> Var
-changeTDummyLval (Var n TDummy) t       = Var n t
-changeTDummyLval var@(Var _ _) _       = var
-changeTDummyLval (Index var e t') t  =
-    let newE = changeTDummyExpr t e
-    in Index var newE t'
--------------------------------------------------------------------------------
-
-
--------------------------------------------------------------------------------
--- Cambia el TDummy de las expresiones en el 'for'
-changeTDummyExpr :: Type -> Expr -> Expr
-changeTDummyExpr t (Literal lit TDummy) = Literal lit t
---------------------------------------------------------------------------
-changeTDummyExpr _ lit@(Literal _ _) = lit
---------------------------------------------------------------------------
-changeTDummyExpr t (Variable var TDummy) =
-    let newVar = changeTDummyLval var t
-    in Variable newVar t
---------------------------------------------------------------------------
-changeTDummyExpr _ vars@(Variable _ _) = vars
---------------------------------------------------------------------------
-changeTDummyExpr t (ArrayList exprs TDummy) =
-    let newExprs = map (changeTDummyExpr t) exprs
-    in ArrayList newExprs t
---------------------------------------------------------------------------
-changeTDummyExpr _ lst@(ArrayList _ _) = lst
---------------------------------------------------------------------------
-changeTDummyExpr t (Unary op e TDummy) =
-    let newE = changeTDummyExpr t e
-    in Unary op newE t
---------------------------------------------------------------------------
-changeTDummyExpr _ opUn@Unary{} = opUn
---------------------------------------------------------------------------
-changeTDummyExpr t (Binary op e1 e2 TDummy) =
-    let newE1 = changeTDummyExpr t e1
-        newE2 = changeTDummyExpr t e2
-    in Binary op newE1 newE2 t
---------------------------------------------------------------------------
-changeTDummyExpr _ opBin@Binary{} = opBin
--------------------------------------------------------------------------------
-
-
--------------------------------------------------------------------------------
--- Cambia el TDummy de la secuencia de instrucciones del 'for'
-changeTDummyFor :: Type -> SymTab -> Scope -> Instr -> Instr
-changeTDummyFor t symTab scope (Assig lval e _)
-    | isVarIter lval symTab scope =
-        error ("\n\nError semantico, la variable de iteracion: '" ++
-               show lval ++ "', no se puede modificar.\n")
-    | otherwise =
-        let newLval = changeTDummyLval lval t
-            newE = changeTDummyExpr t e
-        in Assig newLval newE TVoid
---------------------------------------------------------------------------
--- changeTDummyFor t symTab scope (Program seqI) =
---     let newSeqI = map (changeTDummyFor t symTab scope) seqI
---     in Program newSeqI
---------------------------------------------------------------------------
-changeTDummyFor t symTab scope (For name e1 e2 seqI _) =
-    let newE1 = changeTDummyExpr t e1
-        newE2 = changeTDummyExpr t e2
-        newSeqI = map (changeTDummyFor t symTab scope) seqI
-    in For name newE1 newE2 newSeqI TVoid
---------------------------------------------------------------------------
---changeTDummyFor t symTab scope (ForEach name e1 e2 e3 --seqI st) =
-    --let newE1 = changeTDummyExpr t e1
---        newE2 = changeTDummyExpr t e2
---        newE3 = changeTDummyExpr t e3
---        newSeqI = map (changeTDummyFor t symTab scope) seqI
---    in ForEach name newE1 newE2 newE3 newSeqI st
---------------------------------------------------------------------------
-changeTDummyFor t symTab scope (While e seqI _) =
-    let newE = changeTDummyExpr t e
-        newSeqI = map (changeTDummyFor t symTab scope) seqI
-    in While newE newSeqI TVoid
---------------------------------------------------------------------------
-{-changeTDummyFor t symTab scope (If e seqI) =
-    let newE = changeTDummyExpr t e
-        newSeqI = map (changeTDummyFor t symTab scope) seqI
-    in If newE newSeqI
---------------------------------------------------------------------------
-changeTDummyFor t symTab scope (IfElse e seqI1 seqI2) =
-    let newE = changeTDummyExpr t e
-        newSeqI1 = map (changeTDummyFor t symTab scope) seqI1
-        newSeqI2 = map (changeTDummyFor t symTab scope) seqI2
-    in IfElse newE newSeqI1 newSeqI2 -}
---------------------------------------------------------------------------
-changeTDummyFor t symTab scope (Print [e] _) =
-    let newE = changeTDummyExpr t e
-    in Print [newE] TVoid
--------------------------------------------------------------------------------
--}

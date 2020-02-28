@@ -28,7 +28,7 @@ printPromiseLinks (id:r) =
 
 printPromiseLateChecks :: [LateCheckPromise] -> IO ()
 printPromiseLateChecks [] = return ()
-printPromiseLateChecks (LateCheckPromiseSubroutine e pos ids:r) = do
+printPromiseLateChecks (LateCheckPromS e pos ids:r) = do
     putStrLn "\t\tExpresion: "
     putStrLn $ "\t\t\t" ++ show e
     putStrLn $ "\t\tPos: " ++ show pos
@@ -42,7 +42,7 @@ printPromiseLateChecks (LateCheckPromiseSubroutine e pos ids:r) = do
 
 printPromiseLateChecksCalls :: [LateCheckPromise] -> IO ()
 printPromiseLateChecksCalls [] = return ()
-printPromiseLateChecksCalls (LateCheckPromiseCall subr ids:r) = do
+printPromiseLateChecksCalls (LateCheckPromCall subr ids:r) = do
   putStrLn "\t\tSubroutine: "
   putStrLn $ "\t\t\t" ++ show subr
   putStrLn "\t\tEnlaces: "
@@ -55,7 +55,7 @@ printPromiseLateChecksCalls (LateCheckPromiseCall subr ids:r) = do
 
 printPromiseLateChecksForEachs :: [LateCheckPromise] -> IO ()
 printPromiseLateChecksForEachs [] = return ()
-printPromiseLateChecksForEachs (LateCheckPromiseForEach expr idvar tvar pos ids:r) = do
+printPromiseLateChecksForEachs (LateCheckPromForE expr idvar tvar pos ids:r) = do
   putStrLn "\t\tExpresion: "
   putStrLn $ "\t\t\t" ++ show expr
   putStrLn $ "\t\tPos: " ++ show pos
@@ -71,7 +71,7 @@ printPromiseLateChecksForEachs (LateCheckPromiseForEach expr idvar tvar pos ids:
 
 printPromises :: [Promise] -> IO ()
 printPromises [] = return ()
-printPromises (PromiseSubroutine id params typer cat pos checks checks2 checks3: r) = do
+printPromises (PromiseS id params typer cat pos checks checks2 checks3: r) = do
     putStrLn $ "PromiseFunction : " ++ id
     putStrLn "\tparams : "
     if not $ null params then 

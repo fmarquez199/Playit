@@ -10,16 +10,17 @@
 
 module Playit.Parser (parse, error) where
 
+import Control.Monad           (void,when)
 import Control.Monad.Trans.RWS
-import Control.Monad (void,when)
-import Playit.SymbolTable
+import Data.Maybe              (fromJust)
+import Playit.AST
 import Playit.AuxFuncs
 import Playit.CheckAST
 import Playit.Errors
 import Playit.Lexer
-import Playit.Types
-import Playit.AST
 import Playit.PromisesHandler
+import Playit.SymbolTable
+import Playit.Types
 
 }
 
@@ -79,7 +80,7 @@ import Playit.PromisesHandler
 
   -- Characters
   character         { TkCHARACTER _ _ _ }
-  string            { TkSTRINGS _ _ }
+  string            { TkSTRINGS _ _ _ }
   
   -- Numeric literals
   integer           { TkINT _ _ _ }
@@ -241,10 +242,15 @@ Program :: { Instr }
 
 
 ChekedDefinitions :: { () }
-  : Definitions EndLines--      { % checkPromises }
-  {  {-checkPromises comentado porque en main el usuario peude hacer llamadas a 
-  funciones no definidas y estas no se detectarian, a menos que detectemos que estamos en main y cuando se llama a una
-  función no se le crea una promesa, pero eso habría que modificar el estado so es un TODO -}}
+  : Definitions EndLines      --{ % checkPromises }
+  {
+    {-
+      checkPromises comentado porque en main el usuario puede hacer llamadas a 
+      funciones no definidas y estas no se detectarian, a menos que detectemos
+      que estamos en main y cuando se llama a una función no se le crea una
+      promesa, pero eso habría que modificar el estado so es un TODO
+    -}
+  }
   | Definitions
     { % tell ["After definitions must be one at least line break"] }
 
@@ -616,29 +622,32 @@ Controller :: { Instr }
 InitVar1 :: { (Id, (Expr,Pos) ) }
   : id "=" Expression
     { % do
-      (symtab, activeScopes, scope, promises) <- get
-      let (e, _) = $3
-          id = getTk $1
-          t = (\s -> if s == TInt then TInt else TError) $ typeE e
-          varInfo = [SymbolInfo id t scope IterationVariable []]
-          newSymTab = insertSymbols [id] varInfo symtab
+      state@SymTabState{symTab = st, currS = s} <- get
+      let
+        (e, _) = $3
+        id     = getTk $1
+      v <- var id (getPos $1) -- This have to be here
+      let
+        t       = (\s -> if s == TInt then TInt else TError) $ typeE e
+        varInfo = [SymbolInfo id t s IterationVariable []]
+        newST   = insertSymbols [id] varInfo st
 
-      v <- var id (getPos $1)
-      put (newSymTab, activeScopes, scope, promises)
+      put state{symTab = newST}
       -- return $ assig (v, getPos $1) $3
       return (id, $3)
     }
   | Type id "=" Expression
     { % do
-      (symtab, activeScopes, scope, promises) <- get
-      let id = getTk $2
-          t = if $1 == TInt then TInt else TError
-          var = Var id t
-          varInfo = [SymbolInfo id t scope IterationVariable []]
-          newSymTab = insertSymbols [id] varInfo symtab
+      state@SymTabState{symTab = st, currS = s} <- get
+      let
+        id      = getTk $2
+        t       = if $1 == TInt then TInt else TError
+        var     = Var id t
+        varInfo = [SymbolInfo id t s IterationVariable []]
+        newST   = insertSymbols [id] varInfo st
       
       -- insertDeclarations [(id, getPos $2)] $1 []
-      put (newSymTab, activeScopes, scope, promises)
+      put state{symTab = newST}
       -- return $ assig (var, getPos $2) $4
       return (id, $4)
     }
@@ -646,36 +655,37 @@ InitVar1 :: { (Id, (Expr,Pos) ) }
 InitVar2 :: { (Id, (Expr,Pos) ) }
   : id "<-" Expression %prec "<-"
     { % do
-      (symtab, activeScopes, scope, promises) <- get
-      let 
-        (e, _) = $3
-        id     = getTk $1
-        tID    = typeE e
-        t = if isArray tID || isList tID then baseTypeArrLst tID else if tID == TPDummy then TPDummy else TError
-        varInfo   = [SymbolInfo id t scope IterationVariable []]
-        newSymTab = insertSymbols [id] varInfo symtab
+      state@SymTabState{symTab = st, currS = s} <- get
+      let id = getTk $1
+      v <- var id (getPos $1) -- This have to be here
+      let
+        tE      = typeE (fst $3)
+        baseTE  = baseTypeArrLst tE
+        arrayL  = isArray tE || isList tE
+        t       = if arrayL then baseTE else if tE == TPDummy then TPDummy else TError
+        varInfo = [SymbolInfo id t s IterationVariable []]
+        newST   = insertSymbols [id] varInfo st
 
-      when (t /= TPDummy) (put (newSymTab, activeScopes, scope, promises))
+      when (t /= TPDummy) (put state{symTab = newST})
       
-      v <- var id (getPos $1)
       -- return $ assig (v, getPos $1) $3
       return (id, $3)
     }
   | Type id "<-" Expression %prec "<-"
     { % do
-      (symtab, activeScopes, scope, promises) <- get
+      state@SymTabState{symTab = st, currS = s} <- get
       let
-        id        = getTk $2
-        tE        = typeE $ fst $4
-        matchT    = $1 == (baseTypeArrLst tE)
-        arrayl    = isArray tE || isList tE
-        t         = if arrayl && matchT then $1 else TError
-        var       = Var id $1
-        varInfo   = [SymbolInfo id $1 scope IterationVariable []]
-        newSymTab = insertSymbols [id] varInfo symtab
+        id      = getTk $2
+        tE      = typeE $ fst $4
+        matchT  = $1 == (baseTypeArrLst tE)
+        arrayL  = isArray tE || isList tE
+        t       = if arrayL && matchT then $1 else TError
+        var     = Var id $1
+        varInfo = [SymbolInfo id $1 s IterationVariable []]
+        newST   = insertSymbols [id] varInfo st
 
       -- insertDeclarations [(id, getPos $2)] $1 []
-      put (newSymTab, activeScopes, scope, promises)
+      put state{symTab = newST}
       return (id, $4)
     }
 -------------------------------------------------------------------------------
@@ -957,7 +967,7 @@ Expression :: { (Expr, Pos) }
   | integer   { (Literal (Integer $ getTkInt $1) TInt, getPos $1) }
   | floats    { (Literal (Floatt $ getTkFloat $1) TFloat, getPos $1) }
   | character { (Literal (Character $ getTkChar $1) TChar, getPos $1) }
-  | string    { (Literal (Str $ getTk $1) TStr, getPos $1) }
+  | string    { (Literal (Str $ getTkStr $1) TStr, getPos $1) }
   | null      { (Null, $1) }
   | Lvalue    { let (v,p) = $1 in (Variable v (typeVar v), p) }
 
@@ -974,8 +984,9 @@ DefineRegister :: { () }
   : Register ":" PushScope EndLines Declarations EndLines ".~"
     { %
       let
-        extraI = [AST (concatMap snd $ reverse $5), Params (concatMap fst $ reverse $5)]
         reg    = fst $1
+        decls  = reverse $5
+        extraI = [AST (concatMap snd decls), Params (concatMap fst decls)]
       in
         updatesDeclarationsCategory reg >> updateExtraInfo reg TypeConstructors extraI
     }
@@ -1033,10 +1044,11 @@ DefineUnion :: { () }
   : Union ":" PushScope EndLines Declarations EndLines ".~"  
     { %
       let
-        extraI = [AST (concatMap snd $ reverse $5), Params (concatMap fst $ reverse $5)]
-        reg    = fst $1
+        union  = fst $1
+        decls  = reverse $5
+        extraI = [AST (concatMap snd decls), Params (concatMap fst decls)]
       in
-        updatesDeclarationsCategory reg >> updateExtraInfo reg TypeConstructors extraI
+        updatesDeclarationsCategory union >> updateExtraInfo union TypeConstructors extraI
     }
   | Union ":" PushScope EndLines ".~" { }
 -------------------------------Grammar Errors----------------------------------

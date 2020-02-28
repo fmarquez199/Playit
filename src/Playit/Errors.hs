@@ -10,7 +10,7 @@ module Playit.Errors where
 
 
 import Control.Monad.Trans.RWS
-import Data.List.Split (splitOn)
+import Data.List.Split         (splitOn)
 import Playit.Lexer
 import Playit.Types
 

@@ -1,0 +1,236 @@
+Inventory Contacto:
+
+.~
+
+
+world %casos_binary%:
+
+    Battle bool
+    Rune char
+    @ kill entero1() = TPDummy
+    Skill float
+    Power int
+    Runes string
+    Contacto registro @ Registro
+    @ Null
+
+    Kit of Battle listOfBool
+    Kit of Rune listOfChar
+    Kit of Skill listOfFloat
+    Kit of Power listOfInt
+    Kit of Runes listOfString
+    Kit of Contacto listOfRegisters
+
+    Kit of Kit of Battle listOfListOfBool
+    Kit of Kit of Rune listOfListOfChar
+    Kit of Kit of Skill listOfListOfFloat
+    Kit of Kit of Power listOfListOfInt
+    Kit of Kit of Runes listOfListOfStrings
+    Kit of Kit of Contacto listOfListOfRegister
+
+
+    Battle puff pointerToBool
+    Rune puff  pointerToChar
+    Skill puff  pointerToFloat
+    Power puff  pointerToInt
+    Runes puff  pointerToString
+    Contacto puff  pointerToRegister 
+
+    Kit of (Battle puff) listOfPointerToBool
+    Kit of (Rune puff) listOfPointerToChar
+    Kit of (Skill puff) listOfPointerToFloat
+    Kit of (Power puff) listOfPointerToInt
+    Kit of (Runes puff) listOfPointerToString
+    Kit of (Contacto puff) listOfPointerToRegister
+
+    Kit of Kit of (Battle puff) listOfListOfPointerToBool
+    Kit of Kit of (Rune puff) listOfListOfPointerToChar
+    Kit of Kit of (Skill puff) listOfListOfPointerToFloat
+    Kit of Kit of (Power puff) listOfListOfPointerToInt
+    Kit of Kit of (Runes puff) listOfListOfPointerToString
+    Kit of Kit of (Contacto puff) listOfListOfPointerToRegister
+
+    Kit of Battle puff pointerToListOfBattle
+    Kit of Rune puff pointerToListOfChar
+    Kit of Skill puff pointerToListOfFloat
+    Kit of Power puff pointerToListOfInt
+    Kit of Runes puff pointerToListOfString
+    Kit of Contacto puff pointerToListOfRegister
+
+    "' No deberían dar problemas para bool && || '"
+    bool = bool && bool
+    bool = bool && bool && bool
+ 
+    "' Deberían dar error cualquier tipo distinto de bool && ||'"
+    @bool = char && char
+
+    @bool = char && int
+
+    "' No deberían dar problemas para el mismo tipo comparable == /= '"
+    bool = char == char
+    bool = float == float
+    bool = bool == bool
+    bool = int == int
+    bool = string == string
+    bool = registro == registro
+
+
+    bool = listOfBool == listOfBool
+    bool = listOfChar == listOfChar
+    bool = listOfFloat== listOfFloat
+    bool = listOfInt == listOfInt
+    bool = listOfString== listOfString
+    bool =listOfRegisters == listOfRegisters
+
+    bool =listOfListOfBool == listOfListOfBool
+    bool = listOfListOfChar== listOfListOfChar
+    bool =listOfListOfFloat == listOfListOfFloat
+    bool =listOfListOfInt == listOfListOfInt
+    bool =listOfListOfStrings == listOfListOfStrings
+    bool = listOfListOfRegister== listOfListOfRegister
+
+
+    bool = pointerToBool== pointerToBool
+    bool =pointerToChar == pointerToChar
+    bool = pointerToFloat== pointerToFloat
+    bool =pointerToInt == pointerToInt
+    bool = pointerToString== pointerToString
+    bool =pointerToRegister == pointerToRegister 
+
+    bool = listOfPointerToBool== listOfPointerToBool
+    bool = listOfPointerToChar == listOfPointerToChar
+    bool = listOfPointerToFloat == listOfPointerToFloat
+    bool = listOfPointerToInt == listOfPointerToInt
+    bool =listOfPointerToString == listOfPointerToString
+    bool =listOfPointerToRegister == listOfPointerToRegister
+
+    bool =listOfListOfPointerToBool == listOfListOfPointerToBool
+    bool = listOfListOfPointerToChar== listOfListOfPointerToChar
+    bool = listOfListOfPointerToFloat == listOfListOfPointerToFloat
+    bool =listOfListOfPointerToInt == listOfListOfPointerToInt
+    bool = listOfListOfPointerToString == listOfListOfPointerToString
+    bool = listOfListOfPointerToRegister == listOfListOfPointerToRegister
+
+    bool = pointerToListOfBattle == pointerToListOfBattle
+    bool = pointerToListOfChar == pointerToListOfChar
+    bool = pointerToListOfFloat == pointerToListOfFloat
+    bool = pointerToListOfInt == pointerToListOfInt
+    bool = pointerToListOfString == pointerToListOfString
+    bool = pointerToListOfRegister == pointerToListOfRegister
+
+    "'Casos trancados para el == / != que no deberian dar error'"
+
+    bool = pointerToListOfBattle == DeathZone
+    bool = pointerToListOfChar == DeathZone
+    bool = pointerToListOfFloat == DeathZone
+    bool = pointerToListOfInt == DeathZone
+    bool = pointerToListOfString == DeathZone
+    bool = pointerToListOfRegister == DeathZone
+
+    bool = DeathZone == pointerToListOfBattle
+    bool = DeathZone == pointerToListOfChar
+    bool = DeathZone == pointerToListOfFloat
+    bool = DeathZone == pointerToListOfInt
+    bool = DeathZone == pointerToListOfString
+    bool = DeathZone == pointerToListOfRegister
+
+    bool = DeathZone == DeathZone
+
+
+    bool = <<>> == listOfPointerToBool
+    bool = <<>> == listOfPointerToChar
+    bool = <<>> == listOfPointerToFloat
+    bool = <<>> == listOfPointerToInt
+    bool = <<>> == listOfPointerToString
+    bool = <<>> == listOfPointerToRegister
+
+    bool = listOfPointerToBool== <<>>
+    bool = listOfPointerToChar == <<>>
+    bool = listOfPointerToFloat == <<>>
+    bool = listOfPointerToInt == <<>>
+    bool =listOfPointerToString == <<>>
+    bool =listOfPointerToRegister == <<>>
+
+
+    bool =<<>> == listOfListOfPointerToBool
+    bool = <<>>== listOfListOfPointerToChar
+    bool = <<>> == listOfListOfPointerToFloat
+    bool =<<>> == listOfListOfPointerToInt
+    bool = <<>> == listOfListOfPointerToString
+    bool = <<>> == listOfListOfPointerToRegister
+
+    bool =listOfListOfPointerToBool == <<>>
+    bool = listOfListOfPointerToChar== <<>>
+    bool = listOfListOfPointerToFloat == <<>>
+    bool =listOfListOfPointerToInt == <<>>
+    bool = listOfListOfPointerToString == <<>>
+    bool = listOfListOfPointerToRegister == <<>>
+
+    bool = << << >> >> == listOfListOfPointerToBool
+    bool = << << >> >> == listOfListOfPointerToChar
+    bool = << << >> >> == listOfListOfPointerToFloat
+    bool = << << >> >> == listOfListOfPointerToInt
+    bool = << << >> >> == listOfListOfPointerToString
+    bool = << << >> >> == listOfListOfPointerToRegister
+
+
+    bool =listOfListOfPointerToBool == <<<<>>>>
+    bool = listOfListOfPointerToChar== <<<<>>>>
+    bool = listOfListOfPointerToFloat == <<<<>>>>
+    bool =listOfListOfPointerToInt == <<<<>>>>
+    bool = listOfListOfPointerToString == <<<<>>>>
+    bool = listOfListOfPointerToRegister == <<<<>>>>
+
+
+
+    bool = <<>> == <<>>
+
+    bool = <<<<>>>> == <<>>
+
+    bool = <<<<>>>> == <<<<>>>> 
+
+    bool = << <<>> , <<>> >> == <<>>
+
+    bool = << listOfPointerToBool , <<>> >> == <<>>
+    bool = << listOfBool , <<>> >> == <<>>
+    bool = << <<DeathZone>> , listOfPointerToBool >> == <<>>
+    bool = << <<DeathZone>> , listOfPointerToBool >> == listOfListOfPointerToBool
+    bool = << <<DeathZone>> , <<DeathZone>> >> == listOfListOfPointerToBool
+
+
+    "' Deberían dar error en == | /= para tipos distintos'"
+    @bool = char == float
+    @bool = DeathZone == float
+
+
+    @bool = listOfChar == listOfFloat
+
+
+    @bool = << <<DeathZone>> , listOfPointerToInt>> == listOfListOfPointerToBool
+
+    @bool = DeathZone == listOfPointerToInt
+
+    "' No deberían dar problemas para int % // '"
+    int = int % int // int
+ 
+    "' Deberían dar error cualquier tipo distinto de bool && ||'"
+    @int = int % float // int
+
+    "' No deberían dar problemas para int o float > >= < <= '"
+    bool = int > int 
+    bool = float > float 
+
+    "' Deberían dar error cualquier tipo distinto de int o float && ||'"
+    @bool = int > float 
+    @bool = float > char 
+    @bool = char > char 
+
+    "' No deberían dar problemas para int o float + - * / '"
+    int = int + int 
+    float = float + float 
+
+    "' Deberían dar error cualquier tipo distinto de int o float + - * /'"
+    @int = int + float 
+    @float = char -  char 
+
+.~

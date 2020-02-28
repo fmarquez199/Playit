@@ -68,7 +68,7 @@ spec = describe "Lexer.literals" $ do
       let tokens = alexScanTokens "~Hell0 <\"#$%?&/(=){+}[-]'_.,;^`> w@rld!!~"
 
       case tokens of
-        [TkSTRINGS str _] -> str `shouldBe` "~Hell0 <\"#$%?&/(=){+}[-]'_.,;^`> w@rld!!~"
+        [TkSTRINGS str _ _] -> str `shouldBe` "~Hell0 <\"#$%?&/(=){+}[-]'_.,;^`> w@rld!!~"
         _ -> error $ show tokens ++ "rejected as a string literal"
 
     it "accepts `~Un str1ng b!3n c0mple7@ \"#$%&/()=?'*+<>^{}[]`_.,;~` as a valid string literal" $ do

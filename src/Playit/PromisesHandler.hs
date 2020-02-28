@@ -11,10 +11,10 @@
 module Playit.PromisesHandler where
 
 
-import Control.Monad (when,unless,forM)
+import Control.Monad           (when,unless,forM)
 import Control.Monad.Trans.RWS
-import Data.Set as S (fromList,toList)
-import Data.Maybe (isJust,isNothing,fromJust,fromMaybe)
+import Data.Maybe              (isJust,isNothing,fromJust,fromMaybe)
+import Data.Set as S           (fromList,toList)
 import Playit.AuxFuncs
 import Playit.Errors
 import Playit.SymbolTable
@@ -74,10 +74,10 @@ updateExpr (Binary Concat e1 e2 _) tl@(TList t) = do
 --   return (Binary op ne1 ne2 TBool)
 
 updateExpr (FuncCall (Call name args) tf) t = do
-  (symTab, _, _, _) <- get
+  SymTabState{symTab = st} <- get
   let
     nt  = if t == TNull then TPointer TDummy else t
-    info = fromJust $ lookupInSymTab name symTab
+    info = fromJust $ lookupInSymTab name st
 
   ntf <- updatePromise name nt tf
   return (FuncCall (Call name args) ntf)
@@ -176,24 +176,23 @@ updatePromiseInExpr _ e _                = error $ "e : " ++ show e
 -- | Le asigna a una funcion promesa el tipo de retorno pasado como argumento.
 updatePromise :: Id -> Type -> Type -> MonadSymTab Type
 updatePromise name t tf = do
-  (symTab, activeScopes, scope, promises) <- get
+  state@SymTabState{proms = promises} <- get
   let promise = getPromise name promises
 
   if isJust promise then do
     let
       promise'    = fromJust promise
-      typePromise = getTypePromise promise'
+      typePromise = promiseType promise'
 
     if not (isRealType typePromise) && isJust (getTLists [typePromise,t]) then do
       let modifyTypePromise prom = 
-            if getIdPromise prom == name then 
-              let (PromiseSubroutine id p _ cat pos ch ch2 ch3) = prom 
-              in PromiseSubroutine id p t cat pos ch ch2 ch3
+            if promiseId prom == name then 
+              let (PromiseS id p _ cat pos ch ch2 ch3) = prom 
+              in PromiseS id p t cat pos ch ch2 ch3
             else prom
 
-      put(symTab, activeScopes, scope, map modifyTypePromise promises)
-      updateType name 1 t
-      checkExpr promise' t
+      put state{proms = map modifyTypePromise promises}
+      updateType name 1 t >> checkExpr promise' t
       checkExprCalls promise' t -- TODO: No se chequean cuando se infiere?
       checkExprForEach promise' t
       return t
@@ -205,7 +204,7 @@ updatePromise name t tf = do
 -------------------------------------------------------------------------------
 updateInfoSubroutine:: Id -> Category -> [(Type,Id)] -> Type -> MonadSymTab ()
 updateInfoSubroutine name cat p t = do
-  (symTab, activeScopes, scopes, promises) <- get
+  state@SymTabState{proms = promises} <- get
   fileCode <- ask
   let paramsF = reverse p
       promise = getPromise name promises
@@ -213,11 +212,11 @@ updateInfoSubroutine name cat p t = do
   when (isJust promise) $ do
     let 
       promise' = fromJust promise
-      paramsP  = getParamsPromise promise'
-      typeP    = getTypePromise promise'
-      c    = getCatPromise promise'
+      paramsP  = promiseParams promise'
+      typeP    = promiseType promise'
+      c        = promiseCat promise'
       l        = zip paramsP paramsF
-      posp     = getPosPromise promise'
+      posp     = promisePos promise'
 
     if any (/=True) [isJust (getTLists [t1,t2]) | ((t1,_),(t2,_)) <- l ] then do
       let               
@@ -240,12 +239,10 @@ updateInfoSubroutine name cat p t = do
           checkExpr promise' t
           checkExprCalls promise' t -- TODO: No se chequean cuando se infiere?
           checkExprForEach promise' t
-          put(symTab, activeScopes, scopes ,filter (\p -> getIdPromise p /= name) promises)
+          put state{proms = filter (\p -> promiseId p /= name) promises}
 
-  updateExtraInfo name cat [Params paramsF]
-  updateType name 1 t
-  updateCategory name 1 cat
-  return ()
+  updateExtraInfoProm name cat [Params paramsF]
+  updateType name 1 t >> updateCategory name 1 cat
 -------------------------------------------------------------------------------
 
 
@@ -299,60 +296,57 @@ getRelatedPromises _                          = []
 -------------------------------------------------------------------------------
 addLateCheckForEach :: Id -> Id -> Expr -> Pos -> [Id] -> MonadSymTab ()
 addLateCheckForEach idp idvar expr p ids = do
-  (symTab, activeScopes, scope, promises) <- get
+  state@SymTabState{symTab = st, currS = s, proms = promises} <- get
   let
-    infos   = lookupInScopes [scope] idvar symTab
+    infos   = lookupInScopes [s] idvar st
     promise = getPromise idp promises
     tlvar   = if isJust infos then
                 let 
-                  isVar symInfo = getCategory symInfo == IterationVariable
+                  isVar symInfo = category symInfo == IterationVariable
                   v             = filter isVar (fromJust infos)
                 in
-                  getType (head v)
+                  symType (head v)
               else 
                 TPDummy
 
   when (isJust promise ) $ do
     let
       nlids = filter (/= idp) ids
-      nlc   = LateCheckPromiseForEach expr idvar tlvar p nlids
+      nlc   = LateCheckPromForE expr idvar tlvar p nlids
       modifyTypePromise prom = 
-        if getIdPromise prom == idp then 
-          let (PromiseSubroutine id p t cat pos ch ch2 ch3) = prom 
-          in PromiseSubroutine id p t cat pos ch ch2 (ch3 ++ [nlc]) 
+        if promiseId prom == idp then 
+          let (PromiseS id p t cat pos ch ch2 ch3) = prom 
+          in PromiseS id p t cat pos ch ch2 (ch3 ++ [nlc]) 
         else prom
 
-    put(symTab, activeScopes, scope , map modifyTypePromise promises)
+    put state{proms = map modifyTypePromise promises}
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
--- rename to addLateCheks
 -- | Actualiza una promesa agregandole un check que se realizara cuando se
 -- actualize su tipo de retorno
 addLateChecks :: Id -> Expr -> [Pos] -> [Id] -> MonadSymTab ()
-addLateChecks name expr lpos lids = do
-  (symTab, activeScopes, scope, promises) <- get
+addLateChecks name e lpos lids = do
+  state@SymTabState{proms = promises} <- get
   let
     promise = getPromise name promises
 
-  when (isJust promise ) $ do
+  when (isJust promise) $ do
     let
       promise'    = fromJust promise
-      checks      = getLateChecksPromise promise'
-      typePromise = getTypePromise promise'
+      checks      = promiseLateCheck promise'
+      typePromise = promiseType promise'
       nlids       = filter (/= name) lids
 
-    unless (isRealType typePromise || any (\c -> getLCPromiseExpr c == expr) checks) $ do
+    unless (isRealType typePromise || any (\c -> expr c == e) checks) $
       let 
-        nlc = LateCheckPromiseSubroutine expr lpos nlids
-        modifyTypePromise prom = 
-          if getIdPromise prom == name then 
-            let (PromiseSubroutine id p t cat pos ch ch2 ch3) = prom 
-            in PromiseSubroutine id p t cat pos (ch ++ [nlc]) ch2 ch3
+        nlc = LateCheckPromS e lpos nlids
+        modifyPromT prom@PromiseS{promiseId = pId, promiseLateCheck = ch} = 
+          if pId == name then prom{promiseLateCheck = ch ++ [nlc]}
           else prom
-
-      put(symTab, activeScopes, scope , map modifyTypePromise promises)
+      in
+      put state{proms = map modifyPromT promises}
 -------------------------------------------------------------------------------
 
 
@@ -412,17 +406,17 @@ addLateChecks name expr lpos lids = do
 -------------------------------------------------------------------------------
 getParamsSubroutineFromSymtab :: Id -> MonadSymTab [(Type, Id)]
 getParamsSubroutineFromSymtab name = do
-  (symTab, activeScopes, scopes, promises) <- get
+  SymTabState{symTab = st} <- get
   let
-    symInfos = lookupInScopes [1,0] name symTab
+    symInfos = lookupInScopes [1,0] name st
 
   if isJust symInfos then
     let
-      isSubroutine si = getCategory si `elem` [Procedures, Functions]
+      isSubroutine si = category si `elem` [Procedures, Functions]
       subroutine'     = filter isSubroutine (fromJust symInfos)
     in
       if not $  null subroutine' then
-        return $ fromJust $ getParams $ getExtraInfo $ head subroutine'
+        return $ fromJust $ getParams $ extraInfo $ head subroutine'
       else
         error $ "internal error getParamsSubroutineFromSymtab:  " ++ name ++ " not a subroutine"
   else
@@ -442,13 +436,13 @@ checkExprCalls :: Promise -> Type -> MonadSymTab ()
 checkExprCalls promise tr = do 
   fileCode <- ask
   let 
-    name    = getIdPromise promise
-    checks  = getLateCheckOtherCalls promise
+    name    = promiseId promise
+    checks  = otherCallsLateCheck promise
 
     -- params :: [(Expr,Pos)]
-  newcheck' <- forM checks $ \lcp@(LateCheckPromiseCall (Call idPromiseCall paramsCall) relatedIds) -> do
+  newcheck' <- forM checks $ \lcp@(LateCheckPromCall (Call idPromiseCall paramsCall) relatedIds) -> do
 
-    (symTab, activeScopes, scope, promises) <- get
+    SymTabState{proms = promises} <- get
     -- Obtenemos los parametros que se tienen definidos para la función  
     defParamsCall <- getParamsSubroutineFromSymtab idPromiseCall
 
@@ -465,7 +459,7 @@ checkExprCalls promise tr = do
       return (ne,p) 
 
     let 
-      newcheck = LateCheckPromiseCall (Call idPromiseCall newParamsCall ) relatedIds
+      newcheck = LateCheckPromCall (Call idPromiseCall newParamsCall) relatedIds
     
     -- Actualizamos las llamadas en las promesas relacionadas
     lnp <- forM relatedIds $ \idRelated -> do
@@ -475,9 +469,9 @@ checkExprCalls promise tr = do
       if isJust promR then do
         let
           promR' = fromJust promR
-          (PromiseSubroutine idpromR paramspromR typepromR catpromR pospromR checkspromR checksCallspromR checks3) = promR'
+          (PromiseS idpromR paramspromR typepromR catpromR pospromR checkspromR checksCallspromR checks3) = promR'
           nchecksCallspromR = map (\c -> if c == lcp then newcheck else  c) checksCallspromR
-          np = PromiseSubroutine idpromR paramspromR typepromR catpromR pospromR checkspromR nchecksCallspromR checks3
+          np = PromiseS idpromR paramspromR typepromR catpromR pospromR checkspromR nchecksCallspromR checks3
     
         return [np]
       else return []
@@ -488,27 +482,27 @@ checkExprCalls promise tr = do
     when (all (\(t,_) -> t/=TError) nparams && any (\(t,_) -> not $ isRealType t) defParamsCall) $
       updatePromiseArgTypes (fromJust $ getPromise idPromiseCall promises) nparams
       
-    (symTab, activeScopes, scope, promises) <- get
+    state@SymTabState{proms = promises} <- get
     let 
       lnp2           = concat lnp
-      lnpids         = map (\p -> (getIdPromise p, p)) lnp2
-      isToUpdate p   = any (\(id,_) -> id == getIdPromise p) lnpids
-      promTpUpdate p = snd $ head $ filter (\(id,_) -> id == getIdPromise p) lnpids
+      lnpids         = map (\p -> (promiseId p, p)) lnp2
+      isToUpdate p   = any (\(id,_) -> id == promiseId p) lnpids
+      promTpUpdate p = snd $ head $ filter (\(id,_) -> id == promiseId p) lnpids
       modifyTypePromise prom = if isToUpdate prom then promTpUpdate prom else prom
 
-    put(symTab, activeScopes, scope, map modifyTypePromise promises)
+    put state{proms = map modifyTypePromise promises}
     return newcheck
 
   -- TODO :Eliminar solo si se actualiza a un tipo concreto
-  (symTab, activeScopes, scope,promises) <- get
+  state'@SymTabState{proms = promises} <- get
   let 
     modifyTypePromise prom = 
-      if getIdPromise prom == name then 
-        let (PromiseSubroutine id p t cat pos ch ch2 ch3) = prom 
-        in PromiseSubroutine id p t cat pos ch (if isRealType tr then [] else newcheck') ch3
+      if promiseId prom == name then 
+        let (PromiseS id p t cat pos ch ch2 ch3) = prom 
+        in PromiseS id p t cat pos ch (if isRealType tr then [] else newcheck') ch3
       else prom
 
-  put(symTab, activeScopes, scope, map modifyTypePromise promises)
+  put state'{proms = map modifyTypePromise promises}
 -------------------------------------------------------------------------------
 
 
@@ -517,14 +511,14 @@ checkExprForEach :: Promise -> Type -> MonadSymTab ()
 checkExprForEach promise tr = do 
   fileCode <- ask
   let 
-    name    = getIdPromise promise
-    checks  = getLateCheckForEachs promise
+    name    = promiseId promise
+    checks  = forEachLateCheck promise
 
-  newcheck' <- forM checks $ \lcp@(LateCheckPromiseForEach e1 idvar tvar pexpr lids1) -> do
-    (symTab, activeScopes, scope,promises) <- get
+  newcheck' <- forM checks $ \lcp@(LateCheckPromForE e1 idvar tvar pexpr lids1) -> do
+    state@SymTabState{symTab = st, currS = s} <- get
     let
-      newcheck = LateCheckPromiseForEach (updatePromiseInExpr name e1 tr) idvar tvar pexpr lids1
-      ne1      = getLCPromiseForEachExpr newcheck
+      newcheck = LateCheckPromForE (updatePromiseInExpr name e1 tr) idvar tvar pexpr lids1
+      ne1      = expr newcheck
       tne1     = typeE ne1
     
     when (tne1 /= TPDummy) $
@@ -538,12 +532,12 @@ checkExprForEach promise tr = do
         else
           when (isRealType tr && tvar == TPDummy) $
             let
-              varInfo = [SymbolInfo name (baseTypeArrLst tr) scope IterationVariable []]
-              newSymTab = insertSymbols [idvar] varInfo symTab
+              varInfo = [SymbolInfo name (baseTypeArrLst tr) s IterationVariable []]
+              newSymTab = insertSymbols [idvar] varInfo st
             in
-              put (newSymTab, activeScopes, scope, promises)
+              put state{symTab = newSymTab}
 
-    (symTab, activeScopes, scope, promises) <- get
+    state'@SymTabState{proms = promises} <- get
 
     lnp <- forM lids1 $ \idpl -> do
       let
@@ -551,34 +545,34 @@ checkExprForEach promise tr = do
       
       if isJust promise' then do
         let
-          (PromiseSubroutine id2 p2 t2 cat2 pos2 ch2 chcalls ch3) = fromJust promise'
-          nch3 = map (\lcp@(LateCheckPromiseForEach e2 idvar2 tvar2 pexpr2 lids2) ->
-            if e2 == e1 then LateCheckPromiseForEach ne1 idvar2 tvar2 pexpr2 lids2 else lcp) ch3
-          np = PromiseSubroutine id2 p2 t2 cat2 pos2 ch2 chcalls nch3
+          (PromiseS id2 p2 t2 cat2 pos2 ch2 chcalls ch3) = fromJust promise'
+          nch3 = map (\lcp@(LateCheckPromForE e2 idvar2 tvar2 pexpr2 lids2) ->
+            if e2 == e1 then LateCheckPromForE ne1 idvar2 tvar2 pexpr2 lids2 else lcp) ch3
+          np = PromiseS id2 p2 t2 cat2 pos2 ch2 chcalls nch3
     
         return [np]
       else return []
 
     let 
       lnp2           = concat lnp
-      lnpids         = map (\p -> (getIdPromise p, p)) lnp2
-      isToUpdate p   = any (\(id,_) -> id == getIdPromise p) lnpids
-      promTpUpdate p = snd $ head $ filter (\(id,_) -> id == getIdPromise p) lnpids
+      lnpids         = map (\p -> (promiseId p, p)) lnp2
+      isToUpdate p   = any (\(id,_) -> id == promiseId p) lnpids
+      promTpUpdate p = snd $ head $ filter (\(id,_) -> id == promiseId p) lnpids
       modifyTypePromise prom = if isToUpdate prom then promTpUpdate prom else prom
 
-    put(symTab, activeScopes, scope , map modifyTypePromise promises)
+    put state'{proms = map modifyTypePromise promises}
     return newcheck
 
   -- TODO :Eliminar solo si se actualiza a un tipo concreto
-  (symTab, activeScopes, scope,promises) <- get
+  state''@SymTabState{proms = promises} <- get
   let 
     modifyTypePromise prom = 
-      if getIdPromise prom == name then 
-        let (PromiseSubroutine id p t cat pos ch ch2 ch3) = prom 
-        in PromiseSubroutine id p t cat pos ch ch2 (if isRealType tr then [] else newcheck')
+      if promiseId prom == name then 
+        let (PromiseS id p t cat pos ch ch2 ch3) = prom 
+        in PromiseS id p t cat pos ch ch2 (if isRealType tr then [] else newcheck')
       else prom
 
-  put(symTab, activeScopes, scope, map modifyTypePromise promises)
+  put state''{proms = map modifyTypePromise promises}
 -------------------------------------------------------------------------------
 
 
@@ -591,16 +585,16 @@ checkExpr :: Promise -> Type-> MonadSymTab ()
 checkExpr promise tr = do
   fileCode <- ask
   let 
-    name    = getIdPromise promise
-    -- params  = getParamsPromise promise
-    checks  = getLateChecksPromise promise
+    name    = promiseId promise
+    -- params  = promiseParams promise
+    checks  = promiseLateCheck promise
 
-  newcheck' <- forM checks $ \(LateCheckPromiseSubroutine e1 lpos1 lids1) -> do
+  newcheck' <- forM checks $ \(LateCheckPromS e1 lpos1 lids1) -> do
 
-    (symTab, activeScopes, scope,promises) <- get
+    state@SymTabState{proms = promises} <- get
     let
-      newcheck = LateCheckPromiseSubroutine (updatePromiseInExpr name e1 tr) lpos1 lids1
-      ne1 = getLCPromiseExpr newcheck
+      newcheck = LateCheckPromS (updatePromiseInExpr name e1 tr) lpos1 lids1
+      ne1 = expr newcheck
       tne1 = typeE ne1
     
     checkLateCheck ne1 lpos1
@@ -611,34 +605,34 @@ checkExpr promise tr = do
       
       if isJust promise' then do
         let
-          (PromiseSubroutine id2 p2 t2 cat2 pos2 ch2 chcalls ch3) = fromJust promise'
-          nch2 = map (\lcp@(LateCheckPromiseSubroutine e2 lpos2 lids2) ->
-            if e2 == e1 then LateCheckPromiseSubroutine ne1 lpos2 lids2 else lcp) ch2
-          np = PromiseSubroutine id2 p2 t2 cat2 pos2 nch2 chcalls ch3
+          (PromiseS id2 p2 t2 cat2 pos2 ch2 chcalls ch3) = fromJust promise'
+          nch2 = map (\lcp@(LateCheckPromS e2 lpos2 lids2) ->
+            if e2 == e1 then LateCheckPromS ne1 lpos2 lids2 else lcp) ch2
+          np = PromiseS id2 p2 t2 cat2 pos2 nch2 chcalls ch3
 
         return [np]
       else return []
 
     let 
       lnp2           = concat lnp
-      lnpids         = map (\p -> (getIdPromise p, p)) lnp2
-      isToUpdate p   = any (\(id,_) -> id == getIdPromise p) lnpids
-      promTpUpdate p = snd $ head $ filter (\(id,_) -> id == getIdPromise p) lnpids
+      lnpids         = map (\p -> (promiseId p, p)) lnp2
+      isToUpdate p   = any (\(id,_) -> id == promiseId p) lnpids
+      promTpUpdate p = snd $ head $ filter (\(id,_) -> id == promiseId p) lnpids
       modifyTypePromise prom = if isToUpdate prom then promTpUpdate prom else prom
 
-    put(symTab, activeScopes, scope , map modifyTypePromise promises)
+    put state{proms = map modifyTypePromise promises}
     return newcheck
 
   -- TODO :Eliminar solo si se actualiza a un tipo concreto
-  (symTab, activeScopes, scope,promises) <- get
+  state'@SymTabState{proms = promises} <- get
   let 
     modifyTypePromise prom = 
-      if getIdPromise prom == name then 
-        let (PromiseSubroutine id p t cat pos ch ch2 ch3) = prom 
-        in PromiseSubroutine id p t cat pos (if isRealType tr then [] else newcheck') ch2 ch3
+      if promiseId prom == name then 
+        let (PromiseS id p t cat pos ch ch2 ch3) = prom 
+        in PromiseS id p t cat pos (if isRealType tr then [] else newcheck') ch2 ch3
       else prom
 
-  put(symTab, activeScopes, scope, map modifyTypePromise promises)
+  put state'{proms = map modifyTypePromise promises}
 -------------------------------------------------------------------------------
 
 
@@ -869,44 +863,44 @@ y se acaba de inferir un tipo más especifico. Ejemplo, puntero a algo -> punter
 updatePromiseArgTypes :: Promise -> [(Type,Pos)] -> MonadSymTab ()
 updatePromiseArgTypes promise nparams  = do
   let  
-    name      = getIdPromise promise
+    name      = promiseId promise
     extraInfo = Params [(t,show i)| ((t,_),i) <- zip nparams [1..]]
 
-  (symTab, activeScopes, scope,promises) <- get
+  state@SymTabState{proms = promises} <- get
   let 
     modifyTypePromise prom = 
-      if getIdPromise prom == name then 
-        let (PromiseSubroutine id params t cat pos ch ch2 ch3) = prom 
-        in PromiseSubroutine id nparams t cat pos ch ch2 ch3
+      if promiseId prom == name then 
+        let (PromiseS id params t cat pos ch ch2 ch3) = prom 
+        in PromiseS id nparams t cat pos ch ch2 ch3
       else prom
   
   -- Actualizamos los tipos de los argumentos en la promesa
-  put(symTab, activeScopes, scope, map modifyTypePromise promises)
+  put state{proms = map modifyTypePromise promises}
 
   -- Actualizamos los tipos de los argumentos en la tabla de simbolos
-  updateExtraInfo name (getCatPromise promise) [extraInfo]
+  updateExtraInfoProm name (promiseCat promise) [extraInfo]
 
 
 addLateCheckCall :: Id -> Subroutine -> [Id] -> MonadSymTab ()
 addLateCheckCall id call relatedIds = do
-  (symTab, activeScopes, scope,promises) <- get
+  state@SymTabState{proms = promises} <- get
   let  
     promise = fromJust $ getPromise id promises
 
   let 
-    newCheckCall = LateCheckPromiseCall call (filter (/=id) relatedIds)
+    newCheckCall = LateCheckPromCall call (filter (/=id) relatedIds)
     modifyTypePromise prom = 
-      if getIdPromise prom == id then 
-        let (PromiseSubroutine id params t cat pos ch ch2 ch3) = prom 
-        in PromiseSubroutine id params t cat pos ch (ch2 ++ [newCheckCall]) ch3
+      if promiseId prom == id then 
+        let (PromiseS id params t cat pos ch ch2 ch3) = prom 
+        in PromiseS id params t cat pos ch (ch2 ++ [newCheckCall]) ch3
       else prom
   
   -- Actualizamos los tipos de los argumentos en la promesa
-  put(symTab, activeScopes, scope, map modifyTypePromise promises)
+  put state{proms = map modifyTypePromise promises}
 
 updatePromiseLateChecksCalls :: Subroutine -> [(Type,Pos)] ->MonadSymTab ()
 updatePromiseLateChecksCalls callf@(Call namef params) nparams = do
-  (_, _, _,promises) <- get
+  SymTabState{proms = promises} <- get
   let
     exprs       = map fst params
     relatedIds  = map getRelatedPromises exprs
@@ -921,7 +915,7 @@ updatePromiseLateChecksCalls callf@(Call namef params) nparams = do
   when (isJust promise) $ do
     let 
       promise' = fromJust promise
-      paramsPromise = getParamsPromise promise'
+      paramsPromise = promiseParams promise'
     when (any (\(t,_) -> not (isRealType t)) paramsPromise)  $
       -- Si tiene una promesa y hay al menos un tipo sin inferir
       updatePromiseArgTypes (fromJust promise) nparams

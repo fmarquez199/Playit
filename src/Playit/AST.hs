@@ -8,9 +8,9 @@
 -}
 module Playit.AST where
 
-import Control.Monad (when,unless,forM,forM_)
+import Control.Monad           (when,unless,forM,forM_)
 import Control.Monad.Trans.RWS
-import Data.Maybe (fromJust,isJust,isNothing,fromMaybe)
+import Data.Maybe              (fromJust,isJust,isNothing,fromMaybe)
 import Playit.AuxFuncs
 import Playit.CheckAST
 import Playit.Errors
@@ -41,22 +41,22 @@ program i =
 -- | Creates variables ids node
 var :: Id -> Pos -> MonadSymTab (Var,Pos)
 var id p = do
-  (symTab, activeScopes, _, _) <- get
+  SymTabState{symTab = st, actS = activeScopes} <- get
   fileCode <- ask
   let
-    infos = lookupInScopes activeScopes id symTab
+    infos = lookupInScopes activeScopes id st
     vErr  = (Var id TError, p)
 
   if isJust infos then
     let 
-      vars = [Variables,IterationVariable,Parameters Value,Parameters Reference]
-      isVar symInfo = getCategory symInfo `elem` vars
-      v             = filter isVar (fromJust infos)
+      vars    = [Variables,IterationVariable,Parameters Value,Parameters Reference]
+      isVar s = category s `elem` vars
+      v       = filter isVar (fromJust infos)
     in
       if null v then
         tell [errorMsg "This is not a variable" fileCode p] >> return vErr
       else
-        return (Var id (getType $ head v), p)
+        return (Var id (symType $ head v), p)
   else
     tell [errorMsg "Variable not declared in active scopes" fileCode p] >> return vErr
 -------------------------------------------------------------------------------
@@ -117,7 +117,7 @@ indexList (var,pVar) (expr,pExpr)
 -- | Creates the registers / unions fields
 field :: (Var,Pos) -> Id -> Pos -> MonadSymTab (Var,Pos)
 field (var,pVar) field pField = do
-  (symTab, _, _, promises) <- get
+  SymTabState{symTab = st, proms = promises} <- get
   fileCode                 <- ask
   
   -- Verify type 'var' is register / union
@@ -136,7 +136,7 @@ field (var,pVar) field pField = do
   else
     --chequearTipo reg p
     
-    let info = lookupInSymTab field symTab
+    let info = lookupInSymTab field st
     in
       if isJust info then
         let
@@ -146,7 +146,7 @@ field (var,pVar) field pField = do
         in
           if null symbols then tell [noField] >> return (err, pField)
           else
-            return (Field var field (getType $ head symbols), pField)
+            return (Field var field (symType $ head symbols), pField)
       else
         let
           promise = getPromise reg promises
@@ -178,9 +178,9 @@ desref (var,p) = do
 -- | Creates the TNew type
 newType :: Id -> Pos -> MonadSymTab Type
 newType tName p = do
-  (symTab, _, _, _) <- get
+  SymTabState{symTab = st} <- get
   fileCode          <- ask
-  msg               <- checkNewType tName p symTab fileCode
+  msg               <- checkNewType tName p st fileCode
   
   if null msg then return $ TNew tName
   else tell [msg] >> return TError
@@ -234,11 +234,11 @@ increDecreVar op (var,pos) = do
 -- |
 regUnion :: (Id,Pos) -> [(Expr,Pos)] -> MonadSymTab (Expr,Pos)
 regUnion (name,p) e = do
-  (symTab, _, _, _) <- get
-  fileCode          <- ask
+  SymTabState{symTab = st} <- get
+  fileCode                 <- ask
   let
     exprs = map fst e
-    msg   = checkRegUnion name e symTab fileCode p
+    msg   = checkRegUnion name e st fileCode p
 
   if null msg then return (Literal (Register exprs) (TNew name), p)
   else
@@ -628,22 +628,22 @@ while (cond,p) i = do
 call :: Id -> Params -> Pos -> MonadSymTab (Subroutine,Pos)
 call subroutine args p = do
 
-  (symTab, activeScopes, scopes, promises) <- get
+  SymTabState{symTab = st} <- get
   fileCode <- ask
   let
-    symInfos = lookupInScopes [1,0] subroutine symTab
+    symInfos = lookupInScopes [1,0] subroutine st
     sub      = (Call subroutine args, p)
   
   if isJust symInfos then
     let
-      isSubroutine si = getCategory si `elem` [Procedures, Functions]
+      isSubroutine si = category si `elem` [Procedures, Functions]
       subroutine'     = filter isSubroutine (fromJust symInfos)
     in
       if null subroutine' then
         tell [errorMsg "This is not a subroutine" fileCode p] >> return sub
       else do
         let 
-          extraInfoF = getExtraInfo $ head subroutine'
+          extraInfoF = extraInfo $ head subroutine'
           params     = fromJust $ getParams extraInfoF
           nParams    = length params
           nArgs      = length args          
@@ -687,35 +687,35 @@ call subroutine args p = do
 
 -------------------------------------------------------------------------------
 procCall:: (Subroutine,Pos) -> MonadSymTab Instr
-procCall (procedure@(Call name args), p) = do
-
-  (symTab, activeScopes, scope, promises) <- get
+procCall (proc@(Call name args), p) = do
+  state@SymTabState{symTab = st, proms = promises} <- get
   fileCode <- ask
-  let symInfos = lookupInScopes [1,0] name symTab
+  let symInfos = lookupInScopes [1,0] name st
   
+-- Si esta definido, verificar que es procedimiento
   if isJust symInfos then
     let
-      isProcedure symInfo = getCategory symInfo == Procedures
-      procedure' = filter isProcedure (fromJust symInfos)
-      msg        = errorMsg ("'" ++ name ++ "' is not a procedure"++show symInfos) fileCode p
+      isProc s = category s == Procedures
+      proc'    = filter isProc (fromJust symInfos)
+      msg      = errorMsg ("'" ++ name ++ "' is not a procedure") fileCode p
     in
-      if null procedure' then
-        tell [msg] >> return (ProcCall procedure TError)
+      if null proc' then
+        tell [msg] >> return (ProcCall proc TError)
       else
-        return $ ProcCall procedure TVoid
-
+        return $ ProcCall proc TVoid
+-- Sino, es una promesa.
   else do
     let
       nparams     = map (\(e,p) -> (typeE e,p)) args 
       extraInfo   = Params [(typeE e,show i)| ((e,p),i) <- zip args [1..]]
       newProc     = [SymbolInfo name TVoid 1 Procedures [extraInfo]]
-      newProm     = PromiseSubroutine name nparams TVoid Procedures p [] [] []
+      newProm     = PromiseS name nparams TVoid Procedures p [] [] []
       newPromises = promises ++ [newProm]
-      newSymTab   = insertSymbols [name] newProc symTab
+      newSymTab   = insertSymbols [name] newProc st
 
-    put (newSymTab, activeScopes, scope, newPromises)
-    updatePromiseLateChecksCalls procedure nparams
-    return $ ProcCall procedure TVoid
+    put state{symTab = newSymTab, proms = newPromises}
+    updatePromiseLateChecksCalls proc nparams
+    return $ ProcCall proc TVoid
 -------------------------------------------------------------------------------
 
 
@@ -724,35 +724,35 @@ procCall (procedure@(Call name args), p) = do
 -- NOTE: Its already verified that subroutine's defined with 'call', because
 --      its excuted first
 funcCall :: (Subroutine,Pos) -> MonadSymTab (Expr,Pos)
-funcCall (function@(Call name args), p) = do
-
-  (symTab, activeScopes, scope, promises) <- get
+funcCall (func@(Call name args), p) = do
+  state@SymTabState{symTab = st, proms = promises} <- get
   fileCode <- ask
-  let symInfos = lookupInScopes [1,0] name symTab
-  
+  let symInfos = lookupInScopes [1,0] name st
+
+-- Si esta definido, verificar que es funcion
   if isJust symInfos then
     let 
-      isFunction symInfo = getCategory symInfo == Functions
-      function' = filter isFunction (fromJust symInfos)
-      msg       = errorMsg ("'" ++ name  ++ "' is not a function") fileCode p
+      isFunc s = category s == Functions
+      func'    = filter isFunc (fromJust symInfos)
+      msg      = errorMsg ("'" ++ name  ++ "' is not a function") fileCode p
     in
-      if null function' then
-        tell [msg] >> return (FuncCall function TError, p)
+      if null func' then
+        tell [msg] >> return (FuncCall func TError, p)
       else
-        return (FuncCall function (getType $ head function'), p)
-
+        return (FuncCall func (symType $ head func'), p)
+-- Sino, es una promesa.
   else do
     let
       nparams     = map (\(e,p) -> (typeE e,p)) args
       extraInfo   = Params [(typeE e,show i)| ((e,p),i) <- zip args [1..]]
       newFunc     = [SymbolInfo name TPDummy 1 Functions [extraInfo]]
-      newProm     = PromiseSubroutine name nparams TPDummy Functions p [] [] []
+      newProm     = PromiseS name nparams TPDummy Functions p [] [] []
       newPromises = promises ++ [newProm]
-      newSymTab   = insertSymbols [name] newFunc symTab
+      newSymTab   = insertSymbols [name] newFunc st
 
-    put (newSymTab, activeScopes, scope, newPromises)
-    updatePromiseLateChecksCalls function nparams
-    return (FuncCall function TPDummy, p)
+    put state{symTab = newSymTab, proms = newPromises}
+    updatePromiseLateChecksCalls func nparams
+    return (FuncCall func TPDummy, p)
 -------------------------------------------------------------------------------
 
 
@@ -803,8 +803,8 @@ read' (e, pe) p = do
       return (Read e TError, p)
 -------------------------------------------------------------------------------
 
-{-Esta funcion se encarga de verificar que el tipo de la expresión del tamaño de un 
-array sea entero--}
+{- Esta funcion se encarga de verificar que el tipo de la expresión del tamaño
+  de un array sea entero--}
 tArray :: (Expr, Pos) -> Type -> MonadSymTab Type
 tArray (e,p) t
   | te == TInt  = return $ TArray e t
@@ -833,10 +833,10 @@ tArray (e,p) t
 -- | Creates the free memory instruction node
 free :: Id -> Pos -> MonadSymTab Instr
 free var p = do
-  (symTab, activeScopes, _, _) <- get
+  SymTabState{symTab = st, actS = activeScopes} <- get
   fileCode <- ask
   let
-    infos = lookupInScopes activeScopes var symTab
+    infos = lookupInScopes activeScopes var st
     msg   = errorMsg "Variable not declared in active scopes" fileCode p
   
   if isJust infos then return $ Free var TVoid

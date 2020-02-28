@@ -1,0 +1,102 @@
+
+Inventory Contacto:
+
+.~
+
+boss casosPromesas() :
+    Battle bool
+    Rune char
+    @ kill entero1() = TPDummy
+    Skill float
+    Power int
+    Runes string
+    Contacto registro @ Registro
+    @ Null
+
+    Kit of Battle listOfBool
+    Kit of Rune listOfChar
+    Kit of Skill listOfFloat
+    Kit of Power listOfInt
+    Kit of Runes listOfString
+    Kit of Contacto listOfRegisters
+
+    Kit of Kit of Battle listOfListOfBool
+    Kit of Kit of Rune listOfListOfChar
+    Kit of Kit of Skill listOfListOfFloat
+    Kit of Kit of Power listOfListOfInt
+    Kit of Kit of Runes listOfListOfStrings
+    Kit of Kit of Contacto listOfListOfRegister
+
+
+    Battle puff pointerToBool
+    Rune puff  pointerToChar
+    Skill puff  pointerToFloat
+    Power puff  pointerToInt
+    Runes puff  pointerToString
+    Contacto puff  pointerToRegister 
+
+    Kit of (Battle puff) listOfPointerToBool
+    Kit of (Rune puff) listOfPointerToChar
+    Kit of (Skill puff) listOfPointerToFloat
+    Kit of (Power puff) listOfPointerToInt
+    Kit of (Runes puff) listOfPointerToString
+    Kit of (Contacto puff) listOfPointerToRegister
+
+    Kit of Kit of (Battle puff) listOfListOfPointerToBool
+    Kit of Kit of (Rune puff) listOfListOfPointerToChar
+    Kit of Kit of (Skill puff) listOfListOfPointerToFloat
+    Kit of Kit of (Power puff) listOfListOfPointerToInt
+    Kit of Kit of (Runes puff) listOfListOfPointerToString
+    Kit of Kit of (Contacto puff) listOfListOfPointerToRegister
+
+    Kit of Battle puff pointerToListOfBattle
+    Kit of Rune puff pointerToListOfChar
+    Kit of Skill puff pointerToListOfFloat
+    Kit of Power puff pointerToListOfInt
+    Kit of Runes puff pointerToListOfString
+    Kit of Contacto puff pointerToListOfRegister
+
+    "' No deberían dar problemas'"
+    
+    bool = Win ? bool : bool
+    listOfChar = Win ? <<>> : listOfChar
+    listOfPointerToBool = Win ? <<DeathZone>> : <<>>
+
+    listOfPointerToBool = Win ? <<DeathZone>> : kill f1()
+
+    listOfPointerToBool = kill f2() ? <<DeathZone>> : kill f1()
+
+
+    @No corre bien
+    listOfPointerToBool =  (((kill f3() : kill f4()) :: <<kill f5()>>) == kill f6()) ? listOfPointerToBool:listOfPointerToBool
+
+
+    Kit of  Kit of (Skill puff) t
+    t  = kill f1() : kill f6()
+.~
+
+monster f1() Kit of (Skill puff):
+
+.~
+monster f2() Battle:
+
+.~
+monster f3() Kit of (Skill puff):
+
+.~
+monster f4() Kit of (Skill puff):
+
+.~
+monster f5() Kit of (Skill puff):
+
+.~
+monster f6() Kit of  Kit of (Skill puff):
+
+.~
+
+
+
+world %PromesasIfSimple%:
+
+
+.~

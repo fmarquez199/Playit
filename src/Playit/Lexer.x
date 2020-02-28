@@ -99,7 +99,7 @@ tokens :-
 
   -- Characters
   @char               { createTkCHARACTER }
-  @strings            { tok (\(AlexPn _ f c) tk -> TkSTRINGS tk (f,c)) }
+  @strings            { createTkSTRING }
   
   -- Numeric literals
   $digits+            { createTkINT }
@@ -189,6 +189,9 @@ createTkFLOAT (AlexPn _ f c) tk = TkFLOAT tk (f,c) (toFloat tk)
     where
       toFloat f = (read (map (\x-> if x == '\'' then '.' else x) f)::Float)
 
+createTkSTRING (AlexPn _ f c) tk = TkSTRINGS tk  (f,c) (tail $ init tk)
+  -- where
+  --   toString s = tail $ init $ s
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
@@ -230,10 +233,10 @@ data Token =
   TkProgramName      { getTk :: Id, getPos :: Pos }                  |
   TkID               { getTk :: Id, getPos :: Pos }                  |
   TkIDType           { getTk :: Id, getPos :: Pos }                  |
-  TkCHARACTER        { getTk :: Id, getPos :: Pos, getTkChar :: Char } |
-  TkSTRINGS          { getTk :: Id, getPos :: Pos }                  |
-  TkINT              { getTk :: Id, getPos :: Pos, getTkInt :: Int }   |
-  TkFLOAT            { getTk :: Id, getPos :: Pos, getTkFloat::Float } |
+  TkCHARACTER        { getTk :: Id, getPos :: Pos, getTkChar ::Char }   |
+  TkSTRINGS          { getTk :: Id, getPos :: Pos, getTkStr  ::String } |
+  TkINT              { getTk :: Id, getPos :: Pos, getTkInt  ::Int }    |
+  TkFLOAT            { getTk :: Id, getPos :: Pos, getTkFloat::Float }  |
   TkFIN              { getTk :: Id, getPos :: Pos }                  |
   TkADD              { getTk :: Id, getPos :: Pos }                  |
   TkMIN              { getTk :: Id, getPos :: Pos }                  |
@@ -319,8 +322,8 @@ instance Show Token where
   show (TkProgramName tk p)      = showTk tk p
   show (TkID tk p)               = "Identifier \"" ++ tk ++ "\", pos " ++ show p
   show (TkIDType tk p)           = "Type identifier \"" ++ tk ++ "\", pos " ++ show p
-  show (TkCHARACTER tk p _)       = "Character '" ++ tk ++ "', pos " ++ show p
-  show (TkSTRINGS tk p)          = "String \"" ++ tk ++ "\", pos " ++ show p
+  show (TkCHARACTER tk p _)      = "Character '" ++ tk ++ "', pos " ++ show p
+  show (TkSTRINGS tk p _)        = "String \"" ++ tk ++ "\", pos " ++ show p
   show (TkINT tk p _)            = "Integer " ++ tk ++ ", pos " ++ show p
   show (TkFLOAT tk p _)          = "Float " ++ tk ++ ", pos " ++ show p
   show (TkFIN tk p)              = showTk tk p
