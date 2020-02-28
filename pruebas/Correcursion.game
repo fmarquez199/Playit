@@ -7,7 +7,7 @@ monster f2() Power:
     Battle bool
 
     @ Prc promesa 
-    bool = ( << << 2'2 >> >> :: << << kill f() >> >> == kill f3()) ? Win : Lose
+    bool = ( << << 2 >> >> :: << << kill f'() >> >> == kill g'()) ? Win : Lose
 
     @ Comentar para mostrar error de return
     unlock 1
@@ -40,7 +40,7 @@ monster entero2() Rune:
 
 @ For each con promesas
 monster f'() Power:
-  controller i <- kill g'():
+  controller Power i <- kill g'():
   .~
   unlock 10
   @unlock i you cant return an iter var

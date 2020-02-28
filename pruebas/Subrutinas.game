@@ -1,16 +1,16 @@
 boss b("'Power i, Power i'"):
-    drop ~Nada~@, *!*
+  drop ~Nada~@, *!*
 .~
 monster m() Power:
-    Power i = 0
-    unlock i
+  Power i = 0
+  unlock i
 .~
 
 world %subrutinas%:
     
-    @m = 5 @ m declarada pero no es variable
+  @m = 5 @ m declarada pero no es variable
 
-    Power m = kill m()
-    
-    @Power b = kill b() @ b no es una func
+  Power m = kill m()
+  
+  @Power b = kill b() @ b no es una func
 .~

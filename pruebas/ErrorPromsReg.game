@@ -1,0 +1,22 @@
+Inventory Canasta:
+    Manzana m
+.~
+
+monster suma() Manzana :
+  Manzana m
+  m spawn c = 2
+  Compota a
+  Pera b
+
+  unlock m
+.~
+
+Inventory Manzana :
+  Canasta c
+  Power peso
+.~
+
+
+world %ErrPromesasReg%:
+  
+.~

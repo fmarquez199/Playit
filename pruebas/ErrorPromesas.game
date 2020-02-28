@@ -2,40 +2,31 @@ monster suma(Power a , Power b) Power :
 
   Power e
   Power puff pe
-
-  @e = -(-kill f1() + -kill f2())
-  @pe = kill f1()
-
-  @Power|}#kill f4(){| ap
-  
   Power bb
   Skill ss
-
-  bb = (#(kill f2() : kill f1()) > 3)? 3:4
-
-  @ss = kill f2()
-  @ss = kill f2()
-
   Kit of Power ls
-  @ls = kill f1()
-
   Runes s
-  s  = joystick (kill f2())
 
-  Button:
-  | kill fasd()::kill fasd() }
-    Power a = 2
-  .~
+  @ Error f1 y f2 no definidas
+  @ e = -(-kill f1() + -kill f2())
+  @ pe = kill f1()
+  @ bb = (#(kill f2() : kill f1()) > 3)? 3:4
+  @ ss = kill f2()
+  @ ss = kill f2()
+  @ ls = kill f1()
+  @ s  = joystick (kill f2())
 
-  Power puff ppp
-  @ppp++
+  @ Error f4 no defnida, inferir tipo de retorno como array o lista
+  @ Power|}#kill f4(){| ap  
 
-  Battle bool
+  @ Button:
+  @ | kill fasd()::kill fasd() } Power a = 2
+  @ .~
 
-  bool = ! bool
   @ FALTA CONSIDERAR MÁS TARRAY PARA PROMESAS
   @ FALTA EN LATECHECKS Y ACTUALIzACIONES DE EXPRESIONES
   @ PROBLEMA VIENE PORQUE ADMITIMOS ARRAYS |) 1,2,3,3(| COMO UNA EXPRESIÓN EN CUALQUIER LADO
+  unlock 0
 .~
 
 world %ErrPromesas%:

@@ -26,9 +26,10 @@ world %ArrLst%:
   f = |)cn,cn,cn(|
 
   (Kit of Power)|}3{| g @array de listas de enteros
-  g = |)kill f1(),kill f2(),kill f3()(|
-
-  Power|}#kill f4(){| ap
+  
+  @ Error funciones no def. OK
+  @ g = |)kill f1(),kill f2(),kill f3()(|
+  @ Power|}#kill f4(){| ap
 
   (Power puff)|}3{| h @ array de punteros a enteros
   Power puff p
@@ -37,8 +38,8 @@ world %ArrLst%:
 
   @ array de punteros a listas de punteros a listas de punteros a enteros
   (( Kit of ((Kit of (Power puff)) puff)) puff)|}3{| i 
+  ( Kit of ((Kit of (Power puff)) puff)) puff pp
   i = |)pp,pp,pp(|
   @i = |)pp,DeathZone,pp(|
 
-  ( Kit of ((Kit of (Power puff)) puff)) puff pp
 .~

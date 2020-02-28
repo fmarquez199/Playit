@@ -63,7 +63,6 @@ world %casos_binary%:
  
     "' Deberían dar error cualquier tipo distinto de bool && ||'"
     @bool = char && char
-
     @bool = char && int
 
     "' No deberían dar problemas para el mismo tipo comparable == /= '"
@@ -88,7 +87,6 @@ world %casos_binary%:
     bool =listOfListOfInt == listOfListOfInt
     bool =listOfListOfStrings == listOfListOfStrings
     bool = listOfListOfRegister== listOfListOfRegister
-
 
     bool = pointerToBool== pointerToBool
     bool =pointerToChar == pointerToChar
@@ -182,7 +180,6 @@ world %casos_binary%:
     bool = listOfListOfPointerToRegister == <<<<>>>>
 
 
-
     bool = <<>> == <<>>
 
     bool = <<<<>>>> == <<>>
@@ -202,9 +199,7 @@ world %casos_binary%:
     @bool = char == float
     @bool = DeathZone == float
 
-
     @bool = listOfChar == listOfFloat
-
 
     @bool = << <<DeathZone>> , listOfPointerToInt>> == listOfListOfPointerToBool
 
