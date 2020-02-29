@@ -8,10 +8,11 @@
 -}
 module Playit.TAC where
 
-import Control.Monad.IO.Class (liftIO)
-import Control.Monad.Trans.RWS
-import Data.List.Split (splitOn)
-import Data.Maybe (fromJust, isNothing)
+import Control.Monad.IO.Class  (liftIO)
+import Control.Monad           (when,unless)
+import Control.Monad.Trans.RWS (ask,tell,get,put)
+import Data.List.Split         (splitOn)
+import Data.Maybe              (fromJust,isNothing)
 import Playit.AuxFuncs
 import Playit.SymbolTable
 import Playit.Types
@@ -57,17 +58,29 @@ gen i = case i of
 
 -- 
 genAssig :: Var -> Expr -> TACMonad ()
-genAssig var e = do
-  eTemp <- genExpr e
-  vTemp <- genVar var (typeVar var)
-
-  {- 
-    if var.scope == 0 then lo que hice
-    else
-      base/fp[var.offset] := e
-  -}
-
-  tell $ assign vTemp eTemp
+genAssig var e = case typeVar var of
+  TBool -> do
+    next   <- newLabel
+    vTemp  <- genVar var (typeVar var)
+    trueL  <- newLabel
+    falseL <- newLabel
+    genBoolExpr e trueL falseL
+    tell (tacNewLabel trueL)
+    tell (tacAssign vTemp $ tacConstant ("True",TBool))
+    tell (tacGoto next)
+    tell (tacNewLabel falseL)
+    tell (tacAssign vTemp $ tacConstant ("False",TBool))
+    tell (tacNewLabel next)
+  TNew n -> return ()
+  _ -> do
+    eTemp <- genExpr e
+    vTemp <- genVar var (typeVar var)
+    {- 
+      if var.scope == 0 then lo que hice
+      else
+        base/fp[var.offset] := e
+    -}
+    tell $ tacAssign vTemp eTemp
 
 
 -- -- 
@@ -325,21 +338,64 @@ genAssig var e = do
 
 genExpr :: Expr -> TACMonad TACOP
 genExpr e = case e of
-  (Literal l t)         -> genLiteral l t
-  (Variable v t)        -> genVar v t
-  (Unary u e t)         -> genUnOp u e t
-  -- (Binary b e1 e2 t)    -> genBinOp b e1 e2 t
-  -- (IfSimple eB eT eF t) -> genTerOp eB eT eF t
-  -- (ArrayList es t)      -> genArrayList es t
-  -- Null                  -> genNull
-  -- (Read e _)            -> genRead e
-  -- (FuncCall s _)        -> genFuncCall s
-  -- (IdType t)            -> genType t
+  Literal l t         -> genLiteral l t
+  Variable v t        -> genVar v t
+  Unary u e t         -> genUnOp u e t
+  Binary b e1 e2 t    -> genBinOp b e1 e2 t
+  -- IfSimple eB eT eF t -> genTerOp eB eT eF t
+  -- ArrayList es t      -> genArrayList es t
+  -- Null                -> genNull
+  -- Read e _            -> genRead e
+  -- FuncCall s _        -> genFuncCall s
+  -- IdType t            -> genType t
   _ -> return Nothing
 
 
+genBoolExpr :: Expr -> TACOP -> TACOP -> TACMonad ()
+genBoolExpr e trueL falseL =  
+  case e of
+    Literal (Boolean True) _  -> unless (isFall trueL) $ tell (tacGoto trueL)
+    Literal (Boolean False) _ -> unless (isFall falseL) $ tell (tacGoto falseL)
+    Unary Not e _             -> genBoolExpr e falseL trueL
+  -- Variables
+  -- Comparators
+    Binary op e1 e2 _ | op `elem` [Greater,GreaterEq,Less,LessEq,Eq,NotEq] -> do
+      e1Temp <- genExpr e1
+      e2Temp <- genExpr e2
+      let
+        trueNotFall  = not $ isFall trueL
+        falseNotFall = not $ isFall falseL
+      
+      if trueNotFall && falseNotFall then
+        tell (tac (binOpToTACOP op) e1Temp e2Temp trueL) >> tell (tacGoto falseL)
+      else
+        if trueNotFall then tell (tac (binOpToTACOP op) e1Temp e2Temp trueL)
+        else
+          when falseNotFall $
+            tell (tac (negation $ binOpToTACOP op) e1Temp e2Temp falseL)
+  -- Conjunction and disjunction
+    Binary op e1 e2 _ | op `elem` [And,Or] -> do
+      e1TrueL <- -- for `or` we need to generate a new `true` label if the current is `fall`
+        if op == Or then if isFall trueL then newLabel else return trueL
+        else return fall
+      e1FalseL <-
+        if op == And then if isFall falseL then newLabel else return falseL
+        else return fall
+      
+      genBoolExpr e1 e1TrueL e1FalseL
+      genBoolExpr e2 trueL falseL
+      if op == And then
+        when (isFall falseL) $ tell (tacNewLabel e1FalseL)
+      else
+        when (isFall trueL) $ tell (tacNewLabel e1TrueL)
+  -- Functions
+  -- 
+    e -> error $ "Unexpected boolean expression:  " ++ show e
+
+
+
 -- -- 
--- genNull :: MTACExpr
+-- genNull :: TACMonad TACOP
 -- genNull = do
 --   Operands{offS = actO:_} <- get
 --   let pointer = tacVariable $ SymbolInfo "$null" TNull (-1) Constants actO []
@@ -353,48 +409,48 @@ genExpr e = case e of
 -}
 genLiteral :: Literal -> Type -> TACMonad TACOP
 genLiteral l typeL = do
-  -- pushOffset (getWidth typeL)
+  -- actO <- pushOffset (getWidth typeL)
   -- lv   <- newTemp actO
   -- pushLiteral l lv
   -- let
   
   case l of
-{-
-    ArrLst elems -> do
-      let
-        len   = length elems - 1
-        tArr  = typeArrLst typeL
-        tArrW = getWidth tInfo tArr
-        tInfo = head . fromJust $ lookupInSymTab (show tArr) st
-        osi   = zip (replicate (len + 1) (fst actO)) [(snd actO)..(len * tArrW)]
-        newOS = (fst actO, (len + 1) * tArrW) : os
-        lvi o = tacVariable $ SymbolInfo t tArr (-1) TempReg o []
-        lit x = elems !! x
-        rvi x = tacConstant (show (lit x), tArr)
-        idx i = tacConstant (show i, tArr)
-        arrL  = [T.TACC T.Set (lvi o) (idx x) (rvi x) | (x,o) <- zip [0..len] osi]
-      
-      put state{temps = newTS, lits = newLS, offS = newOS}
-      return (arrL, lv)
-    Str s -> do
-      let
-        len   = length s - 1
-        strW  = getWidth tInfo TChar
-        tInfo = head . fromJust $ lookupInSymTab (show TChar) st
-        osi   = zip (replicate (len + 1) (fst actO)) [(snd actO)..len]
-        newOS = (fst actO, len + 1) : os
-        lvi o = tacVariable $ SymbolInfo t TChar (-1) TempReg o []
-        ch  x = s !! x
-        rvi x = tacConstant (show (ch x), TChar)
-        idx i = tacConstant (show i, TChar)
-        str   = [T.TACC T.Set (lvi o) (idx x) (rvi x) | (x,o) <- zip [0..len] osi]
-      
-      put state{temps = newTS, lits = newLS, offS = newOS}
-      return (str, lv)
--}
+    {-
+      ArrLst elems -> do
+        let
+          len   = length elems - 1
+          tArr  = typeArrLst typeL
+          tArrW = getWidth tInfo tArr
+          tInfo = head . fromJust $ lookupInSymTab (show tArr) st
+          osi   = zip (replicate (len + 1) (fst actO)) [(snd actO)..(len * tArrW)]
+          newOS = (fst actO, (len + 1) * tArrW) : os
+          lvi o = tacVariable $ SymbolInfo t tArr (-1) TempReg o []
+          lit x = elems !! x
+          rvi x = tacConstant (show (lit x), tArr)
+          idx i = tacConstant (show i, tArr)
+          arrL  = [T.TACC T.Set (lvi o) (idx x) (rvi x) | (x,o) <- zip [0..len] osi]
+        
+        put state{temps = newTS, lits = newLS, offS = newOS}
+        return (arrL, lv)
+      Str s -> do
+        let
+          len   = length s - 1
+          strW  = getWidth tInfo TChar
+          tInfo = head . fromJust $ lookupInSymTab (show TChar) st
+          osi   = zip (replicate (len + 1) (fst actO)) [(snd actO)..len]
+          newOS = (fst actO, len + 1) : os
+          lvi o = tacVariable $ SymbolInfo t TChar (-1) TempReg o []
+          ch  x = s !! x
+          rvi x = tacConstant (show (ch x), TChar)
+          idx i = tacConstant (show i, TChar)
+          str   = [T.TACC T.Set (lvi o) (idx x) (rvi x) | (x,o) <- zip [0..len] osi]
+        
+        put state{temps = newTS, lits = newLS, offS = newOS}
+        return (str, lv)
+    -}
     -- EmptyVal -> return ([T.TACC T.Assign lv rv Nothing], lv)
     -- (Register es) -> return ([T.TACC T.Assign lv rv Nothing], lv)
-    _ -> do
+    _ ->
       return $ tacConstant (show l, typeL)
 
 
@@ -406,10 +462,10 @@ genLiteral l typeL = do
 -}
 genVar :: Var -> Type -> TACMonad TACOP
 genVar var tVar = do
-  actO <- pushOffset (getWidth tVar)
-  lv   <- newTemp actO
-  rv   <- pushVariable var lv actO
-
+  -- actO <- pushOffset (getWidth tVar)
+  -- lv   <- newTemp actO
+  tacVar  <- pushVariable var tVar
+  
   -- let
     -- refVS = M.insert (getRefVar var) lv vs -- var o *var?
     -- deref = ([T.TACC T.Deref lv rv Nothing], lv)
@@ -435,225 +491,64 @@ genVar var tVar = do
     --   else
     --     put state{vars = newVS} >> return ([T.TACC T.Ref lv rv Nothing], lv)
     -- -- Field v f t   -> 
-    _     -> return lv
+    _     -> return tacVar
 
 
 -- 
 -- ISSUE: fromJust Nothing con New para Registros
 genUnOp :: UnOp -> Expr -> Type -> TACMonad TACOP
 genUnOp op e tOp = do
-  actO  <- pushOffset (getWidth tOp)
-  lv    <- newTemp actO
-  rv    <- genExpr e
-  l0    <- newLabel
-  l1    <- newLabel
-  l2    <- newLabel
-  let
-    c0    = tacConstant ("0", TInt)
-    c25   = tacConstant ("25", TInt)
-    c32   = tacConstant ("32", TInt)
-    check = gte lv c0 l0 ++ goto l2 ++ tacNewLabel l0 ++ sub lv rv c25
-    goNew = goto l2 ++ tacNewLabel l1
+  rv   <- genExpr e
+  actO <- pushOffset (getWidth tOp)
+  lv   <- newTemp actO
   
   case op of
-    Length    -> tell (len lv rv)    >> return lv
-    Negative  -> tell (minus lv rv)  >> return lv
-    New       -> tell (new lv rv)    >> return lv
-    Not       -> tell (tacNot lv rv) >> return lv
-    UpperCase -> do
-      tell (sub lv rv $ tacConstant ("97", TInt))
-      tell check
-      tell (gte lv c0 l0)
-      tell goNew
-      tell (sub lv rv c32)
-      tell (tacNewLabel l2)
-      return lv
-    LowerCase -> do
-      tell (sub lv rv $ tacConstant ("65", TInt))
-      tell check
-      tell (lte lv c0 l0)
-      tell goNew
-      tell (add lv rv c32)
-      tell (tacNewLabel l2)
-      return lv
+    Length   -> tell (tacLen lv rv)   >> return lv
+    Negative -> tell (tacMinus lv rv) >> return lv
+    New      -> tell (tacNew lv rv)   >> return lv
+    charOp   -> do
+      l0 <- newLabel
+      l1 <- newLabel
+      l2 <- newLabel
+      let
+        c0    = tacConstant ("0", TInt)
+        c25   = tacConstant ("25", TInt)
+        c32   = tacConstant ("32", TInt)
+        check = tacGte lv c0 l0 ++ tacGoto l2 ++ tacNewLabel l0 ++ tacSub lv rv c25
+        goNew = tacGoto l2 ++ tacNewLabel l1
+
+      if charOp == UpperCase then do
+        tell (tacSub lv rv $ tacConstant ("97", TInt))
+        tell check
+        tell (tacGte lv c0 l0)
+        tell goNew
+        tell (tacSub lv rv c32)
+        tell (tacNewLabel l2)
+        return lv
+      else do
+        tell (tacSub lv rv $ tacConstant ("65", TInt))
+        tell check
+        tell (tacLte lv c0 l0)
+        tell goNew
+        tell (tacAdd lv rv c32)
+        tell (tacNewLabel l2)
+        return lv
 
 
 -- 
--- genBinOp :: BinOp -> Expr -> Expr -> Type -> MTACExpr
--- genBinOp op e1 e2 tOp = do
---   (e1Code,e1Temp) <- genExpr e1
---   (e2Code,e2Temp) <- genExpr e2
---   state@Operands{temps = ts, labs = ls, offS = os@(actO:_), astST = st} <- get
---   let
---     lsn   = length ls
---     t     = "$t" ++ show (M.size ts)
---     lF    = tacLabel lsn
---     rvl   = tacLabel $ lsn + 1
---     tInfo = head . fromJust $ lookupInSymTab (show tOp) st
---     newO  = (fst actO, snd actO + getWidth tInfo tOp)
---     lvt   = tacVariable $ SymbolInfo t tOp (-1) TempReg actO []
---     rv'   = tacVariable $ SymbolInfo t (typeE e1) (-1) TempReg actO []
+genBinOp :: BinOp -> Expr -> Expr -> Type -> TACMonad TACOP
+genBinOp op e1 e2 tOp = do
+  rv1  <- genExpr e1
+  rv2  <- genExpr e2
+  actO <- pushOffset (getWidth tOp)
+  lv   <- newTemp actO
   
---   put state{temps = M.insert t True ts, labs = lsn + 1:lsn:ls, offS = newO : os}
-  
---   case op of
---   -- Aritmethics
---     Add       -> return (e1Code ++ e2Code ++ [T.TACC T.Add lvt e1Temp e2Temp], lvt)
---     DivEntera -> return (e1Code ++ e2Code ++ [T.TACC T.Div lvt e1Temp e2Temp], lvt)
---     Division  -> return (e1Code ++ e2Code ++ [T.TACC T.Div lvt e1Temp e2Temp], lvt)
---     Minus     -> return (e1Code ++ e2Code ++ [T.TACC T.Sub lvt e1Temp e2Temp], lvt)
---     Module    -> return (e1Code ++ e2Code ++ [T.TACC T.Mod lvt e1Temp e2Temp], lvt)
---     Mult      -> return (e1Code ++ e2Code ++ [T.TACC T.Mult lvt e1Temp e2Temp], lvt)
---     _ -> return Nothing
-  -- Booleans
---     And       -> return (e1Code ++ e2Code ++
---       [
---         T.TACC T.If Nothing e1Temp lF,
---         T.TACC T.Assign lvt (tacConstant ("False", TBool)) Nothing,
---         tacGoTo rvl,
---         T.TACC T.NewLabel lF Nothing Nothing,
---         T.TACC T.Assign lvt e2Temp Nothing,
---         T.TACC T.NewLabel rvl Nothing Nothing
---       ], lvt)
---     Or        -> return (e1Code ++ e2Code ++
---       [
---         T.TACC T.If Nothing e1Temp lF,
---         T.TACC T.Assign lvt e2Temp Nothing,
---         tacGoTo rvl,
---         T.TACC T.NewLabel lF Nothing Nothing,
---         T.TACC T.Assign lvt (tacConstant ("True", TBool)) Nothing,
---         T.TACC T.NewLabel rvl Nothing Nothing
---       ], lvt)
---   -- Comparators
---     Greater   -> return (e1Code ++ e2Code ++
---       if typeE e1 == TInt then
---         [
---           T.TACC T.Sub rv' e1Temp e2Temp,
---           T.TACC T.Gt rv' (tacConstant ("0", TInt)) lF,
---           T.TACC T.Assign lvt (tacConstant ("False", TBool)) Nothing,
---           tacGoTo rvl,
---           T.TACC T.NewLabel lF Nothing Nothing,
---           T.TACC T.Assign lvt (tacConstant ("True", TBool)) Nothing,
---           T.TACC T.NewLabel rvl Nothing Nothing
---         ]
---       else
---         [
---           T.TACC T.Sub rv' e1Temp e2Temp,
---           T.TACC T.Gt rv' (tacConstant ("0.0", TFloat)) lF,
---           T.TACC T.Assign lvt (tacConstant ("False", TBool)) Nothing,
---           tacGoTo rvl,
---           T.TACC T.NewLabel lF Nothing Nothing,
---           T.TACC T.Assign lvt (tacConstant ("True", TBool)) Nothing,
---           T.TACC T.NewLabel rvl Nothing Nothing
---         ], lvt)
---     GreaterEq -> return (e1Code ++ e2Code ++
---       if typeE e1 == TInt then
---         [
---           T.TACC T.Sub rv' e1Temp e2Temp,
---           T.TACC T.Gte rv' (tacConstant ("0", TInt)) lF,
---           T.TACC T.Assign lvt (tacConstant ("False", TBool)) Nothing,
---           tacGoTo rvl,
---           T.TACC T.NewLabel lF Nothing Nothing,
---           T.TACC T.Assign lvt (tacConstant ("True", TBool)) Nothing,
---           T.TACC T.NewLabel rvl Nothing Nothing
---         ]
---       else
---         [
---           T.TACC T.Sub rv' e1Temp e2Temp,
---           T.TACC T.Gte rv' (tacConstant ("0.0", TFloat)) lF,
---           T.TACC T.Assign lvt (tacConstant ("False", TBool)) Nothing,
---           tacGoTo rvl,
---           T.TACC T.NewLabel lF Nothing Nothing,
---           T.TACC T.Assign lvt (tacConstant ("True", TBool)) Nothing,
---           T.TACC T.NewLabel rvl Nothing Nothing
---         ], lvt)
---     Less      -> return (e1Code ++ e2Code ++
---       if typeE e1 == TInt then
---         [
---           T.TACC T.Sub rv' e1Temp e2Temp,
---           T.TACC T.Lt rv' (tacConstant ("0", TInt)) lF,
---           T.TACC T.Assign lvt (tacConstant ("False", TBool)) Nothing,
---           tacGoTo rvl,
---           T.TACC T.NewLabel lF Nothing Nothing,
---           T.TACC T.Assign lvt (tacConstant ("True", TBool)) Nothing,
---           T.TACC T.NewLabel rvl Nothing Nothing
---         ]
---       else
---         [
---           T.TACC T.Sub rv' e1Temp e2Temp,
---           T.TACC T.Lt rv' (tacConstant ("0.0", TFloat)) lF,
---           T.TACC T.Assign lvt (tacConstant ("False", TBool)) Nothing,
---           tacGoTo rvl,
---           T.TACC T.NewLabel lF Nothing Nothing,
---           T.TACC T.Assign lvt (tacConstant ("True", TBool)) Nothing,
---           T.TACC T.NewLabel rvl Nothing Nothing
---         ], lvt)
---     LessEq    -> return (e1Code ++ e2Code ++
---       if typeE e1 == TInt then
---         [
---           T.TACC T.Sub rv' e1Temp e2Temp,
---           T.TACC T.Lte rv' (tacConstant ("0", TInt)) lF,
---           T.TACC T.Assign lvt (tacConstant ("False", TBool)) Nothing,
---           tacGoTo rvl,
---           T.TACC T.NewLabel lF Nothing Nothing,
---           T.TACC T.Assign lvt (tacConstant ("True", TBool)) Nothing,
---           T.TACC T.NewLabel rvl Nothing Nothing
---         ]
---       else
---         [
---           T.TACC T.Sub rv' e1Temp e2Temp,
---           T.TACC T.Lte rv' (tacConstant ("0.0", TFloat)) lF,
---           T.TACC T.Assign lvt (tacConstant ("False", TBool)) Nothing,
---           tacGoTo rvl,
---           T.TACC T.NewLabel lF Nothing Nothing,
---           T.TACC T.Assign lvt (tacConstant ("True", TBool)) Nothing,
---           T.TACC T.NewLabel rvl Nothing Nothing
---         ], lvt)
---     Eq        -> return (e1Code ++ e2Code ++
---       if typeE e1 == TInt then
---         [
---           T.TACC T.Sub rv' e1Temp e2Temp,
---           T.TACC T.Eq rv' (tacConstant ("0", TInt)) lF,
---           T.TACC T.Assign lvt (tacConstant ("False", TBool)) Nothing,
---           tacGoTo rvl,
---           T.TACC T.NewLabel lF Nothing Nothing,
---           T.TACC T.Assign lvt (tacConstant ("True", TBool)) Nothing,
---           T.TACC T.NewLabel rvl Nothing Nothing
---         ]
---       else
---         [
---           T.TACC T.Sub rv' e1Temp e2Temp,
---           T.TACC T.Eq rv' (tacConstant ("0.0", TFloat)) lF,
---           T.TACC T.Assign lvt (tacConstant ("False", TBool)) Nothing,
---           tacGoTo rvl,
---           T.TACC T.NewLabel lF Nothing Nothing,
---           T.TACC T.Assign lvt (tacConstant ("True", TBool)) Nothing,
---           T.TACC T.NewLabel rvl Nothing Nothing
---         ], lvt)
---     NotEq     -> return (e1Code ++ e2Code ++
---       if typeE e1 == TInt then
---         [
---           T.TACC T.Sub rv' e1Temp e2Temp,
---           T.TACC T.Neq rv' (tacConstant ("0", TInt)) lF,
---           T.TACC T.Assign lvt (tacConstant ("False", TBool)) Nothing,
---           tacGoTo rvl,
---           T.TACC T.NewLabel lF Nothing Nothing,
---           T.TACC T.Assign lvt (tacConstant ("True", TBool)) Nothing,
---           T.TACC T.NewLabel rvl Nothing Nothing
---         ]
---       else
---         [
---           T.TACC T.Sub rv' e1Temp e2Temp,
---           T.TACC T.Neq rv' (tacConstant ("0.0", TFloat)) lF,
---           T.TACC T.Assign lvt (tacConstant ("False", TBool)) Nothing,
---           tacGoTo rvl,
---           T.TACC T.NewLabel lF Nothing Nothing,
---           T.TACC T.Assign lvt (tacConstant ("True", TBool)) Nothing,
---           T.TACC T.NewLabel rvl Nothing Nothing
---         ], lvt)
---   -- Lists
---     Anexo  -> return (e1Code ++ e2Code ++ [T.TACC T.Anexo lvt e1Temp e2Temp], lvt)
---     Concat -> return (e1Code ++ e2Code ++ [T.TACC T.Concat lvt e1Temp e2Temp], lvt)
+  case op of
+  -- Aritmethics
+    op       -> tell (tac (binOpToTACOP op) lv rv1 rv2)  >> return lv
+  -- Lists
+    -- Anexo  -> return (e1Code ++ e2Code ++ [T.TACC T.Anexo lvt e1Temp e2Temp], lvt)
+    -- Concat -> return (e1Code ++ e2Code ++ [T.TACC T.Concat lvt e1Temp e2Temp], lvt)
 
 
 -- -- 
@@ -797,12 +692,18 @@ pushLiteral l operand = do
 
 
 -- NOTA: si se guarda en un temporal no se accede a memoria. 
-pushVariable :: Var -> TACOP -> OffSet -> TACMonad TACOP
-pushVariable var temp actO = do
-  state@Operands{vars = vs, astST = st} <- get
-  let info = head . fromJust $ lookupInSymTab (getName var) st
-  put state{vars = M.insert var temp vs}
-  return $ tacVariable $ TACVar info actO
+pushVariable :: Var -> Type -> TACMonad TACOP
+pushVariable var tVar = do
+  Operands{vars = vs} <- get
+  if M.member var vs then return $ fromJust $ M.lookup var vs
+  else do
+    actO <- pushOffset (getWidth tVar)
+    temp <- newTemp actO
+    state@Operands{vars = vs, astST = st} <- get
+    put state{vars = M.insert var temp vs}
+    let info = head . fromJust $ lookupInSymTab (getName var) st
+    -- return $ tacVariable $ TACVar info actO
+    return temp
 
 
 -- -------------------------------------------------------------------------------

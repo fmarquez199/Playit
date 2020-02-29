@@ -16,6 +16,7 @@ import Data.Maybe              (fromJust,isJust,isNothing)
 import Playit.AuxFuncs
 import Playit.Errors
 import Playit.Types
+import Control.Monad.IO.Class  (liftIO)
 import qualified Data.Map as M
 
 
@@ -114,15 +115,15 @@ insertSymbols (n:ns) (info:infos) (SymTab table)
 -------------------------------------------------------------------------------
 -- | Insert the declared variables into symbol table
 insertDeclarations :: [(Id, Pos)] -> Type -> [(Instr,Pos)] -> MonadSymTab InstrSeq
-insertDeclarations ids t asigspos = do
+insertDeclarations ids t asigsPos = do
   state@SymTabState{symTab = st, actS = activeS:_} <- get
   fileCode <- ask
   let
-    asigs       = map fst asigspos
+    asigs       = map fst asigsPos
     ids'        = map fst ids
     idsInfo     = lookupInSymTab' ids' st
     info (x:xs) = SymbolInfo x t activeS Variables [] : info xs
-
+  
 -- Add ids if none var declared
   if all (==Nothing) idsInfo then addToSymTab ids' (info ids')
   else
@@ -142,8 +143,26 @@ insertDeclarations ids t asigspos = do
       else
         let idsInScope = [i | i <- ids', index <- redefsIndexs, i == ids' !! index]
         in addToSymTab idsInScope (info ids')
+--
+  return $ reverse $ initialize (zip ids' asigs) t
 
-  return asigs
+
+initialize :: [(Id,Instr)] -> Type -> InstrSeq
+initialize [] _               = []
+initialize ((n, assig):ids) t =
+  if emptyAssig assig then
+    case t of
+      TInt   -> Assig (Var n t) (Literal (Integer 0) t) TVoid : initialize ids t
+      TFloat -> Assig (Var n t) (Literal (Floatt 0.0) t) TVoid : initialize ids t
+      TBool  -> Assig (Var n t) (Literal (Boolean True) t) TVoid : initialize ids t
+      TChar  -> Assig (Var n t) (Literal (Character '\0') t) TVoid : initialize ids t
+      t' -> error $ "No se como inicializar esto todavia: " ++ show t'
+  else
+    assig : initialize ids t
+
+emptyAssig :: Instr -> Bool
+emptyAssig (Assig _ (Literal EmptyVal _) _) = True
+emptyAssig _                                = False
 -------------------------------------------------------------------------------
 
 

@@ -530,10 +530,49 @@ tacLabel l = Just $ T.Label l
 -------------------------------------------------------------------------------
 
 
+binOpToTACOP :: BinOp -> T.Operation
+binOpToTACOP op = case op of
+  Add       -> T.Add
+  DivEntera -> T.Div
+  Division  -> T.Div
+  Minus     -> T.Sub
+  Module    -> T.Mod
+  Mult      -> T.Mult
+  Greater   -> T.Gt
+  GreaterEq -> T.Gte
+  Less      -> T.Lt
+  LessEq    -> T.Lte
+  Eq        -> T.Eq
+  NotEq     -> T.Neq
+
+
+negation :: T.Operation -> T.Operation
+negation op = case op of
+  T.Lt  -> T.Gte
+  T.Lte -> T.Gt
+  T.Gt  -> T.Lte
+  T.Gte -> T.Lt
+  T.Eq  -> T.Neq
+  T.Neq -> T.Eq
+
+
+fall :: TACOP
+fall = Just $ T.Label "-1"
+
+
+isFall :: TACOP -> Bool
+isFall (Just (T.Label l)) = l == "-1"
+isFall _                  = error "Calling isFall with no label operand"
+
+
+tac :: T.Operation -> TACOP -> TACOP -> TACOP -> [TAC]
+tac op lv rv1 rv2 = [T.TACC op lv rv1 rv2]
+
+
 -------------------------------------------------------------------------------
 -- Creates the TAC's GoTo
-goto :: TACOP -> [TAC]
-goto label = [T.TACC T.GoTo Nothing Nothing label]
+tacGoto :: TACOP -> [TAC]
+tacGoto label = [T.TACC T.GoTo Nothing Nothing label]
 -------------------------------------------------------------------------------
 
 
@@ -545,26 +584,26 @@ tacNewLabel label = [T.TACC T.NewLabel label Nothing Nothing]
 
 
 -------------------------------------------------------------------------------
-assign :: TACOP -> TACOP -> [TAC]
-assign lv rv = [T.TACC T.Assign lv rv Nothing]
+tacAssign :: TACOP -> TACOP -> [TAC]
+tacAssign lv rv = [T.TACC T.Assign lv rv Nothing]
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
-minus :: TACOP -> TACOP -> [TAC]
-minus lv rv = [T.TACC T.Minus lv rv Nothing]
+tacMinus :: TACOP -> TACOP -> [TAC]
+tacMinus lv rv = [T.TACC T.Minus lv rv Nothing]
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
-len :: TACOP -> TACOP -> [TAC]
-len lv rv = [T.TACC T.Length lv rv Nothing]
+tacLen :: TACOP -> TACOP -> [TAC]
+tacLen lv rv = [T.TACC T.Length lv rv Nothing]
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
-new :: TACOP -> TACOP -> [TAC]
-new lv rv = [T.TACC T.New lv rv Nothing]
+tacNew :: TACOP -> TACOP -> [TAC]
+tacNew lv rv = [T.TACC T.New lv rv Nothing]
 -------------------------------------------------------------------------------
 
 
@@ -581,20 +620,20 @@ deref lv rv = [T.TACC T.Deref lv rv Nothing]
 
 
 -------------------------------------------------------------------------------
-add :: TACOP -> TACOP -> TACOP -> [TAC]
-add lv rv1 rv2 = [T.TACC T.Add lv rv1 rv2]
+tacAdd :: TACOP -> TACOP -> TACOP -> [TAC]
+tacAdd lv rv1 rv2 = [T.TACC T.Add lv rv1 rv2]
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
-sub :: TACOP -> TACOP -> TACOP -> [TAC]
-sub lv rv1 rv2 = [T.TACC T.Sub lv rv1 rv2]
+tacSub :: TACOP -> TACOP -> TACOP -> [TAC]
+tacSub lv rv1 rv2 = [T.TACC T.Sub lv rv1 rv2]
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
-mult :: TACOP -> TACOP -> TACOP -> [TAC]
-mult lv rv1 rv2 = [T.TACC T.Mult lv rv1 rv2]
+tacMult :: TACOP -> TACOP -> TACOP -> [TAC]
+tacMult lv rv1 rv2 = [T.TACC T.Mult lv rv1 rv2]
 -------------------------------------------------------------------------------
 
 
@@ -611,38 +650,50 @@ tacMod lv rv1 rv2 = [T.TACC T.Mod lv rv1 rv2]
 
 
 -------------------------------------------------------------------------------
-gt :: TACOP -> TACOP -> TACOP -> [TAC]
-gt lv rv1 rv2 = [T.TACC T.Gt lv rv1 rv2]
+tacGt :: TACOP -> TACOP -> TACOP -> [TAC]
+tacGt lv rv1 rv2 = [T.TACC T.Gt lv rv1 rv2]
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
-gte :: TACOP -> TACOP -> TACOP -> [TAC]
-gte lv rv1 rv2 = [T.TACC T.Gte lv rv1 rv2]
+tacGte :: TACOP -> TACOP -> TACOP -> [TAC]
+tacGte lv rv1 rv2 = [T.TACC T.Gte lv rv1 rv2]
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
-lt :: TACOP -> TACOP -> TACOP -> [TAC]
-lt lv rv1 rv2 = [T.TACC T.Lt lv rv1 rv2]
+tacLt :: TACOP -> TACOP -> TACOP -> [TAC]
+tacLt lv rv1 rv2 = [T.TACC T.Lt lv rv1 rv2]
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
-lte :: TACOP -> TACOP -> TACOP -> [TAC]
-lte lv rv1 rv2 = [T.TACC T.Lte lv rv1 rv2]
+tacLte :: TACOP -> TACOP -> TACOP -> [TAC]
+tacLte lv rv1 rv2 = [T.TACC T.Lte lv rv1 rv2]
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
-eq :: TACOP -> TACOP -> TACOP -> [TAC]
-eq lv rv1 rv2 = [T.TACC T.Eq lv rv1 rv2]
+tacEq :: TACOP -> TACOP -> TACOP -> [TAC]
+tacEq lv rv1 rv2 = [T.TACC T.Eq lv rv1 rv2]
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
-neq :: TACOP -> TACOP -> TACOP -> [TAC]
-neq lv rv1 rv2 = [T.TACC T.Neq lv rv1 rv2]
+tacNeq :: TACOP -> TACOP -> TACOP -> [TAC]
+tacNeq lv rv1 rv2 = [T.TACC T.Neq lv rv1 rv2]
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+tacIf :: TACOP -> TACOP -> [TAC]
+tacIf cond label = [T.TACC T.If Nothing cond label]
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+tacIfFalse :: TACOP -> TACOP -> [TAC]
+tacIfFalse cond label = [T.TACC T.IfFalse Nothing cond label]
 -------------------------------------------------------------------------------
 
 

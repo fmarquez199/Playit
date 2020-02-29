@@ -290,16 +290,17 @@ Declaration :: { ([(Type,Id)], InstrSeq) }
     { % do
       fileCode <- ask
       let
-        (ids,assigs)   = $2
-        ids'           = map fst $ reverse ids
-        types          = replicate (length ids') $1
+        (ids,assigs) = $2
+        ids'         = map fst $ reverse ids
+        pos          = map snd $ reverse ids
+        types        = replicate (length ids') $1
+        typeId       = zip types ids'
 
-      (assigs', msg) <- checkAssigs assigs $1 fileCode
+      (assigs',msg) <- checkAssigs assigs $1 fileCode
+      initAssigs    <- insertDeclarations (reverse ids) $1 (zip assigs' pos)
 
-      insertDeclarations (reverse ids) $1 assigs
-
-      if null msg then return (zip types ids', assigs')
-      else tell [msg] >> return (zip types ids', assigs')
+      if null msg then return (typeId, initAssigs)
+      else tell [msg] >> return (typeId, initAssigs)
     }
 
 -------------------------------------------------------------------------------
@@ -321,19 +322,20 @@ Identifiers :: { ([(Id, Pos)], [(Instr,Pos)]) }
 Identifier :: { ((Id, Pos), [(Instr,Pos)]) }
   : id "=" Expression
     {
-      let (e, p) = $3
-      in ( (getTk $1,getPos $1), [(Assig (Var (getTk $1) TDummy) e TVoid, p)] )
+      let ((e, pE), n, pId)  = ($3, getTk $1, getPos $1)
+      in ( (n, pId), [(Assig (Var n TDummy) e TVoid, pE)] )
     }
   | id "<-" Expression
     { % do
       fileCode <- ask
-      let (e, p) = $3
-      tell [errorMsg "Did you mean '=' ?" fileCode (getPos $1)]
-      return ((getTk $1,getPos $1), [(Assig (Var (getTk $1) TDummy) e TError,p)])
+      let ((e, pE), n, pId)  = ($3, getTk $1, getPos $1)
+      tell [errorMsg "Did you mean '=' ?" fileCode pId]
+      return ((n, pId), [(Assig (Var n TDummy) e TError, pE)])
     }
   | id
     {
-      ( (getTk $1,getPos $1), [] )
+      let (n, p, e) = (getTk $1, getPos $1, Literal EmptyVal TDummy)
+      in ( (n, p), [(Assig (Var n TDummy) e TVoid, p)] )
     }
 
 -------------------------------------------------------------------------------

@@ -442,8 +442,8 @@ type TACOP      = Maybe (TAC.Operand TACInfo Type)
 data TACInfo = Temp Id OffSet | TACVar SymbolInfo OffSet  deriving (Eq, Ord)
 
 instance TAC.SymEntryCompatible TACInfo where
-  getSymID (Temp n o)      = "fp[" ++ show o ++ "]($t" ++ n ++ ")"
-  getSymID (TACVar info o) = "fp[" ++ show o ++ "](" ++ symId info ++ ")"
+  getSymID (Temp n o)      = "fp[" ++ show o ++ "]->($t" ++ n ++ ")"
+  getSymID (TACVar info o) = "fp[" ++ show o ++ "]->(" ++ symId info ++ ")"
 
 instance Show TACInfo where
   show = TAC.getSymID
