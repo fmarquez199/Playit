@@ -37,7 +37,7 @@ gen i = case i of
   (Assigs is _)              -> mapM_ gen is
   (Break _)                  -> return () -- genBreak
   (Continue _)               -> return () -- genContinue
-  (For n e1 e2 is _)         -> return () -- newLabel >>= genFor n e1 e2 is
+  (For n e1 e2 is _)         -> newLabel >>= genFor n e1 e2 is
   (ForEach n e is _)         -> return () -- newLabel >>= genForEach n e is
   (ForWhile n e1 e2 e3 is _) -> return () -- newLabel >>= genForWhile n e1 e2 e3 is
   (IF gs _)                  -> return () -- genIF gs >>= backpatch
@@ -86,30 +86,20 @@ genAssig var e nextL = case typeVar var of
 
 
 -- 
--- genFor :: Id -> Expr -> Expr -> InstrSeq -> TACMonad ()
--- genFor n e1 e2 is = do
-  -- e1Temp <- genExpr e1
-  -- e2Temp <- genExpr e2
-  -- contI  <- continue
-  -- brkI   <- breakI
-  -- state@Operands{temps = ts, labs = ls, contL = cont, brkL = brk, astST = st} <- get
-  -- let
-  --   ctr  = tacLabel cont
-  --   out  = tacLabel brk
-  --   iterMin  = tacVariable $ TACVar v (offSet v)
-  --   iter = tacVariable $ Temp t (offSet v)
-  
-  -- put state{temps = M.insert t True ts, labs = brk:ls}
-  -- mapM_ gen is
-  -- tell (tacAssign iterMin)
-  -- return $ e1Code ++ T.TACC T.Assign iterMin e1Temp Nothing:e2Code ++
-  --     T.TACC T.Assign iter iterMin Nothing: contI ++ [
-  --     T.TACC T.Sub iter iter e2Temp,
-  --     T.TACC T.Gte iter (Just (T.Constant ("0", TInt))) out
-  --   ] ++ stmts ++ [
-  --     T.TACC T.Add iter iter (Just (T.Constant ("1", TInt))),
-  --     tacGoTo ctr
-  --   ] ++ brkI
+genFor :: Id -> Expr -> Expr -> InstrSeq -> TACOP -> TACMonad ()
+genFor n e1 e2 is nextL = do
+  (begin,cont) <- iterTemps
+  iterVar      <- genExpr (Variable (Var n TInt) TInt)
+  e1Temp       <- genExpr e1
+  tell (tacAssign iterVar e1Temp)
+  e2Temp       <- genExpr e2
+  tell (tacNewLabel begin)
+  genComparison iterVar e2Temp nextL fall GreaterEq
+  mapM_ gen is
+  iterVarIncr  <- genBinOp Add TInt iterVar (tacConstant ("1",TInt))
+  tell (tacAssign iterVar iterVarIncr)
+  tell (tacGoto begin)
+  tell (tacNewLabel nextL)
 
 
 {-- TODO
@@ -206,13 +196,12 @@ genWhile :: Expr -> InstrSeq -> TACOP -> TACMonad ()
 genWhile e is nextL = do
   (begin,cont) <- iterTemps
   tell (tacNewLabel begin)
-  genBoolExpr e cont nextL
-  tell (tacNewLabel cont)
+  genBoolExpr e fall nextL
   -- contI         <- continue
   -- brkI          <- breakI
   mapM_ gen is
   -- state@Operands{contL = cont} <- get
-  -- return $ contI ++ stmts ++ eCode ++ [T.TACC T.If Nothing eTemp (tacLabel cont)] ++ brkI
+  -- contI ++ stmts ++ eCode ++ [T.TACC T.If Nothing eTemp (tacLabel cont)] ++ brkI
   tell (tacGoto begin)
   tell (tacNewLabel nextL)
 
@@ -306,7 +295,10 @@ genExpr e = case e of
   Literal l t         -> genLiteral l t
   Variable v t        -> genVar v t
   Unary u e t         -> genUnOp u e t
-  Binary b e1 e2 t    -> genBinOp b e1 e2 t
+  Binary b e1 e2 t    -> do
+    e1Temp <- genExpr e1
+    e2Temp <- genExpr e2
+    genBinOp b t e1Temp e2Temp
   IfSimple eB eT eF t -> genTerOp eB eT eF t
   -- ArrayList es t      -> genArrayList es t
   -- Null                -> genNull
@@ -326,19 +318,9 @@ genBoolExpr e trueL falseL =
   -- Variables
   -- Comparators
     Binary op e1 e2 _ | op `elem` [Greater,GreaterEq,Less,LessEq,Eq,NotEq] -> do
-      e1Temp <- genExpr e1
-      e2Temp <- genExpr e2
-      let
-        trueNotFall  = not $ isFall trueL
-        falseNotFall = not $ isFall falseL
-      
-      if trueNotFall && falseNotFall then
-        tell (tac (binOpToTACOP op) e1Temp e2Temp trueL) >> tell (tacGoto falseL)
-      else
-        if trueNotFall then tell (tac (binOpToTACOP op) e1Temp e2Temp trueL)
-        else
-          when falseNotFall $
-            tell (tac (negation $ binOpToTACOP op) e1Temp e2Temp falseL)
+      leftExpr  <- genExpr e1
+      rightExpr <- genExpr e2
+      genComparison leftExpr rightExpr trueL falseL op
   -- Conjunction and disjunction
     Binary op e1 e2 _ | op `elem` [And,Or] -> do
       e1TrueL <- -- for `or` we need to generate a new `true` label if the current is `fall`
@@ -359,6 +341,20 @@ genBoolExpr e trueL falseL =
   -- 
     e -> error $ "Unexpected boolean expression:  " ++ show e
 
+
+genComparison :: TACOP -> TACOP -> TACOP -> TACOP -> BinOp -> TACMonad ()
+genComparison leftExpr rightExpr trueL falseL op = do
+    let
+      trueNotFall  = not $ isFall trueL
+      falseNotFall = not $ isFall falseL
+    
+    if trueNotFall && falseNotFall then
+      tell (tac (binOpToTACOP op) leftExpr rightExpr trueL) >> tell (tacGoto falseL)
+    else
+      if trueNotFall then tell (tac (binOpToTACOP op) leftExpr rightExpr trueL)
+      else
+        when falseNotFall $
+          tell (tac (negation $ binOpToTACOP op) leftExpr rightExpr falseL)
 
 
 -- 
@@ -503,16 +499,14 @@ genUnOp op e tOp = do
 
 
 -- 
-genBinOp :: BinOp -> Expr -> Expr -> Type -> TACMonad TACOP
-genBinOp op e1 e2 tOp = do
-  rv1  <- genExpr e1
-  rv2  <- genExpr e2
+genBinOp :: BinOp -> Type -> TACOP -> TACOP -> TACMonad TACOP
+genBinOp op tOp rv1 rv2 = do
   actO <- pushOffset (getWidth tOp)
   lv   <- newTemp actO
   
   case op of
   -- Aritmethics
-    op       -> tell (tac (binOpToTACOP op) lv rv1 rv2)  >> return lv
+    op -> tell (tac (binOpToTACOP op) lv rv1 rv2)  >> return lv
   -- Lists
     -- Anexo  -> return (e1Code ++ e2Code ++ [T.TACC T.Anexo lvt e1Temp e2Temp], lvt)
     -- Concat -> return (e1Code ++ e2Code ++ [T.TACC T.Concat lvt e1Temp e2Temp], lvt)

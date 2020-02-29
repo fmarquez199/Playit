@@ -56,6 +56,12 @@ world %Pruebas%:
   lock (x < 10)
   .~
 
+@  controller Power i = 0 -> 10: @ lock i % 2 == 0:
+@    Button:
+@      | Win || Lose } keepPlaying
+@    .~
+@    x = i * 2
+@  .~
 
 @  Runes  s = ~3g~
 @  Runes s = joystick ~Here we go~
