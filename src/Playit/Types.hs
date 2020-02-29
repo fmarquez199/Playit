@@ -458,8 +458,8 @@ data Operands = Operands {
   temps :: M.Map TACInfo Bool,
   lits  :: M.Map Literal TACOP,
   labs  :: [Int],
-  brkL  :: Int,
-  contL :: Int,
+  brkL  :: TACOP,
+  contL :: TACOP,
   offS  :: [OffSet],
   astST :: SymTab
 } deriving (Eq, Ord)

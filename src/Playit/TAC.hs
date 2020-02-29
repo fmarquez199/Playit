@@ -22,11 +22,13 @@ import qualified Playit.TACType as T
 
 --
 tacInitState :: SymTab -> Operands
-tacInitState = Operands M.empty temps M.empty [] (-1) (-1) [0]
+tacInitState = Operands M.empty temps M.empty [] brk cont [0]
   where
     printReg = Temp "_print" (-1)
     readReg  = Temp "_read" (-1)
     nullReg  = Temp "_null" (-1)
+    cont     = tacLabel "cont"
+    brk      = tacLabel "brk"
     temps    = M.fromList [(printReg,False), (readReg,False), (nullReg,False)]
 
 
@@ -35,14 +37,14 @@ gen :: Instr -> TACMonad ()
 gen i = case i of
   (Assig v e _)              -> newLabel >>= genAssig v e
   (Assigs is _)              -> mapM_ gen is
-  (Break _)                  -> return () -- genBreak
-  (Continue _)               -> return () -- genContinue
-  (For n e1 e2 is _)         -> newLabel >>= genFor n e1 e2 is
+  (Break _)                  -> genBreak
+  (Continue _)               -> genContinue
+  (For n e1 e2 is _)         -> breakI >>= genFor n e1 e2 is
   (ForEach n e is _)         -> return () -- newLabel >>= genForEach n e is
   (ForWhile n e1 e2 e3 is _) -> return () -- newLabel >>= genForWhile n e1 e2 e3 is
   (IF gs _)                  -> return () -- genIF gs >>= backpatch
   (Program is _)             -> mapM_ gen is
-  (While e is _)             -> newLabel >>= genWhile e is
+  (While e is _)             -> breakI >>= genWhile e is
   (Print es _)               -> return () -- genPrint es
   (Free id _)                -> return () -- genFree id
   (ProcCall s _)             -> return () -- genProcCall s
@@ -88,15 +90,17 @@ genAssig var e nextL = case typeVar var of
 -- 
 genFor :: Id -> Expr -> Expr -> InstrSeq -> TACOP -> TACMonad ()
 genFor n e1 e2 is nextL = do
-  (begin,cont) <- iterTemps
-  iterVar      <- genExpr (Variable (Var n TInt) TInt)
-  e1Temp       <- genExpr e1
+  begin   <- newLabel
+  cont    <- continue
+  iterVar <- genExpr (Variable (Var n TInt) TInt)
+  e1Temp  <- genExpr e1
   tell (tacAssign iterVar e1Temp)
-  e2Temp       <- genExpr e2
+  e2Temp  <- genExpr e2
   tell (tacNewLabel begin)
   genComparison iterVar e2Temp nextL fall GreaterEq
   mapM_ gen is
-  iterVarIncr  <- genBinOp Add TInt iterVar (tacConstant ("1",TInt))
+  tell (tacNewLabel cont)
+  iterVarIncr <- genBinOp Add TInt iterVar (tacConstant ("1",TInt))
   tell (tacAssign iterVar iterVarIncr)
   tell (tacGoto begin)
   tell (tacNewLabel nextL)
@@ -194,14 +198,10 @@ genFor n e1 e2 is nextL = do
 -- 
 genWhile :: Expr -> InstrSeq -> TACOP -> TACMonad ()
 genWhile e is nextL = do
-  (begin,cont) <- iterTemps
+  begin <- continue
   tell (tacNewLabel begin)
   genBoolExpr e fall nextL
-  -- contI         <- continue
-  -- brkI          <- breakI
   mapM_ gen is
-  -- state@Operands{contL = cont} <- get
-  -- contI ++ stmts ++ eCode ++ [T.TACC T.If Nothing eTemp (tacLabel cont)] ++ brkI
   tell (tacGoto begin)
   tell (tacNewLabel nextL)
 
@@ -270,17 +270,17 @@ genWhile e is nextL = do
 
 
 -- 
--- genContinue :: TACMonad ()
--- genContinue = do
-  -- Operands{contL = continue} <- get
-  -- tell (tacGoto (tacLabel $ show continue))
+genContinue :: TACMonad ()
+genContinue = do
+  Operands{contL = continue} <- get
+  tell (tacGoto continue)
 
 
 -- 
--- genBreak :: TACMonad ()
--- genBreak = do
-  -- Operands{brkL = brk} <- get
-  -- tell (tacGoto (tacLabel $ show brk))
+genBreak :: TACMonad ()
+genBreak = do
+  Operands{brkL = break} <- get
+  tell (tacGoto break)
 
 
 -------------------------------------------------------------------------------
@@ -657,6 +657,7 @@ newTemp actO = do
   return $ tacVariable t
 
 
+-- Tal vez colocar labs como [String]
 newLabel :: TACMonad TACOP
 newLabel = do
   state@Operands{labs = ls} <- get
@@ -712,29 +713,29 @@ pushVariable var tVar = do
 -------------------------------------------------------------------------------
 
 
-iterTemps :: TACMonad (TACOP,TACOP)
-iterTemps = do
-  begin <- newLabel
+-- iterTemps :: TACMonad (TACOP,TACOP)
+-- iterTemps = do
+--   begin <- newLabel
+--   return cont
+
+
+-------------------------------------------------------------------------------
+continue :: TACMonad TACOP
+continue = do
   cont  <- newLabel
-  return (begin,cont)
-
-
--------------------------------------------------------------------------------
--- continue :: TACMonad ()
--- continue = do
---   cont <- newLabel
---   put state{contL = cont}
---   tell (tacNewLabel $ tacLabel $ show cont)
+  state <- get
+  put state{contL = cont}
+  return cont
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
-breakI :: TACMonad ()
+breakI :: TACMonad TACOP
 breakI = do
-  state@Operands{labs = ls} <- get
-  let newL = length ls + 1
-  put state{labs = newL:ls, brkL = newL}
-  tell (tacNewLabel $ tacLabel $ show newL)
+  brk   <- newLabel
+  state <- get
+  put state{brkL = brk}
+  return brk
 -------------------------------------------------------------------------------
 
 
