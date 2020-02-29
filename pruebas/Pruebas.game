@@ -29,6 +29,11 @@ world %Pruebas%:
 @  Skill f2 = f / 0'5
 @  Skill f1 = 2'0
 
+@ Operaciones unarias
+@  Rune   c = *4*
+@  Rune  up = ^*x*
+@  Rune low = .*x*
+
 @ Operaciones boleanas
 @  Battle b
 @  b = !Win
@@ -38,17 +43,16 @@ world %Pruebas%:
 @  Battle p = 3 > 6
 @  p = i5 < i2
 
-@  kill b( kill portalRunesToPower(joystick) ,f)
+@ Operador ternario
+@  Battle f = Win ? (3 == 6) : (3 > 6)
+  Skill f = Lose ? 6'0 : 3'0
+
 
 @  Runes  s = ~3g~
-@  Rune   c = *4*
-@  Rune  up = ^*x*
-@  Rune low = .*x*
-
 @  Runes s = joystick ~Here we go~
 @  drop 1
 
-@  Skill f = Win ? 6'0 : 3'0
+@  kill b( kill portalRunesToPower(joystick) ,f)
 
 @  Power|}2{| array = |)2,3(|
 @  array|)0(| = 0

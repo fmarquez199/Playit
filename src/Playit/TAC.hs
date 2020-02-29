@@ -33,7 +33,7 @@ tacInitState = Operands M.empty temps M.empty [] (-1) (-1) [0]
 -- 
 gen :: Instr -> TACMonad ()
 gen i = case i of
-  (Assig v e _)              -> genAssig v e
+  (Assig v e _)              -> newLabel >>= genAssig v e
   (Assigs is _)              -> mapM_ gen is
   (Break _)                  -> return () -- genBreak
   (Continue _)               -> return () -- genContinue
@@ -57,10 +57,10 @@ gen i = case i of
 
 
 -- 
-genAssig :: Var -> Expr -> TACMonad ()
-genAssig var e = case typeVar var of
+genAssig :: Var -> Expr -> TACOP -> TACMonad ()
+genAssig var e next = case typeVar var of
+-- Si es el operador ternario la expr puede ser bool o no
   TBool -> do
-    next   <- newLabel
     vTemp  <- genVar var (typeVar var)
     trueL  <- newLabel
     falseL <- newLabel
@@ -342,7 +342,7 @@ genExpr e = case e of
   Variable v t        -> genVar v t
   Unary u e t         -> genUnOp u e t
   Binary b e1 e2 t    -> genBinOp b e1 e2 t
-  -- IfSimple eB eT eF t -> genTerOp eB eT eF t
+  IfSimple eB eT eF t -> genTerOp eB eT eF t
   -- ArrayList es t      -> genArrayList es t
   -- Null                -> genNull
   -- Read e _            -> genRead e
@@ -389,6 +389,7 @@ genBoolExpr e trueL falseL =
       else
         when (isFall trueL) $ tell (tacNewLabel e1TrueL)
   -- Functions
+  -- Ternary operator
   -- 
     e -> error $ "Unexpected boolean expression:  " ++ show e
 
@@ -551,16 +552,48 @@ genBinOp op e1 e2 tOp = do
     -- Concat -> return (e1Code ++ e2Code ++ [T.TACC T.Concat lvt e1Temp e2Temp], lvt)
 
 
--- -- 
--- genTerOp :: Expr -> Expr -> Expr -> Type -> MTACExpr
--- genTerOp eB eT eF tOp = do
+-- Tratarlo como un if que asigna cosas
+{- 
+  if cond then assig trueVal
+  else assig falseVal
+
+  Revisar bien labels y offsets
+-}
+genTerOp :: Expr -> Expr -> Expr -> Type -> TACMonad TACOP
+genTerOp eB eT eF tOp = do
+  actO   <- pushOffset (getWidth tOp)
+  actO'  <- pushOffset 1
+  lv     <- newTemp actO
+  eBTemp <- newTemp actO'
+  next   <- newLabel -- next
+  trueL  <- newLabel -- fall
+  falseL <- newLabel -- next
+  genBoolExpr eB trueL falseL
+  tell (tacNewLabel trueL)
+  tell (tacAssign eBTemp $ tacConstant ("True",TBool))
+  tell (tacGoto next)
+  tell (tacNewLabel falseL)
+  tell (tacAssign eBTemp $ tacConstant ("False",TBool))
+  tell (tacNewLabel next)
+  eTTemp <- genExpr eT
+  eFTemp <- genExpr eF
+  tell (tacIf eBTemp trueL)
+  tell (tacAssign lv eFTemp)
+  tell (tacGoto falseL)
+  tell (tacNewLabel trueL)
+  tell (tacAssign lv eTTemp)
+  tell (tacNewLabel falseL)
+  return lv
+
+  -- if tOp == TBool then do
+  --   actO <- pushOffset (getWidth tOp)
+  --   lv   <- newTemp actO
+
 --   (eBCode,eBTemp) <- genExpr eB
 --   (eTCode,eTTemp) <- genExpr eT
 --   (eFCode,eFTemp) <- genExpr eF
 --   state@Operands{temps = ts, labs = ls, offS = os@(actO:_), astST = st} <- get
 --   let
---     lsn   = length ls
---     t     = "$t" ++ show (M.size ts)
 --     lT    = tacLabel lsn
 --     lF    = tacLabel $ lsn + 1
 --     tInfo = head . fromJust $ lookupInSymTab (show tOp) st
@@ -568,7 +601,7 @@ genBinOp op e1 e2 tOp = do
 --     lvt   = tacVariable $ SymbolInfo t tOp (-1) TempReg actO []
 
 --   put state{temps = M.insert t True ts, labs = lsn + 1:lsn:ls, offS = newO:os}
---   return (eBCode ++ eTCode ++ eFCode ++
+
 --     [
 --       T.TACC T.If Nothing eBTemp lT,
 --       T.TACC T.Assign lvt eFTemp Nothing,
