@@ -35,16 +35,16 @@ tacInitState = Operands M.empty temps M.empty [] brk cont [0]
 -- 
 gen :: Instr -> TACMonad ()
 gen i = case i of
+  (Program is _)             -> mapM_ gen is
   (Assig v e _)              -> newLabel >>= genAssig v e
   (Assigs is _)              -> mapM_ gen is
   (Break _)                  -> genBreak
   (Continue _)               -> genContinue
-  (For n e1 e2 is _)         -> breakI >>= genFor n e1 e2 is
-  (ForEach n e is _)         -> return () -- newLabel >>= genForEach n e is
-  (ForWhile n e1 e2 e3 is _) -> return () -- newLabel >>= genForWhile n e1 e2 e3 is
+  (For n e1 e2 is _)         -> breakI   >>= genFor n e1 e2 is
+  (ForEach n e is _)         -> return () -- breakI >>= genForEach n e is
+  (ForWhile n e1 e2 e3 is _) -> breakI   >>= genForWhile n e1 e2 e3 is
   (IF gs _)                  -> newLabel >>= genIF gs
-  (Program is _)             -> mapM_ gen is
-  (While e is _)             -> breakI >>= genWhile e is
+  (While e is _)             -> breakI   >>= genWhile e is
   (Print es _)               -> return () -- genPrint es
   (Free id _)                -> return () -- genFree id
   (ProcCall s _)             -> return () -- genProcCall s
@@ -89,21 +89,7 @@ genAssig var e nextL = case typeVar var of
 
 -- 
 genFor :: Id -> Expr -> Expr -> InstrSeq -> TACOP -> TACMonad ()
-genFor n e1 e2 is nextL = do
-  begin   <- newLabel
-  cont    <- continue
-  iterVar <- genExpr (Variable (Var n TInt) TInt)
-  e1Temp  <- genExpr e1
-  tell (tacAssign iterVar e1Temp)
-  e2Temp  <- genExpr e2
-  tell (tacNewLabel begin)
-  genComparison iterVar e2Temp nextL fall GreaterEq
-  mapM_ gen is
-  tell (tacNewLabel cont)
-  iterVarIncr <- genBinOp Add TInt iterVar (tacConstant ("1",TInt))
-  tell (tacAssign iterVar iterVarIncr)
-  tell (tacGoto begin)
-  tell (tacNewLabel nextL)
+genFor n e1 e2 is nextL = forComparison n e1 e2 nextL >>= forInstrs is nextL
 
 
 {-- TODO
@@ -131,33 +117,11 @@ genFor n e1 e2 is nextL = do
   1 : Cambiar antes esa var por el registro donde se guardo y el que se actualiza
   2 : Cambiar la variable en si
 -}
--- genForWhile :: Id -> Expr -> Expr -> Expr -> InstrSeq -> TACMonad ()
--- genForWhile n e1 e2 e3 is = do
-  -- (e1Code,e1Temp) <- genExpr e1
-  -- (e2Code,e2Temp) <- genExpr e2
-  -- (e3Code,e3Temp) <- genExpr e3
-  -- contI           <- continue
-  -- brkI            <- breakI
-  -- state@Operands{temps = ts, labs = ls, contL = cont, brkL = brk, astST = st} <- get
-  -- let
-  --   ctr  = tacLabel cont
-  --   out  = tacLabel brk
-  --   t    = "$t" ++ show (M.size ts)
-  --   v    = head $ fromJust $ lookupInSymTab n st
-  --   min  = tacVariable $ v (offSet v)
-  --   iter = tacVariable $ Temp t (offSet v)
-
-  -- put state{temps = ts, labs = brk:ls}
-  -- stmts <- foldl concatTAC (return []) (map gen is)
-
-  -- return $ e1Code ++ T.TACC T.Assign min e1Temp Nothing:e2Code ++
-  --     T.TACC T.Assign iter min Nothing: contI ++ [
-  --     T.TACC T.Sub iter iter e2Temp,
-  --     T.TACC T.Gte iter (Just (T.Constant ("0", TInt))) out
-  --   ] ++ e3Code ++ T.TACC T.If Nothing e3Temp out:stmts ++ [
-  --     T.TACC T.Add iter iter (Just (T.Constant ("1", TInt))),
-  --     tacGoTo ctr
-  --   ] ++ brkI
+genForWhile :: Id -> Expr -> Expr -> Expr -> InstrSeq -> TACOP -> TACMonad ()
+genForWhile n e1 e2 cond is nextL = do
+  iteration <- forComparison n e1 e2 nextL
+  genBoolExpr cond fall nextL
+  forInstrs is nextL iteration
 
 
 -- 
@@ -492,13 +456,7 @@ genBinOp op tOp rv1 rv2 = do
     -- Concat -> return (e1Code ++ e2Code ++ [T.TACC T.Concat lvt e1Temp e2Temp], lvt)
 
 
--- Tratarlo como un if que asigna cosas
-{- 
-  if cond then assig trueVal
-  else assig falseVal
-
-  Revisar bien labels y offsets
--}
+-- 
 genTerOp :: Expr -> Expr -> Expr -> Type -> TACMonad TACOP
 genTerOp eB eT eF tOp = do
   actO   <- pushOffset (getWidth tOp)
@@ -642,6 +600,29 @@ pushVariable var tVar = do
     let info = head . fromJust $ lookupInSymTab (getName var) st
     -- return $ tacVariable $ TACVar info actO
     return temp
+
+
+forComparison :: Id -> Expr -> Expr -> TACOP -> TACMonad (TACOP,TACOP,TACOP)
+forComparison n e1 e2 nextL = do
+  begin   <- newLabel
+  cont    <- continue
+  iterVar <- genExpr (Variable (Var n TInt) TInt)
+  e1Temp  <- genExpr e1
+  tell (tacAssign iterVar e1Temp)
+  e2Temp  <- genExpr e2
+  tell (tacNewLabel begin)
+  genComparison iterVar e2Temp fall nextL LessEq
+  return (begin,cont,iterVar)
+
+
+forInstrs :: InstrSeq -> TACOP -> (TACOP,TACOP,TACOP) -> TACMonad ()
+forInstrs is nextL (begin,cont,iterVar) = do
+  mapM_ gen is
+  tell (tacNewLabel cont)
+  iterVarIncr <- genBinOp Add TInt iterVar (tacConstant ("1",TInt))
+  tell (tacAssign iterVar iterVarIncr)
+  tell (tacGoto begin)
+  tell (tacNewLabel nextL)
 
 
 -------------------------------------------------------------------------------
