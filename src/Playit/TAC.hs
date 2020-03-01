@@ -42,7 +42,7 @@ gen i = case i of
   (For n e1 e2 is _)         -> breakI >>= genFor n e1 e2 is
   (ForEach n e is _)         -> return () -- newLabel >>= genForEach n e is
   (ForWhile n e1 e2 e3 is _) -> return () -- newLabel >>= genForWhile n e1 e2 e3 is
-  (IF gs _)                  -> return () -- genIF gs >>= backpatch
+  (IF gs _)                  -> newLabel >>= genIF gs
   (Program is _)             -> mapM_ gen is
   (While e is _)             -> breakI >>= genWhile e is
   (Print es _)               -> return () -- genPrint es
@@ -161,38 +161,18 @@ genFor n e1 e2 is nextL = do
 
 
 -- 
--- genIF :: [(Expr, InstrSeq)] -> TACMonad ()
--- genIF [] = return []
--- genIF [(e, i)] = do
-  -- (eCode,eTemp) <- genExpr e
-  -- iCode         <- foldl concatTAC (return []) (map gen i)
-  -- state@Operands{labs = ls, astST = st} <- get
-  -- let
-  --   lsn  = length ls
-  --   lT = tacLabel lsn
-  --   lnext = tacLabel $ lsn + 1
-  
-  -- case e of
-  --   -- if (true) {s} || else {s} ==>> s
-  --   (Literal (Boolean True) TBool) -> do
-  --     put state{labs = lsn:ls}
-  --     return $ iCode ++ [tacGoTo Nothing]
-  --   -- if (false) {Don't care}
-  --   (Literal (Boolean False) TBool) -> return []
-  --   _ -> do
-  --     put state{labs = lsn + 1:lsn:ls}
-      
-  --     return $ eCode ++ 
-  --       [
-  --         T.TACC T.If Nothing eTemp lT,
-  --         tacGoTo lnext,
-  --         T.TACC T.NewLabel lT Nothing Nothing
-  --       ] ++ iCode ++
-  --       [
-  --         tacGoTo Nothing,
-  --         T.TACC T.NewLabel lnext Nothing Nothing
-  --       ]
--- genIF ((e, i):gs) = concatTAC (concatTAC (genIF [(e, i)]) (genIF gs)) $ return [tacGoTo Nothing]
+genIF :: [(Expr, InstrSeq)] -> TACOP -> TACMonad ()
+genIF [] nextL               = tell (tacNewLabel nextL)
+genIF ((e, is):guards) nextL = do
+  let isLast = null guards
+  falseL <- if isLast then return nextL else newLabel
+  genBoolExpr e fall falseL
+  mapM_ gen is
+  unless isLast $ tell (tacGoto nextL)
+  unless isLast $ tell (tacNewLabel falseL)
+  -- unless isLast $ 
+  when isLast $ return () -- tell (tacNewLabel nextL)
+  genIF guards nextL
 
 
 -- 
@@ -458,7 +438,7 @@ genVar var tVar = do
 
 
 -- 
--- ISSUE: fromJust Nothing con New para Registros
+-- 
 genUnOp :: UnOp -> Expr -> Type -> TACMonad TACOP
 genUnOp op e tOp = do
   rv   <- genExpr e
@@ -522,49 +502,18 @@ genBinOp op tOp rv1 rv2 = do
 genTerOp :: Expr -> Expr -> Expr -> Type -> TACMonad TACOP
 genTerOp eB eT eF tOp = do
   actO   <- pushOffset (getWidth tOp)
-  actO'  <- pushOffset 1
   lv     <- newTemp actO
-  eBTemp <- newTemp actO'
-  next   <- newLabel -- next
-  trueL  <- newLabel -- fall
-  falseL <- newLabel -- next
-  genBoolExpr eB trueL falseL
-  tell (tacNewLabel trueL)
-  tell (tacAssign eBTemp $ tacConstant ("True",TBool))
+  next   <- newLabel
+  falseL <- newLabel
+  genBoolExpr eB fall falseL
+  eTTemp <- genExpr eT
+  tell (tacAssign lv eTTemp)
   tell (tacGoto next)
   tell (tacNewLabel falseL)
-  tell (tacAssign eBTemp $ tacConstant ("False",TBool))
-  tell (tacNewLabel next)
-  eTTemp <- genExpr eT
   eFTemp <- genExpr eF
-  tell (tacIf eBTemp trueL)
   tell (tacAssign lv eFTemp)
-  tell (tacGoto falseL)
-  tell (tacNewLabel trueL)
-  tell (tacAssign lv eTTemp)
-  tell (tacNewLabel falseL)
+  tell (tacNewLabel next)
   return lv
-
-  -- if tOp == TBool then do
-  --   actO <- pushOffset (getWidth tOp)
-  --   lv   <- newTemp actO
-
-  -- (eBCode,eBTemp) <- genExpr eB
-  -- (eTCode,eTTemp) <- genExpr eT
-  -- (eFCode,eFTemp) <- genExpr eF
-  -- state@Operands{temps = ts, labs = ls, offS = os@(actO:_), astST = st} <- get
-  -- let
-  --   lT    = tacLabel lsn
-  --   lF    = tacLabel $ lsn + 1
-  --   lvt   = tacVariable $ SymbolInfo t tOp (-1) TempReg actO []
-  --   [
-  --     T.TACC T.If Nothing eBTemp lT,
-  --     T.TACC T.Assign lvt eFTemp Nothing,
-  --     tacGoTo lF,
-  --     T.TACC T.NewLabel lT Nothing Nothing,
-  --     T.TACC T.Assign lvt eTTemp Nothing,
-  --     T.TACC T.NewLabel lF Nothing Nothing
-  --   ]
 
 
 -- TODO: Offset y que se genere bien
@@ -696,30 +645,6 @@ pushVariable var tVar = do
 
 
 -------------------------------------------------------------------------------
--- Backpatch for goto's in guards
--- backpatch :: [TAC] -> TACMonad ()
--- backpatch tac = do
-  -- state@Operands{labs = ls, brkL = brk, contL = cont} <- get
-  -- let
-  --   lsn    = length ls
-  --   lout   = getLout $ last tac
-  --   l      = getLabel lout
-  --   lout'  = if isNothing lout then tacLabel lsn else lout
-  --   replac = tacGoTo lout'
-  --   target = tacGoTo Nothing
-
-  -- put state{labs = lsn : ls}
-  -- return [(\x -> if x == target then replac else x) x | x <- tac]
--------------------------------------------------------------------------------
-
-
--- iterTemps :: TACMonad (TACOP,TACOP)
--- iterTemps = do
---   begin <- newLabel
---   return cont
-
-
--------------------------------------------------------------------------------
 continue :: TACMonad TACOP
 continue = do
   cont  <- newLabel
@@ -736,12 +661,4 @@ breakI = do
   state <- get
   put state{brkL = brk}
   return brk
--------------------------------------------------------------------------------
-
-
--------------------------------------------------------------------------------
--- unWrapExprCode :: Expr -> TACMonad ()
--- unWrapExprCode e = do
-  -- (eCode,_) <- genExpr e
-  -- return eCode
 -------------------------------------------------------------------------------

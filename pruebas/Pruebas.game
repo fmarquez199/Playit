@@ -19,7 +19,7 @@
 world %Pruebas%:
 
 @ Operaciones aritmeticas
-@  Power x = 50, y, z = 6
+  Power x = 50 @ , u, z = 6
 @  Power y = -5
 @  Power i0 = x + 1
 @  Power i1 = x - 1
@@ -47,7 +47,6 @@ world %Pruebas%:
 @  Battle f = Win ? (3 == 6) : (3 > 6)
 @  Skill f = Lose ? 6'0 : 3'0
 
-  Power x = 2
 @  play:
 @    gameOver
 @    Power i = 9
@@ -60,17 +59,18 @@ world %Pruebas%:
 @    gameOver
 @    keepPlaying
 @    Button:
-@      | Win || Lose } keepPlaying
+@      | i == 7 } gameOver
 @    .~
 @    x = i * 2
 @  .~
 
 @  Button:
-@   | Lose } Power factorial = 0
-@   | 6 > 3 } Power factorial = 1
-@   | i == 3*4 } Power factorial = 1
-@   | Win } Power factorial = 30
-@   | notPressed } Power factorial = 720
+@    | Lose       } x = 0
+@    | x > 3      } x = 10
+@    | x == 20    } x = 1
+@    | Lose       } x = 0
+@    | Win        } x = 30 @ AST no se genera bien. La x en el default tiene el mismo valor que aquí
+@    | notPressed } x = 720
 @  .~
 
 @  Runes  s = ~3g~
