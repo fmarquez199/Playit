@@ -152,17 +152,34 @@ initialize [] _               = []
 initialize ((n, assig):ids) t =
   if emptyAssig assig then
     case t of
-      TInt   -> Assig (Var n t) (Literal (Integer 0) t) TVoid : initialize ids t
-      TFloat -> Assig (Var n t) (Literal (Floatt 0.0) t) TVoid : initialize ids t
-      TBool  -> Assig (Var n t) (Literal (Boolean True) t) TVoid : initialize ids t
-      TChar  -> Assig (Var n t) (Literal (Character '\0') t) TVoid : initialize ids t
-      t' -> error $ "No se como inicializar esto todavia: " ++ show t'
+      TInt        -> assign (defaultBaseVal t) : initialize ids t
+      TFloat      -> assign (defaultBaseVal t) : initialize ids t
+      TBool       -> assign (defaultBaseVal t) : initialize ids t
+      TChar       -> assign (defaultBaseVal t) : initialize ids t
+      TArray e t' -> assign (ArrayList (lits e t') t) : initialize ids t
+      tipo -> error $ "No se como inicializar esto todavia: " ++ show tipo
   else
     assig : initialize ids t
+
+  where
+    assign expr      = Assig (Var n t) expr TVoid
+    lits eSize tArr = replicate (getSize eSize) $ defaultBaseVal tArr
+
+
+defaultBaseVal :: Type -> Expr
+defaultBaseVal TInt   = Literal (Integer 0)  TInt
+defaultBaseVal TFloat = Literal (Floatt 0.0) TFloat
+defaultBaseVal TBool  = Literal (Boolean True) TBool
+defaultBaseVal TChar  = Literal (Character '\0') TChar
+defaultBaseVal t      = error $ "Esto no es un tipo basico: " ++ show t
 
 emptyAssig :: Instr -> Bool
 emptyAssig (Assig _ (Literal EmptyVal _) _) = True
 emptyAssig _                                = False
+
+getSize :: Expr -> Int
+getSize (Literal (Integer n) _) = n
+getSize e = error $ "Expresion para tamaño de arreglo incorrecta: " ++ show e
 -------------------------------------------------------------------------------
 
 
