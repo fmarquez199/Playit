@@ -20,7 +20,7 @@ import Playit.FrontEnd.Types
 
 
 -------------------------------------------------------------------------------
--- | Gets the field register / union name 
+-- | Gets the field register / union name
 getReg :: [ExtraInfo] -> String
 getReg []               = ""
 getReg (FromReg name:_) = name

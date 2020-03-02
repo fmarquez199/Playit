@@ -9,7 +9,7 @@
 module Playit.FrontEnd.AST where
 
 import Control.Monad           (when,unless,forM,forM_)
-import Control.Monad.Trans.RWS
+import Control.Monad.Trans.RWS (get,put,tell,ask)
 import Data.Maybe              (fromJust,isJust,isNothing,fromMaybe)
 import Playit.FrontEnd.Utils
 import Playit.FrontEnd.CheckAST

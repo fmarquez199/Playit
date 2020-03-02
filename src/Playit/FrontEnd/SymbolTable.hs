@@ -16,7 +16,6 @@ import Data.Maybe              (fromJust,isJust,isNothing)
 import Playit.FrontEnd.Utils
 import Playit.FrontEnd.Errors
 import Playit.FrontEnd.Types
-import Control.Monad.IO.Class  (liftIO)
 import qualified Data.Map as M
 
 
@@ -376,7 +375,6 @@ updateExtraInfoProm sym symCategory extra = do
       updateExtraInfo' = 
         fmap (\s -> if isTarget s then modifyExtraInfoProm s extra else s)
             
-    -- liftIO $ print $ SymTab $ M.adjust updateExtraInfo' sym table
     put state{symTab = SymTab $ M.adjust updateExtraInfo' sym table}
 -------------------------------------------------------------------------------
 

@@ -40,8 +40,8 @@ gen ast = tell (tacCall Nothing "_main" 0 ++ tacNewLabel (tacLabel "_main")) >> 
 genCode :: Instr -> TACMonad ()
 genCode i = case i of
   (Program is _)             -> mapM_ genCode is >> genSubroutines
-  (Assig v e _)              -> newLabel >>= genAssig v e
   (Assigs is _)              -> mapM_ genCode is
+  (Assig v e _)              -> newLabel >>= genAssig v e
   (Break _)                  -> genBreak
   (Continue _)               -> genContinue
   (For n e1 e2 is _)         -> breakI   >>= genFor n e1 e2 is
@@ -87,13 +87,15 @@ genAssig var e nextL = case typeVar var of
     tell (tacAssign vTemp $ tacConstant ("False",TBool))
     tell (tacNewLabel nextL)
 -- Registros y uniones
-  TNew n -> return ()
+  TNew n -> 
+    return ()
 --
   _ -> do
     eTemp <- genExpr e
     vTemp <- genVar var (typeVar var)
     {- 
-      if var.scope == 0 then lo que hice
+      if isField var then
+
       else
         base/fp[var.offset] := e
     -}
@@ -242,7 +244,7 @@ genExpr e = case e of
   -- Null                -> genNull
   -- Read e _            -> genRead e
   FuncCall s _        -> genFuncCall s
-  -- IdType t            -> genType t
+  IdType t            -> genType t
   _ -> return Nothing
 
 
@@ -348,27 +350,11 @@ genVar var tVar = do
     -- refVS = M.insert (getRefVar var) lv vs -- var o *var?
     -- deref = ([T.TACC T.Deref lv rv Nothing], lv)
   
-  {- 
-    if var.scope == 0 then lo que hice
-    else
-      adrr := base/fp[var.offset]
-    
-    acceso a campos
-    if var.scope == 0 then adrr := var[field.offset]
-    else
-      adrr := base/fp[var.offset + field.offset]
-  -}
   case var of
-    -- Desref _ t  -> tell (deref lv rv) >> return lv
-    -- Index _ e _ -> do
-    --   (eCode,eTemp) <- genExpr e
-    --   put state{vars = newVS, offS = newOS}
-    --   return (eCode ++ [T.TACC T.Get lv rv eTemp], lv)
-    -- Param n t ref -> -- no llega aaqui. T.T ==>> Asociar la Var que se le pasa como Parametro
-    --   if ref == Value then return ([T.TACC T.Param Nothing rv Nothing], Nothing)
-    --   else
-    --     put state{vars = newVS} >> return ([T.TACC T.Ref lv rv Nothing], lv)
-    -- -- Field v f t   -> 
+    Param n t ref -> error "Un parametro no deberia poder estar en una asignacion"
+    Desref _ t    -> return() -- tell (deref lv rv) >> return lv
+    Index _ e _   -> return()
+    Field v f t   -> return()
     _     -> return tacVar
 
 
@@ -445,14 +431,13 @@ genTerOp eB eT eF tOp = do
   return lv
 
 
--- Confirmar offsets Ok
--- tiene que ser var[i] no con un nuevo temp
+-- 
 genArrayList :: [Expr] -> Int -> Int -> TACOP -> TACMonad TACOP
-genArrayList [] _ _ arrTemp                   = return arrTemp
+genArrayList [] _ _ _                         = return Nothing
 genArrayList (elem:elems) width index arrTemp = do
   elemTemp <- genExpr elem
   tell (tacSet arrTemp (tacConstant (show index,TInt)) elemTemp)
-  actO        <- pushOffset width
+  actO     <- pushOffset width
   genArrayList elems width (index + 1) (modifyOffSet arrTemp actO)
 
 
@@ -482,17 +467,17 @@ genFuncCall (Call f params) = do
 
 -- Cuando se hace new de un tipo, para apuntadores. Reservar espacio para ese tipo
 -- devolver temporal que es un apuntador a ese tipo?
--- genType :: Type -> MTACExpr
--- genType t = do
-  -- -- state@Operands{temps = ts, offS = os@(actO:_), astST = st} <- get
+genType :: Type -> TACMonad TACOP
+genType t = return Nothing
+  -- state@Operands{temps = ts, offS = os@(actO:_), astST = st} <- get
   -- let
-  --   -- tInfo = head . fromJust $ lookupInSymTab (show t) st
-  --   -- temp  = "$t" ++ show (M.size ts)
-  --   -- newO  = (fst actO, snd actO + getWidth tInfo t)
-  --   -- lv    = tacVariable $ SymbolInfo temp t (-1) TempReg actO []
-  --   rv    = tacConstant (show t, t)
+    -- tInfo = head . fromJust $ lookupInSymTab (show t) st
+    -- temp  = "$t" ++ show (M.size ts)
+    -- newO  = (fst actO, snd actO + getWidth tInfo t)
+    -- lv    = tacVariable $ SymbolInfo temp t (-1) TempReg actO []
+    -- rv    = tacConstant (show t, t)
   
-  -- -- put state{temps = M.insert temp True ts, offS = newO:os}
+  -- put state{temps = M.insert temp True ts, offS = newO:os}
   -- return ([], rv)
 
 

@@ -12,9 +12,9 @@ module Playit.FrontEnd.Promises.Handler where
 
 
 import Control.Monad           (when,unless,forM)
-import Control.Monad.Trans.RWS
+import Control.Monad.Trans.RWS (get,put,tell,ask)
 import Data.Maybe              (isJust,isNothing,fromJust,fromMaybe)
-import Data.Set as S           (fromList,toList)
+import Data.Set           as S (fromList,toList)
 import Playit.FrontEnd.Utils
 import Playit.FrontEnd.Errors
 import Playit.FrontEnd.SymbolTable
