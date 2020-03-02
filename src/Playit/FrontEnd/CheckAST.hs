@@ -7,16 +7,16 @@
  *  Natascha Gamboa     12-11250
 -}
 
-module Playit.CheckAST where
+module Playit.FrontEnd.CheckAST where
 
 import Control.Monad.Trans.RWS
 import Control.Monad           (when,unless)
 import Data.Maybe              (isJust,fromJust,fromMaybe,maybe)
-import Playit.AuxFuncs
-import Playit.Errors
-import Playit.PromisesHandler
-import Playit.SymbolTable
-import Playit.Types
+import Playit.FrontEnd.Utils
+import Playit.FrontEnd.Errors
+import Playit.FrontEnd.Promises.Handler
+import Playit.FrontEnd.SymbolTable
+import Playit.FrontEnd.Types
 import qualified Data.Map as M
 
 

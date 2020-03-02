@@ -8,17 +8,17 @@
  *  Natascha Gamboa     12-11250
 -}
 
-module Playit.PromisesHandler where
+module Playit.FrontEnd.Promises.Handler where
 
 
 import Control.Monad           (when,unless,forM)
 import Control.Monad.Trans.RWS
 import Data.Maybe              (isJust,isNothing,fromJust,fromMaybe)
 import Data.Set as S           (fromList,toList)
-import Playit.AuxFuncs
-import Playit.Errors
-import Playit.SymbolTable
-import Playit.Types
+import Playit.FrontEnd.Utils
+import Playit.FrontEnd.Errors
+import Playit.FrontEnd.SymbolTable
+import Playit.FrontEnd.Types
 
 
 

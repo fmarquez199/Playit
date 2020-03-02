@@ -1,4 +1,4 @@
-module Playit.TACType where
+module Playit.BackEnd.TACType where
 
 
 class SymEntryCompatible a where

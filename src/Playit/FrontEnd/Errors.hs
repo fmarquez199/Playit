@@ -6,13 +6,13 @@
  *  Francisco Javier    12-11163
  *  Natascha Gamboa     12-11250
 -}
-module Playit.Errors where
+module Playit.FrontEnd.Errors where
 
 
 import Control.Monad.Trans.RWS
 import Data.List.Split         (splitOn)
-import Playit.Lexer
-import Playit.Types
+import Playit.FrontEnd.Lexer
+import Playit.FrontEnd.Types
 
 
 

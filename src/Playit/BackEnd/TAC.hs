@@ -2,22 +2,23 @@
  * Three address code
  *
  * Copyright : (c) 
- *  Manuel Gonzalez     11-10390
  *  Francisco Javier    12-11163
  *  Natascha Gamboa     12-11250
 -}
-module Playit.TAC where
+module Playit.BackEnd.TAC where
 
 import Control.Monad.IO.Class  (liftIO)
 import Control.Monad           (when,unless)
 import Control.Monad.Trans.RWS (ask,tell,get,put)
 import Data.List.Split         (splitOn)
 import Data.Maybe              (fromJust,isNothing)
-import Playit.AuxFuncs
-import Playit.SymbolTable
-import Playit.Types
-import qualified Data.Map as M
-import qualified Playit.TACType as T
+import Playit.BackEnd.Utils
+import Playit.BackEnd.Types
+import Playit.FrontEnd.SymbolTable
+import Playit.FrontEnd.Types
+import Playit.FrontEnd.Utils
+import qualified Data.Map               as M
+import qualified Playit.BackEnd.TACType as T
 
 
 -- Colocar los temps de print, read y null al inicio?

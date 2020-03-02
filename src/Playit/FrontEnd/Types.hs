@@ -6,13 +6,13 @@
  *  Francisco Javier    12-11163
  *  Natascha Gamboa     12-11250
 -}
-module Playit.Types where
+module Playit.FrontEnd.Types where
 
 import Control.Monad.Trans.RWS
 import Data.List                       (intercalate,elemIndex)
 import Data.Maybe                      (fromJust)
-import qualified Data.Map       as M
-import qualified Playit.TACType as TAC
+-- import Playit.FrontEnd.Promises.Types -- Resolver ciclo de importacion
+import qualified Data.Map               as M
 
 
 -------------------------------------------------------------------------------
@@ -374,11 +374,7 @@ type FileCodeReader = (String,String)
 type MonadSymTab a = RWST FileCodeReader [String] SymTabState IO a
 
 
--------------------------------------------------------------------------------
--------------------------------------------------------------------------------
---                           Promises data types
--------------------------------------------------------------------------------
--------------------------------------------------------------------------------
+
 
 type Promises = [Promise]
 
@@ -426,52 +422,3 @@ data LateCheckPromise =
   deriving (Eq, Ord,Show)
 
 data PromiseExtraI = PromiseExtraI{}
-
-
--------------------------------------------------------------------------------
--------------------------------------------------------------------------------
---                            TAC data types
--------------------------------------------------------------------------------
--------------------------------------------------------------------------------
-
-type TempReg    = String
-type OffSet     = Int
-type TAC        = TAC.ThreeAddressCode TACInfo Type
-type TACOP      = Maybe (TAC.Operand TACInfo Type)
-
-data TACInfo = Temp Id OffSet | TACVar SymbolInfo OffSet  deriving (Eq, Ord)
-
-instance TAC.SymEntryCompatible TACInfo where
-  getSymID (Temp n o)      = "fp[" ++ show o ++ "]->($t" ++ n ++ ")"
-  getSymID (TACVar info o) = "fp[" ++ show o ++ "]->(" ++ symId info ++ ")"
-
-instance Show TACInfo where
-  show = TAC.getSymID
-
-{- | Guarda las variables del codigo del programa, los registros temporales,
-  literales, labels, los labels a donde ir cuando se hace break y continue,
-  la pila de offsets(continua desde donde quedo luego de crear el AST) y la
-  tabla de simbolos ya creada
--}
-data Operands = Operands {
-  vars  :: M.Map Var TACOP,
-  temps :: M.Map TACInfo Bool,
-  lits  :: M.Map Literal TACOP,
-  labs  :: [Int],
-  brkL  :: TACOP,
-  contL :: TACOP,
-  offS  :: [OffSet],
-  subs  :: [(Id,InstrSeq,Bool)],
-  astST :: SymTab
-} deriving (Eq, Ord)
-
-instance Show Operands where
-  show (Operands vs ts ls lbs brk con offs s st) = 
-    "\n vars: " ++ show vs ++ "\n temps: " ++ show ts ++
-    "\n lits: " ++ show ls ++ "\n labels: " ++ show lbs ++
-    "\n break: " ++ show brk ++ "\n continue: " ++ show con ++
-    "\n offsets: " ++ show offs ++ "\nsubroutines: " ++ show s {- ++ show st -} ++ "\n"
-
--- Monad para manejar los operandos, writer tiene la lista de las instrucciones
--- de tres direcciones, reader tiene el AST que sale del parser
-type TACMonad a = RWST Instr [TAC] Operands IO a

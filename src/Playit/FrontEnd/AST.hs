@@ -6,17 +6,17 @@
  *  Francisco Javier    12-11163
  *  Natascha Gamboa     12-11250
 -}
-module Playit.AST where
+module Playit.FrontEnd.AST where
 
 import Control.Monad           (when,unless,forM,forM_)
 import Control.Monad.Trans.RWS
 import Data.Maybe              (fromJust,isJust,isNothing,fromMaybe)
-import Playit.AuxFuncs
-import Playit.CheckAST
-import Playit.Errors
-import Playit.PromisesHandler
-import Playit.SymbolTable
-import Playit.Types
+import Playit.FrontEnd.Utils
+import Playit.FrontEnd.CheckAST
+import Playit.FrontEnd.Errors
+import Playit.FrontEnd.Promises.Handler
+import Playit.FrontEnd.SymbolTable
+import Playit.FrontEnd.Types
 
 
 -------------------------------------------------------------------------------

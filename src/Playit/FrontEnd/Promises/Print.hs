@@ -6,10 +6,11 @@
  *  Francisco Javier    12-11163
  *  Natascha Gamboa     12-11250
 -}
-module Playit.PrintPromises where
+module Playit.FrontEnd.Promises.Print where
 
 
-import Playit.Types
+import Playit.FrontEnd.Types
+import Playit.FrontEnd.Promises.Types
 
 
 printPromiseParam :: [(Type,Pos)] -> IO ()

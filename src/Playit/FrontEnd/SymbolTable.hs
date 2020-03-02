@@ -7,15 +7,15 @@
  *  Francisco Javier    12-11163
  *  Natascha Gamboa     12-11250
 -}
-module Playit.SymbolTable where
+module Playit.FrontEnd.SymbolTable where
 
 import Control.Monad           (when,forM_)
 import Control.Monad.Trans.RWS
 import Data.List               (findIndices)
 import Data.Maybe              (fromJust,isJust,isNothing)
-import Playit.AuxFuncs
-import Playit.Errors
-import Playit.Types
+import Playit.FrontEnd.Utils
+import Playit.FrontEnd.Errors
+import Playit.FrontEnd.Types
 import Control.Monad.IO.Class  (liftIO)
 import qualified Data.Map as M
 

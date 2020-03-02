@@ -8,19 +8,19 @@
  *  Natascha Gamboa     12-11250
 -}
 
-module Playit.Parser (parse, error) where
+module Playit.FrontEnd.Parser (parse, error) where
 
 import Control.Monad           (void,when)
 import Control.Monad.Trans.RWS
 import Data.Maybe              (fromJust)
-import Playit.AST
-import Playit.AuxFuncs
-import Playit.CheckAST
-import Playit.Errors
-import Playit.Lexer
-import Playit.PromisesHandler
-import Playit.SymbolTable
-import Playit.Types
+import Playit.FrontEnd.AST
+import Playit.FrontEnd.Utils
+import Playit.FrontEnd.CheckAST
+import Playit.FrontEnd.Errors
+import Playit.FrontEnd.Lexer
+import Playit.FrontEnd.Promises.Handler
+import Playit.FrontEnd.SymbolTable
+import Playit.FrontEnd.Types
 
 }
 

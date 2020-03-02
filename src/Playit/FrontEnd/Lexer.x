@@ -8,13 +8,13 @@
  *  Natascha Gamboa     12-11250
 -}
 
-module Playit.Lexer (
+module Playit.FrontEnd.Lexer (
     Token(..),
     -- AlexPosn(..), 
     alexScanTokens,
 ) where
 
-import Playit.Types
+import Playit.FrontEnd.Types
 }
 
 %wrapper "posn"

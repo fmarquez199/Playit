@@ -8,21 +8,17 @@
 -}
 module Main where
 
-import Control.Monad.Trans.RWS (runRWST)
-import Control.Monad           (mapM_)
-import Control.Exception
-import Data.Strings            (strEndsWith)
-import System.Environment      (getArgs)
-import System.IO.Error
-import System.IO               (readFile)
-import Playit.SymbolTable
-import Playit.Errors
-import Playit.Parser
-import Playit.Lexer
-import Playit.TAC
-import Playit.TACType
-import Playit.Types
-import Playit.PrintPromises
+import Control.Monad.Trans.RWS     (runRWST)
+import Control.Monad               (mapM_)
+import Data.Strings                (strEndsWith)
+import System.Environment          (getArgs)
+import System.IO                   (readFile)
+import Playit.FrontEnd.SymbolTable (stInitState)
+import Playit.FrontEnd.Errors      (lexerErrors,showLexerErrors)
+import Playit.FrontEnd.Parser      (parse)
+import Playit.FrontEnd.Lexer       (alexScanTokens)
+import Playit.FrontEnd.Types       (SymTabState(..))
+import Playit.BackEnd.TAC          (gen,tacInitState)
 
 
 -- | Determines if an file is empty
