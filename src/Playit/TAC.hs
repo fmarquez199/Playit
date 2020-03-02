@@ -22,7 +22,7 @@ import qualified Playit.TACType as T
 
 --
 tacInitState :: SymTab -> Operands
-tacInitState = Operands M.empty temps M.empty [] brk cont [0]
+tacInitState = Operands M.empty temps M.empty [] brk cont [0] []
   where
     printReg = Temp "_print" (-1)
     readReg  = Temp "_read" (-1)
@@ -32,12 +32,16 @@ tacInitState = Operands M.empty temps M.empty [] brk cont [0]
     temps    = M.fromList [(printReg,False), (readReg,False), (nullReg,False)]
 
 
--- 
 gen :: Instr -> TACMonad ()
-gen i = case i of
-  (Program is _)             -> mapM_ gen is
+gen ast = tell (tacCall "_main" 0) >> tell (tacNewLabel $ tacLabel "_main") >> genCode ast
+
+
+-- 
+genCode :: Instr -> TACMonad ()
+genCode i = case i of
+  (Program is _)             -> mapM_ genCode is >> genSubroutines
   (Assig v e _)              -> newLabel >>= genAssig v e
-  (Assigs is _)              -> mapM_ gen is
+  (Assigs is _)              -> mapM_ genCode is
   (Break _)                  -> genBreak
   (Continue _)               -> genContinue
   (For n e1 e2 is _)         -> breakI   >>= genFor n e1 e2 is
@@ -47,10 +51,18 @@ gen i = case i of
   (While e is _)             -> breakI   >>= genWhile e is
   (Print es _)               -> return () -- genPrint es
   (Free id _)                -> return () -- genFree id
-  (ProcCall s _)             -> return () -- genProcCall s
+  (ProcCall s _)             -> genProcCall s
   (Return e _)               -> return () -- genReturn e
 
 
+genSubroutines :: TACMonad ()
+genSubroutines = do
+  Operands{subs = subroutines} <- get
+  mapM_ genSubroutine subroutines
+
+
+genSubroutine :: (Id,InstrSeq) -> TACMonad ()
+genSubroutine (s,i) = tell (tacNewLabel $ tacLabel s) >> mapM_ genCode i
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 --                            TAC Instructions
@@ -109,7 +121,7 @@ genFor n e1 e2 is nextL = forComparison n e1 e2 nextL >>= forInstrs is nextL
 -- genForEach :: Id -> Expr -> InstrSeq -> TACMonad ()
 -- genForEach n e is = return [] -- concatTAC var for
   -- where
-  --   var = gen (Assig (Var n (typeE e)) e TVoid)
+  --   var = genCode (Assig (Var n (typeE e)) e TVoid)
 
 
 -- 
@@ -127,7 +139,7 @@ genIF ((e, is):guards) nextL = do
   let isLast = null guards
   falseL <- if isLast then return nextL else newLabel
   genBoolExpr e fall falseL
-  mapM_ gen is
+  mapM_ genCode is
   unless isLast $ tell (tacGoto nextL)
   unless isLast $ tell (tacNewLabel falseL)
   -- unless isLast $ 
@@ -141,7 +153,7 @@ genWhile e is nextL = do
   begin <- continue
   tell (tacNewLabel begin)
   genBoolExpr e fall nextL
-  mapM_ gen is
+  mapM_ genCode is
   tell (tacGoto begin)
   tell (tacNewLabel nextL)
 
@@ -173,8 +185,12 @@ genWhile e is nextL = do
 
 -------------------------------------------------------------------------------
 -- 
--- genProcCall :: Subroutine -> TACMonad ()
--- genProcCall (Call s params) = do
+genProcCall :: Subroutine -> TACMonad ()
+genProcCall (Call s params) = do
+  pushSubroutine s
+  -- act= <- pushOffset 4 -- ==>> ?
+  genParams (map fst params)
+  tell (tacCall s $ length params)
   -- state@Operands{astST = st, labs = ls} <- get
   -- paramsCode <- genParams params 
   -- let
@@ -185,15 +201,17 @@ genWhile e is nextL = do
   --   ret    = [T.TACC T.Return Nothing Nothing Nothing]
   --   begin  = [T.TACC T.NewLabel (tacLabel $ length ls) Nothing Nothing]
   -- liftIO $ print params
-  -- stmts <- foldl concatTAC (return []) (map gen instrs)
+  -- stmts <- foldl concatTAC (return []) (map genCode instrs)
   -- put state{labs = length ls : ls}
 
   -- return $ paramsCode ++ [T.TACC T.Call Nothing proc args] ++ begin ++ stmts ++ ret
 
 -- 
--- genParams :: Params -> TACMonad ()
+genParams :: [Expr] -> TACMonad ()
 -- genParams []             = return []
--- genParams ((e,_):params) = do
+genParams params = do
+  operands <- mapM genExpr params
+  tell $ map tacParam operands
   -- (eCode,eTemp) <- genExpr e
   -- paramsCode    <- genParams params
   -- return $ eCode ++
@@ -202,11 +220,11 @@ genWhile e is nextL = do
 -------------------------------------------------------------------------------
 
 
--- 
--- genReturn :: Expr -> TACMonad ()
--- genReturn e = do
-  -- eTemp <- genExpr e
-  -- tell [T.TACC T.Return Nothing eTemp Nothing] -- ++ goto begin(continue) ++ label end(break)
+-- Hace epilogo
+genReturn :: Expr -> TACMonad ()
+genReturn e = do
+  eTemp <- genExpr e
+  tell [T.TACC T.Return Nothing eTemp Nothing]
 
 
 -- 
@@ -490,7 +508,7 @@ genArrayList (elem:elems) width index arrTemp = do
 -- 
 -- genRead :: Expr -> MTACExpr
 -- genRead e = do
-  -- msg <- gen (Print [e] TVoid)
+  -- msg <- genCode (Print [e] TVoid)
   -- state@Operands{offS = actO:_} <- get
   -- let
   --   lv = tacVariable $ SymbolInfo "$read" TStr (-1) TempRead actO []
@@ -508,7 +526,7 @@ genArrayList (elem:elems) width index arrTemp = do
   --   instrs = getAST $ extraInfo fInfo
 
   -- paramsCode <- genParams params
-  -- stmts      <- foldl concatTAC (return []) (map gen instrs)
+  -- stmts      <- foldl concatTAC (return []) (map genCode instrs)
   -- state@Operands{temps = ts, labs = ls, offS = os@(actO:_)} <- get
   -- let
   --   func   = tacVariable fInfo
@@ -590,6 +608,13 @@ pushVariable var tVar = do
     return temp
 
 
+pushSubroutine :: Id -> TACMonad ()
+pushSubroutine s = do
+  state@Operands{subs = subroutines, astST = st} <- get
+  let ast = getAST . extraInfo . head . fromJust $ lookupInSymTab s st
+  put state{subs = (s,ast):subroutines}
+
+
 forComparison :: Id -> Expr -> Expr -> TACOP -> TACMonad (TACOP,TACOP,TACOP)
 forComparison n e1 e2 nextL = do
   begin   <- newLabel
@@ -605,7 +630,7 @@ forComparison n e1 e2 nextL = do
 
 forInstrs :: InstrSeq -> TACOP -> (TACOP,TACOP,TACOP) -> TACMonad ()
 forInstrs is nextL (begin,cont,iterVar) = do
-  mapM_ gen is
+  mapM_ genCode is
   tell (tacNewLabel cont)
   iterVarIncr <- genBinOp Add TInt iterVar (tacConstant ("1",TInt))
   tell (tacAssign iterVar iterVarIncr)

@@ -710,6 +710,18 @@ tacGet x y i = [T.TACC T.Get x y i]
 
 
 -------------------------------------------------------------------------------
+tacCall :: String -> Int -> [TAC]
+tacCall s n = [T.TACC T.Call Nothing (tacLabel s) (tacConstant (show n,TInt))]
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+tacParam :: TACOP -> TAC
+tacParam p = T.TACC T.Param Nothing p Nothing
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
 -- | Modify the symbol offset
 modifyOffSet :: TACOP -> OffSet -> TACOP
 modifyOffSet (Just (T.Variable (Temp n _))) newO      = tacVariable $ Temp n newO
@@ -744,10 +756,10 @@ lenArray (TArray (Literal (Integer i) _) _) = i
 
 
 -------------------------------------------------------------------------------
--- getAST :: [ExtraInfo] -> InstrSeq
--- getAST []        = []
--- getAST (AST i:_) = i
--- getAST (_:rs)    = getAST rs
+getAST :: [ExtraInfo] -> InstrSeq
+getAST []        = []
+getAST (AST i:_) = i
+getAST (_:rs)    = getAST rs
 -------------------------------------------------------------------------------
 
 

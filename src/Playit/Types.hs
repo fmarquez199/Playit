@@ -461,15 +461,16 @@ data Operands = Operands {
   brkL  :: TACOP,
   contL :: TACOP,
   offS  :: [OffSet],
+  subs  :: [(Id,InstrSeq)],
   astST :: SymTab
 } deriving (Eq, Ord)
 
 instance Show Operands where
-  show (Operands vs ts ls lbs brk con offs st) = 
+  show (Operands vs ts ls lbs brk con offs s st) = 
     "\n vars: " ++ show vs ++ "\n temps: " ++ show ts ++
     "\n lits: " ++ show ls ++ "\n labels: " ++ show lbs ++
     "\n break: " ++ show brk ++ "\n continue: " ++ show con ++
-    "\n offsets: " ++ show offs {- ++ show st -} ++ "\n"
+    "\n offsets: " ++ show offs ++ "\nsubroutines: " ++ show s {- ++ show st -} ++ "\n"
 
 -- Monad para manejar los operandos, writer tiene la lista de las instrucciones
 -- de tres direcciones, reader tiene el AST que sale del parser

@@ -8,9 +8,9 @@
 @    Skill b
 @    Battle c
 @  .~
-@  boss b(Inv i, Skill ? x):
-@    x = 10'5
-@  .~
+  boss b(Power i, Skill x):
+    x = 10'5
+  .~
 @  monster m(Skill s) Power:
 @    Power i = 0
 @    unlock i
@@ -78,9 +78,9 @@ world %Pruebas%:
 @  Runes j = joystick ~Here we go~
 @  drop s
 
-@  kill b( kill portalRunesToPower(joystick) ,f)
+  kill b(x,4'5)
 
-  Power|}2{| array = |)2,3(|
+@  Power|}2{| array = |)2,3(|
 @  array|)0(| = 0
 @  x = array|)0(|
 

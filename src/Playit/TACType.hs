@@ -79,7 +79,7 @@ data (SymEntryCompatible a) => Operand a b =
 instance (SymEntryCompatible a, Show a, Show b) => Show (Operand a b) where
   show (Variable x) = show x
   show (Constant c) = fst c
-  show (Label l)    = "label_" ++ l
+  show (Label l)    = l
 
 
 data Operation =
