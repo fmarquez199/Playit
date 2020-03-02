@@ -461,7 +461,7 @@ data Operands = Operands {
   brkL  :: TACOP,
   contL :: TACOP,
   offS  :: [OffSet],
-  subs  :: [(Id,InstrSeq)],
+  subs  :: [(Id,InstrSeq,Bool)],
   astST :: SymTab
 } deriving (Eq, Ord)
 

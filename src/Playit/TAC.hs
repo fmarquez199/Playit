@@ -33,7 +33,7 @@ tacInitState = Operands M.empty temps M.empty [] brk cont [0] []
 
 
 gen :: Instr -> TACMonad ()
-gen ast = tell (tacCall "_main" 0) >> tell (tacNewLabel $ tacLabel "_main") >> genCode ast
+gen ast = tell (tacCall "_main" 0 ++ tacNewLabel (tacLabel "_main")) >> genCode ast
 
 
 -- 
@@ -52,7 +52,7 @@ genCode i = case i of
   (Print es _)               -> return () -- genPrint es
   (Free id _)                -> return () -- genFree id
   (ProcCall s _)             -> genProcCall s
-  (Return e _)               -> return () -- genReturn e
+  (Return e _)               -> return () -- genExpr e >>= genReturn
 
 
 genSubroutines :: TACMonad ()
@@ -61,8 +61,9 @@ genSubroutines = do
   mapM_ genSubroutine subroutines
 
 
-genSubroutine :: (Id,InstrSeq) -> TACMonad ()
-genSubroutine (s,i) = tell (tacNewLabel $ tacLabel s) >> mapM_ genCode i
+genSubroutine :: (Id,InstrSeq,Bool) -> TACMonad ()
+genSubroutine (s,i,isProc) =
+  tell (tacNewLabel $ tacLabel s) >> mapM_ genCode i >> when isProc (genReturn Nothing)
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 --                            TAC Instructions
@@ -184,47 +185,25 @@ genWhile e is nextL = do
 
 
 -------------------------------------------------------------------------------
--- 
+-- Confirmar offsets Ok
 genProcCall :: Subroutine -> TACMonad ()
 genProcCall (Call s params) = do
-  pushSubroutine s
+  pushSubroutine s True
   -- act= <- pushOffset 4 -- ==>> ?
   genParams (map fst params)
   tell (tacCall s $ length params)
-  -- state@Operands{astST = st, labs = ls} <- get
-  -- paramsCode <- genParams params 
-  -- let
-  --   pInfo  = head . fromJust $ lookupInSymTab s st
-  --   instrs = getAST $ extraInfo pInfo
-  --   proc   = tacVariable pInfo
-  --   args   = tacConstant (show $ length paramsCode, TInt)
-  --   ret    = [T.TACC T.Return Nothing Nothing Nothing]
-  --   begin  = [T.TACC T.NewLabel (tacLabel $ length ls) Nothing Nothing]
-  -- liftIO $ print params
-  -- stmts <- foldl concatTAC (return []) (map genCode instrs)
-  -- put state{labs = length ls : ls}
-
-  -- return $ paramsCode ++ [T.TACC T.Call Nothing proc args] ++ begin ++ stmts ++ ret
 
 -- 
 genParams :: [Expr] -> TACMonad ()
--- genParams []             = return []
 genParams params = do
   operands <- mapM genExpr params
   tell $ map tacParam operands
-  -- (eCode,eTemp) <- genExpr e
-  -- paramsCode    <- genParams params
-  -- return $ eCode ++
-  --   if isNothing eTemp then paramsCode
-  --   else T.TACC T.Param Nothing eTemp Nothing : paramsCode
 -------------------------------------------------------------------------------
 
 
 -- Hace epilogo
-genReturn :: Expr -> TACMonad ()
-genReturn e = do
-  eTemp <- genExpr e
-  tell [T.TACC T.Return Nothing eTemp Nothing]
+genReturn :: TACOP -> TACMonad ()
+genReturn e = tell [T.TACC T.Return Nothing e Nothing]
 
 
 -- 
@@ -495,7 +474,7 @@ genTerOp eB eT eF tOp = do
   return lv
 
 
--- 
+-- Confirmar offsets Ok
 genArrayList :: [Expr] -> Int -> Int -> TACOP -> TACMonad TACOP
 genArrayList [] _ _ arrTemp                   = return arrTemp
 genArrayList (elem:elems) width index arrTemp = do
@@ -608,11 +587,11 @@ pushVariable var tVar = do
     return temp
 
 
-pushSubroutine :: Id -> TACMonad ()
-pushSubroutine s = do
+pushSubroutine :: Id -> Bool -> TACMonad ()
+pushSubroutine s isProc = do
   state@Operands{subs = subroutines, astST = st} <- get
   let ast = getAST . extraInfo . head . fromJust $ lookupInSymTab s st
-  put state{subs = (s,ast):subroutines}
+  put state{subs = (s,ast,isProc):subroutines}
 
 
 forComparison :: Id -> Expr -> Expr -> TACOP -> TACMonad (TACOP,TACOP,TACOP)
