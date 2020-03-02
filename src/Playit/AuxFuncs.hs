@@ -710,8 +710,8 @@ tacGet x y i = [T.TACC T.Get x y i]
 
 
 -------------------------------------------------------------------------------
-tacCall :: String -> Int -> [TAC]
-tacCall s n = [T.TACC T.Call Nothing (tacLabel s) (tacConstant (show n,TInt))]
+tacCall :: TACOP -> String -> Int -> [TAC]
+tacCall lv s n = [T.TACC T.Call lv (tacLabel s) (tacConstant (show n,TInt))]
 -------------------------------------------------------------------------------
 
 

@@ -20,7 +20,7 @@ import qualified Data.Map as M
 import qualified Playit.TACType as T
 
 
---
+-- Colocar los temps de print, read y null al inicio?
 tacInitState :: SymTab -> Operands
 tacInitState = Operands M.empty temps M.empty [] brk cont [0] []
   where
@@ -33,8 +33,7 @@ tacInitState = Operands M.empty temps M.empty [] brk cont [0] []
 
 
 gen :: Instr -> TACMonad ()
-gen ast = tell (tacCall "_main" 0 ++ tacNewLabel (tacLabel "_main")) >> genCode ast
-
+gen ast = tell (tacCall Nothing "_main" 0 ++ tacNewLabel (tacLabel "_main")) >> genCode ast
 
 -- 
 genCode :: Instr -> TACMonad ()
@@ -50,9 +49,9 @@ genCode i = case i of
   (IF gs _)                  -> newLabel >>= genIF gs
   (While e is _)             -> breakI   >>= genWhile e is
   (Print es _)               -> return () -- genPrint es
-  (Free id _)                -> return () -- genFree id
+  (Free id _)                -> genFree id
   (ProcCall s _)             -> genProcCall s
-  (Return e _)               -> return () -- genExpr e >>= genReturn
+  (Return e _)               -> genExpr e >>= genReturn
 
 
 genSubroutines :: TACMonad ()
@@ -71,7 +70,7 @@ genSubroutine (s,i,isProc) =
 -------------------------------------------------------------------------------
 
 
--- 
+-- Registros/Uniones
 genAssig :: Var -> Expr -> TACOP -> TACMonad ()
 genAssig var e nextL = case typeVar var of
   -- Si es el operador ternario la expr puede ser bool o no
@@ -143,8 +142,7 @@ genIF ((e, is):guards) nextL = do
   mapM_ genCode is
   unless isLast $ tell (tacGoto nextL)
   unless isLast $ tell (tacNewLabel falseL)
-  -- unless isLast $ 
-  when isLast $ return () -- tell (tacNewLabel nextL)
+  when isLast $ return ()
   genIF guards nextL
 
 
@@ -174,24 +172,26 @@ genWhile e is nextL = do
 
 
 -- 
--- genFree :: Id -> TACMonad ()
--- genFree varId = do
-  -- Operands{vars = vs, astST = st} <- get
-  -- let
-  --   varT = symType . head . fromJust $ lookupInSymTab varId st
-  --   var  = Var varId varT
-  --   addr = fromJust $ M.lookup var vs
-  -- return [T.TACC T.Free Nothing addr Nothing]
+genFree :: Id -> TACMonad ()
+genFree varId = do
+  Operands{vars = vs, astST = st} <- get
+  let -- Si se cambia por 'free Expr' no tendria que buscar en la symtab
+    varT = symType . head . fromJust $ lookupInSymTab varId st
+    var  = fromJust $ M.lookup (Var varId varT) vs
+  tell [tacParam var]
+  tell (tacCall Nothing "free" 1)
 
 
 -------------------------------------------------------------------------------
+-- Hace prologo
 -- Confirmar offsets Ok
 genProcCall :: Subroutine -> TACMonad ()
 genProcCall (Call s params) = do
   pushSubroutine s True
   -- act= <- pushOffset 4 -- ==>> ?
   genParams (map fst params)
-  tell (tacCall s $ length params)
+  -- Prologo antes de pasar el poder al proc
+  tell (tacCall Nothing s $ length params)
 
 -- 
 genParams :: [Expr] -> TACMonad ()
@@ -242,7 +242,7 @@ genExpr e = case e of
     in pushOffset width >>= newTemp >>= genArrayList es width 0
   -- Null                -> genNull
   -- Read e _            -> genRead e
-  -- FuncCall s _        -> genFuncCall s
+  FuncCall s _        -> genFuncCall s
   -- IdType t            -> genType t
   _ -> return Nothing
 
@@ -309,7 +309,7 @@ genComparison leftExpr rightExpr trueL falseL op = do
   EmptyVal -> Usado cuando no se coloca msj en el read
   Register
   Union
-  Array
+  ArrLst -> Realmente se llega hasta aqui?
   String
 -}
 genLiteral :: Literal -> Type -> TACMonad TACOP
@@ -496,28 +496,16 @@ genArrayList (elem:elems) width index arrTemp = do
   -- return (msg ++ [T.TACC T.Assign lv rv Nothing], lv)
 
 
--- 
--- genFuncCall :: Subroutine -> MTACExpr
--- genFuncCall (Call f params) = do
-  -- Operands{astST = st} <- get
-  -- let
-  --   fInfo  = head . fromJust $ lookupInSymTab f st
-  --   instrs = getAST $ extraInfo fInfo
-
-  -- paramsCode <- genParams params
-  -- stmts      <- foldl concatTAC (return []) (map genCode instrs)
-  -- state@Operands{temps = ts, labs = ls, offS = os@(actO:_)} <- get
-  -- let
-  --   func   = tacVariable fInfo
-  --   args   = tacConstant (show $ length paramsCode, TInt)
-  --   temp   = "$t" ++ show (M.size ts)
-  --   typeF  = symType fInfo
-  --   newO   = (fst actO, snd actO + getWidth fInfo typeF)
-  --   lv     = tacVariable $ SymbolInfo temp typeF (-1) TempReg actO []
-  --   begin  = [T.TACC T.NewLabel (tacLabel $ length ls) Nothing Nothing]
-
-  -- put state{temps = M.insert temp True ts, labs = length ls : ls, offS = newO:os}
-  -- return (paramsCode ++ [T.TACC T.Call lv func args] ++ begin ++ stmts, lv)
+-- Hace prologo
+genFuncCall :: Subroutine -> TACMonad TACOP
+genFuncCall (Call f params) = do
+  pushSubroutine f False
+  genParams (map fst params)
+  Operands{offS = actO:_} <- get
+  lv <- newTemp actO
+  -- Prologo antes de pasar el poder al proc
+  tell (tacCall lv f $ length params)
+  return lv
 
 
 -- Cuando se hace new de un tipo, para apuntadores. Reservar espacio para ese tipo
