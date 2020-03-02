@@ -2,13 +2,14 @@ module Utils where
 
 import Test.Hspec
 import Control.Monad.RWS
-import Playit.Lexer       (alexScanTokens)
-import Playit.Parser      (parse)
-import Playit.SymbolTable (initState)
-import Playit.TAC         (gen, tacInitState)
-import qualified Playit.TACType as T
-import Playit.AuxFuncs (tacConstant, tacVariable, tacLabel, tacGoTo)
-import Playit.Types
+import Playit.FrontEnd.Lexer       (alexScanTokens)
+import Playit.FrontEnd.Parser      (parse)
+import Playit.FrontEnd.SymbolTable (stInitState)
+import Playit.FrontEnd.Types
+import Playit.BackEnd.TAC          (gen,tacInitState)
+import Playit.BackEnd.Utils        (tacConstant,tacVariable,tacLabel,tacGoto)
+import Playit.BackEnd.Types
+import qualified Playit.BackEnd.TACType as T
 
 runTestForValidTAC :: String -> [TAC] -> IO ()
 runTestForValidTAC program genTAC = do
@@ -16,8 +17,8 @@ runTestForValidTAC program genTAC = do
     tokens   = alexScanTokens program
     fileCode = ("TestValidTAC.game", program)
 
-  (ast, SymTabState{symTab = st}, _) <- runRWST (parse tokens) fileCode initState
-  (tac, _, _) <- runRWST (gen ast) ast (tacInitState st)
+  (ast, SymTabState{symTab = st}, _) <- runRWST (parse tokens) fileCode stInitState
+  (_, _, tac) <- runRWST (gen ast) ast (tacInitState st)
   tac `shouldBe` genTAC
 
 
@@ -313,7 +314,7 @@ float = tacVariable $ SymbolInfo "i" TFloat 1 Variables ("global", 0) []
 bool :: TACOP
 bool = tacVariable $ SymbolInfo "p" TBool 1 Variables ("global", 0) []
 
-temp :: TReg -> Type -> String -> Bool -> TACOP
+temp :: TempReg -> Type -> String -> Bool -> TACOP
 temp reg t typ True  = tacVariable $ SymbolInfo reg t 1 Constants (typ, -1) []
 temp reg t typ False = tacVariable $ SymbolInfo reg t 1 Variables (typ, -1) []
 
@@ -363,7 +364,7 @@ assignBool True  = T.TACC T.Assign (temp "$t0" TBool "binOp" False) true Nothing
 assignBool False = T.TACC T.Assign (temp "$t0" TBool "binOp" False) false Nothing
 
 exitlist :: Int -> TAC
-exitlist x = tacGoTo (tacLabel x)
+exitlist x = tacGoto (tacLabel x)
 
 label :: Int -> TAC
 label x = T.TACC T.NewLabel (tacLabel x) Nothing Nothing

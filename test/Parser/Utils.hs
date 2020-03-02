@@ -1,11 +1,11 @@
 module Utils where
 
 import Test.Hspec
-import Control.Monad.RWS
-import Playit.Lexer
-import Playit.Parser
-import Playit.SymbolTable
-import Playit.Types (Instr)
+import Control.Monad.RWS          (runRWST)
+import Playit.FrontEnd.Lexer
+import Playit.FrontEnd.Parser
+import Playit.FrontEnd.SymbolTable
+import Playit.FrontEnd.Types       (Instr(..))
 
 runTestForValidProgram :: String -> (Instr -> Bool) -> IO ()
 runTestForValidProgram program predicate = do

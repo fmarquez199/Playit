@@ -1,7 +1,7 @@
 module ReservedWordsSpec where
 
 import Test.Hspec
-import Playit.Lexer
+import Playit.FontEnd.Lexer
 
 spec :: Spec
 spec = describe "Lexer.reservedWords" $ do

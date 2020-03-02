@@ -2,7 +2,7 @@ module ParserSpec where
 
 import Test.Hspec
 import Utils
-import Playit.Types
+import Playit.FrontEnd.Types
 
 
 spec :: Spec

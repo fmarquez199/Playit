@@ -8,9 +8,10 @@
 @    Skill b
 @    Battle c
 @  .~
-@  boss b(Power i, Skill x):
-@    x = 10'5
-@  .~
+  boss b(Power i, Skill x):
+    x = 10'5
+    Power y = i * 2
+  .~
 @  monster m(Skill s) Power:
 @    Power i = 0
 @    unlock i
@@ -75,11 +76,11 @@ world %Pruebas%:
   @.~
 
 @ Subrutinas
-  @kill b(x,4'5)
+  kill b(x,4'5)
   @x = kill m(10'4)
   
 @ Arreglos
-  @Power|}2{| array = |)2,3(|
+  Power|}2{| array = |)2,3(|
 
 
 

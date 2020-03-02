@@ -1,7 +1,7 @@
 module LiteralsSpec where
 
 import Test.Hspec
-import Playit.Lexer
+import Playit.FontEnd.Lexer
 
 spec :: Spec
 spec = describe "Lexer.literals" $ do

@@ -2,9 +2,9 @@ module AssignExprsSpec where
 
 import Test.Hspec
 import Utils
-import Playit.Types
-import qualified Playit.TACType as T
-import Playit.AuxFuncs(tacConstant, tacVariable)
+import Playit.FrontEnd.Types
+import Playit.BackEnd.Utils                  (tacConstant, tacVariable)
+import qualified Playit.BackEnd.TACType as T
 
 
 spec :: Spec

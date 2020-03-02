@@ -16,7 +16,7 @@ import Playit.BackEnd.Utils
 import Playit.BackEnd.Types
 import Playit.FrontEnd.SymbolTable (lookupInSymTab)
 import Playit.FrontEnd.Types
-import Playit.FrontEnd.Utils       (typeVar,baseTypeT,getName)
+import Playit.FrontEnd.Utils       (typeVar,baseTypeT,getName,isArrLst)
 import qualified Data.Map               as M
 import qualified Playit.BackEnd.TACType as T
 
@@ -97,7 +97,7 @@ genAssig var e nextL = case typeVar var of
       else
         base/fp[var.offset] := e
     -}
-    tell $ tacAssign vTemp eTemp
+    unless (isArrLst e) $ tell $ tacAssign vTemp eTemp
 
 
 -- 
@@ -320,37 +320,9 @@ genLiteral l typeL = do
   
   case l of
     {-
-      ArrLst elems -> do
-        let
-          len   = length elems - 1
-          tArr  = typeArrLst typeL
-          tArrW = getWidth tInfo tArr
-          tInfo = head . fromJust $ lookupInSymTab (show tArr) st
-          osi   = zip (replicate (len + 1) (fst actO)) [(snd actO)..(len * tArrW)]
-          newOS = (fst actO, (len + 1) * tArrW) : os
-          lvi o = tacVariable $ SymbolInfo t tArr (-1) TempReg o []
-          lit x = elems !! x
-          rvi x = tacConstant (show (lit x), tArr)
-          idx i = tacConstant (show i, tArr)
-          arrL  = [T.TACC T.Set (lvi o) (idx x) (rvi x) | (x,o) <- zip [0..len] osi]
-        
-        put state{temps = newTS, lits = newLS, offS = newOS}
-        return (arrL, lv)
+      ArrLst elems -> -- No llega aqui
+        liftIO (print ("Llegue a literal ArrLst: " ++ show elems)) >> return (tacLabel "lit arrLst")
       Str s -> do
-        let
-          len   = length s - 1
-          strW  = getWidth tInfo TChar
-          tInfo = head . fromJust $ lookupInSymTab (show TChar) st
-          osi   = zip (replicate (len + 1) (fst actO)) [(snd actO)..len]
-          newOS = (fst actO, len + 1) : os
-          lvi o = tacVariable $ SymbolInfo t TChar (-1) TempReg o []
-          ch  x = s !! x
-          rvi x = tacConstant (show (ch x), TChar)
-          idx i = tacConstant (show i, TChar)
-          str   = [T.TACC T.Set (lvi o) (idx x) (rvi x) | (x,o) <- zip [0..len] osi]
-        
-        put state{temps = newTS, lits = newLS, offS = newOS}
-        return (str, lv)
     -}
     -- EmptyVal -> return ([T.TACC T.Assign lv rv Nothing], lv)
     -- (Register es) -> return ([T.TACC T.Assign lv rv Nothing], lv)
@@ -556,8 +528,6 @@ pushOffset width = do
 resetOffset :: TACMonad ()
 resetOffset = do
   state <- get
-  -- state@Operands{fp = oldFp} <- get
-  -- let newFp = oldFp + width
   put state{base = 0}
 
 
@@ -578,8 +548,8 @@ pushVariable var tVar = do
     state@Operands{vars = vs, astST = st} <- get
     put state{vars = M.insert var temp vs}
     let info = head . fromJust $ lookupInSymTab (getName var) st
-    return $ tacVariable $ TACVar info actO
-    -- return temp
+    -- return $ tacVariable $ TACVar info actO
+    return temp
 
 
 pushSubroutine :: Id -> Bool -> TACMonad ()
