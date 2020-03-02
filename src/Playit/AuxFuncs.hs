@@ -614,8 +614,8 @@ tacNot lv rv = [T.TACC T.Not lv rv Nothing]
 
 
 -------------------------------------------------------------------------------
-deref :: TACOP -> TACOP -> [TAC]
-deref lv rv = [T.TACC T.Deref lv rv Nothing]
+tacDeref :: TACOP -> TACOP -> [TAC]
+tacDeref lv rv = [T.TACC T.Deref lv rv Nothing]
 -------------------------------------------------------------------------------
 
 
@@ -692,23 +692,35 @@ tacIf cond label = [T.TACC T.If Nothing cond label]
 
 
 -------------------------------------------------------------------------------
-tacIfFalse :: TACOP -> TACOP -> [TAC]
-tacIfFalse cond label = [T.TACC T.IfFalse Nothing cond label]
+-- tacIfFalse :: TACOP -> TACOP -> [TAC]
+-- tacIfFalse cond label = [T.TACC T.IfFalse Nothing cond label]
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+tacSet :: TACOP -> TACOP -> TACOP -> [TAC]
+tacSet x i y = [T.TACC T.Set x i y]
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+tacGet :: TACOP -> TACOP -> TACOP -> [TAC]
+tacGet x y i = [T.TACC T.Get x y i]
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
 -- | Modify the symbol offset
-modifyOffSet :: TACInfo -> OffSet -> TACInfo
-modifyOffSet (Temp n _) newO      = Temp n newO
-modifyOffSet (TACVar info _) newO = TACVar info newO
+modifyOffSet :: TACOP -> OffSet -> TACOP
+modifyOffSet (Just (T.Variable (Temp n _))) newO      = tacVariable $ Temp n newO
+modifyOffSet (Just (T.Variable (TACVar info _))) newO = tacVariable $ TACVar info newO
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
 -- Gets the with of the Type
 getWidth :: Type -> Int
-getWidth array@(TArray _ t) = sizeArray array * getWidth t
+getWidth array@(TArray _ t) = lenArray array * getWidth t
 getWidth TBool              = 1
 getWidth TChar              = 1
 getWidth TFloat             = 8
@@ -726,23 +738,22 @@ getWidth _                  = -1 -- This shouldn't happen
 
 
 -------------------------------------------------------------------------------
--- 
-sizeArray :: Type -> Int
-sizeArray (TArray (Literal (Integer i) _) _) = i
+lenArray :: Type -> Int
+lenArray (TArray (Literal (Integer i) _) _) = i
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
-getAST :: [ExtraInfo] -> InstrSeq
-getAST []        = []
-getAST (AST i:_) = i
-getAST (_:rs)    = getAST rs
+-- getAST :: [ExtraInfo] -> InstrSeq
+-- getAST []        = []
+-- getAST (AST i:_) = i
+-- getAST (_:rs)    = getAST rs
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
-getRefVar :: Var -> Var
-getRefVar (Desref v _) = v
-getRefVar var          = var
+-- getRefVar :: Var -> Var
+-- getRefVar (Desref v _) = v
+-- getRefVar var          = var
 -------------------------------------------------------------------------------
 

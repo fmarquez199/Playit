@@ -61,13 +61,13 @@ main = do
           (ast,state@SymTabState{symTab = st},errs) <- runRWST parseCode fileCode stInitState
           
           if null errs then do
-            print ast -- >> print st >> printPromises (proms state)
+            print ast  >> print st >> printPromises (proms state)
             -- putStrLn $ "\nActive scopes: " ++ show (actS state)
             -- putStrLn $ "\nActual scope:" ++ show (stScope state)
             -- putStrLn $ "\nOffSets: " ++ show (offSets state)
             -- putStrLn $ "\nActual offset: " ++ show (actOffS state)
             (_,state,tac) <- runRWST (gen ast) ast (tacInitState (symTab state))
-            -- print state
+            print state
             mapM_ print tac
           else
             mapM_ putStrLn errs

@@ -113,10 +113,6 @@ genFor n e1 e2 is nextL = forComparison n e1 e2 nextL >>= forInstrs is nextL
 
 
 -- 
-{- TODO: si e3Code usa la var de iteracion para calcular la condicion, hay 2 opciones:
-  1 : Cambiar antes esa var por el registro donde se guardo y el que se actualiza
-  2 : Cambiar la variable en si
--}
 genForWhile :: Id -> Expr -> Expr -> Expr -> InstrSeq -> TACOP -> TACMonad ()
 genForWhile n e1 e2 cond is nextL = do
   iteration <- forComparison n e1 e2 nextL
@@ -244,7 +240,9 @@ genExpr e = case e of
     e2Temp <- genExpr e2
     genBinOp b t e1Temp e2Temp
   IfSimple eB eT eF t -> genTerOp eB eT eF t
-  -- ArrayList es t      -> genArrayList es t
+  ArrayList es t      ->
+    let width = getWidth (baseTypeT t)
+    in pushOffset width >>= newTemp >>= genArrayList es width 0
   -- Null                -> genNull
   -- Read e _            -> genRead e
   -- FuncCall s _        -> genFuncCall s
@@ -313,6 +311,9 @@ genComparison leftExpr rightExpr trueL falseL op = do
 {- TODO:
   EmptyVal -> Usado cuando no se coloca msj en el read
   Register
+  Union
+  Array
+  String
 -}
 genLiteral :: Literal -> Type -> TACMonad TACOP
 genLiteral l typeL = do
@@ -366,6 +367,8 @@ genLiteral l typeL = do
   casos bloques anidados que acceden a los ids
   Param Id Type Ref
   Field Var Id Type
+  Index
+  Desref
 -}
 genVar :: Var -> Type -> TACMonad TACOP
 genVar var tVar = do
@@ -402,7 +405,7 @@ genVar var tVar = do
 
 
 -- 
--- 
+-- New IdType
 genUnOp :: UnOp -> Expr -> Type -> TACMonad TACOP
 genUnOp op e tOp = do
   rv   <- genExpr e
@@ -412,7 +415,7 @@ genUnOp op e tOp = do
   case op of
     Length   -> tell (tacLen lv rv)   >> return lv
     Negative -> tell (tacMinus lv rv) >> return lv
-    New      -> tell (tacNew lv rv)   >> return lv
+    New      -> tell (tacNew lv rv)   >> return lv -- relacionado con IdType
     charOp   -> do
       l0 <- newLabel
       l1 <- newLabel
@@ -474,30 +477,14 @@ genTerOp eB eT eF tOp = do
   return lv
 
 
--- TODO: Offset y que se genere bien
--- genArrayList :: [Expr] -> Type -> MTACExpr
--- genArrayList elems tE = do
-  -- -- elemsCode <- foldl concatTAC (return []) $ map unWrapExprCode elems
-  -- state@Operands{temps = ts, offS = os@(actO:prevO:_), astST = st} <- get
-  -- let
-  --   t   x = "$t" ++ show x
-  --   lvt   = tacVariable $ SymbolInfo (t (M.size ts)) tArr (-1) TempReg actO []
-  --   len   = length elems - 1
-  --   tArr  = typeArrLst tE
-  --   tArrW = getWidth tInfo tArr
-  --   tInfo = head . fromJust $ lookupInSymTab (show tArr) st
-  --   osi   = zip (replicate (len + 1) (fst actO)) (map (* tArrW) [(snd prevO)..])
-  --   newOS = (fst actO, (len + 1) * tArrW) : os
-  --   lvi x o = tacVariable $ SymbolInfo (t x) tArr (-1) TempReg o []
-  --   lit x = elems !! x
-  --   rvi x = tacConstant (show (lit x), tArr)
-  --   arrL  = [T.TACC T.Assign (lvi x o) (rvi x) Nothing | (x,o) <- zip [(M.size ts)..] osi]
-  --   newTS x = M.insert (t x) True ts
-  
-  -- put state{temps = newTS (M.size ts), offS = newOS}
-
-  -- if null elems then return ([], lvt)
-  -- else return (arrL, lvt)
+-- 
+genArrayList :: [Expr] -> Int -> Int -> TACOP -> TACMonad TACOP
+genArrayList [] _ _ arrTemp                   = return arrTemp
+genArrayList (elem:elems) width index arrTemp = do
+  elemTemp <- genExpr elem
+  tell (tacSet arrTemp (tacConstant (show index,TInt)) elemTemp)
+  actO        <- pushOffset width
+  genArrayList elems width (index + 1) (modifyOffSet arrTemp actO)
 
 
 -- 
@@ -536,7 +523,8 @@ genTerOp eB eT eF tOp = do
   -- return (paramsCode ++ [T.TACC T.Call lv func args] ++ begin ++ stmts, lv)
 
 
--- TODO
+-- Cuando se hace new de un tipo, para apuntadores. Reservar espacio para ese tipo
+-- devolver temporal que es un apuntador a ese tipo?
 -- genType :: Type -> MTACExpr
 -- genType t = do
   -- -- state@Operands{temps = ts, offS = os@(actO:_), astST = st} <- get
@@ -591,7 +579,7 @@ pushLiteral l operand = do
 pushVariable :: Var -> Type -> TACMonad TACOP
 pushVariable var tVar = do
   Operands{vars = vs} <- get
-  if M.member var vs then return $ fromJust $ M.lookup var vs
+  if M.member var vs then return $ fromJust $ M.lookup var vs -- Aumentar las veces que esta siendo usada (TACOP, Int <veces usada>)
   else do
     actO <- pushOffset (getWidth tVar)
     temp <- newTemp actO

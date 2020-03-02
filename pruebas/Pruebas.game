@@ -18,9 +18,10 @@
 
 world %Pruebas%:
 
-@ Operaciones aritmeticas
   Power x = 50 @ , u, z = 6
 @  Power y = -5
+
+@ Operaciones aritmeticas
 @  Power i0 = x + 1
 @  Power i1 = x - 1
 @  Power i2 = x * 1
@@ -45,7 +46,7 @@ world %Pruebas%:
 
 @ Operador ternario
 @  Battle f = Win ? (3 == 6) : (3 > 6)
-@  Skill f = Lose ? 6'0 : 3'0
+@  Skill f2 = Lose ? 6'0 : 3'0
 
 @  play:
 @    gameOver
@@ -55,7 +56,7 @@ world %Pruebas%:
 @  lock (x < 10)
 @  .~
 
-@  controller Power i = 0 -> 10: @ lock i % 2 == 0:
+@  controller Power i = 0 -> 10 lock i % 2 == 0:
 @    gameOver
 @    keepPlaying
 @    Button:
@@ -73,14 +74,15 @@ world %Pruebas%:
 @    | notPressed } x = 720
 @  .~
 
-@  Runes  s = ~3g~
-@  Runes s = joystick ~Here we go~
-@  drop 1
+@  Runes s = ~3g~
+@  Runes j = joystick ~Here we go~
+@  drop s
 
 @  kill b( kill portalRunesToPower(joystick) ,f)
 
-@  Power|}2{| array = |)2,3(|
+  Power|}2{| array = |)2,3(|
 @  array|)0(| = 0
+@  x = array|)0(|
 
 @  Power a = #array
 @  Kit of Power list = <<10, 21, 3>> :: (<<2>> :: <<0>>) @ This is a problem
@@ -88,23 +90,16 @@ world %Pruebas%:
 @  Kit of Power empty = << >>
 @  list1|>0<| = 10
 
+@  controller Power elem <- |)2,3(|:
+@    Power i = elem
+@  .~
+
 @  Power puff pointer = summon Power
 @  puff pointer = 1
 @  free pointer
 
 @  Inv inv = Inv {10 , 1'8}
-@  kill b( inv , 1'0)
-
 @  Power elem = inv spawn a, x
 @  Inv puff inv2 = summon Inv
-
-@  controller Power elem <- |)2,3(|:
-@    Power i = elem
-@  .~
-@  controller Power x = 0 -> 10: @ lock x % 2 == 0:
-@    Button:
-@      | Win || Lose } keepPlaying
-@    .~
-@    Power a = x * 2
-@  .~
+@  kill b( inv , 1'0)
 .~

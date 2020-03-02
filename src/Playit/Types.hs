@@ -309,7 +309,7 @@ instance Show Category where
 data ExtraInfo =
   AST InstrSeq       |
   Params [(Type,Id)] |
-  FromReg Id         -- Register / union al que pertenece el campo/variable
+  FromReg Id {- Bool que indica si esta activo(uniones) -}        -- Register / union al que pertenece el campo/variable
   deriving (Eq, Ord)
 
 instance Show ExtraInfo where
