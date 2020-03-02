@@ -5,25 +5,25 @@
  *  Francisco Javier    12-11163
  *  Natascha Gamboa     12-11250
 -}
-module Playit.BackEnd.TAC where
+module Playit.BackEnd.TAC (tacInitState,gen) where
 
-import Control.Monad.IO.Class  (liftIO)
-import Control.Monad           (when,unless)
-import Control.Monad.Trans.RWS (ask,tell,get,put)
-import Data.List.Split         (splitOn)
-import Data.Maybe              (fromJust,isNothing)
-import Playit.BackEnd.Utils
+import Control.Monad.IO.Class      (liftIO)
+import Control.Monad               (when,unless)
+import Control.Monad.Trans.RWS     (ask,tell,get,put)
+import Data.List.Split             (splitOn)
+import Data.Maybe                  (fromJust,isNothing)
+import Playit.BackEnd.Utils    
 import Playit.BackEnd.Types
-import Playit.FrontEnd.SymbolTable
+import Playit.FrontEnd.SymbolTable (lookupInSymTab)
 import Playit.FrontEnd.Types
-import Playit.FrontEnd.Utils
+import Playit.FrontEnd.Utils       (typeVar,baseTypeT,getName)
 import qualified Data.Map               as M
 import qualified Playit.BackEnd.TACType as T
 
 
 -- Colocar los temps de print, read y null al inicio?
 tacInitState :: SymTab -> Operands
-tacInitState = Operands M.empty temps M.empty [] brk cont [0] []
+tacInitState = Operands M.empty temps M.empty [] brk cont 0 []
   where
     printReg = Temp "_print" (-1)
     readReg  = Temp "_read" (-1)
@@ -63,7 +63,7 @@ genSubroutines = do
 
 genSubroutine :: (Id,InstrSeq,Bool) -> TACMonad ()
 genSubroutine (s,i,isProc) =
-  tell (tacNewLabel $ tacLabel s) >> mapM_ genCode i >> when isProc (genReturn Nothing)
+  resetOffset >> tell (tacNewLabel $ tacLabel s) >> mapM_ genCode i >> when isProc (genReturn Nothing)
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 --                            TAC Instructions
@@ -185,11 +185,9 @@ genFree varId = do
 
 -------------------------------------------------------------------------------
 -- Hace prologo
--- Confirmar offsets Ok
 genProcCall :: Subroutine -> TACMonad ()
 genProcCall (Call s params) = do
   pushSubroutine s True
-  -- act= <- pushOffset 4 -- ==>> ?
   genParams (map fst params)
   -- Prologo antes de pasar el poder al proc
   tell (tacCall Nothing s $ length params)
@@ -476,6 +474,7 @@ genTerOp eB eT eF tOp = do
 
 
 -- Confirmar offsets Ok
+-- tiene que ser var[i] no con un nuevo temp
 genArrayList :: [Expr] -> Int -> Int -> TACOP -> TACMonad TACOP
 genArrayList [] _ _ arrTemp                   = return arrTemp
 genArrayList (elem:elems) width index arrTemp = do
@@ -502,7 +501,7 @@ genFuncCall :: Subroutine -> TACMonad TACOP
 genFuncCall (Call f params) = do
   pushSubroutine f False
   genParams (map fst params)
-  Operands{offS = actO:_} <- get
+  Operands{base = actO} <- get
   lv <- newTemp actO
   -- Prologo antes de pasar el poder al proc
   tell (tacCall lv f $ length params)
@@ -549,10 +548,17 @@ newLabel = do
 
 pushOffset :: Int -> TACMonad OffSet
 pushOffset width = do
-  state@Operands{offS = os@(actO:_)} <- get
+  state@Operands{base = actO} <- get
   let newO = actO + width
-  put state{offS = newO:os}
+  put state{base = newO}
   return actO
+
+resetOffset :: TACMonad ()
+resetOffset = do
+  state <- get
+  -- state@Operands{fp = oldFp} <- get
+  -- let newFp = oldFp + width
+  put state{base = 0}
 
 
 pushLiteral :: Literal -> TACOP -> TACMonad ()
@@ -572,8 +578,8 @@ pushVariable var tVar = do
     state@Operands{vars = vs, astST = st} <- get
     put state{vars = M.insert var temp vs}
     let info = head . fromJust $ lookupInSymTab (getName var) st
-    -- return $ tacVariable $ TACVar info actO
-    return temp
+    return $ tacVariable $ TACVar info actO
+    -- return temp
 
 
 pushSubroutine :: Id -> Bool -> TACMonad ()

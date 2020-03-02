@@ -18,7 +18,7 @@ import Playit.FrontEnd.Errors      (lexerErrors,showLexerErrors)
 import Playit.FrontEnd.Parser      (parse)
 import Playit.FrontEnd.Lexer       (alexScanTokens)
 import Playit.FrontEnd.Types       (SymTabState(..))
-import Playit.BackEnd.TAC          (gen,tacInitState)
+import Playit.BackEnd.TAC
 
 
 -- | Determines if an file is empty

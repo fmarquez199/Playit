@@ -22,8 +22,8 @@ type TACOP   = Maybe (TACT.Operand TACInfo Type)
 data TACInfo = Temp Id OffSet | TACVar SymbolInfo OffSet  deriving (Eq, Ord)
 
 instance TACT.SymEntryCompatible TACInfo where
-  getSymID (Temp n o)      = "fp[" ++ show o ++ "]->($t" ++ n ++ ")"
-  getSymID (TACVar info o) = "fp[" ++ show o ++ "]->(" ++ symId info ++ ")"
+  getSymID (Temp n o)      = "[" ++ show o ++ "]->($t" ++ n ++ ")"
+  getSymID (TACVar info o) = "[" ++ show o ++ "]->(" ++ symId info ++ ")"
 
 instance Show TACInfo where
   show = TACT.getSymID
@@ -40,17 +40,18 @@ data Operands = Operands {
   labs  :: [Int],
   brkL  :: TACOP,
   contL :: TACOP,
-  offS  :: [OffSet],
+  base  :: OffSet,
+  -- fp    :: OffSet,
   subs  :: [(Id,InstrSeq,Bool)],
   astST :: SymTab
 } deriving (Eq, Ord)
 
 instance Show Operands where
-  show (Operands vs ts ls lbs brk con offs s st) = 
+  show (Operands vs ts ls lbs brk con b s st) = 
     "\n vars: " ++ show vs ++ "\n temps: " ++ show ts ++
     "\n lits: " ++ show ls ++ "\n labels: " ++ show lbs ++
     "\n break: " ++ show brk ++ "\n continue: " ++ show con ++
-    "\n offsets: " ++ show offs ++ "\nsubroutines: " ++ show s {- ++ show st -} ++ "\n"
+    "\n base: " ++ show b ++ "\nsubroutines: " ++ show s {- ++ show st -} ++ "\n"
 
 -- Monad para manejar los operandos, writer tiene la lista de las instrucciones
 -- de tres direcciones, reader tiene el AST que sale del parser
