@@ -1,0 +1,58 @@
+@Funciones
+monster f2() Power:
+    Skill r = kill g2()
+    r = 2'6 + kill g2()
+
+    Power puff p
+    Battle bool
+
+    @ Prc promesa 
+    bool = ( << << 2 >> >> :: << << kill f'() >> >> == kill g'()) ? Win : Lose
+
+    @ Comentar para mostrar error de return
+    unlock 1
+.~
+monster g2() Skill:
+    Power r = kill f2()
+    unlock 1'6
+.~
+
+@ Procedimientos 
+boss f():
+    kill g()
+.~
+boss g():
+    kill f()
+.~
+
+@ Promesas con tipos diferentes
+monster suma(Power a,Power b) Power:
+  Power t @= (kill entero1() > kill entero2()) ? 2:3
+  unlock t
+.~
+
+monster entero1() Power:
+    unlock 2
+.~
+monster entero2() Rune:
+    unlock *a*
+.~
+
+@ For each con promesas
+monster f'() Power:
+  controller Power i <- kill g'():
+  .~
+  unlock 10
+  @unlock i you cant return an iter var
+.~
+monster g'() Kit of Kit of Power:
+    Kit of Kit of Power kp
+    unlock kp
+.~
+
+
+world %Correcursion%:
+    @kill f()
+    Power f2' = kill f2()
+    Skill g2' = kill g2()
+.~

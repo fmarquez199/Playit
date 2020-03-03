@@ -1,0 +1,50 @@
+Inventory Nombre:
+  Skill flotante
+.~
+
+Inventory Contacto:
+  Nombre puff pointernombre
+.~
+Inventory Contacto2:
+  Nombre pointernombre2
+.~
+
+world %Apts%:
+  Power y
+  Power puff aptY
+
+  y = 5
+  "' deberia estar bien, regresar la dir de memoria. O en la verificacion de tipos 
+  cuando se tenga apt = y hacerlo compatible'"
+  @ aptY = ? y 
+  puff aptY = y
+
+  Contacto puff puff c = summon Contacto puff @, c2, c3
+  
+  @ ( *( (**c).pointernombre)).flotante
+  puff (puff (puff c) spawn pointernombre) spawn flotante = 2'2
+  
+  @ Test: reg no tiene campo
+  @ puff c spawn pointernombre2 spawn flotante = 2'2
+  
+  @ Test: campo no declarado
+  @ puff c spawn p spawn flotante = 2'2
+
+  Power puff apt
+  Kit of Power puff apt2
+  Kit of Power puff puff apt3
+  Kit of Power puff puff puff apt4
+  Kit of (Power puff) apt5
+  
+  Battle p
+  p = puff apt == puff apt2|>12<|
+ 
+  Power|}2{||}2{| a 
+  
+  p = a|)0(| == a|)2(| 
+  p = apt == apt5|>12<|
+  p = puff apt == puff apt2|>12<|
+  p = puff apt == puff puff apt3|>12<|
+  p = puff apt == puff puff puff apt4|>12<|
+  
+.~

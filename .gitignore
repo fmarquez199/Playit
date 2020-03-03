@@ -1,8 +1,12 @@
 .stack-work/
-Playit.cabal
-*~
-*.yaml.lock
-.idea
-*.info
 .vscode/
 testignorame/
+*~
+*.yaml.lock
+*.info
+.idea
+app/*.exe
+app/*.o
+src/Playit/*.o
+src/Playit/*.hi
+Playit.cabal

@@ -1,0 +1,33 @@
+monster suma(Power a , Power b) Power :
+
+  Power e
+  Power puff pe
+  Power bb
+  Skill ss
+  Kit of Power ls
+  Runes s
+
+  @ Error f1 y f2 no definidas
+  @ e = -(-kill f1() + -kill f2())
+  @ pe = kill f1()
+  @ bb = (#(kill f2() : kill f1()) > 3)? 3:4
+  @ ss = kill f2()
+  @ ss = kill f2()
+  @ ls = kill f1()
+  @ s  = joystick (kill f2())
+
+  @ Error f4 no defnida, inferir tipo de retorno como array o lista
+  @ Power|}#kill f4(){| ap  
+
+  @ Button:
+  @ | kill fasd()::kill fasd() } Power a = 2
+  @ .~
+
+  @ FALTA CONSIDERAR MÁS TARRAY PARA PROMESAS
+  @ FALTA EN LATECHECKS Y ACTUALIzACIONES DE EXPRESIONES
+  @ PROBLEMA VIENE PORQUE ADMITIMOS ARRAYS |) 1,2,3,3(| COMO UNA EXPRESIÓN EN CUALQUIER LADO
+  unlock 0
+.~
+
+world %ErrPromesas%:
+ .~

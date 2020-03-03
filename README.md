@@ -4,7 +4,7 @@
 
 **Diseñado por:**
 
-* Manuel Gonzalez 11-10390
+* Manuel Gonzalez 11-10390  (Fase I)
 * Francisco Javier 12-11163
 * Natascha Gamboa 12-11250
 
@@ -97,7 +97,7 @@ precedida por una cantidad no nula de `0`, es decir, son enteros:
 ```sh
 01
 003
-0000000000000000000000000000000000000005
+0000000000005
 ```
 
 ---
@@ -786,7 +786,7 @@ free p
 ```
 **Ejemplo puntero a array de enteros**
 ```sh
-Power|}20{| puff p = summon Power
+Power|}20{| puff p = summon Power|}20{|
 puff p|)1(| = 15
 free|}{| p
 ```
@@ -858,7 +858,13 @@ stack build
 ### Ejecutar el compilador
 
 ```sh
-stack exec playit-exe test/casos/<resto de ruta al archivo>.game 
+stack exec playit-exe test/<nombre archivo>.game 
+```
+
+### Compilar y Ejecutar el compilador
+
+```sh
+stack run test/<nombre archivo>.game
 ```
 
 ### Ejecutar las pruebas
