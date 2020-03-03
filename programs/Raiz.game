@@ -1,0 +1,44 @@
+"'
+def heron(n, error):
+    prev, new = 1.0, 0.5 * (1 + n)
+    while abs(new - prev) > error:
+        prev, new = new, 0.5 * (new + n/new)
+    return new
+
+Taken from: https://stackoverflow.com/questions/16619201/heron-method-in-python
+'"
+monster sqrt(Skill f) Skill:
+  Skill prev = 1'0, new = 0'5 * (1'0 + f)
+  controller Power i = 0 -> 1000 lock kill abs(new - prev) <= 0'000001:
+    prev = new
+    new = 0'5 * (new + f / new)
+  .~
+  unlock new
+.~
+
+monster abs(Skill f) Skill:
+  Button:
+    | f > 0'0 } unlock f
+  .~
+  unlock -f
+.~
+
+world %Raiz%:
+  play:
+    Runes act = joystick ~Diga lo que haremos: calcular (c) o salir (x): ~
+    Button:
+      | act == ~x~ } gameOver
+    .~
+    drop ~Diga el valor al que le desea calcular la raiz cuadrada.~
+    drop ~Debe tener el formato~
+    Skill num = joystick ~numero'numero y debe ser 0'0 o mayor: ~
+    Button:
+      | num < 0'0 }
+        drop ~Va a ocurrir un error, mejor vuelve a empezar.~
+        keepPlaying
+    .~
+    drop kill sqrt(num)
+  lock Win
+  .~
+  drop ~Bye, bye~
+.~
