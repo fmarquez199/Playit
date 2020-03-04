@@ -19,7 +19,7 @@
 
 world %Pruebas%:
 
-  Power x = 50 @ , u, z = 6
+@  Power x = 50 @ , u, z = 6
 @  Power y = -5
 
 @ Operaciones aritmeticas
@@ -58,13 +58,13 @@ world %Pruebas%:
   @.~
 
 @  controller Power i = 0 -> 10 lock i % 2 == 0:
-  @  gameOver
-  @  keepPlaying
-  @  Button:
-  @    | i == 7 } gameOver
-  @  .~
-  @  x = i * 2
-  @.~
+@    gameOver
+@    keepPlaying
+@    Button:
+@      | i == 7 } gameOver
+@    .~
+@    Power x = i * 2
+@  .~
 
 @  Button:
   @  | Lose       } x = 0
@@ -76,12 +76,15 @@ world %Pruebas%:
   @.~
 
 @ Subrutinas
-  kill b(x,4'5)
-  @x = kill m(10'4)
+@  kill b(x,4'5)
+@  x = kill m(10'4)
   
 @ Arreglos
-  Power|}2{| array = |)2,3(|
+@  Power|}3{| array = |)2, 3, 4(|
 
+  controller Power e <- |)2, 3(|:
+    Power i = e
+  .~
 
 
 @  Runes s = ~3g~
@@ -97,10 +100,6 @@ world %Pruebas%:
 @  Kit of Power list1 = <<4,2>>
 @  Kit of Power empty = << >>
 @  list1|>0<| = 10
-
-@  controller Power elem <- |)2,3(|:
-@    Power i = elem
-@  .~
 
 @  Power puff pointer = summon Power
 @  puff pointer = 1

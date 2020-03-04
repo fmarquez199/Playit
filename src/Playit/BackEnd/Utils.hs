@@ -252,14 +252,14 @@ modifyOffSet (Just (T.Variable (TACVar info _))) newO = tacVariable $ TACVar inf
 -------------------------------------------------------------------------------
 -- Gets the with of the Type
 getWidth :: Type -> Int
-getWidth array@(TArray _ t) = lenArray array * getWidth t
+getWidth array@(TArray _ t) = 4 * getWidth t
 getWidth TBool              = 1
 getWidth TChar              = 1
 getWidth TFloat             = 8
 getWidth TInt               = 4
 getWidth (TList t)          = getWidth t -- ?
-getWidth TListEmpty         = 1 -- como base?
-getWidth (TNew n)           = 0 -- Reg or Union
+getWidth TListEmpty         = 4 -- como base?
+getWidth (TNew n)           = 4 -- Reg or Union
 getWidth (TPointer t)       = 4 * getWidth t -- Una palabra del procesador
 getWidth TNull              = 4 -- Reservemos ese espacio asi igual
 -- getWidth TStr               = 1 -- Se calcula cuando se tiene el valor del string
@@ -270,8 +270,9 @@ getWidth _                  = -1 -- This shouldn't happen
 
 
 -------------------------------------------------------------------------------
-lenArray :: Type -> Int
-lenArray (TArray (Literal (Integer i) _) _) = i
+lenArray :: Expr -> Int
+lenArray (ArrayList ls _) = length ls
+lenArray _                = 1
 -------------------------------------------------------------------------------
 
 

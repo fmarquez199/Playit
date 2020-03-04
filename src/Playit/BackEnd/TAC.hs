@@ -5,18 +5,18 @@
  *  Francisco Javier    12-11163
  *  Natascha Gamboa     12-11250
 -}
-module Playit.BackEnd.TAC (tacInitState,gen) where
+module Playit.BackEnd.TAC (tacInitState, gen) where
 
 import Control.Monad.IO.Class      (liftIO)
-import Control.Monad               (when,unless)
-import Control.Monad.Trans.RWS     (ask,tell,get,put)
+import Control.Monad               (when, unless)
+import Control.Monad.Trans.RWS     (ask, tell, get, put)
 import Data.List.Split             (splitOn)
-import Data.Maybe                  (fromJust,isNothing)
+import Data.Maybe                  (fromJust, isNothing)
 import Playit.BackEnd.Utils    
 import Playit.BackEnd.Types
 import Playit.FrontEnd.SymbolTable (lookupInSymTab)
 import Playit.FrontEnd.Types
-import Playit.FrontEnd.Utils       (typeVar,baseTypeT,getName,isArrLst)
+import Playit.FrontEnd.Utils (typeVar, baseTypeT, getName, isArrLst, baseTypeE)
 import qualified Data.Map               as M
 import qualified Playit.BackEnd.TACType as T
 
@@ -30,7 +30,7 @@ tacInitState = Operands M.empty temps M.empty [] brk cont 0 []
     nullReg  = Temp "_null" (-1)
     cont     = tacLabel "cont"
     brk      = tacLabel "brk"
-    temps    = M.fromList [(printReg,False), (readReg,False), (nullReg,False)]
+    temps    = M.fromList [(printReg, False), (readReg, False), (nullReg, False)]
 
 
 gen :: Instr -> TACMonad ()
@@ -45,7 +45,7 @@ genCode i = case i of
   (Break _)                  -> genBreak
   (Continue _)               -> genContinue
   (For n e1 e2 is _)         -> breakI   >>= genFor n e1 e2 is
-  (ForEach n e is _)         -> return () -- breakI >>= genForEach n e is
+  (ForEach n e is _)         -> breakI   >>= genForEach n e is
   (ForWhile n e1 e2 e3 is _) -> breakI   >>= genForWhile n e1 e2 e3 is
   (IF gs _)                  -> newLabel >>= genIF gs
   (While e is _)             -> breakI   >>= genWhile e is
@@ -61,8 +61,8 @@ genSubroutines = do
   mapM_ genSubroutine subroutines
 
 
-genSubroutine :: (Id,InstrSeq,Bool) -> TACMonad ()
-genSubroutine (s,i,isProc) =
+genSubroutine :: (Id, InstrSeq, Bool) -> TACMonad ()
+genSubroutine (s, i, isProc) =
   resetOffset >> tell (tacNewLabel $ tacLabel s) >> mapM_ genCode i >> when isProc (genReturn Nothing)
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
@@ -81,10 +81,10 @@ genAssig var e nextL = case typeVar var of
     falseL <- newLabel
     genBoolExpr e trueL falseL
     tell (tacNewLabel trueL)
-    tell (tacAssign vTemp $ tacConstant ("True",TBool))
+    tell (tacAssign vTemp $ tacConstant ("True", TBool))
     tell (tacGoto nextL)
     tell (tacNewLabel falseL)
-    tell (tacAssign vTemp $ tacConstant ("False",TBool))
+    tell (tacAssign vTemp $ tacConstant ("False", TBool))
     tell (tacNewLabel nextL)
 -- Registros y uniones
   TNew n -> 
@@ -107,25 +107,31 @@ genFor :: Id -> Expr -> Expr -> InstrSeq -> TACOP -> TACMonad ()
 genFor n e1 e2 is nextL = forComparison n e1 e2 nextL >>= forInstrs is nextL
 
 
-{-- TODO
-  controller var <- arrLst:
-  InstrSeq
-  .~
-
-  |
-  v
-
-  var = arrLst
-  controller dummy = 0 -> #var:
-    InstrSeq[var := var[dummy]]
-  .~
---}
 -- 
--- genForEach :: Id -> Expr -> InstrSeq -> TACMonad ()
--- genForEach n e is = return [] -- concatTAC var for
-  -- where
-  --   var = genCode (Assig (Var n (typeE e)) e TVoid)
-
+genForEach :: Id -> Expr -> InstrSeq -> TACOP -> TACMonad ()
+genForEach n e is nextL = do
+  let
+    t = baseTypeE e
+    w = getWidth t
+  var   <- genVar (Var n t) t
+  tmp   <- genExpr e
+  count <- genVar (Var ("$i_" ++ n) t) TInt
+  begin <- newLabel
+  contn <- continue
+  tell (tacDeref count tmp)
+  iterVarShft <- genBinOp Add TInt tmp (tacConstant ("4", TInt))
+  tell (tacAssign tmp iterVarShft)
+  tell (tacNewLabel begin)
+  tell (tacLte count (tacConstant ("0", TInt)) nextL)
+  tell (tacDeref var tmp)
+  mapM_ genCode is
+  tell (tacNewLabel contn)
+  iterVarIncr <- genBinOp Add TInt tmp (tacConstant (show w, TInt))
+  countIncrmt <- genBinOp Minus TInt count (tacConstant ("1", TInt))
+  tell (tacAssign tmp iterVarIncr)
+  tell (tacAssign count countIncrmt)
+  tell (tacGoto begin)
+  tell (tacNewLabel nextL)
 
 -- 
 genForWhile :: Id -> Expr -> Expr -> Expr -> InstrSeq -> TACOP -> TACMonad ()
@@ -168,7 +174,7 @@ genWhile e is nextL = do
   --   len   = length es - 1
   --   t'  x = "$print[" ++ x ++ "]"
   --   l'  x = es !! x 
-  --   lvi x = tacVariable $ SymbolInfo (t' x) TDummy 1 Constants ("print",-1) []
+  --   lvi x = tacVariable $ SymbolInfo (t' x) TDummy 1 Constants ("print", -1) []
   --   rvi x = tacConstant (show (l' x), TDummy)
 
   -- return $ es' ++ [ T.TACC T.Assign (lvi (show x)) (rvi x) Nothing | x <- [0..len] ]
@@ -257,12 +263,12 @@ genBoolExpr e trueL falseL =
     Unary Not e _             -> genBoolExpr e falseL trueL
   -- Variables
   -- Comparators
-    Binary op e1 e2 _ | op `elem` [Greater,GreaterEq,Less,LessEq,Eq,NotEq] -> do
+    Binary op e1 e2 _ | op `elem` [Greater, GreaterEq, Less, LessEq, Eq, NotEq] -> do
       leftExpr  <- genExpr e1
       rightExpr <- genExpr e2
       genComparison leftExpr rightExpr trueL falseL op
   -- Conjunction and disjunction
-    Binary op e1 e2 _ | op `elem` [And,Or] -> do
+    Binary op e1 e2 _ | op `elem` [And, Or] -> do
       e1TrueL <- -- for `or` we need to generate a new `true` label if the current is `fall`
         if op == Or then if isFall trueL then newLabel else return trueL
         else return fall
@@ -345,17 +351,18 @@ genVar var tVar = do
   -- actO <- pushOffset (getWidth tVar)
   -- lv   <- newTemp actO
   tacVar  <- pushVariable var tVar
+  return tacVar
   
   -- let
     -- refVS = M.insert (getRefVar var) lv vs -- var o *var?
     -- deref = ([T.TACC T.Deref lv rv Nothing], lv)
   
-  case var of
-    Param n t ref -> error "Un parametro no deberia poder estar en una asignacion"
-    Desref _ t    -> return() -- tell (deref lv rv) >> return lv
-    Index _ e _   -> return()
-    Field v f t   -> return()
-    _     -> return tacVar
+  -- case var of
+  --   Param n t ref -> error "Un parametro no deberia poder estar en una asignacion"
+  --   Desref _ t    -> return() -- tell (deref lv rv) >> return lv
+  --   Index _ e _   -> return()
+  --   Field v f t   -> return()
+  --   _     -> return tacVar
 
 
 -- 
@@ -433,10 +440,13 @@ genTerOp eB eT eF tOp = do
 
 -- 
 genArrayList :: [Expr] -> Int -> Int -> TACOP -> TACMonad TACOP
-genArrayList [] _ _ _                         = return Nothing
+genArrayList [] _ index arrTemp               = do
+  let len = (tacConstant (show index, TInt))
+  tell (tacSet arrTemp (tacConstant ("0", TInt)) len)
+  return arrTemp
 genArrayList (elem:elems) width index arrTemp = do
   elemTemp <- genExpr elem
-  tell (tacSet arrTemp (tacConstant (show index,TInt)) elemTemp)
+  tell (tacSet arrTemp (tacConstant (show (index + 1), TInt)) elemTemp)
   actO     <- pushOffset width
   genArrayList elems width (index + 1) (modifyOffSet arrTemp actO)
 
@@ -541,10 +551,10 @@ pushSubroutine :: Id -> Bool -> TACMonad ()
 pushSubroutine s isProc = do
   state@Operands{subs = subroutines, astST = st} <- get
   let ast = getAST . extraInfo . head . fromJust $ lookupInSymTab s st
-  put state{subs = (s,ast,isProc):subroutines}
+  put state{subs = (s, ast, isProc):subroutines}
 
 
-forComparison :: Id -> Expr -> Expr -> TACOP -> TACMonad (TACOP,TACOP,TACOP)
+forComparison :: Id -> Expr -> Expr -> TACOP -> TACMonad (TACOP, TACOP, TACOP)
 forComparison n e1 e2 nextL = do
   begin   <- newLabel
   cont    <- continue
@@ -554,14 +564,14 @@ forComparison n e1 e2 nextL = do
   e2Temp  <- genExpr e2
   tell (tacNewLabel begin)
   genComparison iterVar e2Temp fall nextL LessEq
-  return (begin,cont,iterVar)
+  return (begin, cont, iterVar)
 
 
-forInstrs :: InstrSeq -> TACOP -> (TACOP,TACOP,TACOP) -> TACMonad ()
-forInstrs is nextL (begin,cont,iterVar) = do
+forInstrs :: InstrSeq -> TACOP -> (TACOP, TACOP, TACOP) -> TACMonad ()
+forInstrs is nextL (begin, cont, iterVar) = do
   mapM_ genCode is
   tell (tacNewLabel cont)
-  iterVarIncr <- genBinOp Add TInt iterVar (tacConstant ("1",TInt))
+  iterVarIncr <- genBinOp Add TInt iterVar (tacConstant ("1", TInt))
   tell (tacAssign iterVar iterVarIncr)
   tell (tacGoto begin)
   tell (tacNewLabel nextL)
