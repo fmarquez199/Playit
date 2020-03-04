@@ -58,13 +58,13 @@ world %Pruebas%:
   @.~
 
 @  controller Power i = 0 -> 10 lock i % 2 == 0:
-@    gameOver
-@    keepPlaying
-@    Button:
-@      | i == 7 } gameOver
-@    .~
-@    Power x = i * 2
-@  .~
+  @  gameOver
+  @  keepPlaying
+  @  Button:
+  @    | i == 7 } gameOver
+  @  .~
+  @  x = i * 2
+  @.~
 
 @  Button:
   @  | Lose       } x = 0
@@ -76,11 +76,11 @@ world %Pruebas%:
   @.~
 
 @ Subrutinas
-@  kill b(x,4'5)
-@  x = kill m(10'4)
+  @kill b(x,4'5)
+  @x = kill m(10'4)
   
 @ Arreglos
-@  Power|}3{| array = |)2, 3, 4(|
+  @Power|}3{| array = |)2, 3, 4(|
 
   controller Power e <- |)2, 3(|:
     Power i = e
