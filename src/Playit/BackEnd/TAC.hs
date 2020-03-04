@@ -16,7 +16,7 @@ import Playit.BackEnd.Utils
 import Playit.BackEnd.Types
 import Playit.FrontEnd.SymbolTable (lookupInSymTab)
 import Playit.FrontEnd.Types
-import Playit.FrontEnd.Utils (typeVar, baseTypeT, getName, isArrLst, baseTypeE)
+import Playit.FrontEnd.Utils       (typeVar, baseTypeT, getName, isArrLst, baseTypeE)
 import qualified Data.Map               as M
 import qualified Playit.BackEnd.TACType as T
 
@@ -113,22 +113,19 @@ genForEach n e is nextL = do
   let
     t = baseTypeE e
     w = getWidth t
-  var   <- genVar (Var n t) t
-  tmp   <- genExpr e
-  count <- genVar (Var ("$i_" ++ n) t) TInt
   begin <- newLabel
   contn <- continue
-  tell (tacDeref count tmp)
-  iterVarShft <- genBinOp Add TInt tmp (tacConstant ("4", TInt))
-  tell (tacAssign tmp iterVarShft)
+  var   <- genVar (Var n t) t
+  expr  <- genExpr e
+  count <- genVar (Var ("$i_" ++ n) t) TInt
+  tell (tacDeref count expr)
   tell (tacNewLabel begin)
   tell (tacLte count (tacConstant ("0", TInt)) nextL)
-  tell (tacDeref var tmp)
+  iterVarShft <- genBinOp Add TInt expr (tacConstant (show w, TInt))
+  tell (tacDeref var iterVarShft)
   mapM_ genCode is
   tell (tacNewLabel contn)
-  iterVarIncr <- genBinOp Add TInt tmp (tacConstant (show w, TInt))
   countIncrmt <- genBinOp Minus TInt count (tacConstant ("1", TInt))
-  tell (tacAssign tmp iterVarIncr)
   tell (tacAssign count countIncrmt)
   tell (tacGoto begin)
   tell (tacNewLabel nextL)
@@ -440,10 +437,9 @@ genTerOp eB eT eF tOp = do
 
 -- 
 genArrayList :: [Expr] -> Int -> Int -> TACOP -> TACMonad TACOP
-genArrayList [] _ index arrTemp               = do
+genArrayList [] _ index arrTemp               =
   let len = (tacConstant (show index, TInt))
-  tell (tacSet arrTemp (tacConstant ("0", TInt)) len)
-  return arrTemp
+  in tell (tacSet arrTemp (tacConstant ("0", TInt)) len) >> return arrTemp
 genArrayList (elem:elems) width index arrTemp = do
   elemTemp <- genExpr elem
   tell (tacSet arrTemp (tacConstant (show (index + 1), TInt)) elemTemp)
