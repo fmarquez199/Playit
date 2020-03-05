@@ -8,10 +8,10 @@
 @    Skill b
 @    Battle c
 @  .~
-  boss b(Power i, Skill x):
-    x = 10'5
-    Power y = i * 2
-  .~
+@  boss b(Power i, Skill x):
+@    x = 10'5
+@    Power y = i * 2
+@  .~
 @  monster m(Skill s) Power:
 @    Power i = 0
 @    unlock i
@@ -82,10 +82,13 @@ world %Pruebas%:
 @ Arreglos
   @Power|}3{| array = |)2, 3, 4(|
 
-  controller Power e <- |)2, 3(|:
-    Power i = e
-  .~
+  @controller Power e <- |)2, 3(|:
+  @  Power i = e
+  @.~
 
+@ Apuntadores
+  Power puff apt1
+  Rune|}3{| puff apt2
 
 @  Runes s = ~3g~
 @  Runes j = joystick ~Here we go~
