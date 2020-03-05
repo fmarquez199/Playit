@@ -285,8 +285,8 @@ getAST (_:rs)    = getAST rs
 
 
 -------------------------------------------------------------------------------
--- getRefVar :: Var -> Var
--- getRefVar (Desref v _) = v
--- getRefVar var          = var
+getRefVar :: Var -> Var
+getRefVar (Desref v _) = v
+getRefVar var          = var
 -------------------------------------------------------------------------------
 

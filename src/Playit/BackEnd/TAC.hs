@@ -344,22 +344,17 @@ genLiteral l typeL = do
   Desref
 -}
 genVar :: Var -> Type -> TACMonad TACOP
-genVar var tVar = do
-  -- actO <- pushOffset (getWidth tVar)
-  -- lv   <- newTemp actO
-  tacVar  <- pushVariable var tVar
-  return tacVar
-  
-  -- let
-    -- refVS = M.insert (getRefVar var) lv vs -- var o *var?
-    -- deref = ([T.TACC T.Deref lv rv Nothing], lv)
-  
-  -- case var of
+genVar var tVar =
+  case var of
   --   Param n t ref -> error "Un parametro no deberia poder estar en una asignacion"
-  --   Desref _ t    -> return() -- tell (deref lv rv) >> return lv
+    Desref _ t    -> do
+      actO   <- pushOffset (getWidth tVar)
+      lv     <- newTemp actO
+      tacVar <- pushVariable (getRefVar var) tVar
+      tell (tacDeref lv tacVar) >> return lv
   --   Index _ e _   -> return()
   --   Field v f t   -> return()
-  --   _     -> return tacVar
+    _     -> pushVariable var tVar >>= return
 
 
 -- 
