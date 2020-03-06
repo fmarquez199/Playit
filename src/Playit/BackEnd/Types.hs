@@ -42,7 +42,7 @@ data Operands = Operands {
   contL :: TACOP,
   base  :: OffSet,
   -- fp    :: OffSet,
-  subs  :: [(Id,InstrSeq,Bool)],
+  subs  :: [(Id, InstrSeq, Bool)],
   astST :: SymTab
 } deriving (Eq, Ord)
 

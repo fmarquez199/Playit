@@ -25,16 +25,24 @@ import qualified Playit.BackEnd.TACType as T
 tacInitState :: SymTab -> Operands
 tacInitState = Operands M.empty temps M.empty [] brk cont 0 []
   where
+    elemReg  = Temp "_elem" (-1)
+    freeReg  = Temp "_free" (-1)
+    headReg  = Temp "_head" (-1)
+    nullReg  = Temp "_null" (-1)
     printReg = Temp "_print" (-1)
     readReg  = Temp "_read" (-1)
-    nullReg  = Temp "_null" (-1)
+    retReg   = Temp "_v0" (-1)
     cont     = tacLabel "cont"
     brk      = tacLabel "brk"
-    temps    = M.fromList [(printReg, False), (readReg, False), (nullReg, False)]
+    temps    = M.fromList [(elemReg, False), (freeReg, False), (headReg, False), (nullReg, False), (printReg, False), (readReg, False), (retReg, False)]
 
 
 gen :: Instr -> TACMonad ()
-gen ast = tell (tacCall Nothing "_main" 0 ++ tacNewLabel (tacLabel "_main")) >> genCode ast
+gen ast = do
+  malloc
+  free
+  tell (tacCall Nothing "_main" 0 ++ tacNewLabel (tacLabel "_main"))
+  genCode ast
 
 -- 
 genCode :: Instr -> TACMonad ()
@@ -485,7 +493,33 @@ genType t = return Nothing
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 --- Auxiliares que deben ir en este archivo
+getElem :: TACMonad TACOP
+getElem = return $ tacVariable $ Temp "_elem" (-1)
 
+getFree :: TACMonad TACOP
+getFree = return $ tacVariable $ Temp "free" (-1)
+
+getHead :: TACMonad TACOP
+getHead = return $ tacVariable $ Temp "_head" (-1)
+
+getNull :: TACMonad TACOP
+getNull = return $ tacVariable $ Temp "_null" (-1)
+
+getPrint :: TACMonad TACOP
+getPrint = return $ tacVariable $ Temp "_print" (-1)
+
+getRead :: TACMonad TACOP
+getRead = return $ tacVariable $ Temp "_read" (-1)
+
+getReturn :: TACMonad TACOP
+getReturn = return $ tacVariable $ Temp "_return" (-1)
+
+getParam :: Int -> TACMonad TACOP
+getParam x = do
+  state@Operands{temps = ts} <- get
+  let a = Temp ("$a" ++ show x) (-1)
+  put state{temps = M.insert a True ts}
+  return $ tacVariable a
 
 newTemp :: OffSet -> TACMonad TACOP
 newTemp actO = do
@@ -586,3 +620,164 @@ breakI = do
   put state{brkL = brk}
   return brk
 -------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-- _head[0] = pointer to first list node
+-- _head[4] = amount of memory spent 
+-- _elem[0] = pointer to next list node
+-- _elem[4] = flag isFree (0 -> ocuppied, _ -> free)
+-- _elem[8] = size of block
+-- _elem[12] = pointer to element
+
+-- malloc(requestedBytes):
+--   prólogo.
+--   _elem     := syscall9(16)
+--   _return   := syscall9(requestedBytes)
+--   if _return = 0 goto 2
+-- 1:_elem[0]  := _head[0]
+--   _elem[4]  := 0
+--   _elem[8]  := requestedBytes
+--   _elem[12] := _return
+--   _head[0]  := _elem
+--   _head[4]  := _head[4] + requestedBytes
+-- 5:epílogo.
+--   return _return
+-- 2:_elem := *_head[0]
+--   $t?   := *_elem[4]
+-- 3:if $t? = 0 goto 4
+--   $t?   := *_elem[8]
+--   if $t? < requestedBytes goto 4
+--   _return = _elem[12]
+--   goto 1
+-- 4:$t? := *_elem[8]
+--   $t?? := *_head[4]
+--   $t?? := $t?? - $t?
+--   if t?? <= 0 goto 5
+--   $t? := *_elem[0]
+--   goto 3
+
+malloc :: TACMonad ()
+malloc = do
+  elem <- getElem
+  head <- getHead
+  par0 <- getParam 0
+  retn <- getReturn
+  let
+    temp1   = tacVariable $ Temp "mallocTemp1" 4
+    temp2   = tacVariable $ Temp "mallocTemp2" 4
+    zero    = tacConstant ("0", TInt)
+    four    = tacConstant ("4", TInt)
+    eight   = tacConstant ("8", TInt)
+    twelve  = tacConstant ("12", TInt)
+    sixteen = tacConstant ("16", TInt)
+    mem     = tacLabel "malloc1"
+    noMem   = tacLabel "malloc2"
+    lookMem = tacLabel "malloc3"
+    nextOne = tacLabel "malloc4"
+    errReqs = tacLabel "malloc5"
+    syscall = tacLabel "        syscall 9"
+  tell (tacNewLabel (tacLabel "_malloc(requestedBytes):"))
+  tell (tacAssign temp1 par0)
+  tell (tacAssign par0 sixteen)
+  tell (tacNewLabel syscall)
+  tell (tacAssign par0 temp1)
+  tell (tacNewLabel syscall)
+  tell (tacEq retn zero noMem)
+  tell (tacNewLabel mem)
+  tell (tacGet temp1 head zero)
+  tell (tacSet elem zero temp1)
+  tell (tacSet elem four zero)
+  tell (tacSet elem eight par0)
+  tell (tacSet elem twelve retn)
+  tell (tacSet head zero elem)
+  tell (tacGet temp1 head four)
+  tell (tacAdd temp1 temp1 par0)
+  tell (tacSet head four temp1)
+  tell (tacNewLabel errReqs)
+  tell (tacGoto (tacLabel "_"))
+  tell (tacNewLabel noMem)
+  tell (tacDeref elem head)
+  tell (tacGet temp1 elem four)
+  tell (tacDeref temp1 temp1)
+  tell (tacNewLabel lookMem)
+  tell (tacEq temp1 zero nextOne)
+  tell (tacGet temp1 elem eight)
+  tell (tacDeref temp1 temp1)
+  tell (tacLt temp1 par0 nextOne)
+  tell (tacGet retn elem twelve)
+  tell (tacGoto mem)
+  tell (tacNewLabel nextOne)
+  tell (tacGet temp1 elem eight)
+  tell (tacDeref temp1 temp1)
+  tell (tacGet temp2 head four)
+  tell (tacDeref temp2 temp2)
+  tell (tacSub temp2 temp2 temp1)
+  tell (tacLte temp2 zero errReqs)
+  tell (tacGet temp1 elem zero)
+  tell (tacDeref temp1 temp1)
+  tell (tacGoto lookMem)
+
+-- _head[0] = pointer to first list node
+-- _head[4] = amount of memory spent 
+-- _elem[0] = pointer to next list node
+-- _elem[4] = flag isFree (0 -> ocuppied, _ -> free)
+-- _elem[8] = size of block
+-- _elem[12] = pointer to element
+
+-- free(address):
+--   prólogo.
+--   _elem := *_head[0]
+--   $t?   := *_elem[8]
+--   $t??  := *_head[4]
+-- 1:$t??  := $t?? - $t?
+--   if $t?? <= 0 goto 3
+--   _free := _elem[12]
+--   if _free != address goto 2
+--   _free := *_free
+--   _free[4] := 4
+--   goto 3
+-- 2:_elem := *_elem[0]
+--   $t? := *_elem[8]?
+--   goto 1
+-- 3:epílogo.
+--   return
+free :: TACMonad ()
+free = do
+  elem <- getElem
+  head <- getHead
+  par0 <- getParam 0
+  free <- getFree
+  let
+    temp1   = tacVariable $ Temp "freeTemp1" 4
+    temp2   = tacVariable $ Temp "freeTemp2" 4
+    zero    = tacConstant ("0", TInt)
+    four    = tacConstant ("4", TInt)
+    eight   = tacConstant ("8", TInt)
+    twelve  = tacConstant ("12", TInt)
+    begin   = tacLabel "free1"
+    nextOne = tacLabel "free2"
+    exit    = tacLabel "free3"
+  tell (tacNewLabel (tacLabel "_free(address):"))
+  tell (tacGet elem head zero)
+  tell (tacDeref elem elem)
+  tell (tacGet temp1 elem eight)
+  tell (tacDeref temp1 temp1)
+  tell (tacGet temp2 head four)
+  tell (tacDeref temp2 temp2)
+  tell (tacNewLabel begin)
+  tell (tacSub temp2 temp2 temp1)
+  tell (tacLte temp2 zero exit)
+  tell (tacGet free elem twelve)
+  tell (tacNeq free par0 nextOne)
+  tell (tacDeref free free)
+  tell (tacSet free four four)
+  tell (tacGoto exit)
+  tell (tacNewLabel nextOne)
+  tell (tacGet elem elem zero)
+  tell (tacDeref elem elem)
+  tell (tacGet temp1 elem eight)
+  tell (tacDeref temp1 temp1)
+  tell (tacGoto begin)
+  tell (tacNewLabel exit)
+  tell (tacGoto (tacLabel "_"))
