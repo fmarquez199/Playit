@@ -12,13 +12,14 @@
 @    x = 10'5
 @    Power y = i * 2
 @  .~
-@  monster m(Skill s) Power:
-@    Power i = 0
-@    unlock i
-@  .~
+monster m(Skill ?s) Power:
+  Skill v = s
+  Power i = 0
+  unlock i
+.~
 
 world %Pruebas%:
-
+  Power x = kill m(0'0)
 @  Power x = 50 @ , u, z = 6
 @  Power y = -5
 
@@ -67,30 +68,30 @@ world %Pruebas%:
   @.~
 
 @  Button:
-  @  | Lose       } x = 0
-  @  | x > 3      } x = 10
-  @  | x == 20    } x = 1
-  @  | Lose       } x = 0
-  @  | Win        } x = 30 @ AST no se genera bien. La x en el default tiene el mismo valor que aquí
-  @  | notPressed } x = 720
-  @.~
+@    | Lose       } x = 0
+@    | x > 3      } x = 10
+@    | x == 20    } x = 1
+@    | Lose       } x = 0
+@    | Win        } x = 30 @ AST no se genera bien. La x en el default tiene el mismo valor que aquí
+@    | notPressed } x = 720
+@  .~
 
 @ Subrutinas
-  @kill b(x,4'5)
-  @x = kill m(10'4)
+@  kill b(x,4'5)
+@  x = kill m(10'4)
   
 @ Arreglos
-  @Power|}3{| array = |)2, 3, 4(|
+@  Power|}3{| array = |)2, 3, 4(|
 
-  @controller Power e <- |)2, 3(|:
-  @  Power i = e
-  @.~
+@  controller Power e <- |)2, 3(|:
+@    Power i = e
+@  .~
 
 @ Apuntadores
-  Power puff apt1
-  Rune|}3{| puff apt2
-  puff apt1 = 50
-  @puff apt2 = |)*a*, *b*, *4*(|
+@  Power puff apt1
+@  Rune|}3{| puff apt2
+@  puff apt1 = 50
+@  puff apt2 = |)*a*, *b*, *4*(|
 
 @  Runes s = ~3g~
 @  Runes j = joystick ~Here we go~

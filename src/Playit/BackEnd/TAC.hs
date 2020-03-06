@@ -352,12 +352,16 @@ genLiteral l typeL = do
   Desref
 -}
 genVar :: Var -> Type -> TACMonad TACOP
-genVar var tVar =
+genVar var tVar = do
+  actO <- pushOffset $ getWidth tVar
+  lv   <- newTemp actO
   case var of
-  --   Param n t ref -> error "Un parametro no deberia poder estar en una asignacion"
+    Param n t ref -> do
+      if ref == Value then
+        pushVariable var tVar >>= return
+      else
+        pushVariable var tVar >>= return
     Desref _ t    -> do
-      actO   <- pushOffset (getWidth tVar)
-      lv     <- newTemp actO
       tacVar <- pushVariable (getRefVar var) tVar
       tell (tacDeref lv tacVar) >> return lv
   --   Index _ e _   -> return()
@@ -568,8 +572,10 @@ pushVariable var tVar = do
     state@Operands{vars = vs, astST = st} <- get
     put state{vars = M.insert var temp vs}
     let info = head . fromJust $ lookupInSymTab (getName var) st
-    -- return $ tacVariable $ TACVar info actO
-    return temp
+    if category info == Parameters Reference then
+      return $ tacVariable $ TACVar info actO
+    else
+      return temp
 
 
 pushSubroutine :: Id -> Bool -> TACMonad ()
