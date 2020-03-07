@@ -95,8 +95,8 @@ genAssig var e nextL = case typeVar var of
     tell (tacAssign vTemp $ tacConstant ("False", TBool))
     tell (tacNewLabel nextL)
 -- Registros y uniones
-  TNew n -> 
-    return ()
+  TNew n -> do
+    e <- genExpr e
 --
   _ -> do
     eTemp <- genExpr e
@@ -356,16 +356,13 @@ genVar var tVar = do
   actO <- pushOffset $ getWidth tVar
   lv   <- newTemp actO
   case var of
-    Param n t ref -> do
-      if ref == Value then
-        pushVariable var tVar >>= return
-      else
-        pushVariable var tVar >>= return
-    Desref _ t    -> do
+    Param _ _ Reference -> do
+      tacVar <- pushVariable var tVar
+      tell (tacDeref lv tacVar) >> return lv
+    Desref _ t -> do
       tacVar <- pushVariable (getRefVar var) tVar
       tell (tacDeref lv tacVar) >> return lv
-  --   Index _ e _   -> return()
-  --   Field v f t   -> return()
+  --   Field v f t -> return()
     _     -> pushVariable var tVar >>= return
 
 
