@@ -8,13 +8,13 @@
 @  Skill b
 @  Battle c
 @.~
-@boss b(Power i, Skill x):
-@  x = 10'5
-@  Power y = i * 2
-@.~
-monster m(Power|}1{| s) Power:
-  unlock 0
+boss b(Power ?i, Skill x):
+  x = 10'5
+  Power y = i * 2
 .~
+@monster m(Power|}1{| s) Power:
+@  unlock 0
+@.~
 
 world %Pruebas%:
 
@@ -78,8 +78,8 @@ world %Pruebas%:
   @kill b(x,4'5)
   @x = kill m(10'4)
   @Power|}x{| a     @ Esto esta dando error cuando se inicializa por defecto un arreglo
-  Power|}1{| a
-  x = kill m(a)
+  @Power|}1{| a
+  @x = kill m(a)
 
 @ Arreglos
   @Power|}3{| array = |)2, 3, 4(|
@@ -89,11 +89,12 @@ world %Pruebas%:
   @.~
 
 @ Apuntadores
-  @Power puff apt1 = summon Power
+  Power puff apt1 = summon Power
   @Rune|}3{| puff apt2
   @puff apt1 = 50
   @puff apt2 = |)*a*, *b*, *4*(|
   @free apt1
+  kill b(apt1,10'6)
 
 
 "'Ejemplos por implementar, arriba estan cosas probadas que funcionan'"
