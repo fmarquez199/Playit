@@ -14,22 +14,6 @@ import qualified Playit.BackEnd.TACType as T
 
 
 -------------------------------------------------------------------------------
--- Gets the TAC's label operand
--- getLout :: TAC -> TACOP
--- getLout (T.TACC T.NewLabel out Nothing Nothing) = out
--- getLout _                                       = Nothing
--------------------------------------------------------------------------------
-
-
--------------------------------------------------------------------------------
--- Gets the value of the label operand
--- getLabel :: TACOP -> String
--- getLabel Nothing            = ""
--- getLabel (Just (T.Label l)) = l
--------------------------------------------------------------------------------
-
-
--------------------------------------------------------------------------------
 -- Creates the TAC's variable operand
 tacVariable :: TACInfo -> TACOP
 tacVariable v = Just $ T.Variable v

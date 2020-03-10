@@ -10,8 +10,15 @@ module Playit.BackEnd.Types where
 import Control.Monad.Trans.RWS
 import Playit.FrontEnd.Types
 import qualified Data.Map               as M
+import qualified Data.Graph             as G
 import qualified Playit.BackEnd.TACType as TACT
 
+
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+--                               TAC creation
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 
 type TempReg = String
@@ -56,3 +63,17 @@ instance Show Operands where
 -- Monad para manejar los operandos, writer tiene la lista de las instrucciones
 -- de tres direcciones, reader tiene el AST que sale del parser
 type TACMonad a = RWST Instr [TAC] Operands IO a
+
+
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+--                           Flow Graph creation
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+
+type FGNode = [TAC]
+type FGKey  = String
+
+data FlowGraph = FlowGraph {
+  
+}
