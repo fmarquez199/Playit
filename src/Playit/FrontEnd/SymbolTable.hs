@@ -181,6 +181,7 @@ emptyAssig _                                = False
 
 getSize :: Expr -> Int
 getSize (Literal (Integer n) _) = n
+-- getSize (Variable var _)        = -- Buscar el valor de var, 0.o
 getSize e = error $ "Expresion para tamaño de arreglo incorrecta: " ++ show e
 -------------------------------------------------------------------------------
 

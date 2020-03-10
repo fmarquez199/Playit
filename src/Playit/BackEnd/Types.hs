@@ -42,12 +42,14 @@ data Operands = Operands {
   contL :: TACOP,
   base  :: OffSet,
   -- fp    :: OffSet,
+  callF :: Bool,
+  callM :: Bool,
   subs  :: [(Id, InstrSeq, Bool)],
   astST :: SymTab
 } deriving (Eq, Ord)
 
 instance Show Operands where
-  show (Operands vs ts ls lbs brk con b s st) = 
+  show (Operands vs ts ls lbs brk con b _ _ s st) = 
     "\n vars: " ++ show vs ++ "\n temps: " ++ show ts ++
     "\n lits: " ++ show ls ++ "\n labels: " ++ show lbs ++
     "\n break: " ++ show brk ++ "\n continue: " ++ show con ++
