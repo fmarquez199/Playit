@@ -13,14 +13,14 @@ import Playit.BackEnd.Types
 import Playit.FrontEnd.SymbolTable (lookupInSymTab)
 import Playit.FrontEnd.Types
 import Playit.FrontEnd.Utils       (getName)
-import qualified Data.Map               as M
-import qualified Playit.BackEnd.TACType as T
+import qualified Data.Map          as M
+import qualified TACType           as T
 
 
 -------------------------------------------------------------------------------
 -- Creates the TAC's variable operand
 tacVariable :: TACInfo -> TACOP
-tacVariable v = Just $ T.Variable v
+tacVariable v = Just $ T.Id v
 -------------------------------------------------------------------------------
 
 
@@ -80,68 +80,68 @@ isFall _                  = error "Calling isFall with no label operand"
 
 -------------------------------------------------------------------------------
 tacBin :: T.Operation -> TACOP -> TACOP -> TACOP -> [TAC]
-tacBin op lv rv1 rv2 = [T.TACC op lv rv1 rv2]
+tacBin op lv rv1 rv2 = [T.ThreeAddressCode op lv rv1 rv2]
 
 tacUn :: T.Operation -> TACOP -> TACOP -> [TAC]
-tacUn op lv rv = [T.TACC op lv rv Nothing]
+tacUn op lv rv = [T.ThreeAddressCode op lv rv Nothing]
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
 -- Creates the TAC's GoTo
 tacGoto :: TACOP -> [TAC]
-tacGoto label = [T.TACC T.GoTo Nothing Nothing label]
+tacGoto label = [T.ThreeAddressCode T.GoTo Nothing Nothing label]
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
 -- Creates the TAC's GoTo
 tacNewLabel :: TACOP -> [TAC]
-tacNewLabel label = [T.TACC T.NewLabel label Nothing Nothing]
+tacNewLabel label = [T.ThreeAddressCode T.NewLabel label Nothing Nothing]
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
 tacAssign :: TACOP -> TACOP -> [TAC]
-tacAssign lv rv = [T.TACC T.Assign lv rv Nothing]
+tacAssign lv rv = [T.ThreeAddressCode T.Assign lv rv Nothing]
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
 tacIf :: TACOP -> TACOP -> [TAC]
-tacIf cond label = [T.TACC T.If Nothing cond label]
+tacIf cond label = [T.ThreeAddressCode T.If Nothing cond label]
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
 tacSet :: TACOP -> TACOP -> TACOP -> [TAC]
-tacSet x i y = [T.TACC T.Set x i y]
+tacSet x i y = [T.ThreeAddressCode T.Set x i y]
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
 tacGet :: TACOP -> TACOP -> TACOP -> [TAC]
-tacGet x y i = [T.TACC T.Get x y i]
+tacGet x y i = [T.ThreeAddressCode T.Get x y i]
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
 tacCall :: TACOP -> String -> Int -> [TAC]
-tacCall lv s n = [T.TACC T.Call lv (tacLabel s) (tacConstant (show n,TInt))]
+tacCall lv s n = [T.ThreeAddressCode T.Call lv (tacLabel s) (tacConstant (show n,TInt))]
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
 tacParam :: TACOP -> TAC
-tacParam p = T.TACC T.Param Nothing p Nothing
+tacParam p = T.ThreeAddressCode T.Param Nothing p Nothing
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
 -- | Modify the symbol offset
 modifyOffSet :: TACOP -> OffSet -> TACOP
-modifyOffSet (Just (T.Variable (Temp n _))) newO      = tacVariable $ Temp n newO
-modifyOffSet (Just (T.Variable (TACVar info _))) newO = tacVariable $ TACVar info newO
+modifyOffSet (Just (T.Id (Temp n _))) newO      = tacVariable $ Temp n newO
+modifyOffSet (Just (T.Id (TACVar info _))) newO = tacVariable $ TACVar info newO
 -------------------------------------------------------------------------------
 
 
@@ -399,7 +399,7 @@ malloc = do
   -- epilogo
   -- return _return
   tell (tacNewLabel exitMall)
-  tell [T.TACC T.Return Nothing retn Nothing]
+  tell [T.ThreeAddressCode T.Return Nothing retn Nothing]
   
 -- 2: No hay memoria disponible, entonces se busca en la lista si hay algun bloque libre que encaje en el tamaño de memoria solicitado
   tell (tacNewLabel noMemory)
@@ -489,5 +489,5 @@ free = do
 
 -- 3:
   tell (tacNewLabel exitFree)
-  tell [T.TACC T.Return Nothing Nothing Nothing]
+  tell [T.ThreeAddressCode T.Return Nothing Nothing Nothing]
 -------------------------------------------------------------------------------

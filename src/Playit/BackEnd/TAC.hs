@@ -16,8 +16,8 @@ import Playit.BackEnd.Types
 import Playit.FrontEnd.SymbolTable (lookupInSymTab)
 import Playit.FrontEnd.Types
 import Playit.FrontEnd.Utils       (typeVar, baseTypeT, isArrLst, baseTypeE)
-import qualified Data.Map               as M
-import qualified Playit.BackEnd.TACType as T
+import qualified Data.Map          as M
+import qualified TACType           as T
 
 
 -- Colocar los temps de print, read y null al inicio?
@@ -178,7 +178,7 @@ genWhile e is nextL = do
   --   lvi x = tacVariable $ SymbolInfo (t' x) TDummy 1 Constants ("print", -1) []
   --   rvi x = tacConstant (show (l' x), TDummy)
 
-  -- return $ es' ++ [ T.TACC T.Assign (lvi (show x)) (rvi x) Nothing | x <- [0..len] ]
+  -- return $ es' ++ [ T.ThreeAddressCode T.Assign (lvi (show x)) (rvi x) Nothing | x <- [0..len] ]
 
 
 -- Aqui se llama a free, Prologo
@@ -213,7 +213,7 @@ genParams params = do
 
 -- Hace epilogo
 genReturn :: TACOP -> TACMonad ()
-genReturn e = tell [T.TACC T.Return Nothing e Nothing]
+genReturn e = tell [T.ThreeAddressCode T.Return Nothing e Nothing]
 
 
 -- 
@@ -332,8 +332,8 @@ genLiteral l typeL = -- do
         liftIO (print ("Llegue a literal ArrLst: " ++ show elems)) >> return (tacLabel "lit arrLst")
       Str s -> do
     -}
-    -- EmptyVal -> return ([T.TACC T.Assign lv rv Nothing], lv)
-    -- (Register es) -> return ([T.TACC T.Assign lv rv Nothing], lv)
+    -- EmptyVal -> return ([T.ThreeAddressCode T.Assign lv rv Nothing], lv)
+    -- (Register es) -> return ([T.ThreeAddressCode T.Assign lv rv Nothing], lv)
     -- _ ->
   return $ tacConstant (show l, typeL)
 
@@ -419,8 +419,8 @@ genBinOp op tOp rv1 rv2 = do
   -- Aritmethics
     op -> tell (tacBin (binOpToTACOP op) lv rv1 rv2)  >> return lv
   -- Lists
-    -- Anexo  -> return (e1Code ++ e2Code ++ [T.TACC T.Anexo lvt e1Temp e2Temp], lvt)
-    -- Concat -> return (e1Code ++ e2Code ++ [T.TACC T.Concat lvt e1Temp e2Temp], lvt)
+    -- Anexo  -> return (e1Code ++ e2Code ++ [T.ThreeAddressCode T.Anexo lvt e1Temp e2Temp], lvt)
+    -- Concat -> return (e1Code ++ e2Code ++ [T.ThreeAddressCode T.Concat lvt e1Temp e2Temp], lvt)
 
 
 -- 
@@ -462,7 +462,7 @@ genArrayList (elem:elems) width index arrTemp = do
   --   lv = tacVariable $ SymbolInfo "$read" TStr (-1) TempRead actO []
   --   rv = tacConstant ("'R'", TChar)
   
-  -- return (msg ++ [T.TACC T.Assign lv rv Nothing], lv)
+  -- return (msg ++ [T.ThreeAddressCode T.Assign lv rv Nothing], lv)
 
 
 -- Hace prologo

@@ -9,9 +9,8 @@ module Playit.BackEnd.Types where
 
 import Control.Monad.Trans.RWS
 import Playit.FrontEnd.Types
-import qualified Data.Map               as M
-import qualified Playit.BackEnd.TACType as TACT
-
+import qualified Data.Map       as M
+import qualified TACType        as TACT
 
 
 type TempReg = String
