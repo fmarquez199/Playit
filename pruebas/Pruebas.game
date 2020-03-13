@@ -8,10 +8,10 @@
 @  Skill b
 @  Battle c
 @.~
-boss b(Power ?i, Skill x):
-  x = 10'5
-  Power y = i * 2
-.~
+@boss b(Power ?i, Skill x):
+@  x = 10'5
+@  Power y = i * 2
+@.~
 @monster m(Power|}1{| s) Power:
 @  unlock 0
 @.~
@@ -93,8 +93,8 @@ world %Pruebas%:
   @Rune|}3{| puff apt2
   @puff apt1 = 50
   @puff apt2 = |)*a*, *b*, *4*(|
-  @free apt1
-  kill b(apt1,10'6)
+  free apt1
+  @kill b(apt1,10'6)
 
 
 "'Ejemplos por implementar, arriba estan cosas probadas que funcionan'"

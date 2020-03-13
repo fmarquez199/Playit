@@ -7,26 +7,14 @@
 -}
 module Playit.BackEnd.Utils where
 
+import Control.Monad.Trans.RWS     (tell, get, put)
 import Data.Maybe
-import Playit.FrontEnd.Types
 import Playit.BackEnd.Types
+import Playit.FrontEnd.SymbolTable (lookupInSymTab)
+import Playit.FrontEnd.Types
+import Playit.FrontEnd.Utils       (getName)
+import qualified Data.Map               as M
 import qualified Playit.BackEnd.TACType as T
-
-
--------------------------------------------------------------------------------
--- Gets the TAC's label operand
--- getLout :: TAC -> TACOP
--- getLout (T.TACC T.NewLabel out Nothing Nothing) = out
--- getLout _                                       = Nothing
--------------------------------------------------------------------------------
-
-
--------------------------------------------------------------------------------
--- Gets the value of the label operand
--- getLabel :: TACOP -> String
--- getLabel Nothing            = ""
--- getLabel (Just (T.Label l)) = l
--------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
@@ -50,6 +38,7 @@ tacLabel l = Just $ T.Label l
 -------------------------------------------------------------------------------
 
 
+-------------------------------------------------------------------------------
 binOpToTACOP :: BinOp -> T.Operation
 binOpToTACOP op = case op of
   Add       -> T.Add
@@ -64,8 +53,10 @@ binOpToTACOP op = case op of
   LessEq    -> T.Lte
   Eq        -> T.Eq
   NotEq     -> T.Neq
+-------------------------------------------------------------------------------
 
 
+-------------------------------------------------------------------------------
 negation :: T.Operation -> T.Operation
 negation op = case op of
   T.Lt  -> T.Gte
@@ -74,19 +65,26 @@ negation op = case op of
   T.Gte -> T.Lt
   T.Eq  -> T.Neq
   T.Neq -> T.Eq
+-------------------------------------------------------------------------------
 
 
+-------------------------------------------------------------------------------
 fall :: TACOP
 fall = Just $ T.Label "-1"
-
 
 isFall :: TACOP -> Bool
 isFall (Just (T.Label l)) = l == "-1"
 isFall _                  = error "Calling isFall with no label operand"
+-------------------------------------------------------------------------------
 
 
-tac :: T.Operation -> TACOP -> TACOP -> TACOP -> [TAC]
-tac op lv rv1 rv2 = [T.TACC op lv rv1 rv2]
+-------------------------------------------------------------------------------
+tacBin :: T.Operation -> TACOP -> TACOP -> TACOP -> [TAC]
+tacBin op lv rv1 rv2 = [T.TACC op lv rv1 rv2]
+
+tacUn :: T.Operation -> TACOP -> TACOP -> [TAC]
+tacUn op lv rv = [T.TACC op lv rv Nothing]
+-------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
@@ -110,110 +108,8 @@ tacAssign lv rv = [T.TACC T.Assign lv rv Nothing]
 
 
 -------------------------------------------------------------------------------
-tacMinus :: TACOP -> TACOP -> [TAC]
-tacMinus lv rv = [T.TACC T.Minus lv rv Nothing]
--------------------------------------------------------------------------------
-
-
--------------------------------------------------------------------------------
-tacLen :: TACOP -> TACOP -> [TAC]
-tacLen lv rv = [T.TACC T.Length lv rv Nothing]
--------------------------------------------------------------------------------
-
-
--------------------------------------------------------------------------------
-tacNew :: TACOP -> TACOP -> [TAC]
-tacNew lv rv = [T.TACC T.New lv rv Nothing]
--------------------------------------------------------------------------------
-
-
--------------------------------------------------------------------------------
-tacNot :: TACOP -> TACOP -> [TAC]
-tacNot lv rv = [T.TACC T.Not lv rv Nothing]
--------------------------------------------------------------------------------
-
-
--------------------------------------------------------------------------------
-tacDeref :: TACOP -> TACOP -> [TAC]
-tacDeref lv rv = [T.TACC T.Deref lv rv Nothing]
--------------------------------------------------------------------------------
-
-
--------------------------------------------------------------------------------
-tacAdd :: TACOP -> TACOP -> TACOP -> [TAC]
-tacAdd lv rv1 rv2 = [T.TACC T.Add lv rv1 rv2]
--------------------------------------------------------------------------------
-
-
--------------------------------------------------------------------------------
-tacSub :: TACOP -> TACOP -> TACOP -> [TAC]
-tacSub lv rv1 rv2 = [T.TACC T.Sub lv rv1 rv2]
--------------------------------------------------------------------------------
-
-
--------------------------------------------------------------------------------
-tacMult :: TACOP -> TACOP -> TACOP -> [TAC]
-tacMult lv rv1 rv2 = [T.TACC T.Mult lv rv1 rv2]
--------------------------------------------------------------------------------
-
-
--------------------------------------------------------------------------------
-tacDiv :: TACOP -> TACOP -> TACOP -> [TAC]
-tacDiv lv rv1 rv2 = [T.TACC T.Div lv rv1 rv2]
--------------------------------------------------------------------------------
-
-
--------------------------------------------------------------------------------
-tacMod :: TACOP -> TACOP -> TACOP -> [TAC]
-tacMod lv rv1 rv2 = [T.TACC T.Mod lv rv1 rv2]
--------------------------------------------------------------------------------
-
-
--------------------------------------------------------------------------------
-tacGt :: TACOP -> TACOP -> TACOP -> [TAC]
-tacGt lv rv1 rv2 = [T.TACC T.Gt lv rv1 rv2]
--------------------------------------------------------------------------------
-
-
--------------------------------------------------------------------------------
-tacGte :: TACOP -> TACOP -> TACOP -> [TAC]
-tacGte lv rv1 rv2 = [T.TACC T.Gte lv rv1 rv2]
--------------------------------------------------------------------------------
-
-
--------------------------------------------------------------------------------
-tacLt :: TACOP -> TACOP -> TACOP -> [TAC]
-tacLt lv rv1 rv2 = [T.TACC T.Lt lv rv1 rv2]
--------------------------------------------------------------------------------
-
-
--------------------------------------------------------------------------------
-tacLte :: TACOP -> TACOP -> TACOP -> [TAC]
-tacLte lv rv1 rv2 = [T.TACC T.Lte lv rv1 rv2]
--------------------------------------------------------------------------------
-
-
--------------------------------------------------------------------------------
-tacEq :: TACOP -> TACOP -> TACOP -> [TAC]
-tacEq lv rv1 rv2 = [T.TACC T.Eq lv rv1 rv2]
--------------------------------------------------------------------------------
-
-
--------------------------------------------------------------------------------
-tacNeq :: TACOP -> TACOP -> TACOP -> [TAC]
-tacNeq lv rv1 rv2 = [T.TACC T.Neq lv rv1 rv2]
--------------------------------------------------------------------------------
-
-
--------------------------------------------------------------------------------
 tacIf :: TACOP -> TACOP -> [TAC]
 tacIf cond label = [T.TACC T.If Nothing cond label]
--------------------------------------------------------------------------------
-
-
--------------------------------------------------------------------------------
--- tacIfFalse :: TACOP -> TACOP -> [TAC]
--- tacIfFalse cond label = [T.TACC T.IfFalse Nothing cond label]
 -------------------------------------------------------------------------------
 
 
@@ -290,3 +186,308 @@ getRefVar (Desref v _) = v
 getRefVar var          = var
 -------------------------------------------------------------------------------
 
+
+-------------------------------------------------------------------------------
+continue :: TACMonad TACOP
+continue = do
+  cont  <- newLabel
+  state <- get
+  put state{contL = cont}
+  return cont
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+breakI :: TACMonad TACOP
+breakI = do
+  brk   <- newLabel
+  state <- get
+  put state{brkL = brk}
+  return brk
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+newTemp :: OffSet -> TACMonad TACOP
+newTemp actO = do
+  state@Operands{temps = ts} <- get
+  let t = Temp ("$t" ++ show (M.size ts - 4)) actO
+  put state{temps = M.insert t True ts}
+  return $ tacVariable t
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-- Tal vez colocar labs como [String]
+newLabel :: TACMonad TACOP
+newLabel = do
+  state@Operands{labs = ls} <- get
+  let newL = length ls
+  put state{labs = newL:ls}
+  return $ tacLabel $ show newL
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+pushOffset :: Int -> TACMonad OffSet
+pushOffset width = do
+  state@Operands{base = actO} <- get
+  let newO = actO + width
+  put state{base = newO}
+  return actO
+
+resetOffset :: TACMonad ()
+resetOffset = do
+  state <- get
+  put state{base = 0}
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+pushLiteral :: Literal -> TACOP -> TACMonad ()
+pushLiteral l operand = do
+  state@Operands{lits = ls} <- get
+  put state{lits = M.insert l operand ls}
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-- NOTA: si se guarda en un temporal no se accede a memoria. 
+pushVariable :: Var -> Type -> TACMonad TACOP
+pushVariable var tVar = do
+  Operands{vars = vs, astST = st} <- get
+  if M.member var vs then return $ fromJust $ M.lookup var vs -- Aumentar las veces que esta siendo usada (TACOP, Int <veces usada>)
+  else do
+    let info = head . fromJust $ lookupInSymTab (getName var) st
+    actO <- pushOffset (getWidth tVar)
+    temp <- newTemp actO
+    
+    state@Operands{vars = vs, astST = st} <- get
+    put state{vars = M.insert var temp vs}
+    
+    if category info == Parameters Reference then
+      return $ tacVariable $ TACVar info actO
+    else
+      return temp
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+pushSubroutine :: Id -> Bool -> TACMonad ()
+pushSubroutine s isProc = do
+  state@Operands{subs = subroutines, astST = st} <- get
+  let ast = getAST . extraInfo . head . fromJust $ lookupInSymTab s st
+  put state{subs = (s, ast, isProc):subroutines}
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-- Actualizar offset dependiendo del tamaño del tipo de parametro a pasar ??
+getParam :: Int -> TACMonad TACOP
+getParam x = do
+  state@Operands{temps = ts} <- get
+  let a = Temp ("$a" ++ show x) (-1)
+  put state{temps = M.insert a True ts}
+  return $ tacVariable a
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+setMemoryTemps :: TACMonad (TACOP,TACOP,TACOP,TACOP,TACOP)
+setMemoryTemps = do
+  param0 <- getParam 0
+  head   <- pushOffset 8  >>= newTemp
+  elem   <- pushOffset 12 >>= newTemp
+  temp1  <- pushOffset 4  >>= newTemp
+  temp2  <- pushOffset 4  >>= newTemp
+  return (head, elem, param0, temp1, temp2)
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+setElemIndexs :: (TACOP,TACOP,TACOP,TACOP,TACOP)
+setElemIndexs = (zero,one,two,three,sixteen)
+  where
+    zero    = tacConstant ("0", TInt)
+    one     = tacConstant ("1", TInt)
+    two     = tacConstant ("2", TInt)
+    three   = tacConstant ("3", TInt)
+    sixteen = tacConstant ("16", TInt)
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-- Functions
+
+-------------------------------------------------------------------------------
+-- prologue
+-- prologue
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-- epilogue
+-- epilogue
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+syscall :: Int -> TACOP -> TACOP -> TACMonad ()
+syscall v0 lv param = do
+  tell [tacParam param]                         -- $a0
+  tell [tacParam $ tacConstant (show v0, TInt)] -- $v0
+  tell (tacCall lv "syscall" 2)
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+{-
+  _head[0] = pointer to first list element
+  _head[1] = amount of memory allocated 
+  _elem[0] = pointer to next list element
+  _elem[1] = flag isFree (0 -> ocuppied, 1 -> free)
+  _elem[2] = size of allocated block
+  _elem[3] = address to heap allocated memory
+-}
+malloc :: TACMonad ()
+malloc = do
+  (head,elem,par0,temp1,temp2) <- setMemoryTemps
+  -- temp1: Guarda el valor del parámetro pasado $a0 (requestedBytes)
+  -- temp2: Contenido de _head cuando hay mem y flag isFree de _elem cuando no
+  let
+    (zero,one,two,three,sixteen) = setElemIndexs
+    retn                         = tacVariable $ Temp "_return" (-1)
+    allocate                     = tacLabel "allocate"
+    noMemory                     = tacLabel "noMemory"
+    lookMem                      = tacLabel "lookMemory"
+    nextElemM                    = tacLabel "nextElementMalloc"
+    exitMall                     = tacLabel "exitMalloc"
+  
+  tell (tacNewLabel $ tacLabel "malloc")
+  -- prologo
+  -- requestedBytes := $a0      De esto no deberia encargarse el prologo?
+  tell (tacAssign temp1 par0)
+
+  -- _return := syscall9(requestedBytes)
+  syscall 9 retn temp1
+
+  -- if _return = 0 goto 2
+  tell (tacBin T.Eq retn zero noMemory)
+
+-- 1: Hay memoria disponible, entonces crea el bloque con la info
+  tell (tacNewLabel allocate)
+  -- _elem     := syscall9(16)
+  syscall 9 elem sixteen
+  -- _elem[0]  := _head[0]
+  tell (tacGet temp2 head zero)
+  tell (tacSet elem zero temp2)
+  -- _elem[1]  := 0
+  tell (tacSet elem one zero)
+  -- _elem[2]  := requestedBytes
+  tell (tacSet elem two temp1)
+  -- _elem[3] := _return
+  tell (tacSet elem three retn)
+  -- _head[0]  := _elem
+  tell (tacSet head zero elem)
+  -- _head[1]  := _head[1] + requestedBytes
+  tell (tacGet temp2 head one)
+  tell (tacBin T.Add temp2 temp2 temp1)
+  tell (tacSet head one temp2)
+  
+-- 5: Fin, retorna la dir de mem
+  -- epilogo
+  -- return _return
+  tell (tacNewLabel exitMall)
+  tell [T.TACC T.Return Nothing retn Nothing]
+  
+-- 2: No hay memoria disponible, entonces se busca en la lista si hay algun bloque libre que encaje en el tamaño de memoria solicitado
+  tell (tacNewLabel noMemory)
+  -- _elem  := _head[0]
+  tell (tacUn T.Deref elem head)
+  -- isFree := _elem[1]
+  tell (tacGet temp2 elem one)
+
+-- 3: 
+  tell (tacNewLabel lookMem)
+  -- if isFree = 0 goto 4
+  tell (tacBin T.Eq temp2 zero nextElemM)
+  -- blockSize := _elem[2]
+  tell (tacGet temp2 elem two)
+  -- if blockSize < requestedBytes goto 4
+  tell (tacBin T.Lt temp2 temp1 nextElemM)
+  -- _return = _elem[3]
+  tell (tacGet retn elem three)
+  -- goto 5
+  tell (tacGoto exitMall)
+
+-- 4: Se mueve al siguiente elemento para ver si cabe ahi la cantidad de memoria solicitada
+  tell (tacNewLabel nextElemM)
+  -- Revisar si es el ultimo de la lista
+  -- if _elem[0] == 0  goto 5
+  tell (tacGet temp2 elem zero)
+  tell (tacBin T.Eq temp2 zero exitMall)
+  -- _elem  := _elem[0]
+  tell (tacGet elem elem zero)
+  -- isFree := _elem[1]
+  tell (tacGet temp2 elem one)
+  -- goto 3
+  tell (tacGoto lookMem)
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+{-
+  _head[0] = pointer to first list element
+  _head[1] = amount of memory allocated 
+  _elem[0] = pointer to next list element
+  _elem[1]4 = flag isFree (0 -> ocuppied, 1 -> free)
+  _elem[2]8 = size of allocated block
+  _elem[3]12 = adress to heap allocated memory
+-}
+free :: TACMonad ()
+free = do
+  (head,elem,par0,temp1,temp2) <- setMemoryTemps
+  fre <- pushOffset 4 >>= newTemp -- Dir de mem a liberar
+  -- temp1: Guarda la direccion de memoria a ser liberada
+  -- temp2: Flag isFree
+  let
+    (zero,one,two,three,_) = setElemIndexs
+    beginFree              = tacLabel "beginFree"
+    nextElemF              = tacLabel "nextElementFree"
+    exitFree               = tacLabel "exitFree"
+  
+  tell (tacNewLabel (tacLabel "free"))
+  -- address := $a0
+  tell (tacAssign temp1 par0)
+
+  -- _elem := _head[0]
+  tell (tacGet elem head zero)
+
+-- 1: Revisa si llega al ultimo elemento y si la dir de mem a liberar es la indicada y la libera
+  tell (tacNewLabel beginFree)
+  -- if _elem[0] == 0 goto 3
+  tell (tacGet temp2 elem zero)
+  tell (tacBin T.Eq temp2 zero exitFree)
+  -- _free := _elem[3]
+  tell (tacGet fre elem three)
+  -- if _free != address goto 2
+  tell (tacBin T.Neq fre temp1 nextElemF)
+  -- _free    := *_free
+  tell (tacUn T.Deref fre fre)
+  -- _free[1] := 1
+  tell (tacSet fre one one)
+  -- goto 3
+  tell (tacGoto exitFree)
+
+-- 2: Siguiente elemento a revisar si es el que debe ser liberado
+  tell (tacNewLabel nextElemF)
+  -- _elem     := _elem[0]
+  tell (tacGet elem elem zero)
+  -- goto 1
+  tell (tacGoto beginFree)
+
+-- 3:
+  tell (tacNewLabel exitFree)
+  tell [T.TACC T.Return Nothing Nothing Nothing]
+-------------------------------------------------------------------------------

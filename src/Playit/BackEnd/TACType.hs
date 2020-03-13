@@ -28,7 +28,7 @@ instance (SymEntryCompatible a, Show a, Show b) => Show (ThreeAddressCode a b) w
 -- Logical
   show (TACC And (Just x) (Just y) (Just z))    = show x ++ " := " ++ show y ++ " && " ++ show z
   show (TACC Or (Just x) (Just y) (Just z))     = show x ++ " := " ++ show y ++ " || " ++ show z
-  show (TACC Not (Just x) (Just y) _)           = "\t" ++ show x ++ " := !" ++ show y
+  -- show (TACC Not (Just x) (Just y) _)           = "\t" ++ show x ++ " := !" ++ show y
 -- Comparators
   show (TACC Gt (Just x) (Just y) (Just z))     = "\t" ++ "if " ++ show x ++ " > " ++ show y ++ " goto " ++ show z
   show (TACC Gte (Just x) (Just y) (Just z))    = "\t" ++ "if " ++ show x ++ " >= " ++ show y ++ " goto " ++ show z
@@ -58,9 +58,9 @@ instance (SymEntryCompatible a, Show a, Show b) => Show (ThreeAddressCode a b) w
 -- Pointer operations
   show (TACC Ref (Just x) (Just y) Nothing)     = "\t" ++ show x ++ " := &" ++ show y
   show (TACC Deref (Just x) (Just y) Nothing)   = "\t" ++ show x ++ " := *" ++ show y
-  show (TACC New (Just x) (Just size) Nothing)  = "\t" ++ show x ++ " := malloc(" ++ show size ++ ")"
-  show (TACC Free Nothing (Just addr) Nothing)  = "\tfree(" ++ show addr ++ ")"
-  show (TACC Free Nothing Nothing Nothing)      = "\tSegmentation fault"
+  -- show (TACC New (Just x) (Just size) Nothing)  = "\t" ++ show x ++ " := malloc(" ++ show size ++ ")"
+  -- show (TACC Free Nothing (Just addr) Nothing)  = "\tfree(" ++ show addr ++ ")"
+  -- show (TACC Free Nothing Nothing Nothing)      = "\tSegmentation fault"
 -- Access for records and unions
   show (TACC Access (Just x) (Just r) (Just f)) = "\t" ++ show x ++ " := " ++ show r ++ "." ++ show f
 -- Castings
@@ -103,8 +103,8 @@ data Operation =
   And               |
   -- | Logical or
   Or                |
-  -- | Logical not
-  Not               |
+  -- | Logical not, >>>> no es necesario porque se hace jumping code <<<<
+  -- Not               |
 
 -- Comparators
   -- | Greater than
@@ -155,10 +155,10 @@ data Operation =
   Ref               |
   -- | x:= *y
   Deref             |
-  -- | x:= new Type
-  New               |
-  -- | free var
-  Free              |
+  -- | x:= new Type, >>>> No es necesario porque se llama a malloc <<<
+  -- New               |
+  -- | free var, >>>> No es necesario porque se llama a free <<<
+  -- Free              |
 
 -- Access for records and unions
   -- | x:= r.field
