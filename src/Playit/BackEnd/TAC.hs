@@ -8,7 +8,7 @@
 module Playit.BackEnd.TAC (tacInitState, gen) where
 
 import Control.Monad.IO.Class      (liftIO)
-import Control.Monad               (when, unless)
+import Control.Monad               (when, unless, void)
 import Control.Monad.Trans.RWS     (ask, tell, get, put)
 import Data.Maybe                  (fromJust, isNothing)
 import Playit.BackEnd.Utils    
@@ -42,7 +42,7 @@ genCode :: Instr -> TACMonad ()
 genCode i = case i of
   (Program is _)             -> mapM_ genCode is >> genSubroutines
   (Assigs is _)              -> mapM_ genCode is
-  (Assig v e _)              -> newLabel >>= genAssig v e
+  (Assig v e _)              -> genAssig v e
   (Break _)                  -> genBreak
   (Continue _)               -> genContinue
   (For n e1 e2 is _)         -> breakI   >>= genFor n e1 e2 is
@@ -76,11 +76,12 @@ genSubroutine (s, i, isProc) =
 
 
 -- Registros/Uniones
-genAssig :: Var -> Expr -> TACOP -> TACMonad ()
-genAssig var e nextL = case typeVar var of
+genAssig :: Var -> Expr -> TACMonad ()
+genAssig var e = case typeVar var of
   -- Si es el operador ternario la expr puede ser bool o no
   TBool -> do
-    vTemp  <- genVar var (typeVar var)
+    vTemp  <- pushOffset (getWidth (typeVar var)) >>= newTemp >>= genVar var
+    nextL  <- newLabel
     trueL  <- newLabel
     falseL <- newLabel
     genBoolExpr e trueL falseL
@@ -95,15 +96,19 @@ genAssig var e nextL = case typeVar var of
     e<-genExpr e
     return ()
 --
-  _ -> do
+  t -> do
+    {- if isIndexVar var then  else   -}
     eTemp <- genExpr e
-    vTemp <- genVar var (typeVar var)
     {- 
       if isField var then
       else
         base/fp[var.offset] := e
     -}
-    unless (isArrLst e) $ tell $ tacAssign vTemp eTemp
+    if isLit e then do
+      vTemp <- pushOffset (getWidth t) >>= newTemp >>= genVar var
+      tell (tacAssign vTemp eTemp)
+    else
+      void (genVar var eTemp)
 
 
 -- 
@@ -119,9 +124,9 @@ genForEach n e is nextL = do
     w = getWidth t
   begin <- newLabel
   contn <- continue
-  var   <- genVar (Var n t) t
+  var   <- pushOffset (getWidth t) >>= newTemp >>= genVar (Var n t)
   expr  <- genExpr e
-  count <- genVar (Var ("$i_" ++ n) t) TInt
+  count <- pushOffset 4 >>= newTemp >>= genVar (Var ("$i_" ++ n) t)
   tell (tacUn T.Deref count expr)
   tell (tacNewLabel begin)
   tell (tacBin T.Lte count (tacConstant ("0", TInt)) nextL)
@@ -235,7 +240,10 @@ genBreak = do
 genExpr :: Expr -> TACMonad TACOP
 genExpr e = case e of
   Literal l t         -> genLiteral l t
-  Variable v t        -> genVar v t
+  Variable v t        -> do
+    vs <- vars <$> get
+    if M.member v vs then return $ fromJust $ M.lookup v vs -- Aumentar las veces que esta siendo usada (TACOP, Int <veces usada>)
+    else pushOffset (getWidth t) >>= newTemp >>= genVar v
   Unary u e t         -> genUnOp u e t
   Binary b e1 e2 t    -> do
     e1Temp <- genExpr e1
@@ -339,22 +347,18 @@ genLiteral l typeL = -- do
   Field Var Id Type
   Index
 -}
-genVar :: Var -> Type -> TACMonad TACOP
-genVar var tVar =
+genVar :: Var -> TACOP -> TACMonad TACOP
+genVar var temp =
   case var of
     Param _ _ Reference -> do -- error "Un parametro no deberia poder estar en una asignacion"
-      actO   <- pushOffset (getWidth tVar)
-      lv     <- newTemp actO
-      tacVar <- pushVariable var tVar
-      tell (tacUn T.Deref lv tacVar) >> return lv
+      tacVar <- pushVariable var temp
+      tell (tacUn T.Deref temp tacVar) >> return temp
     Desref _ t -> do
-      actO   <- pushOffset (getWidth tVar)
-      lv     <- newTemp actO
-      tacVar <- pushVariable (getRefVar var) tVar
-      tell (tacUn T.Deref lv tacVar) >> return lv
+      tacVar <- pushVariable (getRefVar var) temp
+      tell (tacUn T.Deref temp tacVar) >> return temp
     -- Field v f t -> return()
     -- Index v e t -> return()
-    _     -> pushVariable var tVar
+    _     -> pushVariable var temp
 
 
 -- Prolog con New

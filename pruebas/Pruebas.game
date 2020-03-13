@@ -22,8 +22,8 @@ world %Pruebas%:
 @  Power y = -5
 
 @ Operaciones aritmeticas
-  @Power i0 = x + 1
-  @Power i1 = x - 1
+  Power i0 = x + 1
+  Power i1 = x - 1
   @Power i2 = x * 1
   @Power i4 = x % 1
   @Power i5 = x // 1
@@ -83,6 +83,8 @@ world %Pruebas%:
 
 @ Arreglos
   @Power|}3{| array = |)2, 3, 4(|
+  @array|)0(| = 0
+  @x = array|)0(|
 
   @controller Power e <- |)2, 3(|:
   @  Power i = e
@@ -97,16 +99,13 @@ world %Pruebas%:
   @kill b(apt1,10'6)
 
 @ I/O
-  Runes s = ~3g~
+  @Runes s = ~3g~
   @Runes j = joystick ~Here we go~
-  drop s
+  @drop s
   @drop ~hola mundo!!~
 
 
 "'Ejemplos por implementar, arriba estan cosas probadas que funcionan'"
-
-@  array|)0(| = 0
-@  x = array|)0(|
 
 @  Power a = #array
 @  Kit of Power list = <<10, 21, 3>> :: (<<2>> :: <<0>>) @ This is a problem

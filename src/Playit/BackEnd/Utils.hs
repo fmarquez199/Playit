@@ -18,6 +18,13 @@ import qualified TACType           as T
 
 
 -------------------------------------------------------------------------------
+isLit :: Expr -> Bool
+isLit (Literal _ _) = True
+isLit _             = False
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
 -- Creates the TAC's variable operand
 tacVariable :: TACInfo -> TACOP
 tacVariable v = Just $ T.Id v
@@ -253,16 +260,14 @@ pushLiteral l operand = do
 
 -------------------------------------------------------------------------------
 -- NOTA: si se guarda en un temporal no se accede a memoria. 
-pushVariable :: Var -> Type -> TACMonad TACOP
-pushVariable var tVar = do
+pushVariable :: Var -> TACOP -> TACMonad TACOP
+pushVariable var temp = do
   Operands{vars = vs, astST = st} <- get
   if M.member var vs then return $ fromJust $ M.lookup var vs -- Aumentar las veces que esta siendo usada (TACOP, Int <veces usada>)
   else do
     let info = head . fromJust $ lookupInSymTab (getName var) st
-    actO <- pushOffset (getWidth tVar)
-    temp <- newTemp actO
-    
-    state@Operands{vars = vs, astST = st} <- get
+
+    state@Operands{base= actO} <- get
     put state{vars = M.insert var temp vs}
     
     if category info == Parameters Reference then
