@@ -89,19 +89,21 @@ world %Pruebas%:
   @.~
 
 @ Apuntadores
-  Power puff apt1 = summon Power
+  @Power puff apt1 = summon Power
   @Rune|}3{| puff apt2
   @puff apt1 = 50
   @puff apt2 = |)*a*, *b*, *4*(|
-  free apt1
+  @free apt1
   @kill b(apt1,10'6)
+
+@ I/O
+  Runes s = ~3g~
+  @Runes j = joystick ~Here we go~
+  drop s
+  @drop ~hola mundo!!~
 
 
 "'Ejemplos por implementar, arriba estan cosas probadas que funcionan'"
-@  Runes s = ~3g~
-@  Runes j = joystick ~Here we go~
-@  drop s
-
 
 @  array|)0(| = 0
 @  x = array|)0(|

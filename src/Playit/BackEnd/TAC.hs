@@ -15,7 +15,7 @@ import Playit.BackEnd.Utils
 import Playit.BackEnd.Types
 import Playit.FrontEnd.SymbolTable (lookupInSymTab)
 import Playit.FrontEnd.Types
-import Playit.FrontEnd.Utils       (typeVar, baseTypeT, isArrLst, baseTypeE)
+import Playit.FrontEnd.Utils       (typeVar, baseTypeT, isArrLst, baseTypeE, typeE)
 import qualified Data.Map          as M
 import qualified TACType           as T
 
@@ -50,7 +50,7 @@ genCode i = case i of
   (ForWhile n e1 e2 e3 is _) -> breakI   >>= genForWhile n e1 e2 e3 is
   (IF gs _)                  -> newLabel >>= genIF gs
   (While e is _)             -> breakI   >>= genWhile e is
-  (Print es _)               -> return () -- genPrint es
+  (Print es _)               -> genPrint es
   (Free id _)                -> genFree id
   (ProcCall s _)             -> genProcCall s
   (Return e _)               -> genExpr e >>= genReturn
@@ -167,18 +167,13 @@ genWhile e is nextL = do
   tell (tacNewLabel nextL)
 
 
--- TODO: relacionado con arrays/lists
--- genPrint :: [Expr] -> TACMonad ()
--- genPrint es = return []
-  -- es'    <- foldl concatTAC (return []) $ map unWrapExprCode es
-  -- let
-  --   len   = length es - 1
-  --   t'  x = "$print[" ++ x ++ "]"
-  --   l'  x = es !! x 
-  --   lvi x = tacVariable $ SymbolInfo (t' x) TDummy 1 Constants ("print", -1) []
-  --   rvi x = tacConstant (show (l' x), TDummy)
-
-  -- return $ es' ++ [ T.ThreeAddressCode T.Assign (lvi (show x)) (rvi x) Nothing | x <- [0..len] ]
+-- syscall 4
+-- TODO: width del tipo string
+genPrint :: [Expr] -> TACMonad ()
+genPrint es = do
+  lv     <- pushOffset (getWidth (typeE (head es))) >>= newTemp
+  params <- mapM genExpr es
+  syscall 8 lv params
 
 
 -- Aqui se llama a free, Prologo
@@ -251,10 +246,9 @@ genExpr e = case e of
     let width = getWidth (baseTypeT t)
     in pushOffset width >>= newTemp >>= genArrayList es width 0
   Null                -> genNull
-  -- Read e _            -> genRead e
+  Read e _            -> genRead e
   FuncCall s _        -> genFuncCall s
   IdType t            -> genType t
-  _ -> return Nothing
 
 
 -- Array de bools, apuntador a bool
@@ -415,9 +409,10 @@ genBinOp op tOp rv1 rv2 = do
   actO <- pushOffset (getWidth tOp)
   lv   <- newTemp actO
   
-  case op of
+  -- case op of
   -- Aritmethics
-    op -> tell (tacBin (binOpToTACOP op) lv rv1 rv2)  >> return lv
+  --  op ->
+  tell (tacBin (binOpToTACOP op) lv rv1 rv2)  >> return lv
   -- Lists
     -- Anexo  -> return (e1Code ++ e2Code ++ [T.ThreeAddressCode T.Anexo lvt e1Temp e2Temp], lvt)
     -- Concat -> return (e1Code ++ e2Code ++ [T.ThreeAddressCode T.Concat lvt e1Temp e2Temp], lvt)
@@ -453,16 +448,14 @@ genArrayList (elem:elems) width index arrTemp = do
   genArrayList elems width (index + 1) (modifyOffSet arrTemp actO)
 
 
--- 
--- genRead :: Expr -> MTACExpr
--- genRead e = do
-  -- msg <- genCode (Print [e] TVoid)
-  -- state@Operands{offS = actO:_} <- get
-  -- let
-  --   lv = tacVariable $ SymbolInfo "$read" TStr (-1) TempRead actO []
-  --   rv = tacConstant ("'R'", TChar)
-  
-  -- return (msg ++ [T.ThreeAddressCode T.Assign lv rv Nothing], lv)
+-- syscall 8
+-- TODO: width del tipo string
+genRead :: Expr -> TACMonad TACOP
+genRead e = do
+  lv    <- pushOffset (getWidth (typeE e)) >>= newTemp
+  param <- genExpr e
+  syscall 8 lv [param]
+  return lv
 
 
 -- Hace prologo
@@ -471,7 +464,7 @@ genFuncCall (Call f params) = do
   pushSubroutine f False
   genParams (map fst params)
   Operands{base = actO} <- get
-  lv <- newTemp actO
+  lv <- newTemp actO -- Deberia ser el offset del tipo de retorno de la funcion, como lo obtengo?
   -- Prologo antes de pasar el poder al proc
   tell (tacCall lv f $ length params)
   return lv

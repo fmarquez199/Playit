@@ -333,11 +333,11 @@ setElemIndexs = (zero,one,two,three,sixteen)
 
 
 -------------------------------------------------------------------------------
-syscall :: Int -> TACOP -> TACOP -> TACMonad ()
-syscall v0 lv param = do
-  tell [tacParam param]                         -- $a0
+syscall :: Int -> TACOP -> [TACOP] -> TACMonad ()
+syscall v0 lv params = do
+  tell (map tacParam params)
   tell [tacParam $ tacConstant (show v0, TInt)] -- $v0
-  tell (tacCall lv "syscall" 2)
+  tell (tacCall lv "syscall" (length params + 1))
 -------------------------------------------------------------------------------
 
 
@@ -370,7 +370,7 @@ malloc = do
   tell (tacAssign temp1 par0)
 
   -- _return := syscall9(requestedBytes)
-  syscall 9 retn temp1
+  syscall 9 retn [temp1]
 
   -- if _return = 0 goto 2
   tell (tacBin T.Eq retn zero noMemory)
@@ -378,7 +378,7 @@ malloc = do
 -- 1: Hay memoria disponible, entonces crea el bloque con la info
   tell (tacNewLabel allocate)
   -- _elem     := syscall9(16)
-  syscall 9 elem sixteen
+  syscall 9 elem [sixteen]
   -- _elem[0]  := _head[0]
   tell (tacGet temp2 head zero)
   tell (tacSet elem zero temp2)
