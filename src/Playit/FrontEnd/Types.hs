@@ -93,7 +93,7 @@ instance Show Var where
   show (Param n t _)     = "Parameter: ?" ++ {-"("++show t++")"++-}n
   show (Desref v t)      = {-"("++show t++")"++-}"puff (" ++ show v ++ ")"
   show (Var n t)         = {-"("++show t++")"++-}n
-  show (Index v e t)     = {-"("++show t++")"++-}show v ++ " index: " ++ show e
+  show (Index v e t)     = {-"("++show t++")"++-}show v ++ "[" ++ show e ++ "]"
   show (Field v n t)     = {-"("++show t++") "++"("++-}show v ++ " spawn " ++ n
 
 -- Specify if a parameter is by value or reference

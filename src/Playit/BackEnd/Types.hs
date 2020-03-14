@@ -9,10 +9,9 @@ module Playit.BackEnd.Types where
 
 import Control.Monad.Trans.RWS
 import Playit.FrontEnd.Types
-import qualified Data.Map               as M
-import qualified Data.Graph             as G
-import qualified Playit.BackEnd.TACType as TACT
-
+import qualified Data.Map       as M
+import qualified Data.Graph     as G
+import qualified TACType        as TACT
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
@@ -29,7 +28,7 @@ type TACOP   = Maybe (TACT.Operand TACInfo Type)
 data TACInfo = Temp Id OffSet | TACVar SymbolInfo OffSet  deriving (Eq, Ord)
 
 instance TACT.SymEntryCompatible TACInfo where
-  getSymID (Temp n o)      = "[" ++ show o ++ "]->($t" ++ n ++ ")"
+  getSymID (Temp n o)      = "[" ++ show o ++ "]->(" ++ n ++ ")"
   getSymID (TACVar info o) = "[" ++ show o ++ "]->(" ++ symId info ++ ")"
 
 instance Show TACInfo where
@@ -49,16 +48,18 @@ data Operands = Operands {
   contL :: TACOP,
   base  :: OffSet,
   -- fp    :: OffSet,
-  subs  :: [(Id,InstrSeq,Bool)],
+  callF :: Bool,
+  callM :: Bool,
+  subs  :: [(Id, InstrSeq, Bool)],
   astST :: SymTab
 } deriving (Eq, Ord)
 
 instance Show Operands where
-  show (Operands vs ts ls lbs brk con b s st) = 
+  show (Operands vs ts ls lbs brk con b _ _ s st) = 
     "\n vars: " ++ show vs ++ "\n temps: " ++ show ts ++
-    "\n lits: " ++ show ls ++ "\n labels: " ++ show lbs ++
-    "\n break: " ++ show brk ++ "\n continue: " ++ show con ++
-    "\n base: " ++ show b ++ "\nsubroutines: " ++ show s {- ++ show st -} ++ "\n"
+    "\n lits: " ++ show ls ++ "\n labels: " ++ show lbs {- ++ -}
+    -- "\n break: " ++ show brk ++ "\n continue: " ++ show con ++
+    -- "\n base: " ++ show b ++ "\nsubroutines: " ++ show s {- ++ show st -} ++ "\n"
 
 -- Monad para manejar los operandos, writer tiene la lista de las instrucciones
 -- de tres direcciones, reader tiene el AST que sale del parser

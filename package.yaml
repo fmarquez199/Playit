@@ -32,7 +32,9 @@ dependencies:
 - split
 - tostring
 library:
-  source-dirs: src
+  source-dirs:
+    - src
+    - TACType
 
 executables:
   playit-exe:

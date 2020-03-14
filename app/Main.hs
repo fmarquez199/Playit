@@ -59,13 +59,13 @@ main = do
           (ast,state@SymTabState{symTab = st},errs) <- runRWST parseCode fileCode stInitState
           
           if null errs then do
+            (_,state,tac) <- runRWST (gen ast) ast (tacInitState (symTab state))
+            print state
             print ast -- >> print st >> printPromises (proms state)
             -- putStrLn $ "\nActive scopes: " ++ show (actS state)
             -- putStrLn $ "\nActual scope:" ++ show (stScope state)
             -- putStrLn $ "\nOffSets: " ++ show (offSets state)
             -- putStrLn $ "\nActual offset: " ++ show (actOffS state)
-            (_,state,tac) <- runRWST (gen ast) ast (tacInitState (symTab state))
-            print state
             mapM_ print tac
             let ((graph, getNodeFromVertex, getVertexFromKey), leaders) = genFlowGraph tac
             print graph

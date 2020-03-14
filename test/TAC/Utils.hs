@@ -9,7 +9,7 @@ import Playit.FrontEnd.Types
 import Playit.BackEnd.TAC          (gen,tacInitState)
 import Playit.BackEnd.Utils        (tacConstant,tacVariable,tacLabel,tacGoto)
 import Playit.BackEnd.Types
-import qualified Playit.BackEnd.TACType as T
+import qualified TACType           as T
 
 runTestForValidTAC :: String -> [TAC] -> IO ()
 runTestForValidTAC program genTAC = do
@@ -249,28 +249,28 @@ upperCase' :: [TAC]
 upperCase' = [assignChar "$t0" 'x', lowerL "$t0" "97", lLimit, exitlist 2, label 0, upperL "$t0", uLimit, exitlist 2, label 1, up "$t1", label 2, saveChar]
 
 lowerL :: String -> String -> TAC
-lowerL reg x = T.TACC T.Sub (temp reg TChar "binOp" False) (temp reg TChar "lit" True) (tacConstant (x, TInt))
+lowerL reg x = T.ThreeAddressCode T.Sub (temp reg TChar "binOp" False) (temp reg TChar "lit" True) (tacConstant (x, TInt))
 
 assignChar :: String -> Char -> TAC
-assignChar reg c = T.TACC T.Assign (temp reg TChar "lit" True) (tacConstant (show c, TChar)) Nothing
+assignChar reg c = T.ThreeAddressCode T.Assign (temp reg TChar "lit" True) (tacConstant (show c, TChar)) Nothing
 
 lLimit :: TAC
-lLimit = T.TACC T.Gte (temp "$t0" TChar "binOp" False) (tacConstant ("0", TInt)) (tacLabel 0)
+lLimit = T.ThreeAddressCode T.Gte (temp "$t0" TChar "binOp" False) (tacConstant ("0", TInt)) (tacLabel 0)
 
 upperL :: String -> TAC
-upperL reg = T.TACC T.Sub (temp reg TChar "binOp" False) (temp reg TChar "binOp" False) (tacConstant ("25", TInt))
+upperL reg = T.ThreeAddressCode T.Sub (temp reg TChar "binOp" False) (temp reg TChar "binOp" False) (tacConstant ("25", TInt))
 
 uLimit :: TAC
-uLimit = T.TACC T.Lte (temp "$t0" TChar "binOp" False) (tacConstant ("0", TInt)) (tacLabel 1)
+uLimit = T.ThreeAddressCode T.Lte (temp "$t0" TChar "binOp" False) (tacConstant ("0", TInt)) (tacLabel 1)
 
 up :: String -> TAC
-up reg = T.TACC T.Sub (temp reg TChar "binOp" False) (temp reg TChar "binOp" False) (tacConstant ("32", TInt))
+up reg = T.ThreeAddressCode T.Sub (temp reg TChar "binOp" False) (temp reg TChar "binOp" False) (tacConstant ("32", TInt))
 
 down :: String -> TAC
-down reg = T.TACC T.Add (temp reg TChar "binOp" False) (temp reg TChar "binOp" False) (tacConstant ("32", TInt))
+down reg = T.ThreeAddressCode T.Add (temp reg TChar "binOp" False) (temp reg TChar "binOp" False) (tacConstant ("32", TInt))
 
 saveChar :: TAC
-saveChar = T.TACC T.Assign char (temp "$t1" TChar "binOp" False) Nothing
+saveChar = T.ThreeAddressCode T.Assign char (temp "$t1" TChar "binOp" False) Nothing
 
 char :: TACOP
 char = tacVariable $ SymbolInfo "c" TChar 1 Variables ("global", -1) []
@@ -319,84 +319,84 @@ temp reg t typ True  = tacVariable $ SymbolInfo reg t 1 Constants (typ, -1) []
 temp reg t typ False = tacVariable $ SymbolInfo reg t 1 Variables (typ, -1) []
 
 assign3 :: TAC
-assign3 = T.TACC T.Assign (temp "$t0" TInt "lit" True) (tacConstant ("3", TInt)) Nothing
+assign3 = T.ThreeAddressCode T.Assign (temp "$t0" TInt "lit" True) (tacConstant ("3", TInt)) Nothing
 
 assign4 :: TAC
-assign4 = T.TACC T.Assign (temp "$t1" TInt "lit" True) (tacConstant ("4", TInt)) Nothing
+assign4 = T.ThreeAddressCode T.Assign (temp "$t1" TInt "lit" True) (tacConstant ("4", TInt)) Nothing
 
 intOp :: String -> TAC
-intOp "+"  = T.TACC T.Add (temp "$t0" TInt "binOp" False) (temp "$t0" TInt "lit" True) (temp "$t1" TInt "lit" True)
-intOp "-"  = T.TACC T.Sub (temp "$t0" TInt "binOp" False) (temp "$t0" TInt "lit" True) (temp "$t1" TInt "lit" True)
-intOp "*"  = T.TACC T.Mult (temp "$t0" TInt "binOp" False) (temp "$t0" TInt "lit" True) (temp "$t1" TInt "lit" True)
-intOp "/"  = T.TACC T.Div (temp "$t0" TFloat "binOp" False) (temp "$t0" TInt "lit" True) (temp "$t1" TInt "lit" True)
-intOp "//" = T.TACC T.Div (temp "$t0" TInt "binOp" False) (temp "$t0" TInt "lit" True) (temp "$t1" TInt "lit" True)
-intOp "%"  = T.TACC T.Mod (temp "$t0" TInt "binOp" False) (temp "$t0" TInt "lit" True) (temp "$t1" TInt "lit" True)
+intOp "+"  = T.ThreeAddressCode T.Add (temp "$t0" TInt "binOp" False) (temp "$t0" TInt "lit" True) (temp "$t1" TInt "lit" True)
+intOp "-"  = T.ThreeAddressCode T.Sub (temp "$t0" TInt "binOp" False) (temp "$t0" TInt "lit" True) (temp "$t1" TInt "lit" True)
+intOp "*"  = T.ThreeAddressCode T.Mult (temp "$t0" TInt "binOp" False) (temp "$t0" TInt "lit" True) (temp "$t1" TInt "lit" True)
+intOp "/"  = T.ThreeAddressCode T.Div (temp "$t0" TFloat "binOp" False) (temp "$t0" TInt "lit" True) (temp "$t1" TInt "lit" True)
+intOp "//" = T.ThreeAddressCode T.Div (temp "$t0" TInt "binOp" False) (temp "$t0" TInt "lit" True) (temp "$t1" TInt "lit" True)
+intOp "%"  = T.ThreeAddressCode T.Mod (temp "$t0" TInt "binOp" False) (temp "$t0" TInt "lit" True) (temp "$t1" TInt "lit" True)
 
 assignInt :: TAC
-assignInt = T.TACC T.Assign int (temp "$t0" TInt "binOp" False) Nothing
+assignInt = T.ThreeAddressCode T.Assign int (temp "$t0" TInt "binOp" False) Nothing
 
 assign3'0 :: TAC
-assign3'0 = T.TACC T.Assign (temp "$t0" TFloat "lit" True) (tacConstant ("3.0", TFloat)) Nothing
+assign3'0 = T.ThreeAddressCode T.Assign (temp "$t0" TFloat "lit" True) (tacConstant ("3.0", TFloat)) Nothing
 
 assign4'0 :: TAC
-assign4'0 = T.TACC T.Assign (temp "$t1" TFloat "lit" True) (tacConstant ("4.0", TFloat)) Nothing
+assign4'0 = T.ThreeAddressCode T.Assign (temp "$t1" TFloat "lit" True) (tacConstant ("4.0", TFloat)) Nothing
 
 floatOp :: String -> TAC
-floatOp "+" = T.TACC T.Add (temp "$t0" TFloat "binOp" False) (temp "$t0" TFloat "lit" True) (temp "$t1" TFloat "lit" True)
-floatOp "-" = T.TACC T.Sub (temp "$t0" TFloat "binOp" False) (temp "$t0" TFloat "lit" True) (temp "$t1" TFloat "lit" True)
-floatOp "*" = T.TACC T.Mult (temp "$t0" TFloat "binOp" False) (temp "$t0" TFloat "lit" True) (temp "$t1" TFloat "lit" True)
-floatOp "/" = T.TACC T.Div (temp "$t0" TFloat "binOp" False) (temp "$t0" TFloat "lit" True) (temp "$t1" TFloat "lit" True)
+floatOp "+" = T.ThreeAddressCode T.Add (temp "$t0" TFloat "binOp" False) (temp "$t0" TFloat "lit" True) (temp "$t1" TFloat "lit" True)
+floatOp "-" = T.ThreeAddressCode T.Sub (temp "$t0" TFloat "binOp" False) (temp "$t0" TFloat "lit" True) (temp "$t1" TFloat "lit" True)
+floatOp "*" = T.ThreeAddressCode T.Mult (temp "$t0" TFloat "binOp" False) (temp "$t0" TFloat "lit" True) (temp "$t1" TFloat "lit" True)
+floatOp "/" = T.ThreeAddressCode T.Div (temp "$t0" TFloat "binOp" False) (temp "$t0" TFloat "lit" True) (temp "$t1" TFloat "lit" True)
 
 assignFloat :: TAC
-assignFloat = T.TACC T.Assign float (temp "$t0" TFloat "binOp" False) Nothing
+assignFloat = T.ThreeAddressCode T.Assign float (temp "$t0" TFloat "binOp" False) Nothing
 
 assignTrue :: TAC
-assignTrue = T.TACC T.Assign (temp "$t0" TBool "lit" True) true Nothing
+assignTrue = T.ThreeAddressCode T.Assign (temp "$t0" TBool "lit" True) true Nothing
 
 assignFalse :: TAC
-assignFalse = T.TACC T.Assign (temp "$t1" TBool "lit" True) false Nothing
+assignFalse = T.ThreeAddressCode T.Assign (temp "$t1" TBool "lit" True) false Nothing
 
 tacIf :: String -> String -> Int -> Bool -> TAC
-tacIf reg mode l b = T.TACC T.If Nothing (temp reg TBool mode b) (tacLabel l)
+tacIf reg mode l b = T.ThreeAddressCode T.If Nothing (temp reg TBool mode b) (tacLabel l)
 
 assignBool :: Bool -> TAC
-assignBool True  = T.TACC T.Assign (temp "$t0" TBool "binOp" False) true Nothing
-assignBool False = T.TACC T.Assign (temp "$t0" TBool "binOp" False) false Nothing
+assignBool True  = T.ThreeAddressCode T.Assign (temp "$t0" TBool "binOp" False) true Nothing
+assignBool False = T.ThreeAddressCode T.Assign (temp "$t0" TBool "binOp" False) false Nothing
 
 exitlist :: Int -> TAC
 exitlist x = tacGoto (tacLabel x)
 
 label :: Int -> TAC
-label x = T.TACC T.NewLabel (tacLabel x) Nothing Nothing
+label x = T.ThreeAddressCode T.NewLabel (tacLabel x) Nothing Nothing
 
 saveBoolVar :: String -> String -> TAC
-saveBoolVar x y = T.TACC T.Assign (temp x TBool "binOp" False) (temp y TBool "lit" True) Nothing
+saveBoolVar x y = T.ThreeAddressCode T.Assign (temp x TBool "binOp" False) (temp y TBool "lit" True) Nothing
 
 saveBool :: TAC
-saveBool = T.TACC T.Assign bool (temp "$t0" TBool "binOp" False) Nothing
+saveBool = T.ThreeAddressCode T.Assign bool (temp "$t0" TBool "binOp" False) Nothing
 
 zeroIntComp :: String -> Int -> TAC
-zeroIntComp "<"  x = T.TACC T.Lt  (temp "$t0" TInt "binOp" False) (tacConstant ("0", TInt)) (tacLabel x)
-zeroIntComp "<=" x = T.TACC T.Lte (temp "$t0" TInt "binOp" False) (tacConstant ("0", TInt)) (tacLabel x)
-zeroIntComp "==" x = T.TACC T.Eq  (temp "$t0" TInt "binOp" False) (tacConstant ("0", TInt)) (tacLabel x)
-zeroIntComp "!=" x = T.TACC T.Neq (temp "$t0" TInt "binOp" False) (tacConstant ("0", TInt)) (tacLabel x)
-zeroIntComp ">"  x = T.TACC T.Gt  (temp "$t0" TInt "binOp" False) (tacConstant ("0", TInt)) (tacLabel x)
-zeroIntComp ">=" x = T.TACC T.Gte (temp "$t0" TInt "binOp" False) (tacConstant ("0", TInt)) (tacLabel x)
+zeroIntComp "<"  x = T.ThreeAddressCode T.Lt  (temp "$t0" TInt "binOp" False) (tacConstant ("0", TInt)) (tacLabel x)
+zeroIntComp "<=" x = T.ThreeAddressCode T.Lte (temp "$t0" TInt "binOp" False) (tacConstant ("0", TInt)) (tacLabel x)
+zeroIntComp "==" x = T.ThreeAddressCode T.Eq  (temp "$t0" TInt "binOp" False) (tacConstant ("0", TInt)) (tacLabel x)
+zeroIntComp "!=" x = T.ThreeAddressCode T.Neq (temp "$t0" TInt "binOp" False) (tacConstant ("0", TInt)) (tacLabel x)
+zeroIntComp ">"  x = T.ThreeAddressCode T.Gt  (temp "$t0" TInt "binOp" False) (tacConstant ("0", TInt)) (tacLabel x)
+zeroIntComp ">=" x = T.ThreeAddressCode T.Gte (temp "$t0" TInt "binOp" False) (tacConstant ("0", TInt)) (tacLabel x)
 
 zeroFloatComp :: String -> Int -> TAC
-zeroFloatComp "<"  x = T.TACC T.Lt  (temp "$t0" TFloat "binOp" False) (tacConstant ("0.0", TFloat)) (tacLabel x)
-zeroFloatComp "<=" x = T.TACC T.Lte (temp "$t0" TFloat "binOp" False) (tacConstant ("0.0", TFloat)) (tacLabel x)
-zeroFloatComp "==" x = T.TACC T.Eq  (temp "$t0" TFloat "binOp" False) (tacConstant ("0.0", TFloat)) (tacLabel x)
-zeroFloatComp "!=" x = T.TACC T.Neq (temp "$t0" TFloat "binOp" False) (tacConstant ("0.0", TFloat)) (tacLabel x)
-zeroFloatComp ">"  x = T.TACC T.Gt  (temp "$t0" TFloat "binOp" False) (tacConstant ("0.0", TFloat)) (tacLabel x)
-zeroFloatComp ">=" x = T.TACC T.Gte (temp "$t0" TFloat "binOp" False) (tacConstant ("0.0", TFloat)) (tacLabel x)
+zeroFloatComp "<"  x = T.ThreeAddressCode T.Lt  (temp "$t0" TFloat "binOp" False) (tacConstant ("0.0", TFloat)) (tacLabel x)
+zeroFloatComp "<=" x = T.ThreeAddressCode T.Lte (temp "$t0" TFloat "binOp" False) (tacConstant ("0.0", TFloat)) (tacLabel x)
+zeroFloatComp "==" x = T.ThreeAddressCode T.Eq  (temp "$t0" TFloat "binOp" False) (tacConstant ("0.0", TFloat)) (tacLabel x)
+zeroFloatComp "!=" x = T.ThreeAddressCode T.Neq (temp "$t0" TFloat "binOp" False) (tacConstant ("0.0", TFloat)) (tacLabel x)
+zeroFloatComp ">"  x = T.ThreeAddressCode T.Gt  (temp "$t0" TFloat "binOp" False) (tacConstant ("0.0", TFloat)) (tacLabel x)
+zeroFloatComp ">=" x = T.ThreeAddressCode T.Gte (temp "$t0" TFloat "binOp" False) (tacConstant ("0.0", TFloat)) (tacLabel x)
 
 assignTrue' :: TAC
-assignTrue' = T.TACC T.Assign (temp "$t0" TBool "binOp" False) true Nothing
+assignTrue' = T.ThreeAddressCode T.Assign (temp "$t0" TBool "binOp" False) true Nothing
 
 assignFalse' :: TAC
-assignFalse' = T.TACC T.Assign (temp "$t0" TBool "binOp" False) false Nothing
+assignFalse' = T.ThreeAddressCode T.Assign (temp "$t0" TBool "binOp" False) false Nothing
 
 saveBool' :: TAC
-saveBool' = T.TACC T.Assign bool (temp "$t0" TBool "binOp" False) Nothing
+saveBool' = T.ThreeAddressCode T.Assign bool (temp "$t0" TBool "binOp" False) Nothing
 
