@@ -73,8 +73,5 @@ type TACMonad a = RWST Instr [TAC] Operands IO a
 -------------------------------------------------------------------------------
 
 type FGNode = [TAC]
-type FGKey  = String
-
-data FlowGraph = FlowGraph {
-  
-}
+type FGKey  = TAC
+type FlowGraph = (G.Graph, G.Vertex -> (FGNode, FGKey, [FGKey]), FGKey -> Maybe G.Vertex)

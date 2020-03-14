@@ -69,7 +69,7 @@ main = do
             mapM_ print tac
             let ((graph, getNodeFromVertex, getVertexFromKey), leaders) = genFlowGraph tac
             print graph
-            mapM_ print $ map getNodeFromVertex (G.vertices graph)
+            mapM_ (print . getNodeFromVertex) (G.vertices graph)
             print leaders
           else
             mapM_ putStrLn errs

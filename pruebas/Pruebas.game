@@ -18,12 +18,11 @@
 
 world %Pruebas%:
 
-  Power x = 5 @ , u, z = 6
-@  Power y = -5
+  Power x = 5
 
 @ Operaciones aritmeticas
   Power i0 = x + 1
-  Power i1 = x - 1
+  @Power i1 = x - 1
   @Power i2 = x * 1
   @Power i4 = x % 1
   @Power i5 = x // 1
@@ -31,6 +30,7 @@ world %Pruebas%:
   @Skill f1 = 2'0
 
 @ Operaciones unarias
+  @Power  y = -5
   @Rune   c = *4*
   @Rune  up = ^*x*
   @Rune low = .*x*
@@ -48,22 +48,22 @@ world %Pruebas%:
   @Battle f = Win ? (3 == 6) : (3 > 6)
   @Skill f2 = Lose ? 6'0 : 3'0
 
-@  play:
+  play:
   @  gameOver
   @  Power i = 9
   @  keepPlaying
-  @  x++
-  @lock (x < 10)
-  @.~
+    x++
+  lock (x < 10)
+  .~
 
-  controller Power i = 0 -> 10: @ lock i % 2 == 0:
+  @controller Power i = 0 -> 10: @ lock i % 2 == 0:
   @  gameOver
   @  keepPlaying
   @  Button:
   @    | i == 7 } gameOver
   @  .~
-    x = i * 2
-  .~
+  @  x = i * 2
+  @.~
 
 @  Button:
   @  | Lose       } x = 0

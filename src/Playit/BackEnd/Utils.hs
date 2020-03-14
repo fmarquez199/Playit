@@ -18,6 +18,12 @@ import qualified TACType           as T
 
 
 -------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-- TAC
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
 isLit :: Expr -> Bool
 isLit (Literal _ _) = True
 isLit _             = False
@@ -103,8 +109,8 @@ tacGoto label = [T.ThreeAddressCode T.GoTo Nothing Nothing label]
 
 -------------------------------------------------------------------------------
 -- Creates the TAC's GoTo
-tacNewLabel :: TACOP -> [TAC]
-tacNewLabel label = [T.ThreeAddressCode T.NewLabel label Nothing Nothing]
+tacNewLabel :: TACOP -> TAC
+tacNewLabel label = T.ThreeAddressCode T.NewLabel label Nothing Nothing
 -------------------------------------------------------------------------------
 
 
@@ -369,7 +375,7 @@ malloc = do
     nextElemM                    = tacLabel "nextElementMalloc"
     exitMall                     = tacLabel "exitMalloc"
   
-  tell (tacNewLabel $ tacLabel "malloc")
+  tell [tacNewLabel $ tacLabel "malloc"]
   -- prologo
   -- requestedBytes := $a0      De esto no deberia encargarse el prologo?
   tell (tacAssign temp1 par0)
@@ -381,7 +387,7 @@ malloc = do
   tell (tacBin T.Eq retn zero noMemory)
 
 -- 1: Hay memoria disponible, entonces crea el bloque con la info
-  tell (tacNewLabel allocate)
+  tell [tacNewLabel allocate]
   -- _elem     := syscall9(16)
   syscall 9 elem [sixteen]
   -- _elem[0]  := _head[0]
@@ -403,18 +409,18 @@ malloc = do
 -- 5: Fin, retorna la dir de mem
   -- epilogo
   -- return _return
-  tell (tacNewLabel exitMall)
+  tell [tacNewLabel exitMall]
   tell [T.ThreeAddressCode T.Return Nothing retn Nothing]
   
 -- 2: No hay memoria disponible, entonces se busca en la lista si hay algun bloque libre que encaje en el tamaño de memoria solicitado
-  tell (tacNewLabel noMemory)
+  tell [tacNewLabel noMemory]
   -- _elem  := _head[0]
   tell (tacUn T.Deref elem head)
   -- isFree := _elem[1]
   tell (tacGet temp2 elem one)
 
 -- 3: 
-  tell (tacNewLabel lookMem)
+  tell [tacNewLabel lookMem]
   -- if isFree = 0 goto 4
   tell (tacBin T.Eq temp2 zero nextElemM)
   -- blockSize := _elem[2]
@@ -427,7 +433,7 @@ malloc = do
   tell (tacGoto exitMall)
 
 -- 4: Se mueve al siguiente elemento para ver si cabe ahi la cantidad de memoria solicitada
-  tell (tacNewLabel nextElemM)
+  tell [tacNewLabel nextElemM]
   -- Revisar si es el ultimo de la lista
   -- if _elem[0] == 0  goto 5
   tell (tacGet temp2 elem zero)
@@ -462,7 +468,7 @@ free = do
     nextElemF              = tacLabel "nextElementFree"
     exitFree               = tacLabel "exitFree"
   
-  tell (tacNewLabel (tacLabel "free"))
+  tell [tacNewLabel $ tacLabel "free"]
   -- address := $a0
   tell (tacAssign temp1 par0)
 
@@ -470,7 +476,7 @@ free = do
   tell (tacGet elem head zero)
 
 -- 1: Revisa si llega al ultimo elemento y si la dir de mem a liberar es la indicada y la libera
-  tell (tacNewLabel beginFree)
+  tell [tacNewLabel beginFree]
   -- if _elem[0] == 0 goto 3
   tell (tacGet temp2 elem zero)
   tell (tacBin T.Eq temp2 zero exitFree)
@@ -486,13 +492,21 @@ free = do
   tell (tacGoto exitFree)
 
 -- 2: Siguiente elemento a revisar si es el que debe ser liberado
-  tell (tacNewLabel nextElemF)
+  tell [tacNewLabel nextElemF]
   -- _elem     := _elem[0]
   tell (tacGet elem elem zero)
   -- goto 1
   tell (tacGoto beginFree)
 
 -- 3:
-  tell (tacNewLabel exitFree)
+  tell [tacNewLabel exitFree]
   tell [T.ThreeAddressCode T.Return Nothing Nothing Nothing]
 -------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-- Flow Graph
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+

@@ -8,46 +8,33 @@
 module Playit.BackEnd.FlowGraph (genFlowGraph) where
 
 import Playit.BackEnd.Types
-import qualified Data.Graph             as G
-import qualified Playit.BackEnd.TACType as T
+import Playit.BackEnd.Utils (tacNewLabel, tacLabel)
+import qualified Data.Graph as G
+import qualified TACType    as T
 
 
-genFlowGraph :: [TAC] -> ((G.Graph, G.Vertex -> (FGNode, FGKey, [FGKey]), FGKey -> Maybe G.Vertex), [Int])
+genFlowGraph :: [TAC] -> (FlowGraph, [Int])
 genFlowGraph tac = (G.graphFromEdges blocks,leaders)
   where
     leaders = getLeaders tac 0
-    blocks  = ([],"ENTRY",["B1"]) : genBlocks tac leaders 1
+    block1  = tac !! head leaders
+    blocks  = ([],tacNewLabel $ tacLabel "ENTRY",[block1]) : genBlocks tac leaders
 
--- poner arista del ultimo al key EXIT
-genBlocks :: [TAC] ->  [Int] -> Int -> [([TAC],FGKey,[FGKey])]
-genBlocks _ [] _                 = [([],"EXIT",[])]
-genBlocks tac (leader:leaders) i = (block,key,edges) : genBlocks tac leaders (i + 1)
+-- 
+genBlocks :: [TAC] ->  [Int]-> [([TAC],FGKey,[FGKey])]
+genBlocks _ []                 = [([],tacNewLabel $ tacLabel "EXIT",[])]
+genBlocks tac (leader:leaders) = (block,key,edges) : genBlocks tac leaders
   where
-    next  = if null leaders then length tac else head leaders
     begin = tac !! leader
-    end   = if null leaders then tac !! (next - 1) else tac !! next -- <<<<
+    next  = if null leaders then length tac else head leaders
+    nextI = tac !! next
+    lastI = tac !! (next - 1)
     block = take (next - leader) . drop leader $ tac
-    key   = "B" ++ show i
-    edge  = if null leaders then "EXIT"  else "B" ++ show (i + 1)
-    ciclo = if isGoto end && gotoB then True else False -- <<<<
-    edges = if ciclo then [key,edge] else [edge]
-    rv1   = T.tacRvalue1 end
-    rv2   = T.tacRvalue2 end
-
-    isLab :: TACOP -> Bool
-    isLab (Just (T.Label l)) = True
-    isLab _                  = False
-
-    getLabel :: TACOP -> String
-    getLabel (Just (T.Label l)) = l
-    getLabel _                  = ""
-    
-    gotoB :: Bool
-    gotoB
-      | isLab rv1 = getLabel rv1 == getLabel (T.tacLvalue begin)
-      | isLab rv2 = getLabel rv2 == getLabel (T.tacLvalue begin)
-      | otherwise = False
-
+    key   = begin
+    nextB = if null leaders then tacNewLabel $ tacLabel "EXIT" else nextI
+    ciclo = getLabel (T.tacRvalue2 lastI)
+    edges = if null ciclo then [nextB] else [nextB,tacNewLabel $ tacLabel ciclo]
+    -- si es un return sus arcos son a todos despues de el
 
 getLeaders :: [TAC] -> Int -> [Int]
 getLeaders [] _         = []
@@ -68,3 +55,8 @@ isJump instr = T.tacOperand instr `elem` jumps
   where
     jumps = [T.NewLabel,T.Call]
 
+
+getLabel :: TACOP -> String
+getLabel (Just (T.Label l)) = l
+getLabel _                  = ""
+    
