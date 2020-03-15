@@ -34,7 +34,7 @@ tacInitState = Operands M.empty temps M.empty [] brk cont 0 False False []
 
 
 gen :: Instr -> TACMonad ()
-gen ast = tell (tacCall Nothing "_main" 0 ++ tacNewLabel (tacLabel "_main")) >>
+gen ast = tell (tacCall Nothing "_main" 0 ++ [tacNewLabel (tacLabel "_main")]) >>
           genCode ast
 
 -- 
@@ -66,7 +66,7 @@ genSubroutines = do
 
 genSubroutine :: (Id, InstrSeq, Bool) -> TACMonad ()
 genSubroutine (s, i, isProc) =
-  resetOffset >> tell (tacNewLabel $ tacLabel s) >> mapM_ genCode i >> 
+  resetOffset >> tell [tacNewLabel $ tacLabel s] >> mapM_ genCode i >> 
     when isProc (genReturn Nothing)
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
@@ -85,12 +85,12 @@ genAssig var e = case typeVar var of
     trueL  <- newLabel
     falseL <- newLabel
     genBoolExpr e trueL falseL
-    tell (tacNewLabel trueL)
+    tell [tacNewLabel trueL]
     tell (tacAssign vTemp $ tacConstant ("True", TBool))
     tell (tacGoto nextL)
-    tell (tacNewLabel falseL)
+    tell [tacNewLabel falseL]
     tell (tacAssign vTemp $ tacConstant ("False", TBool))
-    tell (tacNewLabel nextL)
+    tell [tacNewLabel nextL]
 -- Registros y uniones
   -- TNew n -> do
   --   e<-genExpr e
@@ -110,6 +110,7 @@ genAssig var e = case typeVar var of
     -}
     if isLit e then do
       vTemp <- pushOffset (getWidth t) >>= newTemp >>= genVar var
+      -- pushLiteral eTemp vTemp
       tell (tacAssign vTemp eTemp)
     else
       void (genVar var eTemp)
@@ -132,16 +133,16 @@ genForEach n e is nextL = do
   expr  <- genExpr e
   count <- pushOffset 4 >>= newTemp >>= genVar (Var ("$i_" ++ n) t)
   tell (tacUn T.Deref count expr)
-  tell (tacNewLabel begin)
+  tell [tacNewLabel begin]
   tell (tacBin T.Lte count (tacConstant ("0", TInt)) nextL)
   iterVarShft <- genBinOp Add TInt expr (tacConstant (show w, TInt))
   tell (tacUn T.Deref var iterVarShft)
   mapM_ genCode is
-  tell (tacNewLabel contn)
+  tell [tacNewLabel contn]
   countIncrmt <- genBinOp Minus TInt count (tacConstant ("1", TInt))
   tell (tacAssign count countIncrmt)
   tell (tacGoto begin)
-  tell (tacNewLabel nextL)
+  tell [tacNewLabel nextL]
 
 -- 
 genForWhile :: Id -> Expr -> Expr -> Expr -> InstrSeq -> TACOP -> TACMonad ()
@@ -153,14 +154,14 @@ genForWhile n e1 e2 cond is nextL = do
 
 -- 
 genIF :: [(Expr, InstrSeq)] -> TACOP -> TACMonad ()
-genIF [] nextL               = tell (tacNewLabel nextL)
+genIF [] nextL               = tell [tacNewLabel nextL]
 genIF ((e, is):guards) nextL = do
   let isLast = null guards
   falseL <- if isLast then return nextL else newLabel
   genBoolExpr e fall falseL
   mapM_ genCode is
   unless isLast $ tell (tacGoto nextL)
-  unless isLast $ tell (tacNewLabel falseL)
+  unless isLast $ tell [tacNewLabel falseL]
   when isLast $ return ()
   genIF guards nextL
 
@@ -169,11 +170,11 @@ genIF ((e, is):guards) nextL = do
 genWhile :: Expr -> InstrSeq -> TACOP -> TACMonad ()
 genWhile e is nextL = do
   begin <- continue
-  tell (tacNewLabel begin)
+  tell [tacNewLabel begin]
   genBoolExpr e fall nextL
   mapM_ genCode is
   tell (tacGoto begin)
-  tell (tacNewLabel nextL)
+  tell [tacNewLabel nextL]
 
 
 -- syscall 4
@@ -280,9 +281,9 @@ genBoolExpr e trueL falseL =
       genBoolExpr e1 e1TrueL e1FalseL
       genBoolExpr e2 trueL falseL
       if op == And then
-        when (isFall falseL) $ tell (tacNewLabel e1FalseL)
+        when (isFall falseL) $ tell [tacNewLabel e1FalseL]
       else
-        when (isFall trueL) $ tell (tacNewLabel e1TrueL)
+        when (isFall trueL) $ tell [tacNewLabel e1TrueL]
   -- Functions
   -- Ternary operator
   -- 
@@ -378,8 +379,8 @@ genUnOp op e tOp = do
         c0    = tacConstant ("0", TInt)
         c25   = tacConstant ("25", TInt)
         c32   = tacConstant ("32", TInt)
-        check = tacBin T.Gte lv c0 l0 ++ tacGoto l2 ++ tacNewLabel l0 ++ tacBin T.Sub lv rv c25
-        goNew = tacGoto l2 ++ tacNewLabel l1
+        check = tacBin T.Gte lv c0 l0 ++ tacGoto l2 ++ tacNewLabel l0 : tacBin T.Sub lv rv c25
+        goNew = tacGoto l2 ++ [tacNewLabel l1]
 
       if charOp == UpperCase then do
         tell (tacBin T.Sub lv rv $ tacConstant ("97", TInt))
@@ -387,7 +388,7 @@ genUnOp op e tOp = do
         tell (tacBin T.Gte lv c0 l0)
         tell goNew
         tell (tacBin T.Sub lv rv c32)
-        tell (tacNewLabel l2)
+        tell [tacNewLabel l2]
         return lv
       else do
         tell (tacBin T.Sub lv rv $ tacConstant ("65", TInt))
@@ -395,7 +396,7 @@ genUnOp op e tOp = do
         tell (tacBin T.Lte lv c0 l0)
         tell goNew
         tell (tacBin T.Add lv rv c32)
-        tell (tacNewLabel l2)
+        tell [tacNewLabel l2]
         return lv
 
 
@@ -425,10 +426,10 @@ genTerOp eB eT eF tOp = do
   eTTemp <- genExpr eT
   tell (tacAssign lv eTTemp)
   tell (tacGoto next)
-  tell (tacNewLabel falseL)
+  tell [tacNewLabel falseL]
   eFTemp <- genExpr eF
   tell (tacAssign lv eFTemp)
-  tell (tacNewLabel next)
+  tell [tacNewLabel next]
   return lv
 
 
@@ -485,7 +486,7 @@ forComparison n e1 e2 nextL = do
   e1Temp  <- genExpr e1
   tell (tacAssign iterVar e1Temp)
   e2Temp  <- genExpr e2
-  tell (tacNewLabel begin)
+  tell [tacNewLabel begin]
   genComparison iterVar e2Temp fall nextL LessEq
   return (begin, cont, iterVar)
 -------------------------------------------------------------------------------
@@ -495,11 +496,11 @@ forComparison n e1 e2 nextL = do
 forInstrs :: InstrSeq -> TACOP -> (TACOP, TACOP, TACOP) -> TACMonad ()
 forInstrs is nextL (begin, cont, iterVar) = do
   mapM_ genCode is
-  tell (tacNewLabel cont)
+  tell [tacNewLabel cont]
   iterVarIncr <- genBinOp Add TInt iterVar (tacConstant ("1", TInt))
   tell (tacAssign iterVar iterVarIncr)
   tell (tacGoto begin)
-  tell (tacNewLabel nextL)
+  tell [tacNewLabel nextL]
 -------------------------------------------------------------------------------
 
 

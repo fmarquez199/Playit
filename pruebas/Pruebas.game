@@ -46,9 +46,9 @@ world %Pruebas%:
 
 @ Operador ternario
   @Battle f = Win ? (3 == 6) : (3 > 6)
-  @Skill f2 = Lose ? 6'0 : 3'0
+  Skill f2 = Lose ? 6'0 : 3'0
 
-@  play:
+  @play:
   @  gameOver
   @  Power i = 9
   @  keepPlaying
@@ -56,7 +56,7 @@ world %Pruebas%:
   @lock (x < 10)
   @.~
 
-@  controller Power i = 0 -> 10 lock i % 2 == 0:
+  @controller Power i = 0 -> 10: @ lock i % 2 == 0:
   @  gameOver
   @  keepPlaying
   @  Button:
@@ -82,7 +82,7 @@ world %Pruebas%:
   @x = kill m(arr1)
 
 @ Arreglos
-  Power|}3{| array = |)2, 3, 4(|
+  @Power|}3{| array = |)2, 3, 4(|
   @Power len = #array
   @array|)0(| = 0
   @x = array|)0(|
@@ -106,11 +106,6 @@ world %Pruebas%:
   @drop s
   @drop ~hola mundo!!~
 
-@ Registros
-  @Inv inv = Inv {10 , 1'8, Lose}
-  @Power elem = inv spawn a
-  @kill b( inv , 1'0)
-
 
 "'Ejemplos por implementar, arriba estan cosas probadas que funcionan'"
 @ Listas
@@ -118,4 +113,10 @@ world %Pruebas%:
   @Kit of Power list1 = <<4,2>>
   @Kit of Power empty = << >>
   @list1|>0<| = 10
+
+@ Registros
+  @Inv inv = Inv {10 , 1'8, Lose}
+  @Power elem = inv spawn a
+  @kill b( inv , 1'0)
+
 .~

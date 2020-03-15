@@ -11,7 +11,7 @@ data (SymEntryCompatible a) => ThreeAddressCode a b = ThreeAddressCode
     tacRvalue1 :: Maybe (Operand a b),
     tacRvalue2 :: Maybe (Operand a b)
   }
-  deriving (Eq)
+  deriving (Eq, Ord)
 
 
 instance (SymEntryCompatible a, Show a, Show b) => Show (ThreeAddressCode a b) where
@@ -175,4 +175,4 @@ data Operation =
 -- Castings
   Cast String String
 
-  deriving (Eq, Show)
+  deriving (Eq, Show, Ord)

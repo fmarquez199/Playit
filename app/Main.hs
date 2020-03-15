@@ -8,17 +8,19 @@
 -}
 module Main where
 
-import Control.Monad.Trans.RWS     (runRWST)
 import Control.Monad               (mapM_)
+import Control.Monad.Trans.RWS     (runRWST)
 import Data.Strings                (strEndsWith)
+import Playit.BackEnd.FlowGraph
+import Playit.BackEnd.TAC
+import Playit.FrontEnd.Errors      (lexerErrors,showLexerErrors)
+import Playit.FrontEnd.Lexer       (alexScanTokens)
+import Playit.FrontEnd.Parser      (parse)
+import Playit.FrontEnd.SymbolTable (stInitState)
+import Playit.FrontEnd.Types       (SymTabState(..))
 import System.Environment          (getArgs)
 import System.IO                   (readFile)
-import Playit.FrontEnd.SymbolTable (stInitState)
-import Playit.FrontEnd.Errors      (lexerErrors,showLexerErrors)
-import Playit.FrontEnd.Parser      (parse)
-import Playit.FrontEnd.Lexer       (alexScanTokens)
-import Playit.FrontEnd.Types       (SymTabState(..))
-import Playit.BackEnd.TAC
+import qualified Data.Graph             as G
 
 
 -- | Determines if an file is empty
@@ -65,5 +67,9 @@ main = do
             -- putStrLn $ "\nOffSets: " ++ show (offSets state)
             -- putStrLn $ "\nActual offset: " ++ show (actOffS state)
             mapM_ print tac
+            let ((graph, getNodeFromVertex, getVertexFromKey), leaders) = genFlowGraph tac
+            print graph
+            mapM_ (print . getNodeFromVertex) (G.vertices graph)
+            print leaders
           else
             mapM_ putStrLn errs

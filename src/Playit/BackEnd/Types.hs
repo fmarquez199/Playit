@@ -10,7 +10,14 @@ module Playit.BackEnd.Types where
 import Control.Monad.Trans.RWS
 import Playit.FrontEnd.Types
 import qualified Data.Map       as M
+import qualified Data.Graph     as G
 import qualified TACType        as TACT
+
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+--                               TAC creation
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 
 type TempReg = String
@@ -35,15 +42,15 @@ instance Show TACInfo where
 data Operands = Operands {
   vars  :: M.Map Var TACOP,
   temps :: M.Map TACInfo Bool,
-  lits  :: M.Map Literal TACOP,
-  labs  :: [Int],
-  brkL  :: TACOP,
-  contL :: TACOP,
+  lits  :: M.Map TACOP TACOP,
+  labs  :: [Int],   -- Labels
+  brkL  :: TACOP,   -- brake label
+  contL :: TACOP,   -- continue label
   base  :: OffSet,
   -- fp    :: OffSet,
-  callF :: Bool,
-  callM :: Bool,
-  subs  :: [(Id, InstrSeq, Bool)],
+  callF :: Bool, -- Dice si generar TAC para free
+  callM :: Bool, -- Dice si generar TAC para malloc
+  subs  :: [(Id, InstrSeq, Bool)], -- subrutinas a generar su codigo
   astST :: SymTab
 } deriving (Eq, Ord)
 
@@ -57,3 +64,14 @@ instance Show Operands where
 -- Monad para manejar los operandos, writer tiene la lista de las instrucciones
 -- de tres direcciones, reader tiene el AST que sale del parser
 type TACMonad a = RWST Instr [TAC] Operands IO a
+
+
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+--                           Flow Graph creation
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+
+type FGNode = [TAC]
+type FGKey  = TAC
+type FlowGraph = (G.Graph, G.Vertex -> (FGNode, FGKey, [FGKey]), FGKey -> Maybe G.Vertex)
