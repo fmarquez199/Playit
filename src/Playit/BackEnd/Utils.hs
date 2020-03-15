@@ -421,7 +421,7 @@ malloc = do
   tell (tacGet temp2 elem two)
   -- if blockSize < requestedBytes goto 4
   tell (tacBin T.Lt temp2 temp1 nextElemM)
-  -- _return = _elem[3]
+  -- _return = _elem[3] >>>> Si el bloque es mayor se deberia particionar???
   tell (tacGet retn elem three)
   -- goto 5
   tell (tacGoto exitMall)
@@ -480,7 +480,7 @@ free = do
   tell (tacBin T.Neq fre temp1 nextElemF)
   -- _free    := *_free
   tell (tacUn T.Deref fre fre)
-  -- _free[1] := 1
+  -- _free[1] := 1 >>>> Deberia es eliminar el elemento de la lista, asi no habria que juntar 2 elementos al ver que esten libres en malloc
   tell (tacSet fre one one)
   -- goto 3
   tell (tacGoto exitFree)

@@ -92,12 +92,16 @@ genAssig var e = case typeVar var of
     tell (tacAssign vTemp $ tacConstant ("False", TBool))
     tell (tacNewLabel nextL)
 -- Registros y uniones
-  TNew n -> do
-    e<-genExpr e
-    return ()
+  -- TNew n -> do
+  --   e<-genExpr e
+  --   return ()
 --
   t -> do
-    {- if isIndexVar var then  else   -}
+    -- | isIndexVar var && isIndexExpr e -> do
+    --   tell (tacGet )    
+    {- if isIndexVar var then 
+      tell (tacSet vTemp index eTemp)
+      else   -}
     eTemp <- genExpr e
     {- 
       if isField var then
@@ -194,7 +198,6 @@ genFree varId = do
   put state{callF = True}
 
 
--------------------------------------------------------------------------------
 -- Hace prologo
 genProcCall :: Subroutine -> TACMonad ()
 genProcCall (Call s params) = do
@@ -202,13 +205,6 @@ genProcCall (Call s params) = do
   genParams (map fst params)
   -- Prologo antes de pasar el poder al proc
   tell (tacCall Nothing s $ length params)
-
--- 
-genParams :: [Expr] -> TACMonad ()
-genParams params = do
-  operands <- mapM genExpr params
-  tell $ map tacParam operands
--------------------------------------------------------------------------------
 
 
 -- Hace epilogo
@@ -316,26 +312,19 @@ genNull = return $ tacVariable $ Temp "_null" (-1)
 -- | Generates the TAC code for literals
 {- TODO:
   EmptyVal -> Usado cuando no se coloca msj en el read
+  ArrLst -> caso que llega hasta aqui?
   Register
   Union
-  ArrLst -> Realmente se llega hasta aqui?
-  String
 -}
 genLiteral :: Literal -> Type -> TACMonad TACOP
-genLiteral l typeL = -- do
-  -- actO <- pushOffset (getWidth typeL)
-  -- lv   <- newTemp actO
-  -- pushLiteral l lv
-  -- let
-  
+genLiteral l typeL =
   -- case l of
     {-
       ArrLst elems -> -- No llega aqui
         liftIO (print ("Llegue a literal ArrLst: " ++ show elems)) >> return (tacLabel "lit arrLst")
-      Str s -> do
     -}
-    -- EmptyVal -> return ([T.ThreeAddressCode T.Assign lv rv Nothing], lv)
-    -- (Register es) -> return ([T.ThreeAddressCode T.Assign lv rv Nothing], lv)
+    -- EmptyVal -> 
+    -- Register es -> -- actualizar el valor de cada campo
     -- _ ->
   return $ tacConstant (show l, typeL)
 
@@ -345,19 +334,22 @@ genLiteral l typeL = -- do
   casos bloques anidados que acceden a los ids
   Param Id Type Ref
   Field Var Id Type
-  Index
+  Index  Var Expr Type
 -}
 genVar :: Var -> TACOP -> TACMonad TACOP
 genVar var temp =
   case var of
-    Param _ _ Reference -> do -- error "Un parametro no deberia poder estar en una asignacion"
+    Param _ _ Reference -> do -- No llega
+      liftIO (print ("Llegue a genVar param por ref: " ++ show var))
       tacVar <- pushVariable var temp
       tell (tacUn T.Deref temp tacVar) >> return temp
     Desref _ t -> do
       tacVar <- pushVariable (getRefVar var) temp
       tell (tacUn T.Deref temp tacVar) >> return temp
     -- Field v f t -> return()
-    -- Index v e t -> return()
+    -- Index v e t -> do
+    --   index   <- genExpr e
+    --   arrTemp <- 
     _     -> pushVariable var temp
 
 
@@ -484,6 +476,7 @@ genType t = return (tacConstant (show (getWidth t),TInt))
 --- Auxiliares que deben ir en este archivo
 
 
+-------------------------------------------------------------------------------
 forComparison :: Id -> Expr -> Expr -> TACOP -> TACMonad (TACOP, TACOP, TACOP)
 forComparison n e1 e2 nextL = do
   begin   <- newLabel
@@ -495,8 +488,10 @@ forComparison n e1 e2 nextL = do
   tell (tacNewLabel begin)
   genComparison iterVar e2Temp fall nextL LessEq
   return (begin, cont, iterVar)
+-------------------------------------------------------------------------------
 
 
+-------------------------------------------------------------------------------
 forInstrs :: InstrSeq -> TACOP -> (TACOP, TACOP, TACOP) -> TACMonad ()
 forInstrs is nextL (begin, cont, iterVar) = do
   mapM_ genCode is
@@ -505,3 +500,13 @@ forInstrs is nextL (begin, cont, iterVar) = do
   tell (tacAssign iterVar iterVarIncr)
   tell (tacGoto begin)
   tell (tacNewLabel nextL)
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-- 
+genParams :: [Expr] -> TACMonad ()
+genParams params = do
+  operands <- mapM genExpr params
+  tell $ map tacParam operands
+-------------------------------------------------------------------------------

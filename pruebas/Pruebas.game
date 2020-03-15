@@ -1,29 +1,28 @@
-@Inventory Inv:
-@  Power a = 0
-@  Skill b = 2'4
-@  Battle c
-@.~
-@Items It:
+Inventory Inv: @ Tamaño 13
+  Power a = 0
+  Skill b = 2'4
+  Battle c
+.~
+@Items It: @ Tamaño 8
 @  Power a
 @  Skill b
 @  Battle c
 @.~
-@boss b(Power ?i, Skill x):
+@boss b(Inv i, Skill x):
 @  x = 10'5
 @  Power y = i * 2
 @.~
-@monster m(Power|}1{| s) Power:
+@monster m(Power|}5{| s) Power:
 @  unlock 0
 @.~
 
 world %Pruebas%:
 
-  Power x = 5 @ , u, z = 6
-@  Power y = -5
+  Power x = 5
 
 @ Operaciones aritmeticas
-  Power i0 = x + 1
-  Power i1 = x - 1
+  @Power i0 = x + 1
+  @Power i1 = x - 1
   @Power i2 = x * 1
   @Power i4 = x % 1
   @Power i5 = x // 1
@@ -31,6 +30,7 @@ world %Pruebas%:
   @Skill f1 = 2'0
 
 @ Operaciones unarias
+  @Power  y = -5
   @Rune   c = *4*
   @Rune  up = ^*x*
   @Rune low = .*x*
@@ -77,12 +77,13 @@ world %Pruebas%:
 @ Subrutinas
   @kill b(x,4'5)
   @x = kill m(10'4)
-  @Power|}x{| a     @ Esto esta dando error cuando se inicializa por defecto un arreglo
-  @Power|}1{| a
-  @x = kill m(a)
+  @Power|}x{| arr0     @ Esto esta dando error cuando se inicializa por defecto un arreglo
+  @Power|}5{| arr1
+  @x = kill m(arr1)
 
 @ Arreglos
-  @Power|}3{| array = |)2, 3, 4(|
+  Power|}3{| array = |)2, 3, 4(|
+  @Power len = #array
   @array|)0(| = 0
   @x = array|)0(|
 
@@ -95,8 +96,9 @@ world %Pruebas%:
   @Rune|}3{| puff apt2
   @puff apt1 = 50
   @puff apt2 = |)*a*, *b*, *4*(|
-  @free apt1
   @kill b(apt1,10'6)
+  @free apt1
+  @free apt2
 
 @ I/O
   @Runes s = ~3g~
@@ -104,17 +106,16 @@ world %Pruebas%:
   @drop s
   @drop ~hola mundo!!~
 
+@ Registros
+  @Inv inv = Inv {10 , 1'8, Lose}
+  @Power elem = inv spawn a
+  @kill b( inv , 1'0)
+
 
 "'Ejemplos por implementar, arriba estan cosas probadas que funcionan'"
-
-@  Power a = #array
-@  Kit of Power list = <<10, 21, 3>> :: (<<2>> :: <<0>>) @ This is a problem
-@  Kit of Power list1 = <<4,2>>
-@  Kit of Power empty = << >>
-@  list1|>0<| = 10
-
-@  Inv inv = Inv {10 , 1'8}
-@  Power elem = inv spawn a, x
-@  Inv puff inv2 = summon Inv
-@  kill b( inv , 1'0)
+@ Listas
+  @Kit of Power list = <<10, 21, 3>> :: (<<2>> :: <<0>>) @ This is a problem
+  @Kit of Power list1 = <<4,2>>
+  @Kit of Power empty = << >>
+  @list1|>0<| = 10
 .~
