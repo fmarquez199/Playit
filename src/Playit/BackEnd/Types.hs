@@ -42,15 +42,15 @@ instance Show TACInfo where
 data Operands = Operands {
   vars  :: M.Map Var TACOP,
   temps :: M.Map TACInfo Bool,
-  lits  :: M.Map Literal TACOP,
-  labs  :: [Int],
-  brkL  :: TACOP,
-  contL :: TACOP,
+  lits  :: M.Map TACOP TACOP,
+  labs  :: [Int],   -- Labels
+  brkL  :: TACOP,   -- brake label
+  contL :: TACOP,   -- continue label
   base  :: OffSet,
   -- fp    :: OffSet,
-  callF :: Bool,
-  callM :: Bool,
-  subs  :: [(Id, InstrSeq, Bool)],
+  callF :: Bool, -- Dice si generar TAC para free
+  callM :: Bool, -- Dice si generar TAC para malloc
+  subs  :: [(Id, InstrSeq, Bool)], -- subrutinas a generar su codigo
   astST :: SymTab
 } deriving (Eq, Ord)
 

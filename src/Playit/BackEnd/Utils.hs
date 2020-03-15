@@ -257,10 +257,10 @@ resetOffset = do
 
 
 -------------------------------------------------------------------------------
-pushLiteral :: Literal -> TACOP -> TACMonad ()
-pushLiteral l operand = do
+pushLiteral :: TACOP -> TACOP -> TACMonad ()
+pushLiteral lit temp = do
   state@Operands{lits = ls} <- get
-  put state{lits = M.insert l operand ls}
+  put state{lits = M.insert lit temp ls}
 -------------------------------------------------------------------------------
 
 

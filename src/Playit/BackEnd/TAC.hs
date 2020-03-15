@@ -106,6 +106,7 @@ genAssig var e = case typeVar var of
     -}
     if isLit e then do
       vTemp <- pushOffset (getWidth t) >>= newTemp >>= genVar var
+      -- pushLiteral eTemp vTemp
       tell (tacAssign vTemp eTemp)
     else
       void (genVar var eTemp)

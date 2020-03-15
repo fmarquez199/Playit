@@ -16,44 +16,45 @@ import qualified TACType    as T
 genFlowGraph :: [TAC] -> (FlowGraph, [Int])
 genFlowGraph tac = (G.graphFromEdges blocks,leaders)
   where
-    leaders = getLeaders tac 0
+    leaders = 0 : getLeaders tac 0
     block1  = tac !! head leaders
-    blocks  = ([],tacNewLabel $ tacLabel "ENTRY",[block1]) : genBlocks tac leaders
+    entry   = ([],tacNewLabel $ tacLabel "ENTRY",[block1])
+    blocks  = entry : genBlocks tac leaders
 
 -- 
-genBlocks :: [TAC] ->  [Int]-> [([TAC],FGKey,[FGKey])]
+genBlocks :: [TAC] -> [Int]-> [([TAC],FGKey,[FGKey])]
 genBlocks _ []                 = [([],tacNewLabel $ tacLabel "EXIT",[])]
-genBlocks tac (leader:leaders) = (block,key,edges) : genBlocks tac leaders
+genBlocks tac (leader:leaders) = (block,begin,edges) : genBlocks tac leaders
   where
+    exit  = tacNewLabel $ tacLabel "EXIT"
     begin = tac !! leader
     next  = if null leaders then length tac else head leaders
-    nextI = tac !! next
     lastI = tac !! (next - 1)
     block = take (next - leader) . drop leader $ tac
-    key   = begin
-    nextB = if null leaders then tacNewLabel $ tacLabel "EXIT" else nextI
+    nextB = if null leaders then exit else tac !! next
     ciclo = getLabel (T.tacRvalue2 lastI)
-    edges = if null ciclo then [nextB] else [nextB,tacNewLabel $ tacLabel ciclo]
-    -- si es un return sus arcos son a todos despues de el
+    noRet = T.tacOperand lastI /= T.Return
+    edges
+      | null ciclo && noRet = [nextB]
+      | not noRet           = exit : map (tac !!) leaders
+      | not (null ciclo)    = [nextB,tacNewLabel $ tacLabel ciclo]
+      | otherwise = [tacNewLabel $ tacLabel "what?"]
+    
 
 getLeaders :: [TAC] -> Int -> [Int]
 getLeaders [] _         = []
 getLeaders (i:is) index
-  | isJump i  = index : getLeaders is (index + 1)
-  | isGoto i  = index + 1 : getLeaders is (index + 1)
+  | isLabel i = index : getLeaders is (index + 1)
+  | isJump i && not (isLabel $ head is) = index + 1 : getLeaders is (index + 1)
   | otherwise = getLeaders is (index + 1)
 
-
-isGoto :: TAC -> Bool
-isGoto instr = T.tacOperand instr `elem` jumps
   where
-    jumps = [T.If,T.GoTo,T.Lt,T.Lte,T.Gt,T.Gte,T.Eq,T.Neq]
+    jumps = [T.Call,T.If,T.GoTo,T.Lt,T.Lte,T.Gt,T.Gte,T.Eq,T.Neq]
+    isJump :: TAC -> Bool
+    isJump instr = T.tacOperand instr `elem` jumps
 
-
-isJump :: TAC -> Bool
-isJump instr = T.tacOperand instr `elem` jumps
-  where
-    jumps = [T.NewLabel,T.Call]
+    isLabel :: TAC -> Bool
+    isLabel instr = T.tacOperand instr == T.NewLabel
 
 
 getLabel :: TACOP -> String

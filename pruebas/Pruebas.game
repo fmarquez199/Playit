@@ -8,13 +8,13 @@
 @  Skill b
 @  Battle c
 @.~
-@boss b(Power ?i, Skill x):
-@  x = 10'5
-@  Power y = i * 2
-@.~
-@monster m(Power|}1{| s) Power:
-@  unlock 0
-@.~
+boss b(Power i, Skill x):
+  x = 10'5
+  Power y = i * 2
+.~
+monster m(Power|}1{| s) Power:
+  unlock 0
+.~
 
 world %Pruebas%:
 
@@ -48,13 +48,13 @@ world %Pruebas%:
   @Battle f = Win ? (3 == 6) : (3 > 6)
   @Skill f2 = Lose ? 6'0 : 3'0
 
-  play:
+  @play:
   @  gameOver
   @  Power i = 9
   @  keepPlaying
-    x++
-  lock (x < 10)
-  .~
+  @  x++
+  @lock (x < 10)
+  @.~
 
   @controller Power i = 0 -> 10: @ lock i % 2 == 0:
   @  gameOver
@@ -75,14 +75,14 @@ world %Pruebas%:
   @.~
 
 @ Subrutinas
-  @kill b(x,4'5)
+  kill b(x,4'5)
   @x = kill m(10'4)
   @Power|}x{| a     @ Esto esta dando error cuando se inicializa por defecto un arreglo
-  @Power|}1{| a
-  @x = kill m(a)
+  Power|}1{| a
+  x = kill m(a)
 
 @ Arreglos
-  @Power|}3{| array = |)2, 3, 4(|
+  Power|}3{| array = |)2, 3, 4(|
   @array|)0(| = 0
   @x = array|)0(|
 
