@@ -8,9 +8,11 @@
 module Playit.BackEnd.Types where
 
 import Control.Monad.Trans.RWS
+import Control.Monad.Trans.State
 import Playit.FrontEnd.Types
 import qualified Data.Map       as M
 import qualified Data.Graph     as G
+import qualified Data.Set       as S
 import qualified TACType        as TACT
 
 -------------------------------------------------------------------------------
@@ -72,6 +74,21 @@ type TACMonad a = RWST Instr [TAC] Operands IO a
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 
-type FGNode = [TAC]
-type FGKey  = TAC
-type FlowGraph = (G.Graph, G.Vertex -> (FGNode, FGKey, [FGKey]), FGKey -> Maybe G.Vertex)
+type FGNode         = [TAC]
+type FGKey          = TAC
+type NodeFromVertex = G.Vertex -> (FGNode, FGKey, [FGKey])
+type VertexFromKey  = FGKey -> Maybe G.Vertex
+type FlowGraph      = (G.Graph, NodeFromVertex, VertexFromKey)
+
+
+data LiveVars = LiveVars {
+  blocks    :: [(FGNode, FGKey, [FGKey])],
+  bLiveVars :: M.Map FGKey (S.Set Var),
+  changed   :: Bool
+} deriving (Eq, Ord, Show)
+
+-- instance Show LiveVars where
+--   show (LiveVars b bLV _) =
+--     "\n blocks: " ++ show b ++ "\n\n blocks liveVars: " ++ show bLV ++ "\n"
+
+type LVMonad a = StateT LiveVars IO a

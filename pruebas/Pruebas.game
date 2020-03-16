@@ -21,7 +21,7 @@ world %Pruebas%:
   Power x = 5
 
 @ Operaciones aritmeticas
-  @Power i0 = x + 1
+  Power i0 = x + 1
   @Power i1 = x - 1
   @Power i2 = x * 1
   @Power i4 = x % 1
@@ -46,15 +46,15 @@ world %Pruebas%:
 
 @ Operador ternario
   @Battle f = Win ? (3 == 6) : (3 > 6)
-  Skill f2 = Lose ? 6'0 : 3'0
+  @Skill f2 = Lose ? 6'0 : 3'0
 
-  @play:
+  play:
   @  gameOver
   @  Power i = 9
   @  keepPlaying
-  @  x++
-  @lock (x < 10)
-  @.~
+    x++
+  lock (x < 10)
+  .~
 
   @controller Power i = 0 -> 10: @ lock i % 2 == 0:
   @  gameOver

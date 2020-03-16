@@ -22,7 +22,7 @@ genFlowGraph tac = (G.graphFromEdges blocks,leaders)
     blocks  = entry : genBlocks tac leaders
 
 -- 
-genBlocks :: [TAC] -> [Int]-> [([TAC],FGKey,[FGKey])]
+genBlocks :: [TAC] -> [Int]-> [(FGNode,FGKey,[FGKey])]
 genBlocks _ []                 = [([],tacNewLabel $ tacLabel "EXIT",[])]
 genBlocks tac (leader:leaders) = (block,begin,edges) : genBlocks tac leaders
   where
