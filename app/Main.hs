@@ -13,6 +13,7 @@ import Control.Monad.Trans.RWS     (runRWST)
 import Control.Monad.Trans.State   (execStateT)
 import Data.Strings                (strEndsWith)
 import Playit.BackEnd.FlowGraph
+import Playit.BackEnd.InterferenceGraph
 import Playit.BackEnd.LiveVariables
 import Playit.BackEnd.TAC
 import Playit.BackEnd.Types        (Operands(vars),LiveVars(bLiveVars))
@@ -74,10 +75,12 @@ main = do
             let (fg@(graph, getNodeFromVertex, getVertexFromKey), leaders) = genFlowGraph tac
                 nodes = map getNodeFromVertex (vertices graph)
                 vs    = toList (vars state)
-            putStrLn $ "\nGraph: " ++ show graph
-            putStrLn $ "\nNodes: " ++ show nodes
+            putStrLn $ "\nFlow Graph: " ++ show graph
+            putStrLn $ "\nNodes: " ++ printFGNodes nodes
             -- print leaders
             liveVars <- execStateT (getLiveVars fg vs) (initLiveVars nodes)
-            putStrLn $ "\nLive Vars: " ++ show (toList (bLiveVars liveVars))
+            putStrLn $ "\nLive Vars: " ++ printLiveVars (toList (bLiveVars liveVars))
+            putStrLn $ "\nInference Graph: " ++ show (genInterferenceGraph graph)
           else
             mapM_ putStrLn errs
+

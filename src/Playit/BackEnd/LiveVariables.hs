@@ -1,7 +1,8 @@
-module Playit.BackEnd.LiveVariables (getLiveVars, initLiveVars) where
+module Playit.BackEnd.LiveVariables (getLiveVars, initLiveVars, printLiveVars) where
 
 import Control.Monad             (when, mapM_)
 import Control.Monad.Trans.State (get, put)
+import Data.List                 (intercalate)
 import Data.Maybe                (mapMaybe, isJust, fromJust, fromMaybe)
 import Playit.BackEnd.Types
 import Playit.FrontEnd.Types     (Var(..),Type(..))
@@ -98,3 +99,10 @@ getId vars val =
         var       = if null varOfTemp then Nothing else Just (fst . head $ varOfTemp)
     _               -> Nothing
 
+
+printLiveVars :: [(TAC,S.Set Var)] -> String
+printLiveVars [] = ""
+printLiveVars ((key,liveVars):nextLiveVars) =
+  "\nNode Key(" ++ show key ++ "): " ++
+  "{" ++ intercalate "," (map show (S.toList liveVars)) ++ "}" ++
+  printLiveVars nextLiveVars
