@@ -70,7 +70,7 @@ type TACMonad a = RWST Instr [TAC] Operands IO a
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
---                           Flow Graph creation
+--                           Register Allocation
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 
@@ -79,16 +79,27 @@ type FGKey          = TAC
 type NodeFromVertex = G.Vertex -> (FGNode, FGKey, [FGKey])
 type VertexFromKey  = FGKey -> Maybe G.Vertex
 type FlowGraph      = (G.Graph, NodeFromVertex, VertexFromKey)
+type InterfGraph    = (G.Graph, G.Vertex -> IGraphEdge, TACInfo -> Maybe G.Vertex)
+type IGraphEdge     = (TACInfo,TACInfo,[TACInfo])
+type Reg = Int
 
-
-data LiveVars = LiveVars {
-  blocks    :: [(FGNode, FGKey, [FGKey])],
-  bLiveVars :: M.Map FGKey (S.Set Var),
-  changed   :: Bool
+-- 
+data RegAlloc = RegAlloc {
+  blocks    :: [(FGNode, FGKey, [FGKey])], -- Basic blocks
+  bLiveVars :: M.Map FGKey (S.Set TACInfo), -- Variables vivas por bloque
+  lvChanged :: Bool -- Indica si algun conjunto de variables vivas cambio
+  -- varInReg  :: M.Map Var Reg, -- Mantiene que variables tienen aisgnado que registro
+  -- interfG   :: InterfGraph -- Grafo de interferencia
+  -- spills    :: S.Set Var, -- Conjunto de variables que son spill
+  -- , -- 
+  -- , -- 
+  -- tac'      :: [TAC] -- TAC modificado si se genera un spill
 } deriving (Eq, Ord, Show)
 
--- instance Show LiveVars where
---   show (LiveVars b bLV _) =
+-- instance Show RegAlloc where
+--   show (RegAlloc b bLV _) =
 --     "\n blocks: " ++ show b ++ "\n\n blocks liveVars: " ++ show bLV ++ "\n"
 
-type LVMonad a = StateT LiveVars IO a
+
+-- 
+type RegAllocMonad a = StateT RegAlloc IO a

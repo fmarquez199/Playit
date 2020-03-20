@@ -12,11 +12,12 @@ import Control.Monad               (mapM_)
 import Control.Monad.Trans.RWS     (runRWST)
 import Control.Monad.Trans.State   (execStateT)
 import Data.Strings                (strEndsWith)
-import Playit.BackEnd.FlowGraph
-import Playit.BackEnd.InterferenceGraph
-import Playit.BackEnd.LiveVariables
+import Playit.BackEnd.RegAlloc.FlowGraph
+import Playit.BackEnd.RegAlloc.GraphColoring
+import Playit.BackEnd.RegAlloc.InterferenceGraph
+import Playit.BackEnd.RegAlloc.LiveVariables
 import Playit.BackEnd.TAC
-import Playit.BackEnd.Types        (Operands(vars),LiveVars(bLiveVars))
+import Playit.BackEnd.Types        (Operands(vars),RegAlloc(bLiveVars))
 import Playit.FrontEnd.Errors      (lexerErrors,showLexerErrors)
 import Playit.FrontEnd.Lexer       (alexScanTokens)
 import Playit.FrontEnd.Parser      (parse)
@@ -26,6 +27,7 @@ import System.Environment          (getArgs)
 import System.IO                   (readFile)
 import Data.Graph                  (vertices)
 import Data.Map                    (toList)
+import Data.Set                    (fromList)
 
 
 -- | Determines if an file is empty
@@ -74,13 +76,17 @@ main = do
             mapM_ print tac
             let (fg@(graph, getNodeFromVertex, getVertexFromKey), leaders) = genFlowGraph tac
                 nodes = map getNodeFromVertex (vertices graph)
-                vs    = toList (vars state)
             putStrLn $ "\nFlow Graph: " ++ show graph
             putStrLn $ "\nNodes: " ++ printFGNodes nodes
             -- print leaders
-            liveVars <- execStateT (getLiveVars fg vs) (initLiveVars nodes)
-            putStrLn $ "\nLive Vars: " ++ printLiveVars (toList (bLiveVars liveVars))
-            putStrLn $ "\nInference Graph: " ++ show (genInterferenceGraph graph)
+            regAlloc <- execStateT (getLiveVars fg) (initRegAlloc nodes)
+            let
+              liveVars = fromList $ map snd $ toList $ bLiveVars regAlloc
+              (ig, nodeFromVertex, vertexFromKey) = genInterferenceGraph liveVars
+              igNodes = map nodeFromVertex (vertices ig)
+            putStrLn $ "\nLive Vars: " ++ printLiveVars (toList (bLiveVars regAlloc))
+            putStrLn $ "\nInference Graph: " ++ printIGNodes igNodes
+            putStrLn $ "\nDSatur coloring: " ++ show (colorDsatur ig)
           else
             mapM_ putStrLn errs
 

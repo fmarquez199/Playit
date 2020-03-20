@@ -5,7 +5,7 @@
  *  Francisco Javier    12-11163
  *  Natascha Gamboa     12-11250
 -}
-module Playit.BackEnd.FlowGraph (genFlowGraph, printFGNodes) where
+module Playit.BackEnd.RegAlloc.FlowGraph (genFlowGraph, printFGNodes) where
 
 import Playit.BackEnd.Types
 import Playit.BackEnd.Utils (tacNewLabel, tacLabel)
@@ -68,7 +68,7 @@ printFGNodes [] = ""
 printFGNodes ((node,key,succs):nodes) = 
   "\n\nNode Key(" ++ show key ++ ")\n" ++
   show node ++ "\n" ++
-  concatMap ("\t->" ++ ) (map show succs) ++
+  concatMap (("\t->" ++ ) . show) succs ++
   printFGNodes nodes
 
 

@@ -53,7 +53,7 @@
   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 -}
 
-module Playit.BackEnd.GraphColoring where
+module Playit.BackEnd.RegAlloc.GraphColoring (
 --   ( -- * Types
 --     Color
 --   , VertColorMap
@@ -63,7 +63,7 @@ module Playit.BackEnd.GraphColoring where
 --     -- * Coloring
 --   , colorInOrder
 --   , colorLF
---   , colorDsatur
+   colorDsatur
 --   , colorDcolor
 --   , isColorable
 --     -- * Color map transformations
@@ -74,7 +74,7 @@ module Playit.BackEnd.GraphColoring where
 --   , neighbors
 --   , hasLoop
 --   , isUndirected
---   ) where
+  ) where
 
 import Data.Maybe
 import Data.Ord
@@ -158,7 +158,7 @@ neighColors g cMap v = verticesColors cMap $ neighbors g v
 -- | Color one node.
 colorNode :: Graph.Graph -> VertColorMap -> Graph.Vertex -> Color
 -- use of "head" is A-ok as the source is an infinite list
-colorNode g cMap v = head $ filter notNeighColor [0..]
+colorNode g cMap v = head $ filter notNeighColor [8..25] -- [8..25], si el filtrado es null => spill
     where notNeighColor = (`notElem` neighColors g cMap v)
 
 -- | Color a node returning the updated color map.
