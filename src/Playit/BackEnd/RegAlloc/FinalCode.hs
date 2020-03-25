@@ -7,6 +7,7 @@
 -}
 module Playit.BackEnd.RegAlloc.FinalCode (genFinalCode) where
 
+import Control.Monad.IO.Class(liftIO)
 import Data.Maybe            (isJust, fromJust)
 import Playit.BackEnd.Types  (TAC, TACOP, TACInfo(..), InterfGraph)
 import Playit.BackEnd.Utils  (tacNewLabel, tacLabel)
@@ -133,14 +134,15 @@ genJumps tac (_, _, t) name = case tacRvalue2 tac of
   _ -> do
     let
       goto = show (tacOperand tac) ++ " "
-      dest = show (fromJust $ tacInfo $ tacRvalue2 tac) ++ "\n"
-    if isJust $ tacRvalue1 tac then do
-      let
-        cond = show (fromJust $ t $ fromJust $ tacInfo $ tacRvalue1 tac)
-      if isCall $ tacOperand tac then do -- Call Procedures
-        let code = goto ++ cond ++ ", " ++ dest
-        appendFile name code >> prologue name
-      else appendFile name $ goto ++ cond ++ ", " ++ dest -- If
+      dest = show (fromJust $ tacRvalue2 tac) ++ "\n"
+    if isJust $ tacRvalue1 tac then
+      if isCall $ tacOperand tac then -- Call Procedures
+        let code = goto ++ show (fromJust $ tacRvalue1 tac) ++ ", " ++ dest
+        in appendFile name code >> prologue name
+        
+      else
+        let cond = show (fromJust $ t $ fromJust $ tacInfo $ tacRvalue1 tac)
+        in appendFile name $ goto ++ cond ++ ", " ++ dest -- If
     else appendFile name $ goto ++ dest -- GoTo
 
 epilogue :: String -> IO ()
@@ -186,18 +188,21 @@ genSyscalls tac (_, _, t) name =
 -- ThreeAddressCode Assign (Just x) (Just y) Nothing
 -- ThreeAddressCode Assign (Just x) Nothing Nothing
 genAssign :: TAC -> InterfGraph -> String -> IO ()
-genAssign tac (_, _, t) name = case tacRvalue1 tac of
-  Nothing -> do
-    let
-      dest = fromJust $ t $ fromJust $ tacInfo $ tacLvalue tac
-      comd = "li " ++ show dest ++ ", 0\n"
-    appendFile name comd
-  _ -> do
-    let
-      dest = fromJust $ t $ fromJust $ tacInfo $ tacLvalue tac
-      reg1 = fromJust $ t $ fromJust $ tacInfo $ tacRvalue1 tac
-      comd = "addi " ++ show dest ++ ", " ++ show reg1 ++ ", 0\n"
-    appendFile name comd
+genAssign tac (_, _, t) name = 
+  let dest = show (fromJust $ t $ fromJust $ tacInfo $ tacLvalue tac)
+  in case tacRvalue1 tac of
+    Nothing ->
+      let code = "li " ++ show dest ++ ", 0\n"
+      in appendFile name code
+    _ ->
+      if isJust $ tacInfo $ tacRvalue1 tac then do
+        let
+          reg1 = show (fromJust $ t $ fromJust $ tacInfo $ tacRvalue1 tac)
+          code = "addi " ++ dest ++ ", " ++ reg1 ++ ", 0\n"
+        appendFile name code
+      else 
+        let immediate = show (fromJust $ tacRvalue1 tac) ++ "\n"
+        in appendFile name $ "li " ++ dest ++ ", " ++ immediate
 
 -- ThreeAddressCode Param Nothing (Just p) Nothing
 genParam :: TAC -> InterfGraph -> String -> IO ()
