@@ -87,17 +87,17 @@ instance (SymEntryCompatible a, Show a, Show b) => Show (Operand a b) where
 data Operation =
   Assign            |
 -- Arithmetic
-  -- | Addition
+  -- | Addition (add)
   Add               |
-  -- | Substraction
+  -- | Substraction (sub)
   Sub               |
-  -- | Unary minus
+  -- | Unary minus (neg)
   Minus             |
-  -- | Multiplication
+  -- | Multiplication (mul)
   Mult              |
-  -- | Division
+  -- | Division (div)
   Div               |
-  -- | Modulus
+  -- | Modulus (rem)
   Mod               |
 
 -- Logical
@@ -107,23 +107,23 @@ data Operation =
   Or                |
 
 -- Comparators
-  -- | Greater than
+  -- | Greater than (bgt)
   Gt                |
-  -- | Greater than or equal
+  -- | Greater than or equal (bge)
   Gte               |
-  -- | Less than
+  -- | Less than (blt)
   Lt                |
-  -- | Less than or equal
+  -- | Less than or equal (bte)
   Lte               |
-  -- | Equal
+  -- | Equal (beq)
   Eq                |
-  -- | Not equal
+  -- | Not equal (bne)
   Neq               |
 
 -- Jumping
-  -- | goto <label>
+  -- | goto <label> "b"
   GoTo              |
-  -- | if <var> goto <label>
+  -- | if <var> goto <label> "bnez"
   If                |
   -- | if !<var> goto <label>
   IfFalse           |
@@ -133,9 +133,9 @@ data Operation =
 -- Calling functions
   -- | Define a parameter
   Param             |
-  -- | Call function
+  -- | Call function (jal)
   Call              |
-  -- | Return value from function
+  -- | Return value from function (jr)
   Return            |
 
 -- Array operators
@@ -151,9 +151,9 @@ data Operation =
   Length            |
 
 -- Pointer operations
-  -- | x:= &y
+  -- | x:= &y (la)
   Ref               |
-  -- | x:= *y
+  -- | x:= *y (lw)
   Deref             |
 
 -- Access for records and unions
