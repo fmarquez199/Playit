@@ -20,6 +20,7 @@ tacInfo _ = Nothing
 tacType :: TACOP -> Maybe Type
 tacType (Just (Constant (_, t))) = Just t
 tacType (Just (Id (TACVar s _))) = Just $ symType s
+tacType (Just (Id (Temp _ t _))) = Just t
 tacType _ = Nothing
 
 isFloat :: Maybe Type -> Bool

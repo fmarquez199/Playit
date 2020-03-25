@@ -27,10 +27,12 @@ type OffSet  = Int
 type TAC     = TACT.ThreeAddressCode TACInfo Type
 type TACOP   = Maybe (TACT.Operand TACInfo Type)
 
-data TACInfo = Temp Id OffSet | TACVar SymbolInfo OffSet  deriving (Eq, Ord)
+data TACInfo = Temp Id Type OffSet
+             | TACVar SymbolInfo OffSet
+             deriving (Eq, Ord)
 
 instance TACT.SymEntryCompatible TACInfo where
-  getSymID (Temp n o)      = "[" ++ show o ++ "]->(" ++ n ++ ")"
+  getSymID (Temp n _ o)    = "[" ++ show o ++ "]->(" ++ n ++ ")"
   getSymID (TACVar info o) = "[" ++ show o ++ "]->(" ++ symId info ++ ")"
 
 instance Show TACInfo where

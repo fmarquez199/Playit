@@ -24,10 +24,10 @@ import qualified TACType           as T
 tacInitState :: SymTab -> Operands
 tacInitState = Operands M.empty temps M.empty [] brk cont 0 False False []
   where
-    retnReg  = Temp "_return" (-1)  -- $v0, offset fijo?
-    nullReg  = Temp "_null" (-1)    -- $zero, offset fijo?
-    printReg = Temp "_print" (-1)   -- syscall 4
-    readReg  = Temp "_read" (-1)    -- syscall 8
+    retnReg  = Temp "_return" TInt 4  -- $v0, offset fijo?
+    nullReg  = Temp "_null" TInt 4    -- $zero, offset fijo?
+    printReg = Temp "_print" TInt 4   -- syscall 4
+    readReg  = Temp "_read" TInt 4    -- syscall 8
     cont     = tacLabel "cont"
     brk      = tacLabel "brk"
     temps    = M.fromList [(retnReg, False), (nullReg, False), (printReg, False), (readReg, False)]
@@ -80,16 +80,16 @@ genAssig :: Var -> Expr -> TACMonad ()
 genAssig var e = case typeVar var of
   -- Si es el operador ternario la expr puede ser bool o no
   TBool -> do
-    vTemp  <- pushOffset (getWidth (typeVar var)) >>= newTemp >>= genVar var
+    tmp <- pushOffset (getWidth (typeVar var)) >>= newTemp TBool >>= genVar var
     nextL  <- newLabel
     trueL  <- newLabel
     falseL <- newLabel
     genBoolExpr e trueL falseL
     tell [tacNewLabel trueL]
-    tell (tacAssign vTemp $ tacConstant ("True", TBool))
+    tell (tacAssign tmp (tacConstant ("True", TBool)))
     tell (tacGoto nextL)
     tell [tacNewLabel falseL]
-    tell (tacAssign vTemp $ tacConstant ("False", TBool))
+    tell (tacAssign tmp (tacConstant ("False", TBool)))
     tell [tacNewLabel nextL]
 -- Registros y uniones
   -- TNew n -> do
@@ -109,7 +109,7 @@ genAssig var e = case typeVar var of
         base/fp[var.offset] := e
     -}
     if isLit e then do
-      vTemp <- pushOffset (getWidth t) >>= newTemp >>= genVar var
+      vTemp <- pushOffset (getWidth t) >>= newTemp (typeE e) >>= genVar var
       -- pushLiteral eTemp vTemp
       tell (tacAssign vTemp eTemp)
     else
@@ -129,9 +129,9 @@ genForEach n e is nextL = do
     w = getWidth t
   begin <- newLabel
   contn <- continue
-  var   <- pushOffset (getWidth t) >>= newTemp >>= genVar (Var n t)
+  var   <- pushOffset (getWidth t) >>= newTemp (typeE e) >>= genVar (Var n t)
   expr  <- genExpr e
-  count <- pushOffset 4 >>= newTemp >>= genVar (Var ("$i_" ++ n) t)
+  count <- pushOffset 4 >>= newTemp TInt >>= genVar (Var ("$i_" ++ n) t)
   tell (tacUn T.Deref count expr)
   tell [tacNewLabel begin]
   tell (tacBin T.Lte count (tacConstant ("0", TInt)) nextL)
@@ -181,7 +181,8 @@ genWhile e is nextL = do
 -- TODO: width del tipo string
 genPrint :: [Expr] -> TACMonad ()
 genPrint es = do
-  lv     <- pushOffset (getWidth (typeE (head es))) >>= newTemp
+  let t = typeE (head es)
+  lv     <- pushOffset (getWidth t) >>= newTemp t
   params <- mapM genExpr es
   syscall 8 lv params
 
@@ -240,7 +241,7 @@ genExpr e = case e of
   Variable v t        -> do
     vs <- vars <$> get
     if M.member v vs then return $ fromJust $ M.lookup v vs -- Aumentar las veces que esta siendo usada (TACOP, Int <veces usada>)
-    else pushOffset (getWidth t) >>= newTemp >>= genVar v
+    else pushOffset (getWidth t) >>= newTemp t >>= genVar v
   Unary u e t         -> genUnOp u e t
   Binary b e1 e2 t    -> do
     e1Temp <- genExpr e1
@@ -249,10 +250,10 @@ genExpr e = case e of
   IfSimple eB eT eF t -> genTerOp eB eT eF t
   ArrayList es t      ->
     let width = getWidth (baseTypeT t)
-    in pushOffset width >>= newTemp >>= genArrayList es width 0
+    in pushOffset width >>= newTemp t >>= genArrayList es width 0
   Null                -> genNull
   Read e _            -> genRead e
-  FuncCall s _        -> genFuncCall s
+  FuncCall s t        -> genFuncCall s t
   IdType t            -> genType t
 
 
@@ -307,7 +308,7 @@ genComparison leftExpr rightExpr trueL falseL op = do
 
 -- 
 genNull :: TACMonad TACOP
-genNull = return $ tacVariable $ Temp "_null" (-1)
+genNull = return $ tacVariable $ Temp "_null" TInt 4
 
 
 -- | Generates the TAC code for literals
@@ -359,7 +360,7 @@ genUnOp :: UnOp -> Expr -> Type -> TACMonad TACOP
 genUnOp op e tOp = do
   rv   <- genExpr e
   actO <- pushOffset (getWidth tOp)
-  lv   <- newTemp actO
+  lv   <- newTemp tOp actO
   
   case op of
     Length   -> tell (tacUn T.Length lv rv) >> return lv
@@ -404,7 +405,7 @@ genUnOp op e tOp = do
 genBinOp :: BinOp -> Type -> TACOP -> TACOP -> TACMonad TACOP
 genBinOp op tOp rv1 rv2 = do
   actO <- pushOffset (getWidth tOp)
-  lv   <- newTemp actO
+  lv   <- newTemp tOp actO
   
   -- case op of
   -- Aritmethics
@@ -419,7 +420,7 @@ genBinOp op tOp rv1 rv2 = do
 genTerOp :: Expr -> Expr -> Expr -> Type -> TACMonad TACOP
 genTerOp eB eT eF tOp = do
   actO   <- pushOffset (getWidth tOp)
-  lv     <- newTemp actO
+  lv     <- newTemp tOp actO
   next   <- newLabel
   falseL <- newLabel
   genBoolExpr eB fall falseL
@@ -449,19 +450,18 @@ genArrayList (elem:elems) width index arrTemp = do
 -- TODO: width del tipo string
 genRead :: Expr -> TACMonad TACOP
 genRead e = do
-  lv    <- pushOffset (getWidth (typeE e)) >>= newTemp
+  lv    <- pushOffset (getWidth (typeE e)) >>= newTemp TInt
   param <- genExpr e
   syscall 8 lv [param]
   return lv
 
 
 -- Hace prologo
-genFuncCall :: Subroutine -> TACMonad TACOP
-genFuncCall (Call f params) = do
+genFuncCall :: Subroutine -> Type -> TACMonad TACOP
+genFuncCall (Call f params) t = do
   pushSubroutine f False
   genParams (map fst params)
-  Operands{base = actO} <- get
-  lv <- newTemp actO -- Deberia ser el offset del tipo de retorno de la funcion, como lo obtengo?
+  lv <- pushOffset (getWidth t) >>= newTemp t -- Deberia ser el offset del tipo de retorno de la funcion, como lo obtengo?
   -- Prologo antes de pasar el poder al proc
   tell (tacCall lv f $ length params)
   return lv

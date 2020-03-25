@@ -153,7 +153,7 @@ tacParam p = T.ThreeAddressCode T.Param Nothing p Nothing
 -------------------------------------------------------------------------------
 -- | Modify the symbol offset
 modifyOffSet :: TACOP -> OffSet -> TACOP
-modifyOffSet (Just (T.Id (Temp n _))) newO      = tacVariable $ Temp n newO
+modifyOffSet (Just (T.Id (Temp n t _))) newO    = tacVariable $ Temp n t newO
 modifyOffSet (Just (T.Id (TACVar info _))) newO = tacVariable $ TACVar info newO
 -------------------------------------------------------------------------------
 
@@ -221,10 +221,10 @@ breakI = do
 
 
 -------------------------------------------------------------------------------
-newTemp :: OffSet -> TACMonad TACOP
-newTemp actO = do
+newTemp :: Type -> OffSet -> TACMonad TACOP
+newTemp typ actO = do
   state@Operands{temps = ts} <- get
-  let t = Temp ("$t" ++ show (M.size ts - 4)) actO
+  let t = Temp ("$t" ++ show (M.size ts - 4)) typ actO
   put state{temps = M.insert t True ts}
   return $ tacVariable t
 -------------------------------------------------------------------------------
@@ -294,10 +294,10 @@ pushSubroutine s isProc = do
 
 -------------------------------------------------------------------------------
 -- Actualizar offset dependiendo del tamaño del tipo de parametro a pasar ??
-getParam :: Int -> TACMonad TACOP
-getParam x = do
+getParam :: Type -> Int -> TACMonad TACOP
+getParam t x = do
   state@Operands{temps = ts} <- get
-  let a = Temp ("$a" ++ show x) (-1)
+  let a = Temp ("$a" ++ show x) t (-1)
   put state{temps = M.insert a True ts}
   return $ tacVariable a
 -------------------------------------------------------------------------------
@@ -306,11 +306,11 @@ getParam x = do
 -------------------------------------------------------------------------------
 setMemoryTemps :: TACMonad (TACOP,TACOP,TACOP,TACOP,TACOP)
 setMemoryTemps = do
-  param0 <- getParam 0
-  head   <- pushOffset 8  >>= newTemp
-  elem   <- pushOffset 12 >>= newTemp
-  temp1  <- pushOffset 4  >>= newTemp
-  temp2  <- pushOffset 4  >>= newTemp
+  param0 <- getParam TInt 0
+  head   <- pushOffset 8  >>= newTemp TInt
+  elem   <- pushOffset 12 >>= newTemp TInt
+  temp1  <- pushOffset 4  >>= newTemp TInt
+  temp2  <- pushOffset 4  >>= newTemp TInt
   return (head, elem, param0, temp1, temp2)
 -------------------------------------------------------------------------------
 
@@ -368,7 +368,7 @@ malloc = do
   -- temp2: Contenido de _head cuando hay mem y flag isFree de _elem cuando no
   let
     (zero,one,two,three,sixteen) = setElemIndexs
-    retn                         = tacVariable $ Temp "_return" (-1)
+    retn                         = tacVariable $ Temp "_return" TInt (-1)
     allocate                     = tacLabel "allocate"
     noMemory                     = tacLabel "noMemory"
     lookMem                      = tacLabel "lookMemory"
@@ -459,7 +459,7 @@ malloc = do
 free :: TACMonad ()
 free = do
   (head,elem,par0,temp1,temp2) <- setMemoryTemps
-  fre <- pushOffset 4 >>= newTemp -- Dir de mem a liberar
+  fre <- pushOffset 4 >>= newTemp TInt -- Dir de mem a liberar
   -- temp1: Guarda la direccion de memoria a ser liberada
   -- temp2: Flag isFree
   let
