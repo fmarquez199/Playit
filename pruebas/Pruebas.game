@@ -1,37 +1,36 @@
-@  Inventory Inv:
-@    Power a = 0
-@    Skill b = 2'4
-@    Battle c
-@  .~
-@  Items It:
-@    Power a
-@    Skill b
-@    Battle c
-@  .~
-  boss b(Power i, Skill x):
-    x = 10'5
-    Power y = i * 2
-  .~
-@  monster m(Skill s) Power:
-@    Power i = 0
-@    unlock i
-@  .~
+@Inventory Inv: @ Tamaño 13
+@  Power a = 0
+@  Skill b = 2'4
+@  Battle c
+@.~
+@Items It: @ Tamaño 8
+@  Power a
+@  Skill b
+@  Battle c
+@.~
+@boss b(Inv i, Skill x):
+@  x = 10'5
+@  Power y = i * 2
+@.~
+@monster m(Power|}5{| s) Power:
+@  unlock 0
+@.~
 
 world %Pruebas%:
 
-  Power x = 50 @ , u, z = 6
-@  Power y = -5
+  Power x = 5
 
 @ Operaciones aritmeticas
-  @Power i0 = x + 1
-  @Power i1 = x - 1
-  @Power i2 = x * 1
+  Power i0 = x + 1
+  Power i1 = x - 1
+  Power i2 = x * 1
   @Power i4 = x % 1
   @Power i5 = x // 1
   @Skill f2 = f / 0'5
   @Skill f1 = 2'0
 
 @ Operaciones unarias
+  @Power  y = -5
   @Rune   c = *4*
   @Rune  up = ^*x*
   @Rune low = .*x*
@@ -57,14 +56,16 @@ world %Pruebas%:
   @lock (x < 10)
   @.~
 
-@  controller Power i = 0 -> 10 lock i % 2 == 0:
+  controller x = 0 -> 10: @ lock i % 2 == 0:
   @  gameOver
   @  keepPlaying
-  @  Button:
-  @    | i == 7 } gameOver
-  @  .~
-  @  x = i * 2
-  @.~
+    Button:
+      | x == 7 }
+        i0 = x * i1
+        gameOver
+    .~
+    i2 = i0 * i1
+  .~
 
 @  Button:
   @  | Lose       } x = 0
@@ -76,38 +77,48 @@ world %Pruebas%:
   @.~
 
 @ Subrutinas
-  kill b(x,4'5)
+  @kill b(x,4'5)
   @x = kill m(10'4)
-  
+  @Power|}x{| arr0     @ Esto esta dando error cuando se inicializa por defecto un arreglo
+  @Power|}5{| arr1
+  @x = kill m(arr1)
+
 @ Arreglos
-  Power|}2{| array = |)2,3(|
+  @Power|}3{| array = |)2, 3, 4(|
+  @Power len = #array
+  @array|)0(| = 0
+  @x = array|)0(|
+
+  @controller Power e <- |)2, 3(|:
+  @  Power i = e
+  @.~
+
+@ Apuntadores
+  @Power puff apt1 = summon Power
+  @Rune|}3{| puff apt2
+  @puff apt1 = 50
+  @puff apt2 = |)*a*, *b*, *4*(|
+  @kill b(apt1,10'6)
+  @free apt1
+  @free apt2
+
+@ I/O
+  @Runes s = ~3g~
+  @Runes j = joystick ~Here we go~
+  @drop s
+  @drop ~hola mundo!!~
 
 
+"'Ejemplos por implementar, arriba estan cosas probadas que funcionan'"
+@ Listas
+  @Kit of Power list = <<10, 21, 3>> :: (<<2>> :: <<0>>) @ This is a problem
+  @Kit of Power list1 = <<4,2>>
+  @Kit of Power empty = << >>
+  @list1|>0<| = 10
 
-@  Runes s = ~3g~
-@  Runes j = joystick ~Here we go~
-@  drop s
+@ Registros
+  @Inv inv = Inv {10 , 1'8, Lose}
+  @Power elem = inv spawn a
+  @kill b( inv , 1'0)
 
-
-@  array|)0(| = 0
-@  x = array|)0(|
-
-@  Power a = #array
-@  Kit of Power list = <<10, 21, 3>> :: (<<2>> :: <<0>>) @ This is a problem
-@  Kit of Power list1 = <<4,2>>
-@  Kit of Power empty = << >>
-@  list1|>0<| = 10
-
-@  controller Power elem <- |)2,3(|:
-@    Power i = elem
-@  .~
-
-@  Power puff pointer = summon Power
-@  puff pointer = 1
-@  free pointer
-
-@  Inv inv = Inv {10 , 1'8}
-@  Power elem = inv spawn a, x
-@  Inv puff inv2 = summon Inv
-@  kill b( inv , 1'0)
 .~

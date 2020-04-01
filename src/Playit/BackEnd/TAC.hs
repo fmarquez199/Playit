@@ -5,51 +5,52 @@
  *  Francisco Javier    12-11163
  *  Natascha Gamboa     12-11250
 -}
-module Playit.BackEnd.TAC (tacInitState,gen) where
+module Playit.BackEnd.TAC (tacInitState, gen) where
 
 import Control.Monad.IO.Class      (liftIO)
-import Control.Monad               (when,unless)
-import Control.Monad.Trans.RWS     (ask,tell,get,put)
-import Data.List.Split             (splitOn)
-import Data.Maybe                  (fromJust,isNothing)
+import Control.Monad               (when, unless, void)
+import Control.Monad.Trans.RWS     (ask, tell, get, put)
+import Data.Maybe                  (fromJust, isNothing)
 import Playit.BackEnd.Utils    
 import Playit.BackEnd.Types
 import Playit.FrontEnd.SymbolTable (lookupInSymTab)
 import Playit.FrontEnd.Types
-import Playit.FrontEnd.Utils       (typeVar,baseTypeT,getName,isArrLst)
-import qualified Data.Map               as M
-import qualified Playit.BackEnd.TACType as T
+import Playit.FrontEnd.Utils       (typeVar, baseTypeT, isArrLst, baseTypeE, typeE)
+import qualified Data.Map          as M
+import qualified TACType           as T
 
 
 -- Colocar los temps de print, read y null al inicio?
 tacInitState :: SymTab -> Operands
-tacInitState = Operands M.empty temps M.empty [] brk cont 0 []
+tacInitState = Operands M.empty temps M.empty [] brk cont 0 False False []
   where
-    printReg = Temp "_print" (-1)
-    readReg  = Temp "_read" (-1)
-    nullReg  = Temp "_null" (-1)
+    retnReg  = Temp "_return" (-1)  -- $v0, offset fijo?
+    nullReg  = Temp "_null" (-1)    -- $zero, offset fijo?
+    printReg = Temp "_print" (-1)   -- syscall 4
+    readReg  = Temp "_read" (-1)    -- syscall 8
     cont     = tacLabel "cont"
     brk      = tacLabel "brk"
-    temps    = M.fromList [(printReg,False), (readReg,False), (nullReg,False)]
+    temps    = M.fromList [(retnReg, False), (nullReg, False), (printReg, False), (readReg, False)]
 
 
 gen :: Instr -> TACMonad ()
-gen ast = tell (tacCall Nothing "_main" 0 ++ tacNewLabel (tacLabel "_main")) >> genCode ast
+gen ast = tell (tacCall Nothing "_main" 0 ++ [tacNewLabel (tacLabel "_main")]) >>
+          genCode ast
 
 -- 
 genCode :: Instr -> TACMonad ()
 genCode i = case i of
   (Program is _)             -> mapM_ genCode is >> genSubroutines
   (Assigs is _)              -> mapM_ genCode is
-  (Assig v e _)              -> newLabel >>= genAssig v e
+  (Assig v e _)              -> genAssig v e
   (Break _)                  -> genBreak
   (Continue _)               -> genContinue
   (For n e1 e2 is _)         -> breakI   >>= genFor n e1 e2 is
-  (ForEach n e is _)         -> return () -- breakI >>= genForEach n e is
+  (ForEach n e is _)         -> breakI   >>= genForEach n e is
   (ForWhile n e1 e2 e3 is _) -> breakI   >>= genForWhile n e1 e2 e3 is
   (IF gs _)                  -> newLabel >>= genIF gs
   (While e is _)             -> breakI   >>= genWhile e is
-  (Print es _)               -> return () -- genPrint es
+  (Print es _)               -> genPrint es
   (Free id _)                -> genFree id
   (ProcCall s _)             -> genProcCall s
   (Return e _)               -> genExpr e >>= genReturn
@@ -57,13 +58,16 @@ genCode i = case i of
 
 genSubroutines :: TACMonad ()
 genSubroutines = do
-  Operands{subs = subroutines} <- get
-  mapM_ genSubroutine subroutines
+  state <- get
+  mapM_ genSubroutine (subs state)
+  when (callM state) (resetOffset >> malloc)
+  when (callF state) (resetOffset >> free)
 
 
-genSubroutine :: (Id,InstrSeq,Bool) -> TACMonad ()
-genSubroutine (s,i,isProc) =
-  resetOffset >> tell (tacNewLabel $ tacLabel s) >> mapM_ genCode i >> when isProc (genReturn Nothing)
+genSubroutine :: (Id, InstrSeq, Bool) -> TACMonad ()
+genSubroutine (s, i, isProc) =
+  resetOffset >> tell [tacNewLabel $ tacLabel s] >> mapM_ genCode i >> 
+    when isProc (genReturn Nothing)
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 --                            TAC Instructions
@@ -72,34 +76,44 @@ genSubroutine (s,i,isProc) =
 
 
 -- Registros/Uniones
-genAssig :: Var -> Expr -> TACOP -> TACMonad ()
-genAssig var e nextL = case typeVar var of
+genAssig :: Var -> Expr -> TACMonad ()
+genAssig var e = case typeVar var of
   -- Si es el operador ternario la expr puede ser bool o no
   TBool -> do
-    vTemp  <- genVar var (typeVar var)
+    vTemp  <- pushOffset (getWidth (typeVar var)) >>= newTemp >>= genVar var
+    nextL  <- newLabel
     trueL  <- newLabel
     falseL <- newLabel
     genBoolExpr e trueL falseL
-    tell (tacNewLabel trueL)
-    tell (tacAssign vTemp $ tacConstant ("True",TBool))
+    tell [tacNewLabel trueL]
+    tell (tacAssign vTemp $ tacConstant ("True", TBool))
     tell (tacGoto nextL)
-    tell (tacNewLabel falseL)
-    tell (tacAssign vTemp $ tacConstant ("False",TBool))
-    tell (tacNewLabel nextL)
+    tell [tacNewLabel falseL]
+    tell (tacAssign vTemp $ tacConstant ("False", TBool))
+    tell [tacNewLabel nextL]
 -- Registros y uniones
-  TNew n -> 
-    return ()
+  -- TNew n -> do
+  --   e<-genExpr e
+  --   return ()
 --
-  _ -> do
+  t -> do
+    -- | isIndexVar var && isIndexExpr e -> do
+    --   tell (tacGet )    
+    {- if isIndexVar var then 
+      tell (tacSet vTemp index eTemp)
+      else   -}
     eTemp <- genExpr e
-    vTemp <- genVar var (typeVar var)
     {- 
       if isField var then
-
       else
         base/fp[var.offset] := e
     -}
-    unless (isArrLst e) $ tell $ tacAssign vTemp eTemp
+    if isLit e then do
+      vTemp <- pushOffset (getWidth t) >>= newTemp >>= genVar var
+      -- pushLiteral eTemp vTemp
+      tell (tacAssign vTemp eTemp)
+    else
+      void (genVar var eTemp)
 
 
 -- 
@@ -107,25 +121,28 @@ genFor :: Id -> Expr -> Expr -> InstrSeq -> TACOP -> TACMonad ()
 genFor n e1 e2 is nextL = forComparison n e1 e2 nextL >>= forInstrs is nextL
 
 
-{-- TODO
-  controller var <- arrLst:
-  InstrSeq
-  .~
-
-  |
-  v
-
-  var = arrLst
-  controller dummy = 0 -> #var:
-    InstrSeq[var := var[dummy]]
-  .~
---}
 -- 
--- genForEach :: Id -> Expr -> InstrSeq -> TACMonad ()
--- genForEach n e is = return [] -- concatTAC var for
-  -- where
-  --   var = genCode (Assig (Var n (typeE e)) e TVoid)
-
+genForEach :: Id -> Expr -> InstrSeq -> TACOP -> TACMonad ()
+genForEach n e is nextL = do
+  let
+    t = baseTypeE e
+    w = getWidth t
+  begin <- newLabel
+  contn <- continue
+  var   <- pushOffset (getWidth t) >>= newTemp >>= genVar (Var n t)
+  expr  <- genExpr e
+  count <- pushOffset 4 >>= newTemp >>= genVar (Var ("$i_" ++ n) t)
+  tell (tacUn T.Deref count expr)
+  tell [tacNewLabel begin]
+  tell (tacBin T.Lte count (tacConstant ("0", TInt)) nextL)
+  iterVarShft <- genBinOp Add TInt expr (tacConstant (show w, TInt))
+  tell (tacUn T.Deref var iterVarShft)
+  mapM_ genCode is
+  tell [tacNewLabel contn]
+  countIncrmt <- genBinOp Minus TInt count (tacConstant ("1", TInt))
+  tell (tacAssign count countIncrmt)
+  tell (tacGoto begin)
+  tell [tacNewLabel nextL]
 
 -- 
 genForWhile :: Id -> Expr -> Expr -> Expr -> InstrSeq -> TACOP -> TACMonad ()
@@ -137,14 +154,14 @@ genForWhile n e1 e2 cond is nextL = do
 
 -- 
 genIF :: [(Expr, InstrSeq)] -> TACOP -> TACMonad ()
-genIF [] nextL               = tell (tacNewLabel nextL)
+genIF [] nextL               = tell [tacNewLabel nextL]
 genIF ((e, is):guards) nextL = do
   let isLast = null guards
   falseL <- if isLast then return nextL else newLabel
   genBoolExpr e fall falseL
   mapM_ genCode is
   unless isLast $ tell (tacGoto nextL)
-  unless isLast $ tell (tacNewLabel falseL)
+  unless isLast $ tell [tacNewLabel falseL]
   when isLast $ return ()
   genIF guards nextL
 
@@ -153,39 +170,35 @@ genIF ((e, is):guards) nextL = do
 genWhile :: Expr -> InstrSeq -> TACOP -> TACMonad ()
 genWhile e is nextL = do
   begin <- continue
-  tell (tacNewLabel begin)
+  tell [tacNewLabel begin]
   genBoolExpr e fall nextL
   mapM_ genCode is
   tell (tacGoto begin)
-  tell (tacNewLabel nextL)
+  tell [tacNewLabel nextL]
 
 
--- TODO: relacionado con arrays/lists
--- genPrint :: [Expr] -> TACMonad ()
--- genPrint es = return []
-  -- es'    <- foldl concatTAC (return []) $ map unWrapExprCode es
-  -- let
-  --   len   = length es - 1
-  --   t'  x = "$print[" ++ x ++ "]"
-  --   l'  x = es !! x 
-  --   lvi x = tacVariable $ SymbolInfo (t' x) TDummy 1 Constants ("print",-1) []
-  --   rvi x = tacConstant (show (l' x), TDummy)
-
-  -- return $ es' ++ [ T.TACC T.Assign (lvi (show x)) (rvi x) Nothing | x <- [0..len] ]
+-- syscall 4
+-- TODO: width del tipo string
+genPrint :: [Expr] -> TACMonad ()
+genPrint es = do
+  lv     <- pushOffset (getWidth (typeE (head es))) >>= newTemp
+  params <- mapM genExpr es
+  syscall 8 lv params
 
 
--- 
+-- Aqui se llama a free, Prologo
 genFree :: Id -> TACMonad ()
 genFree varId = do
-  Operands{vars = vs, astST = st} <- get
+  state@Operands{vars = vs, astST = st} <- get
   let -- Si se cambia por 'free Expr' no tendria que buscar en la symtab
     varT = symType . head . fromJust $ lookupInSymTab varId st
     var  = fromJust $ M.lookup (Var varId varT) vs
   tell [tacParam var]
   tell (tacCall Nothing "free" 1)
+  -- prólogo
+  put state{callF = True}
 
 
--------------------------------------------------------------------------------
 -- Hace prologo
 genProcCall :: Subroutine -> TACMonad ()
 genProcCall (Call s params) = do
@@ -194,17 +207,10 @@ genProcCall (Call s params) = do
   -- Prologo antes de pasar el poder al proc
   tell (tacCall Nothing s $ length params)
 
--- 
-genParams :: [Expr] -> TACMonad ()
-genParams params = do
-  operands <- mapM genExpr params
-  tell $ map tacParam operands
--------------------------------------------------------------------------------
-
 
 -- Hace epilogo
 genReturn :: TACOP -> TACMonad ()
-genReturn e = tell [T.TACC T.Return Nothing e Nothing]
+genReturn e = tell [T.ThreeAddressCode T.Return Nothing e Nothing]
 
 
 -- 
@@ -231,7 +237,10 @@ genBreak = do
 genExpr :: Expr -> TACMonad TACOP
 genExpr e = case e of
   Literal l t         -> genLiteral l t
-  Variable v t        -> genVar v t
+  Variable v t        -> do
+    vs <- vars <$> get
+    if M.member v vs then return $ fromJust $ M.lookup v vs -- Aumentar las veces que esta siendo usada (TACOP, Int <veces usada>)
+    else pushOffset (getWidth t) >>= newTemp >>= genVar v
   Unary u e t         -> genUnOp u e t
   Binary b e1 e2 t    -> do
     e1Temp <- genExpr e1
@@ -241,11 +250,10 @@ genExpr e = case e of
   ArrayList es t      ->
     let width = getWidth (baseTypeT t)
     in pushOffset width >>= newTemp >>= genArrayList es width 0
-  -- Null                -> genNull
-  -- Read e _            -> genRead e
+  Null                -> genNull
+  Read e _            -> genRead e
   FuncCall s _        -> genFuncCall s
   IdType t            -> genType t
-  _ -> return Nothing
 
 
 -- Array de bools, apuntador a bool
@@ -257,12 +265,12 @@ genBoolExpr e trueL falseL =
     Unary Not e _             -> genBoolExpr e falseL trueL
   -- Variables
   -- Comparators
-    Binary op e1 e2 _ | op `elem` [Greater,GreaterEq,Less,LessEq,Eq,NotEq] -> do
+    Binary op e1 e2 _ | op `elem` [Greater, GreaterEq, Less, LessEq, Eq, NotEq] -> do
       leftExpr  <- genExpr e1
       rightExpr <- genExpr e2
       genComparison leftExpr rightExpr trueL falseL op
   -- Conjunction and disjunction
-    Binary op e1 e2 _ | op `elem` [And,Or] -> do
+    Binary op e1 e2 _ | op `elem` [And, Or] -> do
       e1TrueL <- -- for `or` we need to generate a new `true` label if the current is `fall`
         if op == Or then if isFall trueL then newLabel else return trueL
         else return fall
@@ -273,9 +281,9 @@ genBoolExpr e trueL falseL =
       genBoolExpr e1 e1TrueL e1FalseL
       genBoolExpr e2 trueL falseL
       if op == And then
-        when (isFall falseL) $ tell (tacNewLabel e1FalseL)
+        when (isFall falseL) $ tell [tacNewLabel e1FalseL]
       else
-        when (isFall trueL) $ tell (tacNewLabel e1TrueL)
+        when (isFall trueL) $ tell [tacNewLabel e1TrueL]
   -- Functions
   -- Ternary operator
   -- 
@@ -289,47 +297,37 @@ genComparison leftExpr rightExpr trueL falseL op = do
       falseNotFall = not $ isFall falseL
     
     if trueNotFall && falseNotFall then
-      tell (tac (binOpToTACOP op) leftExpr rightExpr trueL) >> tell (tacGoto falseL)
+      tell (tacBin (binOpToTACOP op) leftExpr rightExpr trueL) >> tell (tacGoto falseL)
     else
-      if trueNotFall then tell (tac (binOpToTACOP op) leftExpr rightExpr trueL)
+      if trueNotFall then tell (tacBin (binOpToTACOP op) leftExpr rightExpr trueL)
       else
         when falseNotFall $
-          tell (tac (negation $ binOpToTACOP op) leftExpr rightExpr falseL)
+          tell (tacBin (negation $ binOpToTACOP op) leftExpr rightExpr falseL)
 
 
 -- 
--- genNull :: TACMonad TACOP
--- genNull = do
-  -- Operands{offS = actO:_} <- get
-  -- let pointer = tacVariable $ SymbolInfo "$null" TNull (-1) Constants actO []
-  -- return ([T.TACC T.Assign pointer Nothing Nothing], pointer)
+genNull :: TACMonad TACOP
+genNull = return $ tacVariable $ Temp "_null" (-1)
 
 
 -- | Generates the TAC code for literals
 {- TODO:
   EmptyVal -> Usado cuando no se coloca msj en el read
+  ArrLst -> caso que llega hasta aqui?
   Register
   Union
-  ArrLst -> Realmente se llega hasta aqui?
-  String
 -}
 genLiteral :: Literal -> Type -> TACMonad TACOP
-genLiteral l typeL = do
-  -- actO <- pushOffset (getWidth typeL)
-  -- lv   <- newTemp actO
-  -- pushLiteral l lv
-  -- let
-  
-  case l of
+genLiteral l typeL =
+  -- case l of
     {-
       ArrLst elems -> -- No llega aqui
         liftIO (print ("Llegue a literal ArrLst: " ++ show elems)) >> return (tacLabel "lit arrLst")
-      Str s -> do
     -}
-    -- EmptyVal -> return ([T.TACC T.Assign lv rv Nothing], lv)
-    -- (Register es) -> return ([T.TACC T.Assign lv rv Nothing], lv)
-    _ ->
-      return $ tacConstant (show l, typeL)
+    -- EmptyVal -> 
+    -- Register es -> -- actualizar el valor de cada campo
+    -- _ ->
+  return $ tacConstant (show l, typeL)
 
 
 -- 
@@ -337,29 +335,26 @@ genLiteral l typeL = do
   casos bloques anidados que acceden a los ids
   Param Id Type Ref
   Field Var Id Type
-  Index
-  Desref
+  Index  Var Expr Type
 -}
-genVar :: Var -> Type -> TACMonad TACOP
-genVar var tVar = do
-  -- actO <- pushOffset (getWidth tVar)
-  -- lv   <- newTemp actO
-  tacVar  <- pushVariable var tVar
-  
-  -- let
-    -- refVS = M.insert (getRefVar var) lv vs -- var o *var?
-    -- deref = ([T.TACC T.Deref lv rv Nothing], lv)
-  
+genVar :: Var -> TACOP -> TACMonad TACOP
+genVar var temp =
   case var of
-    Param n t ref -> error "Un parametro no deberia poder estar en una asignacion"
-    Desref _ t    -> return() -- tell (deref lv rv) >> return lv
-    Index _ e _   -> return()
-    Field v f t   -> return()
-    _     -> return tacVar
+    Param _ _ Reference -> do -- No llega
+      liftIO (print ("Llegue a genVar param por ref: " ++ show var))
+      tacVar <- pushVariable var temp
+      tell (tacUn T.Deref temp tacVar) >> return temp
+    Desref _ t -> do
+      tacVar <- pushVariable (getRefVar var) temp
+      tell (tacUn T.Deref temp tacVar) >> return temp
+    -- Field v f t -> return()
+    -- Index v e t -> do
+    --   index   <- genExpr e
+    --   arrTemp <- 
+    _     -> pushVariable var temp
 
 
--- 
--- New IdType
+-- Prolog con New
 genUnOp :: UnOp -> Expr -> Type -> TACMonad TACOP
 genUnOp op e tOp = do
   rv   <- genExpr e
@@ -367,9 +362,15 @@ genUnOp op e tOp = do
   lv   <- newTemp actO
   
   case op of
-    Length   -> tell (tacLen lv rv)   >> return lv
-    Negative -> tell (tacMinus lv rv) >> return lv
-    New      -> tell (tacNew lv rv)   >> return lv -- relacionado con IdType
+    Length   -> tell (tacUn T.Length lv rv) >> return lv
+    Negative -> tell (tacUn T.Minus lv rv)  >> return lv
+    New      -> do
+      tell [tacParam rv]
+      tell (tacCall lv "malloc" 1)
+      -- prólogo
+      state <- get
+      put state{callM = True}
+      return lv
     charOp   -> do
       l0 <- newLabel
       l1 <- newLabel
@@ -378,39 +379,40 @@ genUnOp op e tOp = do
         c0    = tacConstant ("0", TInt)
         c25   = tacConstant ("25", TInt)
         c32   = tacConstant ("32", TInt)
-        check = tacGte lv c0 l0 ++ tacGoto l2 ++ tacNewLabel l0 ++ tacSub lv rv c25
-        goNew = tacGoto l2 ++ tacNewLabel l1
+        check = tacBin T.Gte lv c0 l0 ++ tacGoto l2 ++ tacNewLabel l0 : tacBin T.Sub lv rv c25
+        goNew = tacGoto l2 ++ [tacNewLabel l1]
 
       if charOp == UpperCase then do
-        tell (tacSub lv rv $ tacConstant ("97", TInt))
+        tell (tacBin T.Sub lv rv $ tacConstant ("97", TInt))
         tell check
-        tell (tacGte lv c0 l0)
+        tell (tacBin T.Gte lv c0 l0)
         tell goNew
-        tell (tacSub lv rv c32)
-        tell (tacNewLabel l2)
+        tell (tacBin T.Sub lv rv c32)
+        tell [tacNewLabel l2]
         return lv
       else do
-        tell (tacSub lv rv $ tacConstant ("65", TInt))
+        tell (tacBin T.Sub lv rv $ tacConstant ("65", TInt))
         tell check
-        tell (tacLte lv c0 l0)
+        tell (tacBin T.Lte lv c0 l0)
         tell goNew
-        tell (tacAdd lv rv c32)
-        tell (tacNewLabel l2)
+        tell (tacBin T.Add lv rv c32)
+        tell [tacNewLabel l2]
         return lv
 
 
--- 
+-- TODO: Listas
 genBinOp :: BinOp -> Type -> TACOP -> TACOP -> TACMonad TACOP
 genBinOp op tOp rv1 rv2 = do
   actO <- pushOffset (getWidth tOp)
   lv   <- newTemp actO
   
-  case op of
+  -- case op of
   -- Aritmethics
-    op -> tell (tac (binOpToTACOP op) lv rv1 rv2)  >> return lv
+  --  op ->
+  tell (tacBin (binOpToTACOP op) lv rv1 rv2)  >> return lv
   -- Lists
-    -- Anexo  -> return (e1Code ++ e2Code ++ [T.TACC T.Anexo lvt e1Temp e2Temp], lvt)
-    -- Concat -> return (e1Code ++ e2Code ++ [T.TACC T.Concat lvt e1Temp e2Temp], lvt)
+    -- Anexo  -> return (e1Code ++ e2Code ++ [T.ThreeAddressCode T.Anexo lvt e1Temp e2Temp], lvt)
+    -- Concat -> return (e1Code ++ e2Code ++ [T.ThreeAddressCode T.Concat lvt e1Temp e2Temp], lvt)
 
 
 -- 
@@ -424,33 +426,33 @@ genTerOp eB eT eF tOp = do
   eTTemp <- genExpr eT
   tell (tacAssign lv eTTemp)
   tell (tacGoto next)
-  tell (tacNewLabel falseL)
+  tell [tacNewLabel falseL]
   eFTemp <- genExpr eF
   tell (tacAssign lv eFTemp)
-  tell (tacNewLabel next)
+  tell [tacNewLabel next]
   return lv
 
 
 -- 
 genArrayList :: [Expr] -> Int -> Int -> TACOP -> TACMonad TACOP
-genArrayList [] _ _ _                         = return Nothing
+genArrayList [] _ index arrTemp               =
+  let len = tacConstant (show index, TInt)
+  in tell (tacSet arrTemp (tacConstant ("0", TInt)) len) >> return arrTemp
 genArrayList (elem:elems) width index arrTemp = do
   elemTemp <- genExpr elem
-  tell (tacSet arrTemp (tacConstant (show index,TInt)) elemTemp)
+  tell (tacSet arrTemp (tacConstant (show (index + 1), TInt)) elemTemp)
   actO     <- pushOffset width
   genArrayList elems width (index + 1) (modifyOffSet arrTemp actO)
 
 
--- 
--- genRead :: Expr -> MTACExpr
--- genRead e = do
-  -- msg <- genCode (Print [e] TVoid)
-  -- state@Operands{offS = actO:_} <- get
-  -- let
-  --   lv = tacVariable $ SymbolInfo "$read" TStr (-1) TempRead actO []
-  --   rv = tacConstant ("'R'", TChar)
-  
-  -- return (msg ++ [T.TACC T.Assign lv rv Nothing], lv)
+-- syscall 8
+-- TODO: width del tipo string
+genRead :: Expr -> TACMonad TACOP
+genRead e = do
+  lv    <- pushOffset (getWidth (typeE e)) >>= newTemp
+  param <- genExpr e
+  syscall 8 lv [param]
+  return lv
 
 
 -- Hace prologo
@@ -459,26 +461,15 @@ genFuncCall (Call f params) = do
   pushSubroutine f False
   genParams (map fst params)
   Operands{base = actO} <- get
-  lv <- newTemp actO
+  lv <- newTemp actO -- Deberia ser el offset del tipo de retorno de la funcion, como lo obtengo?
   -- Prologo antes de pasar el poder al proc
   tell (tacCall lv f $ length params)
   return lv
 
 
--- Cuando se hace new de un tipo, para apuntadores. Reservar espacio para ese tipo
--- devolver temporal que es un apuntador a ese tipo?
+-- Retorna el tamaño a ser reservado en memoria
 genType :: Type -> TACMonad TACOP
-genType t = return Nothing
-  -- state@Operands{temps = ts, offS = os@(actO:_), astST = st} <- get
-  -- let
-    -- tInfo = head . fromJust $ lookupInSymTab (show t) st
-    -- temp  = "$t" ++ show (M.size ts)
-    -- newO  = (fst actO, snd actO + getWidth tInfo t)
-    -- lv    = tacVariable $ SymbolInfo temp t (-1) TempReg actO []
-    -- rv    = tacConstant (show t, t)
-  
-  -- put state{temps = M.insert temp True ts, offS = newO:os}
-  -- return ([], rv)
+genType t = return (tacConstant (show (getWidth t),TInt))
 
 
 -------------------------------------------------------------------------------
@@ -486,65 +477,8 @@ genType t = return Nothing
 --- Auxiliares que deben ir en este archivo
 
 
-newTemp :: OffSet -> TACMonad TACOP
-newTemp actO = do
-  state@Operands{temps = ts} <- get
-  let t = Temp (show $ M.size ts - 3) actO
-  put state{temps = M.insert t True ts}
-  return $ tacVariable t
-
-
--- Tal vez colocar labs como [String]
-newLabel :: TACMonad TACOP
-newLabel = do
-  state@Operands{labs = ls} <- get
-  let newL = length ls
-  put state{labs = newL:ls}
-  return $ tacLabel $ show newL
-
-
-pushOffset :: Int -> TACMonad OffSet
-pushOffset width = do
-  state@Operands{base = actO} <- get
-  let newO = actO + width
-  put state{base = newO}
-  return actO
-
-resetOffset :: TACMonad ()
-resetOffset = do
-  state <- get
-  put state{base = 0}
-
-
-pushLiteral :: Literal -> TACOP -> TACMonad ()
-pushLiteral l operand = do
-  state@Operands{lits = ls} <- get
-  put state{lits = M.insert l operand ls}
-
-
--- NOTA: si se guarda en un temporal no se accede a memoria. 
-pushVariable :: Var -> Type -> TACMonad TACOP
-pushVariable var tVar = do
-  Operands{vars = vs} <- get
-  if M.member var vs then return $ fromJust $ M.lookup var vs -- Aumentar las veces que esta siendo usada (TACOP, Int <veces usada>)
-  else do
-    actO <- pushOffset (getWidth tVar)
-    temp <- newTemp actO
-    state@Operands{vars = vs, astST = st} <- get
-    put state{vars = M.insert var temp vs}
-    let info = head . fromJust $ lookupInSymTab (getName var) st
-    -- return $ tacVariable $ TACVar info actO
-    return temp
-
-
-pushSubroutine :: Id -> Bool -> TACMonad ()
-pushSubroutine s isProc = do
-  state@Operands{subs = subroutines, astST = st} <- get
-  let ast = getAST . extraInfo . head . fromJust $ lookupInSymTab s st
-  put state{subs = (s,ast,isProc):subroutines}
-
-
-forComparison :: Id -> Expr -> Expr -> TACOP -> TACMonad (TACOP,TACOP,TACOP)
+-------------------------------------------------------------------------------
+forComparison :: Id -> Expr -> Expr -> TACOP -> TACMonad (TACOP, TACOP, TACOP)
 forComparison n e1 e2 nextL = do
   begin   <- newLabel
   cont    <- continue
@@ -552,36 +486,28 @@ forComparison n e1 e2 nextL = do
   e1Temp  <- genExpr e1
   tell (tacAssign iterVar e1Temp)
   e2Temp  <- genExpr e2
-  tell (tacNewLabel begin)
+  tell [tacNewLabel begin]
   genComparison iterVar e2Temp fall nextL LessEq
-  return (begin,cont,iterVar)
+  return (begin, cont, iterVar)
+-------------------------------------------------------------------------------
 
 
-forInstrs :: InstrSeq -> TACOP -> (TACOP,TACOP,TACOP) -> TACMonad ()
-forInstrs is nextL (begin,cont,iterVar) = do
+-------------------------------------------------------------------------------
+forInstrs :: InstrSeq -> TACOP -> (TACOP, TACOP, TACOP) -> TACMonad ()
+forInstrs is nextL (begin, cont, iterVar) = do
   mapM_ genCode is
-  tell (tacNewLabel cont)
-  iterVarIncr <- genBinOp Add TInt iterVar (tacConstant ("1",TInt))
+  tell [tacNewLabel cont]
+  iterVarIncr <- genBinOp Add TInt iterVar (tacConstant ("1", TInt))
   tell (tacAssign iterVar iterVarIncr)
   tell (tacGoto begin)
-  tell (tacNewLabel nextL)
-
-
--------------------------------------------------------------------------------
-continue :: TACMonad TACOP
-continue = do
-  cont  <- newLabel
-  state <- get
-  put state{contL = cont}
-  return cont
+  tell [tacNewLabel nextL]
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
-breakI :: TACMonad TACOP
-breakI = do
-  brk   <- newLabel
-  state <- get
-  put state{brkL = brk}
-  return brk
+-- 
+genParams :: [Expr] -> TACMonad ()
+genParams params = do
+  operands <- mapM genExpr params
+  tell $ map tacParam operands
 -------------------------------------------------------------------------------

@@ -8,10 +8,18 @@
 module Playit.BackEnd.Types where
 
 import Control.Monad.Trans.RWS
+import Control.Monad.Trans.State
 import Playit.FrontEnd.Types
-import qualified Data.Map               as M
-import qualified Playit.BackEnd.TACType as TACT
+import qualified Data.Map       as M
+import qualified Data.Graph     as G
+import qualified Data.Set       as S
+import qualified TACType        as TACT
 
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+--                               TAC creation
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 
 type TempReg = String
@@ -22,7 +30,7 @@ type TACOP   = Maybe (TACT.Operand TACInfo Type)
 data TACInfo = Temp Id OffSet | TACVar SymbolInfo OffSet  deriving (Eq, Ord)
 
 instance TACT.SymEntryCompatible TACInfo where
-  getSymID (Temp n o)      = "[" ++ show o ++ "]->($t" ++ n ++ ")"
+  getSymID (Temp n o)      = "[" ++ show o ++ "]->(" ++ n ++ ")"
   getSymID (TACVar info o) = "[" ++ show o ++ "]->(" ++ symId info ++ ")"
 
 instance Show TACInfo where
@@ -36,23 +44,62 @@ instance Show TACInfo where
 data Operands = Operands {
   vars  :: M.Map Var TACOP,
   temps :: M.Map TACInfo Bool,
-  lits  :: M.Map Literal TACOP,
-  labs  :: [Int],
-  brkL  :: TACOP,
-  contL :: TACOP,
+  lits  :: M.Map TACOP TACOP,
+  labs  :: [Int],   -- Labels
+  brkL  :: TACOP,   -- brake label
+  contL :: TACOP,   -- continue label
   base  :: OffSet,
   -- fp    :: OffSet,
-  subs  :: [(Id,InstrSeq,Bool)],
+  callF :: Bool, -- Dice si generar TAC para free
+  callM :: Bool, -- Dice si generar TAC para malloc
+  subs  :: [(Id, InstrSeq, Bool)], -- subrutinas a generar su codigo
   astST :: SymTab
 } deriving (Eq, Ord)
 
 instance Show Operands where
-  show (Operands vs ts ls lbs brk con b s st) = 
+  show (Operands vs ts ls lbs brk con b _ _ s st) = 
     "\n vars: " ++ show vs ++ "\n temps: " ++ show ts ++
-    "\n lits: " ++ show ls ++ "\n labels: " ++ show lbs ++
-    "\n break: " ++ show brk ++ "\n continue: " ++ show con ++
-    "\n base: " ++ show b ++ "\nsubroutines: " ++ show s {- ++ show st -} ++ "\n"
+    "\n lits: " ++ show ls ++ "\n labels: " ++ show lbs {- ++ -}
+    -- "\n break: " ++ show brk ++ "\n continue: " ++ show con ++
+    -- "\n base: " ++ show b ++ "\nsubroutines: " ++ show s {- ++ show st -} ++ "\n"
 
 -- Monad para manejar los operandos, writer tiene la lista de las instrucciones
 -- de tres direcciones, reader tiene el AST que sale del parser
 type TACMonad a = RWST Instr [TAC] Operands IO a
+
+
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+--                           Register Allocation
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+
+type FGNode         = [TAC]
+type FGKey          = TAC
+type NodeFromVertex = G.Vertex -> (FGNode, FGKey, [FGKey])
+type VertexFromKey  = FGKey -> Maybe G.Vertex
+type FlowGraph      = (G.Graph, NodeFromVertex, VertexFromKey)
+type InterfGraph    = (G.Graph, G.Vertex -> IGraphEdge, TACInfo -> Maybe G.Vertex)
+type IGraphEdge     = (TACInfo,TACInfo,[TACInfo])
+type Reg = Int
+
+-- 
+data RegAlloc = RegAlloc {
+  blocks    :: [(FGNode, FGKey, [FGKey])], -- Basic blocks
+  bLiveVars :: M.Map FGKey (S.Set TACInfo), -- Variables vivas por bloque
+  lvChanged :: Bool -- Indica si algun conjunto de variables vivas cambio
+  -- varInReg  :: M.Map Var Reg, -- Mantiene que variables tienen aisgnado que registro
+  -- interfG   :: InterfGraph -- Grafo de interferencia
+  -- spills    :: S.Set Var, -- Conjunto de variables que son spill
+  -- , -- 
+  -- , -- 
+  -- tac'      :: [TAC] -- TAC modificado si se genera un spill
+} deriving (Eq, Ord, Show)
+
+-- instance Show RegAlloc where
+--   show (RegAlloc b bLV _) =
+--     "\n blocks: " ++ show b ++ "\n\n blocks liveVars: " ++ show bLV ++ "\n"
+
+
+-- 
+type RegAllocMonad a = StateT RegAlloc IO a

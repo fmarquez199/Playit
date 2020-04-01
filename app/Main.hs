@@ -8,17 +8,26 @@
 -}
 module Main where
 
-import Control.Monad.Trans.RWS     (runRWST)
 import Control.Monad               (mapM_)
+import Control.Monad.Trans.RWS     (runRWST)
+import Control.Monad.Trans.State   (execStateT)
 import Data.Strings                (strEndsWith)
+import Playit.BackEnd.RegAlloc.FlowGraph
+import Playit.BackEnd.RegAlloc.GraphColoring
+import Playit.BackEnd.RegAlloc.InterferenceGraph
+import Playit.BackEnd.RegAlloc.LiveVariables
+import Playit.BackEnd.TAC
+import Playit.BackEnd.Types        (Operands(vars),RegAlloc(bLiveVars))
+import Playit.FrontEnd.Errors      (lexerErrors,showLexerErrors)
+import Playit.FrontEnd.Lexer       (alexScanTokens)
+import Playit.FrontEnd.Parser      (parse)
+import Playit.FrontEnd.SymbolTable (stInitState)
+import Playit.FrontEnd.Types       (SymTabState(..))
 import System.Environment          (getArgs)
 import System.IO                   (readFile)
-import Playit.FrontEnd.SymbolTable (stInitState)
-import Playit.FrontEnd.Errors      (lexerErrors,showLexerErrors)
-import Playit.FrontEnd.Parser      (parse)
-import Playit.FrontEnd.Lexer       (alexScanTokens)
-import Playit.FrontEnd.Types       (SymTabState(..))
-import Playit.BackEnd.TAC
+import Data.Graph                  (vertices)
+import Data.Map                    (toList)
+import Data.Set                    (fromList)
 
 
 -- | Determines if an file is empty
@@ -57,13 +66,27 @@ main = do
           (ast,state@SymTabState{symTab = st},errs) <- runRWST parseCode fileCode stInitState
           
           if null errs then do
+            (_,state,tac) <- runRWST (gen ast) ast (tacInitState (symTab state))
+            print state
             print ast -- >> print st >> printPromises (proms state)
             -- putStrLn $ "\nActive scopes: " ++ show (actS state)
             -- putStrLn $ "\nActual scope:" ++ show (stScope state)
             -- putStrLn $ "\nOffSets: " ++ show (offSets state)
             -- putStrLn $ "\nActual offset: " ++ show (actOffS state)
-            (_,state,tac) <- runRWST (gen ast) ast (tacInitState (symTab state))
-            print state
             mapM_ print tac
+            let (fg@(graph, getNodeFromVertex, getVertexFromKey), leaders) = genFlowGraph tac
+                nodes = map getNodeFromVertex (vertices graph)
+            putStrLn $ "\nFlow Graph: " ++ show graph
+            putStrLn $ "\nNodes: " ++ printFGNodes nodes
+            -- print leaders
+            regAlloc <- execStateT (getLiveVars fg) (initRegAlloc nodes)
+            let
+              liveVars = fromList $ map snd $ toList $ bLiveVars regAlloc
+              (ig, nodeFromVertex, vertexFromKey) = genInterferenceGraph liveVars
+              igNodes = map nodeFromVertex (vertices ig)
+            putStrLn $ "\nLive Vars: " ++ printLiveVars (toList (bLiveVars regAlloc))
+            putStrLn $ "\nInference Graph: " ++ printIGNodes igNodes
+            putStrLn $ "\nDSatur coloring: " ++ show (colorDsatur ig)
           else
             mapM_ putStrLn errs
+

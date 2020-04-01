@@ -1,10 +1,51 @@
-monster factorial(Power n) Power:
+monster recursivo(Power n) Power:
   Button:
-    | n < 0 } unlock 0
+    | n < 0 } unlock n
     | n == 0 } unlock 1
-    | n > 0 } unlock n * kill factorial(n-1)
+    | n > 0 } unlock n * kill recursivo(n - 1)
   .~    
 .~
+
+monster iterativo(Power n) Power:
+  Power factorial = 1
+  Button:
+    | n == 0 || n == 1 } unlock 1
+    | n < 0 } unlock n
+  .~ 
+  controller Power i = 2 -> n + 1: @ Verificar offset de i aqui
+    factorial = factorial * i
+  .~
+  unlock factorial
+.~
+
 world %Factorial%:
-    Power f = kill factorial(10)
+  Power f
+  play:
+    Runes act = joystick ~Dime lo que deseas hacer: calcular factorial (f) o salir (x): ~
+    Button:
+      | act == ~x~ } gameOver
+    .~
+    Power num = joystick ~Por favor dime un entero mayor o igual que 0: ~
+    Button:
+      | num < 0 }
+        drop ~El numero es negativo, empieza de nuevo.~
+        keepPlaying
+    .~
+    Runes mod = joystick ~Por favor dime un modo de calcular: iterativo (i) o recursivo (r): ~
+    Button:
+      | mod == ~i~ }
+        Power f = kill iterativo(num)
+        drop ~El factorial de ~, num, ~ es ~, f
+      | mod == ~r~ }
+        Power f = kill recursivo(num)
+        drop ~El factorial de ~, num, ~ es ~, f
+      | notPressed }
+        drop ~No escogiste un modo permitido para calcular, empieza otra vez.~
+        keepPlaying
+    .~
+    @ Si la f se declara dentro del Button anterior deberia ser visibe aqui?
+    @ drop ~El factorial del numero indicado es ~, kill portalPowerToRunes(f)
+  lock Win
+  .~
+  drop ~Bye, bye~
 .~

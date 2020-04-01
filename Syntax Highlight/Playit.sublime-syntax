@@ -1,0 +1,307 @@
+%YAML 1.2
+# https://forum.sublimetext.com/t/create-my-own-syntax-theme/41211/4
+# https://www.sublimetext.com/docs/3/scope_naming.html
+# https://www.sublimetext.com/docs/3/syntax.html
+---
+name: Playit
+file_extensions: 
+  - game
+scope: source.playit
+
+variables:
+  identifier_continue: '[[:alnum:]_]'
+  identifier: '\b[[:alpha:]_]{{identifier_continue}}*\b'
+  digits: (?:\d+(?:_\d+)*)
+  # text  :
+  string: "\\b~{{text}}~\\b"
+  # basic_types: 'Power|Skill|Rune|Runes'
+
+# $digits    = [0-9]
+# $abc_minus = [a-z]
+# $abc_mayus = [A-Z]
+# $abc       = [a-zA-Z]
+# $symbols   = [\! \" \# \$ \% \& \' \( \) \* \+ \, \- \. \/ \: \; \< \= \> \? \@
+#           \[ \\ \] \^ \_ \` \{ \| \} \~ '\0' '\t' '\n' '\\' '\'' '\"' '\~' '\*']
+# $valids    = [$digits $abc $symbols  $white]
+# $char_text = [$valids # [\* \~ \\]]
+# $char_id   = [$digits $abc \_ \']
+
+# @scape    = "\\" | "\0" | "\n" | "\t" | "\~" | "\*"
+# @chars    = $char_text | @scape
+# @text     = @chars*
+# @char     = "*" @chars "*"
+# @strings  = \~ @text \~
+# @id_type  = $abc_mayus $char_id*
+# @id       = $abc_minus $char_id*
+# @programs = \% $char_id+ \%
+# @comments = \"\' ( . # [\'\"] | \n)* \'\"
+# @comment  = \@ [. # \n]*
+
+
+contexts:
+# Esto es una pila, matchea primero lo que esta de primero. Osea el orden importa
+  main:
+    - include: comments
+    - include: constants
+    - include: line_statements
+    - include: expressions-common
+    - include: block_statements
+    - include: methods
+    # - include: 
+    # - include: 
+    # - include: 
+    # - include: 
+    # - include: 
+    # - include: 
+    # - include: 
+
+    - match: \b(world)\b
+      scope: keyword.main.program.playit
+
+    # - match: "\\b[A-Z][a-z]*\\b"
+    #   scope: variable.other.generic-type.playit
+
+    # Hacer que tome "Power|}2{|" y "Kit of" como un tipo
+    - match: "\\b([A-Z][a-zA-Z0-9_\']*|Kit of)\\b"
+      scope: storage.type.playit
+    
+    # - match: ","
+    #   scope: punctuation.separator.comma.playit
+
+  comments:
+    # Comentario de una linea
+    - match: "@"
+      scope: punctuation.definition.comment.playit
+      push:
+        - meta_scope: comment.line.at-sign.playit
+        - match: $\n?
+          pop: true
+
+    - include: block_comment
+  
+  block_comment:
+    - match: "\"'(?!#)"
+      scope: punctuation.definition.comment.begin.playit
+      push:
+        - meta_scope: comment.block.playit
+        
+        - match: "\"'#"
+          push:
+            - match: "'\""
+              pop: true
+            - include: block_comment
+
+        - include: block_comment
+        
+        - match: "'\""
+          scope: punctuation.definition.comment.end.playit
+          pop: true
+
+  strings:
+    # Falta que no tome el .~
+    - match: '~'
+      scope: punctuation.definition.string.begin.playit
+      push:
+        - meta_scope: string.quoted.double.playit
+        - match: '\\.'
+          scope: constant.character.escape.playit
+        - match: $|~
+          scope: punctuation.definition.string.end.playit
+          pop: true
+
+  # characters:
+  #   - match: '\*'
+  #     scope: punctuation.definition.character.begin.playit
+  #     push:
+  #       - meta_scope: character.quoted.single.playit
+  #       - match: '\\.'
+  #         scope: constant.character.escape.playit
+  #       - match: $|\*
+  #         scope: punctuation.definition.character.end.playit
+  #         pop: true
+
+  constants:
+    - match: \b(DeathZone|Win|Lose)\b
+      scope: constant.language.playit
+
+    - match: "\\b(-)?[0-9]+(')?[0-9]*\\b"
+      scope: constant.numeric.playit
+
+  assignments:
+    # - include: illegal-assignment-expression
+
+    # - match: ':'
+    #   scope: punctuation.separator.annotation.variable.playit
+    
+    # Asignacion
+    - match: '=(?!=)'
+      scope: keyword.operator.assignment.playit
+
+  line_statements:
+    - include: assignments
+
+    # Print
+    - match: \b(drop)\b(?! *([,.()\]}]))
+      scope: keyword.other.print.playit
+    
+    - match: \b(unlock)\b
+      scope: keyword.control.flow.return.playit
+
+    - match: \b(gameOver)\b
+      scope: keyword.control.flow.break.playit
+
+    - match: \b(keepPlaying)\b
+      scope: keyword.control.flow.continue.playit
+
+    - match: \b(kill)\b
+      scope: keyword.procedure.call.playit
+
+  block_statements:
+    - match: \b(Button|notPressed|controller|play|lock)\b
+      scope: keyword.control.flow.playit
+
+    # For var = 0 -> 10: ... .~
+    # - match: \b(async +)?(controller)\b
+      # captures:
+      #   1: storage.modifier.async.playit
+      #   2: keyword.control.loop.for.playit
+      # push:
+      #   - meta_scope: meta.statement.loop.for.playit
+        
+        # - include: line-continuation-or-pop
+        
+        # - match: \b\=\b
+        #   scope: keyword.control.loop.for.from.playit
+        #   set:
+        #     - meta_content_scope: meta.statement.loop.for.playit
+            
+            # - include: line-continuation-or-pop
+            
+            # - match: ':(?!=)'
+            #   scope: meta.statement.loop.for.playit punctuation.section.block.loop.for.playit
+            #   pop: true
+        
+            # - include: expression-in-a-statement
+        
+        # - match: ':(?!=)'
+        #   scope: invalid.illegal.missing-from.playit
+        #   pop: true
+        
+        # - include: target-list
+    
+    # While
+    # - match: \bplay\b
+      # scope: keyword.control.loop.while.playit
+      # push:
+        
+        # - meta_scope: meta.statement.loop.while.playit
+        # - include: line-continuation-or-pop
+        
+        # - match: ':(?!=)'
+        #   scope: punctuation.section.block.loop.while.playit
+        #   pop: true
+        
+        # - include: expression-in-a-statement
+        # lock expr \n .~
+    
+  methods:
+    - match: \b(boss|monster)\b
+      scope: keyword.declaration.subroutine.playit
+      # scope: storage.type.function.playit
+
+  expressions-common:
+    - include: comments
+    - include: constants
+    # - include: numbers
+    - include: strings
+    # - include: characters
+    - include: lists
+    - include: arrays
+    - include: operators
+
+    # Read
+    - match: \b(joystick)\b # (?! *([,.()\]}]))
+      scope: keyword.other.print.playit
+
+    - match: \b(kill)\b
+      scope: keyword.function.call.playit
+
+
+  operators:
+    - include: lists_indexation
+
+    - match: <\=|>\=|\=\=|<|>|\!\=
+      scope: keyword.operator.comparison.playit
+
+    - match: \+|\-|\*|/|//|%|\+\+|\-\-|#
+      scope: keyword.operator.arithmetic.playit
+
+    - match: \&\&|\!|\|\|
+      comment: keyword operators that evaluate to True or False
+      scope: keyword.operator.logical.playit
+
+    - match: \b(\?|puff|summon)\b
+      scope: keyword.operator.pointer.playit
+
+    # Algo pasa porque todavia no se toma bien que muestre un caracter
+    # - match: \b(\^)\b
+    #   scope: keyword.operator.uppercase.playit
+
+    # - match: \b(\.)\b
+    #   scope: keyword.operator.lowercase.playit
+
+  lists:
+    - match: '<<'
+      scope: constant.language.list.begin.playit
+      push:
+        - meta_scope: constant.language.list.playit
+        
+        - match: '>>#'
+          push:
+            - match: '>>#'
+              pop: true
+            - include: lists
+            - include: arrays
+
+        - include: lists
+        - include: arrays
+        
+        - match: '>>'
+          scope: constant.language.list.end.playit
+          pop: true
+
+  lists_indexation:
+    - match: '\|\>'
+      scope: constant.language.list.indexation.begin.playit
+      push:
+        - meta_scope: constant.language.list.indexation.playit
+        - match: '\<\|'
+          scope: constant.language.list.indexation.end.playit
+          pop: true
+
+  arrays:
+    - match: '\|\)'
+      scope: constant.language.array.begin.playit
+      push:
+        - meta_scope: constant.language.array.playit
+        
+        - match: '\(\|#'
+          push:
+            - match: ","
+              scope: punctuation.separator.comma.playit
+
+            - match: '\(\|#'
+              pop: true
+            - include: lists
+            - include: arrays
+
+        - include: lists
+        - include: arrays
+        
+        - match: ","
+          scope: punctuation.separator.comma.playit
+
+        - match: '\(\|'
+          scope: constant.language.array.end.playit
+          pop: true
+

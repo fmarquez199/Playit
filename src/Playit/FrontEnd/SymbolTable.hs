@@ -151,17 +151,20 @@ initialize [] _               = []
 initialize ((n, assig):ids) t =
   if emptyAssig assig then
     case t of
-      TInt        -> assign (defaultBaseVal t) : initialize ids t
-      TFloat      -> assign (defaultBaseVal t) : initialize ids t
+      TArray e t' -> assign (ArrayList (lits e t') t) : initialize ids t
+      TPointer _  -> assign Null : initialize ids t
       TBool       -> assign (defaultBaseVal t) : initialize ids t
       TChar       -> assign (defaultBaseVal t) : initialize ids t
-      TArray e t' -> assign (ArrayList (lits e t') t) : initialize ids t
+      TFloat      -> assign (defaultBaseVal t) : initialize ids t
+      TInt        -> assign (defaultBaseVal t) : initialize ids t
+      -- TNew t'     -> 
+      -- TList t'    -> 
       tipo -> error $ "No se como inicializar esto todavia: " ++ show tipo
   else
     assig : initialize ids t
 
   where
-    assign expr      = Assig (Var n t) expr TVoid
+    assign expr     = Assig (Var n t) expr TVoid
     lits eSize tArr = replicate (getSize eSize) $ defaultBaseVal tArr
 
 
@@ -178,6 +181,7 @@ emptyAssig _                                = False
 
 getSize :: Expr -> Int
 getSize (Literal (Integer n) _) = n
+-- getSize (Variable var _)        = -- Buscar el valor de var, 0.o
 getSize e = error $ "Expresion para tamaño de arreglo incorrecta: " ++ show e
 -------------------------------------------------------------------------------
 

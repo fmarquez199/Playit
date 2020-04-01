@@ -1,0 +1,67 @@
+monster sq(Skill f) Skill:
+  unlock f * f
+.~
+
+monster abs(Skill f) Skill:
+  Button:
+    | f > 0'0 } unlock f
+  .~
+  unlock -f
+.~
+
+"'
+def heron(n, error):
+    prev, new = 1.0, 0.5 * (1 + n)
+    while abs(new - prev) > error:
+        prev, new = new, 0.5 * (new + n/new)
+    return new
+
+Taken from: https://stackoverflow.com/questions/16619201/heron-method-in-python
+'"
+monster sqrt(Skill f) Skill:
+  Skill prev = 1'0, new = 0'5 * (1'0 + f)
+  controller Power i = 0 -> 1000 lock kill abs(new - prev) <= 0'000001:
+    prev = new
+    new = 0'5 * (new + f / new)
+  .~
+  unlock new
+.~
+
+world %Estadistica%:
+  play:
+    Runes act = joystick ~Hacemos estadistica (e) o salimos (x): ~
+    Button:
+      | act == ~x~ } gameOver
+    .~
+    Power n = joystick ~Dime la cantidad de muestras: ~
+    Button:
+      | n < 1 }
+        drop ~No tienes muestras, empecemos de nuevo.~
+        keepPlaying
+      | n == 1 }
+        Skill dato = joystick ~Dime el dato: ~
+        drop ~Tienes una (1) sola muestra.~
+        drop ~El promedio, el maximo y el minimo es: ~, dato
+        drop ~La varianza y la desviacion estandar son cero (0).~
+      | notPressed }
+        Skill dato = joystick ~Dime el primer dato: ~
+        Skill sum = dato, sqSum = kill sq(dato), min = dato, max = dato
+        controller Power i = 1 -> n:
+          dato = kill portalRunesToSkill(joystick ~Dime el siguiente dato: ~)
+          sum = sum + dato
+          sqSum = sqSum + kill sq(dato)
+          min = min > dato ? dato : min
+          max = max < dato ? dato : max
+        .~
+        Skill var = (sqSum - kill sq(sum) / n) / (n - 1)
+        drop ~Tienes ~, n, ~ datos.~
+        drop ~El minimo es ~, min
+        drop ~El maximo es ~, max
+        drop ~El promedio es ~, sum / n
+        drop ~La varianza es ~, var
+        drop ~La desviacion estandar es ~, kill sqrt(var)
+    .~
+  lock Win
+  .~
+  drop ~Bye, bye~
+.~
