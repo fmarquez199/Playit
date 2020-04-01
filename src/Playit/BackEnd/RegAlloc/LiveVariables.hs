@@ -84,14 +84,7 @@ getLiveVars fg@(graph, getNodeFromVertex, getVertexFromKey) = do
 ---- Auxs
 
 getValues :: TAC -> [TACOP]
-getValues instr =
-  if T.tacOperand instr `elem` condJumps then
-    [T.tacLvalue instr, T.tacRvalue1 instr] 
-  else
-    [T.tacRvalue1 instr, T.tacRvalue2 instr]
-
-  where
-    condJumps = [T.If, T.IfFalse, T.Eq, T.Neq, T.Lt, T.Gt, T.Lte, T.Gte]
+getValues instr = [T.tacLvalue instr, T.tacRvalue1 instr, T.tacRvalue2 instr] 
 
 
 getId :: TACOP -> Maybe TACInfo

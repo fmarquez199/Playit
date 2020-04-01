@@ -12,11 +12,11 @@ import Control.Monad                     (mapM_)
 import Control.Monad.Trans.RWS           (runRWST)
 import Control.Monad.Trans.State         (execStateT)
 import Data.Strings                      (strEndsWith, strSplit, strSplitAll)
-import Playit.BackEnd.RegAlloc.FinalCode (genFinalCode)
 import Playit.BackEnd.RegAlloc.FlowGraph
 import Playit.BackEnd.RegAlloc.GraphColoring
 import Playit.BackEnd.RegAlloc.InterferenceGraph
 import Playit.BackEnd.RegAlloc.LiveVariables
+import Playit.BackEnd.FinalCode
 import Playit.BackEnd.TAC
 import Playit.BackEnd.Types              (Operands(vars), RegAlloc(bLiveVars))
 import Playit.FrontEnd.Errors            (lexerErrors, showLexerErrors)

@@ -1,9 +1,9 @@
-@Inventory Inv: @ TamaÒo 13
+@Inventory Inv: @ Tama√±o 13
 @  Power a = 0
 @  Skill b = 2'4
 @  Battle c
 @.~
-@Items It: @ TamaÒo 8
+@Items It: @ Tama√±o 8
 @  Power a
 @  Skill b
 @  Battle c
@@ -17,106 +17,108 @@
 @.~
 
 world %Pruebas%:
+
   Power x = 5
+
 @ Operaciones aritmeticas
-@  Power i0 = x + 1
-@  Power i1 = x - 1
-@  Power i2 = x * 1
-@  Power i4 = x % 1
-@  Power i5 = x // 1
-@  Skill f2 = f / 0'5
-@  Skill f1 = 2'0
+  @Power i0 = x + 1
+  @Power i1 = x - 1
+  @Power i2 = x * 1
+  @Power i4 = x % 1
+  @Power i5 = x // 1
+  @Skill f2 = f / 0'5
+  @Skill f1 = 2'0
 
 @ Operaciones unarias
-@  Power  y = -5
-@  Rune   c = *4*
-@  Rune  up = ^*x*
-@  Rune low = .*x*
+  @Power  y = -5
+  @Rune   c = *4*
+  @Rune  up = ^*x*
+  @Rune low = .*x*
 
 @ Operaciones boleanas
-@  Battle b
-@  b = !Win
-@  b = Lose || Win
-@  b = Win && Lose
-@  b = Win && 3 > 6
-@  Battle p = 3 > 6
-@  p = i5 < i2
+  @Battle b
+  @b = !Win
+  @b = Lose || Win
+  @b = Win && Lose
+  @b = Win && 3 > 6
+  @Battle p = 3 > 6
+  @p = i5 < i2
 
 @ Operador ternario
-@  Battle f = Win ? (3 == 6) : (3 > 6)
-@  Skill f2 = Lose ? 6'0 : 3'0
+  @Battle f = Win ? (3 == 6) : (3 > 6)
+  @Skill f2 = Lose ? 6'0 : 3'0
 
 @  play:
-@    gameOver
-@    Power i = 9
-@    keepPlaying
-@    x++
-@  lock (x < 10)
-@  .~
+  @  gameOver
+  @  Power i = 9
+  @  keepPlaying
+  @  x++
+  @lock (x < 10)
+  @.~
 
 @  controller x = 0 -> 10: @ lock i % 2 == 0:
-@    gameOver
-@    keepPlaying
-@    Button:
-@      | x == 7 }
-@        i0 = x * i1
-@        gameOver
-@    .~
-@    i2 = i0 * i1
-@  .~
+  @  gameOver
+  @  keepPlaying
+  @  Button:
+  @    | x == 7 }
+  @      i0 = x * i1
+  @      gameOver
+  @  .~
+  @  i2 = i0 * i1
+  @.~
 
 @  Button:
-@    | Lose       } x = 0
-@    | x > 3      } x = 10
-@    | x == 20    } x = 1
-@    | Lose       } x = 0
-@    | Win        } x = 30 @ AST no se genera bien. La x en el default tiene el mismo valor que aquÌ
-@    | notPressed } x = 720
-@.~
+  @  | Lose       } x = 0
+  @  | x > 3      } x = 10
+  @  | x == 20    } x = 1
+  @  | Lose       } x = 0
+  @  | Win        } x = 30 @ AST no se genera bien. La x en el default tiene el mismo valor que aqu√≠
+  @  | notPressed } x = 720
+  @.~
 
 @ Subrutinas
-@  kill b(x,4'5)
-@  x = kill m(10'4)
-@  Power|}x{| arr0     @ Esto esta dando error cuando se inicializa por efecto un arreglo
-@  Power|}5{| arr1
-@  x = kill m(arr1)
+  @kill b(x,4'5)
+  @x = kill m(10'4)
+  @Power|}x{| arr0     @ Esto esta dando error cuando se inicializa por defecto un arreglo
+  @Power|}5{| arr1
+  @x = kill m(arr1)
 
 @ Arreglos
-@  Power|}3{| array = |)2, 3, 4(|
-@  Power len = #array
-@  array|)0(| = 0
-@  x = array|)0(|
+  @Power|}3{| array = |)2, 3, 4(|
+  @Power len = #array
+  @array|)0(| = 0
+  @x = array|)0(|
 
-@  controller Power e <- |)2, 3(|:
-@    Power i = e
-@  .~
+  @controller Power e <- |)2, 3(|:
+  @  Power i = e
+  @.~
 
 @ Apuntadores
-@  Power puff apt1 = summon Power
-@  Rune|}3{| puff apt2
-@  puff apt1 = 50
-@  puff apt2 = |)*a*, *b*, *4*(|
-@  kill b(apt1,10'6)
-@  free apt1
-@  free apt2
+  @Power puff apt1 = summon Power
+  @Rune|}3{| puff apt2
+  @puff apt1 = 50
+  @puff apt2 = |)*a*, *b*, *4*(|
+  @kill b(apt1,10'6)
+  @free apt1
+  @free apt2
 
 @ I/O
-@  Runes s = ~3g~
-@  Runes j = joystick ~Here we go~
-@  drop s
-@  drop ~hola mundo!!~
+  @Runes s = ~3g~
+  @Runes j = joystick ~Here we go~
+  @drop s
+  @drop ~hola mundo!!~
 
 
 "'Ejemplos por implementar, arriba estan cosas probadas que funcionan'"
 @ Listas
-@  Kit of Power list = <<10, 21, 3>> :: (<<2>> :: <<0>>) @ This is a problem
-@  Kit of Power list1 = <<4,2>>
-@  Kit of Power empty = << >>
-@  list1|>0<| = 10
+  @Kit of Power list = <<10, 21, 3>> :: (<<2>> :: <<0>>) @ This is a problem
+  @Kit of Power list1 = <<4,2>>
+  @Kit of Power empty = << >>
+  @list1|>0<| = 10
 
 @ Registros
-@  Inv inv = Inv {10 , 1'8, Lose}
-@  Power elem = inv spawn a
-@  kill b( inv , 1'0)
+  @Inv inv = Inv {10 , 1'8, Lose}
+  @Power elem = inv spawn a
+  @kill b( inv , 1'0)
 
 .~

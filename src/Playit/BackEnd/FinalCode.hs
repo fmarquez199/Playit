@@ -5,14 +5,14 @@
  *  Francisco Javier 12-11163
  *  Natascha Gamboa  12-11250
 -}
-module Playit.BackEnd.RegAlloc.FinalCode (genFinalCode) where
+module Playit.BackEnd.FinalCode (genFinalCode) where
 
-import Control.Monad.IO.Class(liftIO)
-import Data.Maybe            (isJust, fromJust)
-import Playit.BackEnd.Types  (TAC, TACOP, TACInfo(..), InterfGraph)
-import Playit.BackEnd.Utils  (tacNewLabel, tacLabel)
-import Playit.FrontEnd.Types (Type(..), symType)
-import TACType               (ThreeAddressCode(..), Operation(..), Operand(..))
+import Control.Monad.IO.Class (liftIO)
+import Data.Maybe             (isJust, fromJust)
+import Playit.BackEnd.Types   (TAC, TACOP, TACInfo(..), InterfGraph)
+import Playit.BackEnd.Utils   (tacNewLabel, tacLabel)
+import Playit.FrontEnd.Types  (Type(..), symType)
+import TACType                (ThreeAddressCode(..), Operation(..), Operand(..))
 
 tacInfo :: TACOP -> Maybe TACInfo
 tacInfo (Just (Id tac)) = Just tac
@@ -146,14 +146,14 @@ genJumps tac (_, _, t) name = case tacRvalue2 tac of
     else appendFile name $ goto ++ dest -- GoTo
 
 epilogue :: String -> IO ()
-epilogue name = appendFile name "#epílogo se vende por separado\n"
+epilogue name = appendFile name "#epilogo se vende por separado\n"
 
 isCall :: Operation -> Bool
 isCall Call = True
 isCall _ = False
 
 prologue :: String -> IO ()
-prologue name = appendFile name "#prólogo se vende por separado\n"
+prologue name = appendFile name "#prologo se vende por separado\n"
 
 -- ThreeAddressCode Print Nothing (Just e) Nothing
 -- ThreeAddressCode Read Nothing (Just e) Nothing

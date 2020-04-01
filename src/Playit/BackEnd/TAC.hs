@@ -26,11 +26,9 @@ tacInitState = Operands M.empty temps M.empty [] brk cont 0 False False []
   where
     retnReg  = Temp "_return" TInt 4  -- $v0, offset fijo?
     nullReg  = Temp "_null" TInt 4    -- $zero, offset fijo?
-    printReg = Temp "_print" TInt 4   -- syscall 4
-    readReg  = Temp "_read" TInt 4    -- syscall 8
     cont     = tacLabel "cont"
     brk      = tacLabel "brk"
-    temps    = M.fromList [(retnReg, False), (nullReg, False), (printReg, False), (readReg, False)]
+    temps    = M.fromList [(retnReg, False), (nullReg, False)]
 
 
 gen :: Instr -> TACMonad ()
