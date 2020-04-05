@@ -158,7 +158,7 @@ neighColors g cMap v = verticesColors cMap $ neighbors g v
 -- | Color one node.
 colorNode :: Graph.Graph -> VertColorMap -> Graph.Vertex -> Color
 -- use of "head" is A-ok as the source is an infinite list
-colorNode g cMap v = head $ filter notNeighColor [8..25] -- [8..25], si el filtrado es null => spill
+colorNode g cMap v = head $ filter notNeighColor [8..41] -- [8..25], si el filtrado es null => spill
     where notNeighColor = (`notElem` neighColors g cMap v)
 
 -- | Color a node returning the updated color map.
