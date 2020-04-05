@@ -9,10 +9,12 @@ module Playit.BackEnd.FinalCode (genFinalCode) where
 
 import Control.Monad.IO.Class (liftIO)
 import Data.Maybe             (isJust, fromJust)
+import Playit.BackEnd.RegAlloc.GraphColoring (VertColorMap)
 import Playit.BackEnd.Types   (TAC, TACOP, TACInfo(..), InterfGraph)
 import Playit.BackEnd.Utils   (tacNewLabel, tacLabel)
 import Playit.FrontEnd.Types  (Type(..), symType)
-import TACType                (ThreeAddressCode(..), Operation(..), Operand(..))
+import TACType               (ThreeAddressCode(..), Operation(..), Operand(..))
+import qualified Data.IntMap as I
 
 tacInfo :: TACOP -> Maybe TACInfo
 tacInfo (Just (Id tac)) = Just tac
@@ -29,27 +31,27 @@ isFloat (Just TFloat) = True
 isFloat _ = False
 
 -- ThreeAddressCode NewLabel (Just l) Nothing Nothing
-genFinalCode :: [TAC] -> InterfGraph -> String -> IO ()
-genFinalCode tac inter name =
+genFinalCode :: [TAC] -> InterfGraph -> I.IntMap Int -> String -> IO ()
+genFinalCode tac g c n =
   if null tac then
-    appendFile name ""
+    appendFile n ""
   else
     let h = head tac
     in case tacOperand h of
       x | x `elem` [Add, Sub, Mult, Div, Mod, Gt, Gte, Lt, Lte, Eq, Neq] ->
-        genThreeOperandsOp h inter name >> genFinalCode (tail tac) inter name
+        genThreeOperandsOp h g c n >> genFinalCode (tail tac) g c n
       x | x `elem` [Minus, Length, Ref, Deref] ->
-        genTwoOperandsOp h inter name >> genFinalCode (tail tac) inter name
+        genTwoOperandsOp h g c n >> genFinalCode (tail tac) g c n
       x | x `elem` [Return, Call, If, GoTo] ->
-        genJumps h inter name >> genFinalCode (tail tac) inter name
+        genJumps h g c n >> genFinalCode (tail tac) g c n
       x | x `elem` [Print, Read] ->
-        genSyscalls h inter name >> genFinalCode (tail tac) inter name
+        genSyscalls h g c n >> genFinalCode (tail tac) g c n
       Assign ->
-        genAssign h inter name >> genFinalCode (tail tac) inter name
+        genAssign h g c n >> genFinalCode (tail tac) g c n
       NewLabel ->
-        appendFile name (show h) >> genFinalCode (tail tac) inter name
-      Param -> genParam h inter name >> genFinalCode (tail tac) inter name
-      _ -> appendFile name "" >> genFinalCode (tail tac) inter name
+        appendFile n (show h) >> genFinalCode (tail tac) g c n
+      Param -> genParam h g c n >> genFinalCode (tail tac) g c n
+      _ -> appendFile n "" >> genFinalCode (tail tac) g c n
 
 -- ThreeAddressCode Add (Just x) (Just y) (Just z)
 -- ThreeAddressCode Sub (Just x) (Just y) (Just z)
@@ -69,8 +71,8 @@ genFinalCode tac inter name =
 -- ThreeAddressCode Anexo (Just x) (Just y) (Just z)
 -- ThreeAddressCode Concat (Just x) (Just y) (Just z)
 -- ThreeAddressCode Access (Just x) (Just r) (Just f)
-genThreeOperandsOp :: TAC -> InterfGraph -> String -> IO ()
-genThreeOperandsOp tac i@(_, _, t) name = do
+genThreeOperandsOp :: TAC -> InterfGraph -> I.IntMap Int -> String -> IO ()
+genThreeOperandsOp tac i@(_, _, t) color name = do
   let
     inst = show (tacOperand tac) ++ " "
     dest = show (fromJust $ t $ fromJust $ tacInfo $ tacLvalue tac) ++ ", "
@@ -94,7 +96,7 @@ genThreeOperandsOp tac i@(_, _, t) name = do
       in appendFile name code
     Call ->
       let save = "addi " ++ dest ++ "$v0, 0\n"
-      in genJumps tac i name >> appendFile name save
+      in genJumps tac i color name >> appendFile name save
     Get -> do-- x = y[i]
       let
         y = init $ init reg1
@@ -111,8 +113,8 @@ genThreeOperandsOp tac i@(_, _, t) name = do
 -- ThreeAddressCode Length (Just x) (Just y) _
 -- ThreeAddressCode Ref (Just x) (Just y) Nothing
 -- ThreeAddressCode Deref (Just x) (Just y) Nothing
-genTwoOperandsOp :: TAC -> InterfGraph -> String -> IO ()
-genTwoOperandsOp tac (_, _, t) name = do
+genTwoOperandsOp :: TAC -> InterfGraph -> I.IntMap Int -> String -> IO ()
+genTwoOperandsOp tac (_, _, t) color name = do
   let
     inst = show (tacOperand tac) ++ " "
     dest = show (fromJust $ t $ fromJust $ tacInfo $ tacLvalue tac) ++ ", "
@@ -124,8 +126,8 @@ genTwoOperandsOp tac (_, _, t) name = do
 -- ThreeAddressCode Call Nothing (Just f) (Just n)
 -- ThreeAddressCode If Nothing (Just b) (Just label)
 -- ThreeAddressCode GoTo Nothing Nothing (Just label)
-genJumps :: TAC -> InterfGraph -> String -> IO ()
-genJumps tac (_, _, t) name = case tacRvalue2 tac of
+genJumps :: TAC -> InterfGraph -> I.IntMap Int -> String -> IO ()
+genJumps tac (_, _, t) color name = case tacRvalue2 tac of
   Nothing -> do -- Return
     let
       dest = show (fromJust $ t $ fromJust $ tacInfo $ tacRvalue1 tac)
@@ -157,8 +159,8 @@ prologue name = appendFile name "#prologo se vende por separado\n"
 
 -- ThreeAddressCode Print Nothing (Just e) Nothing
 -- ThreeAddressCode Read Nothing (Just e) Nothing
-genSyscalls :: TAC -> InterfGraph -> String -> IO ()
-genSyscalls tac (_, _, t) name = 
+genSyscalls :: TAC -> InterfGraph -> I.IntMap Int -> String -> IO ()
+genSyscalls tac (_, _, t) color name = 
   let arg = show (fromJust $ t $ fromJust $ tacInfo $ tacRvalue1 tac)
   in case tacOperand tac of
     Print -> -- syscalls 1,2,4,11
@@ -187,9 +189,9 @@ genSyscalls tac (_, _, t) name =
 
 -- ThreeAddressCode Assign (Just x) (Just y) Nothing
 -- ThreeAddressCode Assign (Just x) Nothing Nothing
-genAssign :: TAC -> InterfGraph -> String -> IO ()
-genAssign tac (_, _, t) name = 
-  let dest = show (fromJust $ t $ fromJust $ tacInfo $ tacLvalue tac)
+genAssign :: TAC -> InterfGraph -> I.IntMap Int -> String -> IO ()
+genAssign tac (_, _, t) color name = 
+  let dest = makeReg color $ fromJust $ t $ fromJust $ tacInfo $ tacLvalue tac
   in case tacRvalue1 tac of
     Nothing ->
       let code = "li " ++ show dest ++ ", 0\n"
@@ -205,5 +207,10 @@ genAssign tac (_, _, t) name =
         in appendFile name $ "li " ++ dest ++ ", " ++ immediate
 
 -- ThreeAddressCode Param Nothing (Just p) Nothing
-genParam :: TAC -> InterfGraph -> String -> IO ()
-genParam tac (_, _, t) name = appendFile name ""
+genParam :: TAC -> InterfGraph -> I.IntMap Int -> String -> IO ()
+genParam tac (_, _, t) color name = appendFile name ""
+
+makeReg :: I.IntMap Int -> Int -> String
+makeReg color number = 
+  let n = fromJust $ I.lookup number color
+  in if n > 25 then "$f" ++ show (2 * n - 50) else "$" ++ show n 

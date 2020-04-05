@@ -82,7 +82,7 @@ type NodeFromVertex = G.Vertex -> (FGNode, FGKey, [FGKey])
 type VertexFromKey  = FGKey -> Maybe G.Vertex
 type FlowGraph      = (G.Graph, NodeFromVertex, VertexFromKey)
 type InterfGraph    = (G.Graph, G.Vertex -> IGraphEdge, TACInfo -> Maybe G.Vertex)
-type IGraphEdge     = (TACInfo,TACInfo,[TACInfo])
+type IGraphEdge     = (TACInfo, TACInfo, [TACInfo])
 type Reg = Int
 
 -- 

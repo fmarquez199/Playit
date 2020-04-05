@@ -85,13 +85,14 @@ main = do
               liveVars = fromList $ map snd $ toList $ bLiveVars regAlloc
               inter@(ig, nodeFromVertex, vertexFromKey) = genInterferenceGraph liveVars
               igNodes = map nodeFromVertex (vertices ig)
+              color =  colorDsatur ig
             putStrLn $ "\nLive Vars: " ++ printLiveVars (toList (bLiveVars regAlloc))
             putStrLn $ "\nInterference Graph: " ++ printIGNodes igNodes
-            putStrLn $ "\nDSatur coloring: " ++ show (colorDsatur ig)
+            putStrLn $ "\nDSatur coloring: " ++ show color
             -- putStrLn $ "Ahora el código final en " ++ checkedFile
             let outputFile = last (strSplitAll "\\" (fst (strSplit "." checkedFile))) ++ ".s"
             writeFile ("./output/" ++ outputFile) ".text\n"
-            genFinalCode tac inter ("./output/" ++ outputFile)
+            genFinalCode tac inter color ("./output/" ++ outputFile)
           else
             mapM_ putStrLn errs
 

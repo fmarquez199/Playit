@@ -18,7 +18,15 @@
 
 world %Pruebas%:
 
-  Power x = 5
+  Skill x = 5'0
+  Skill y = 2'0
+  Skill z = 3'0
+  Skill a = 1'0
+  Skill b = 4'0
+  Skill c = 6'0
+  Skill d = 7'0
+  Skill e = 8'0
+  Skill f = 9'0
 
 @ Operaciones aritmeticas
   @Power i0 = x + 1
