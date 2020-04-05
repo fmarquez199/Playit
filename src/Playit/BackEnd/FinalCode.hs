@@ -14,6 +14,7 @@ import Playit.BackEnd.Types   (TAC, TACOP, TACInfo(..), InterfGraph)
 import Playit.BackEnd.Utils   (tacNewLabel, tacLabel)
 import Playit.FrontEnd.Types  (Type(..), symType)
 import TACType               (ThreeAddressCode(..), Operation(..), Operand(..))
+import qualified Data.Graph  as G
 import qualified Data.IntMap as I
 
 tacInfo :: TACOP -> Maybe TACInfo
@@ -75,9 +76,9 @@ genThreeOperandsOp :: TAC -> InterfGraph -> I.IntMap Int -> String -> IO ()
 genThreeOperandsOp tac i@(_, _, t) color name = do
   let
     inst = show (tacOperand tac) ++ " "
-    dest = show (fromJust $ t $ fromJust $ tacInfo $ tacLvalue tac) ++ ", "
-    reg1 = show (fromJust $ t $ fromJust $ tacInfo $ tacRvalue1 tac) ++ ", "
-    reg2 = show (fromJust $ t $ fromJust $ tacInfo $ tacRvalue2 tac) ++ "\n"
+    dest = (makeReg color $ getTempNum t $ tacInfo $ tacLvalue tac) ++ ", "
+    reg1 = (makeReg color $ getTempNum t $ tacInfo $ tacRvalue1 tac) ++ ", "
+    reg2 = (makeReg color $ getTempNum t $ tacInfo $ tacRvalue2 tac) ++ "\n"
   case tacOperand tac of
     x | x `elem` [Add, Sub, Mult, Div, Mod] ->
       if isFloat $ tacType $ tacLvalue tac then do
@@ -109,6 +110,14 @@ genThreeOperandsOp tac i@(_, _, t) color name = do
       appendFile name code
     _ -> appendFile name ""
 
+makeReg :: I.IntMap Int -> Int -> String
+makeReg color number = 
+  let n = fromJust $ I.lookup number color
+  in if n > 25 then "$f" ++ show (2 * n - 50) else "$" ++ show n
+
+getTempNum :: (TACInfo -> Maybe G.Vertex) -> Maybe TACInfo -> Int
+getTempNum t tacInfo = fromJust $ t $ fromJust $ tacInfo
+
 -- ThreeAddressCode Minus (Just x) (Just y) Nothing
 -- ThreeAddressCode Length (Just x) (Just y) _
 -- ThreeAddressCode Ref (Just x) (Just y) Nothing
@@ -117,8 +126,8 @@ genTwoOperandsOp :: TAC -> InterfGraph -> I.IntMap Int -> String -> IO ()
 genTwoOperandsOp tac (_, _, t) color name = do
   let
     inst = show (tacOperand tac) ++ " "
-    dest = show (fromJust $ t $ fromJust $ tacInfo $ tacLvalue tac) ++ ", "
-    reg1 = show (fromJust $ t $ fromJust $ tacInfo $ tacRvalue1 tac)
+    dest = (makeReg color $ getTempNum t $ tacInfo $ tacLvalue tac) ++ ", "
+    reg1 = (makeReg color $ getTempNum t $ tacInfo $ tacRvalue1 tac) ++ "\n"
     code = inst ++ dest ++ reg1
   appendFile name code
 
@@ -130,7 +139,7 @@ genJumps :: TAC -> InterfGraph -> I.IntMap Int -> String -> IO ()
 genJumps tac (_, _, t) color name = case tacRvalue2 tac of
   Nothing -> do -- Return
     let
-      dest = show (fromJust $ t $ fromJust $ tacInfo $ tacRvalue1 tac)
+      dest = makeReg color $ getTempNum t $ tacInfo $ tacRvalue1 tac
       code = "addi $v0, " ++ dest ++ ", 0\n"
     epilogue name >> appendFile name code
   _ -> do
@@ -143,7 +152,7 @@ genJumps tac (_, _, t) color name = case tacRvalue2 tac of
         in appendFile name code >> prologue name
         
       else
-        let cond = show (fromJust $ t $ fromJust $ tacInfo $ tacRvalue1 tac)
+        let cond = makeReg color $ getTempNum t $ tacInfo $ tacRvalue1 tac
         in appendFile name $ goto ++ cond ++ ", " ++ dest -- If
     else appendFile name $ goto ++ dest -- GoTo
 
@@ -161,7 +170,7 @@ prologue name = appendFile name "#prologo se vende por separado\n"
 -- ThreeAddressCode Read Nothing (Just e) Nothing
 genSyscalls :: TAC -> InterfGraph -> I.IntMap Int -> String -> IO ()
 genSyscalls tac (_, _, t) color name = 
-  let arg = show (fromJust $ t $ fromJust $ tacInfo $ tacRvalue1 tac)
+  let arg = makeReg color $ getTempNum t $ tacInfo $ tacRvalue1 tac
   in case tacOperand tac of
     Print -> -- syscalls 1,2,4,11
       case tacType $ tacRvalue1 tac of
@@ -191,7 +200,7 @@ genSyscalls tac (_, _, t) color name =
 -- ThreeAddressCode Assign (Just x) Nothing Nothing
 genAssign :: TAC -> InterfGraph -> I.IntMap Int -> String -> IO ()
 genAssign tac (_, _, t) color name = 
-  let dest = makeReg color $ fromJust $ t $ fromJust $ tacInfo $ tacLvalue tac
+  let dest = makeReg color $ getTempNum t $ tacInfo $ tacLvalue tac
   in case tacRvalue1 tac of
     Nothing ->
       let code = "li " ++ show dest ++ ", 0\n"
@@ -209,8 +218,3 @@ genAssign tac (_, _, t) color name =
 -- ThreeAddressCode Param Nothing (Just p) Nothing
 genParam :: TAC -> InterfGraph -> I.IntMap Int -> String -> IO ()
 genParam tac (_, _, t) color name = appendFile name ""
-
-makeReg :: I.IntMap Int -> Int -> String
-makeReg color number = 
-  let n = fromJust $ I.lookup number color
-  in if n > 25 then "$f" ++ show (2 * n - 50) else "$" ++ show n 
