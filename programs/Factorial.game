@@ -21,9 +21,9 @@ monster iterativo(Power n) Power:
 world %Factorial%:
   Power f
   play:
-    Runes act = joystick ~Dime lo que deseas hacer: calcular factorial (f) o salir (x): ~
+    Rune act = joystick ~Dime lo que deseas hacer: calcular factorial (f) o salir (x): ~
     Button:
-      | act == ~x~ } gameOver
+      | act == *x* } gameOver
     .~
     Power num = joystick ~Por favor dime un entero mayor o igual que 0: ~
     Button:
@@ -31,12 +31,12 @@ world %Factorial%:
         drop ~El numero es negativo, empieza de nuevo.~
         keepPlaying
     .~
-    Runes mod = joystick ~Por favor dime un modo de calcular: iterativo (i) o recursivo (r): ~
+    Rune mod = joystick ~Por favor dime un modo de calcular: iterativo (i) o recursivo (r): ~
     Button:
-      | mod == ~i~ }
+      | mod == *i* }
         Power f = kill iterativo(num)
         drop ~El factorial de ~, num, ~ es ~, f
-      | mod == ~r~ }
+      | mod == *r* }
         Power f = kill recursivo(num)
         drop ~El factorial de ~, num, ~ es ~, f
       | notPressed }

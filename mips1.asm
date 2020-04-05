@@ -1,4 +1,3 @@
 .data
-
 .text
-li $0, 5
+li $8, 'a'
