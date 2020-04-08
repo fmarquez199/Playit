@@ -145,8 +145,20 @@ tacCall lv s n = [T.ThreeAddressCode T.Call lv (tacLabel s) (tacConstant (show n
 
 
 -------------------------------------------------------------------------------
-tacParam :: TACOP -> TAC
-tacParam p = T.ThreeAddressCode T.Param Nothing p Nothing
+tacParam :: TACOP -> Int -> TAC
+tacParam p n = T.ThreeAddressCode T.Param Nothing p (tacConstant (show n, TInt))
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+tacPrint :: TACOP -> TAC
+tacPrint e = T.ThreeAddressCode T.Print Nothing e Nothing
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+tacRead :: TAC
+tacRead = T.ThreeAddressCode T.Read Nothing Nothing Nothing
 -------------------------------------------------------------------------------
 
 
@@ -346,8 +358,8 @@ setElemIndexs = (zero,one,two,three,sixteen)
 -------------------------------------------------------------------------------
 syscall :: Int -> TACOP -> [TACOP] -> TACMonad ()
 syscall v0 lv params = do
-  tell (map tacParam params)
-  tell [tacParam $ tacConstant (show v0, TInt)] -- $v0
+  tell (map (\(x,y) -> tacParam x y) [(x,y) | x <- params, y <- [0..length params - 1]])
+  tell [tacParam (tacConstant (show v0, TInt)) 0] -- $v0
   tell (tacCall lv "syscall" (length params + 1))
 -------------------------------------------------------------------------------
 

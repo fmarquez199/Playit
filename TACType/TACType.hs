@@ -43,7 +43,7 @@ instance (SymEntryCompatible a, Show a, Show b) => Show (ThreeAddressCode a b) w
   show (ThreeAddressCode IfFalse Nothing (Just b) (Just l)) = "\t" ++ "if !" ++ show b ++ " goto " ++ show l
   show (ThreeAddressCode NewLabel (Just l) Nothing Nothing) = show l ++ ": "
 -- Calling functions
-  show (ThreeAddressCode Param Nothing (Just p) Nothing)    = "\tparam " ++ show p
+  show (ThreeAddressCode Param Nothing (Just p) _)          = "\tparam " ++ show p
   show (ThreeAddressCode Call Nothing (Just f) (Just n))    = "\tcall " ++ show f ++ ", " ++ show n
   show (ThreeAddressCode Call (Just x) (Just f) (Just n))   = "\t" ++ show x ++ " := call " ++ show f ++ ", " ++ show n
   show (ThreeAddressCode Return Nothing Nothing Nothing)    = "\treturn" 
@@ -61,6 +61,7 @@ instance (SymEntryCompatible a, Show a, Show b) => Show (ThreeAddressCode a b) w
   show (ThreeAddressCode Access (Just x) (Just r) (Just f)) = "\t" ++ show x ++ " := " ++ show r ++ "." ++ show f
 -- Input/Output
   show (ThreeAddressCode Read Nothing (Just e) Nothing)  = "\tread " ++ show e
+  show (ThreeAddressCode Read Nothing Nothing Nothing)  = "\tread"
   show (ThreeAddressCode Print Nothing (Just e) Nothing) = "\tprint " ++ show e
 -- Exit program
   show (ThreeAddressCode Exit Nothing Nothing Nothing)   = "\texit"

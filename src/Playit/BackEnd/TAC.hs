@@ -179,10 +179,11 @@ genWhile e is nextL = do
 -- TODO: width del tipo string
 genPrint :: [Expr] -> TACMonad ()
 genPrint es = do
-  let t = typeE (head es)
-  lv     <- pushOffset (getWidth t) >>= newTemp t
   params <- mapM genExpr es
-  syscall 8 lv params
+  tell $ map tacPrint params
+  -- let t = typeE (head es)
+  -- lv     <- pushOffset (getWidth t) >>= newTemp t
+  -- syscall 8 lv params
 
 
 -- Aqui se llama a free, Prologo
@@ -192,7 +193,7 @@ genFree varId = do
   let -- Si se cambia por 'free Expr' no tendria que buscar en la symtab
     varT = symType . head . fromJust $ lookupInSymTab varId st
     var  = fromJust $ M.lookup (Var varId varT) vs
-  tell [tacParam var]
+  tell [tacParam var 0]
   tell (tacCall Nothing "free" 1)
   -- prólogo
   put state{callF = True}
@@ -202,7 +203,7 @@ genFree varId = do
 genProcCall :: Subroutine -> TACMonad ()
 genProcCall (Call s params) = do
   pushSubroutine s True
-  genParams (map fst params)
+  genParams (map fst params) 0
   -- Prologo antes de pasar el poder al proc
   tell (tacCall Nothing s $ length params)
 
@@ -250,7 +251,7 @@ genExpr e = case e of
     let width = getWidth (baseTypeT t)
     in pushOffset width >>= newTemp t >>= genArrayList es width 0
   Null                -> genNull
-  Read e _            -> genRead e
+  Read e _            -> genPrint [e] >> genRead
   FuncCall s t        -> genFuncCall s t
   IdType t            -> genType t
 
@@ -364,7 +365,7 @@ genUnOp op e tOp = do
     Length   -> tell (tacUn T.Length lv rv) >> return lv
     Negative -> tell (tacUn T.Minus lv rv)  >> return lv
     New      -> do
-      tell [tacParam rv]
+      tell [tacParam rv 0]
       tell (tacCall lv "malloc" 1)
       -- prólogo
       state <- get
@@ -446,11 +447,11 @@ genArrayList (elem:elems) width index arrTemp = do
 
 -- syscall 8
 -- TODO: width del tipo string
-genRead :: Expr -> TACMonad TACOP
-genRead e = do
-  lv    <- pushOffset (getWidth (typeE e)) >>= newTemp TInt
-  param <- genExpr e
-  syscall 8 lv [param]
+genRead :: TACMonad TACOP
+genRead = do
+  lv    <- pushOffset 4 >>= newTemp TInt
+  -- param <- genExpr e
+  tell [tacRead]
   return lv
 
 
@@ -458,7 +459,7 @@ genRead e = do
 genFuncCall :: Subroutine -> Type -> TACMonad TACOP
 genFuncCall (Call f params) t = do
   pushSubroutine f False
-  genParams (map fst params)
+  genParams (map fst params) 0
   lv <- pushOffset (getWidth t) >>= newTemp t -- Deberia ser el offset del tipo de retorno de la funcion, como lo obtengo?
   -- Prologo antes de pasar el poder al proc
   tell (tacCall lv f $ length params)
@@ -504,8 +505,13 @@ forInstrs is nextL (begin, cont, iterVar) = do
 
 -------------------------------------------------------------------------------
 -- 
-genParams :: [Expr] -> TACMonad ()
-genParams params = do
-  operands <- mapM genExpr params
-  tell $ map tacParam operands
+genParams :: [Expr] -> Int -> TACMonad ()
+genParams [] _ = tell []
+genParams [p] n = do
+  param <- genExpr p
+  tell $ [tacParam param (n + 0)]
+genParams (p:ps) n = do
+  param <- genExpr p
+  tell $ [tacParam param n]
+  genParams ps $ n + 1
 -------------------------------------------------------------------------------
