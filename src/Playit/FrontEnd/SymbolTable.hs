@@ -157,6 +157,7 @@ initialize ((n, assig):ids) t =
       TChar       -> assign (defaultBaseVal t) : initialize ids t
       TFloat      -> assign (defaultBaseVal t) : initialize ids t
       TInt        -> assign (defaultBaseVal t) : initialize ids t
+      TStr        -> assign (defaultBaseVal t) : initialize ids t
       -- TNew t'     -> 
       -- TList t'    -> 
       tipo -> error $ "No se como inicializar esto todavia: " ++ show tipo
@@ -173,6 +174,7 @@ defaultBaseVal TInt   = Literal (Integer 0)  TInt
 defaultBaseVal TFloat = Literal (Floatt 0.0) TFloat
 defaultBaseVal TBool  = Literal (Boolean True) TBool
 defaultBaseVal TChar  = Literal (Character '\0') TChar
+defaultBaseVal TStr   = Literal (Str "") TStr
 defaultBaseVal t      = error $ "Esto no es un tipo basico: " ++ show t
 
 emptyAssig :: Instr -> Bool

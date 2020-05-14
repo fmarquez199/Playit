@@ -236,7 +236,8 @@ breakI = do
 newTemp :: Type -> OffSet -> TACMonad TACOP
 newTemp typ actO = do
   state@Operands{temps = ts} <- get
-  let t = Temp ("$t" ++ show (M.size ts - 2)) typ actO
+  let t = if typ == TFloat then Temp ("$t" ++ show (1 - M.size ts)) typ actO
+      else Temp ("$t" ++ show (M.size ts - 2)) typ actO
   put state{temps = M.insert t True ts}
   return $ tacVariable t
 -------------------------------------------------------------------------------

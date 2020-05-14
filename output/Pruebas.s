@@ -26,4 +26,18 @@ sw $s6, -28($sp)
 sw $s7, -32($sp)
 sw $fp, -36($sp)
 addi $sp, $sp, -40
-_main: li $8, 'a'
+_main: li $f30, 1.0
+li $f16, 1.0
+li $f14, 1.0
+li $f12, 1.0
+li $f10, 1.0
+li $f8, 1.0
+li $f6, 1.0
+li $f4, 1.0
+li $f2, 1.0
+li $f28, 1.0
+li $f26, 1.0
+li $f24, 1.0
+li $f22, 1.0
+li $f20, 1.0
+li $f18, 1.0

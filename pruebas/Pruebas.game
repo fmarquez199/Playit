@@ -18,7 +18,21 @@
 
 world %Pruebas%:
 
-  Rune x = *a*
+  Skill l = 1'0
+  Skill m = 1'0
+  Skill n = 1'0
+  Skill o = 1'0
+  Skill p = 1'0
+  Skill q = 1'0
+  Skill r = 1'0
+  Skill s = 1'0
+  Skill t = 1'0
+  Skill u = 1'0
+  Skill v = 1'0
+  Skill w = 1'0
+  Skill x = 1'0
+  Skill y = 1'0
+  Skill z = 1'0
 @ Operaciones aritmeticas
   @Power i0 = x + 1
   @Power i1 = x - 1

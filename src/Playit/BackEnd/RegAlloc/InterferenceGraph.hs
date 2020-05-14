@@ -11,12 +11,12 @@ genInterferenceGraph liveVars = G.graphFromEdges edges
     edges = S.toList $ S.unions $ S.toList $ S.map (createEdge liveVars) liveVars
 
 
-createEdge :: S.Set (S.Set TACInfo) -> S.Set TACInfo -> S.Set (TACInfo,TACInfo,[TACInfo])
+createEdge :: S.Set (S.Set TACInfo) -> S.Set TACInfo -> S.Set (TACInfo, TACInfo, [TACInfo])
 createEdge liveVars vars = S.map (addEdge liveVars vars) vars
 
 
-addEdge :: S.Set (S.Set TACInfo) -> S.Set TACInfo -> TACInfo -> (TACInfo,TACInfo,[TACInfo])
-addEdge liveVars vars var = (var,var,vars')
+addEdge :: S.Set (S.Set TACInfo) -> S.Set TACInfo -> TACInfo -> (TACInfo, TACInfo, [TACInfo])
+addEdge liveVars vars var = (var, var, vars')
   where
     others = S.map (\lvs -> if S.member var lvs then S.delete var lvs else S.empty) (S.delete vars liveVars)
     vars' = S.toList $ S.unions $ S.toList (S.union others $ S.singleton $ S.delete var vars)
@@ -24,7 +24,7 @@ addEdge liveVars vars var = (var,var,vars')
 
 printIGNodes :: [(TACInfo, TACInfo, [TACInfo])] -> String
 printIGNodes [] = ""
-printIGNodes ((node,key,succs):nodes) = 
+printIGNodes ((node, key, succs):nodes) = 
   "\n\nNode Key(" ++ show key ++ ")\n" ++
   show node ++ "\n" ++
   concatMap (("\t->" ++ ) . show) succs ++

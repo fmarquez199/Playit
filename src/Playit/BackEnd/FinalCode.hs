@@ -40,7 +40,7 @@ genFinalCode tac g c n =
     let h = head tac
     in case tacOperand h of
       x | x `elem` [Add, Sub, Mult, Div, Mod, Gt, Gte, Lt, Lte, Eq, Neq] ->
-        genThreeOperandsOp h g c n >> genFinalCode (tail tac) g c n
+        liftIO (print ("tac: " ++ show (tacInfo $ tacRvalue2 h))) >> genThreeOperandsOp h g c n >> genFinalCode (tail tac) g c n
       x | x `elem` [Minus, Length, Ref, Deref] ->
         genTwoOperandsOp h g c n >> genFinalCode (tail tac) g c n
       x | x `elem` [Return, Call, If, GoTo] ->
@@ -193,34 +193,30 @@ prologue name = appendFile name (pro0 ++ pro1 ++ pro2 ++ mvsp) where
   mvsp = "addi $sp, $sp, -40\n"
 
 -- ThreeAddressCode Print Nothing (Just e) Nothing
--- ThreeAddressCode Read Nothing (Just e) Nothing
+-- ThreeAddressCode Read Nothing Nothing Nothing
+-- ThreeAddressCode Assign Nothing (Just x) Nothing
 genSyscalls :: TAC -> InterfGraph -> I.IntMap Int -> String -> IO ()
 genSyscalls tac (_, _, t) color name =
-  let arg = makeReg color $ getTempNum t $ tacInfo $ tacRvalue1 tac
-  in case tacOperand tac of
-    Print -> -- syscalls 1,2,4,11
-      case tacType $ tacRvalue1 tac of
-        Just TInt ->
-          appendFile name $ "addi $a0, " ++ arg ++ ", 0\nli $v0, 1\nsyscall\n"
-        Just TFloat ->
-          appendFile name $ "addi FP12, " ++ arg ++ ", 0\nli $v0, 2\nsyscall\n"
-        Just TStr ->
-          appendFile name $ "addi $a0, " ++ arg ++ ", 0\nli $v0, 4\nsyscall\n"
-        Just TChar ->
-          appendFile name $ "addi $a0, " ++ arg ++ ", 0\nli $v0, 11\nsyscall\n"
-        _ -> appendFile name ""
-    _ -> -- syscalls 5,6,8,12
-      case tacType $ tacRvalue1 tac of
-        Just TInt ->
-          appendFile name $ "addi $a0, " ++ arg ++ ", 0\nli $v0, 5\nsyscall\n"
-        Just TFloat ->
-          appendFile name $ "addi FP12, " ++ arg ++ ", 0\nli $v0, 6\nsyscall\n"
-        Just TStr ->
-          let len = ", 0\naddi $a1, $zero, 80\nli $v0, 8\nsyscall\n"
-          in appendFile name $ "addi $a0, " ++ arg ++ len
-        Just TChar ->
-          appendFile name $ "addi $a0, " ++ arg ++ ", 0\nli $v0, 12\nsyscall\n"
-        _ -> appendFile name ""
+  if isJust $ tacInfo $ tacRvalue1 tac then
+    let arg = makeReg color $ getTempNum t $ tacInfo $ tacRvalue1 tac
+    in case tacOperand tac of
+      Print -> -- syscalls 1,2,4,11
+        let sys = "syscall\n"
+        in case tacType $ tacRvalue1 tac of
+          Just TInt ->
+            appendFile name $ "addi $a0, " ++ arg ++ ", 0\nli $v0, 1\n" ++ sys
+          Just TFloat ->
+            appendFile name $ "addi FP12, " ++ arg ++ ", 0\nli $v0, 2\n" ++ sys
+          Just TStr ->
+            appendFile name $ "addi $a0, " ++ arg ++ ", 0\nli $v0, 4\n" ++ sys
+          Just TChar ->
+            appendFile name $ "addi $a0, " ++ arg ++ ", 0\nli $v0, 11\n" ++ sys
+          _ -> appendFile name ""
+      -- syscall 9 
+      _ -> appendFile name $ "addi $a0, " ++ arg ++ ", 0\nli $v0, 9\nsyscall\n"
+  else -- syscall 8
+    let code = "la $a0, string\naddi $a1, $zero, 80\nli $v0, 8\nsyscall\n"
+    in appendFile name code
 
 -- ThreeAddressCode Assign (Just x) (Just y) Nothing
 -- ThreeAddressCode Assign (Just x) Nothing Nothing

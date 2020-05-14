@@ -79,11 +79,14 @@ module Playit.BackEnd.RegAlloc.GraphColoring (colorDsatur, VertColorMap) where
 import Data.Maybe
 import Data.Ord
 import Data.List
+import Playit.BackEnd.Types
+import Playit.FrontEnd.Types (Type(..), symType)
 
 import qualified Data.IntMap as IntMap
 import qualified Data.IntSet as IntSet
-import qualified Data.Graph as Graph
-import qualified Data.Array as Array
+import qualified Data.Graph  as G
+import qualified Data.Array  as Array
+import TACType
 
 
 -- * Type declarations
@@ -103,32 +106,32 @@ type VertColorMap = IntMap.IntMap Color
 -- * Vertices characteristics
 
 -- | (vertex, degree) tuples on a graph.
--- verticesDegree :: Graph.Graph -> [(Graph.Vertex, Int)]
--- verticesDegree g = Array.assocs $ Graph.outdegree g
+-- verticesDegree :: G.Graph -> [(G.Vertex, Int)]
+-- verticesDegree g = Array.assocs $ G.outdegree g
 
 -- | vertices of a graph, sorted by ascending degree.
--- verticesByDegreeDesc :: Graph.Graph -> [Graph.Vertex]
+-- verticesByDegreeDesc :: G.Graph -> [G.Vertex]
 -- verticesByDegreeDesc g =
 --   map fst . sortBy (flip (comparing snd)) $ verticesDegree g
 
 -- | vertices of a graph, sorted by descending degree.
--- verticesByDegreeAsc :: Graph.Graph -> [Graph.Vertex]
+-- verticesByDegreeAsc :: G.Graph -> [G.Vertex]
 -- verticesByDegreeAsc g = map fst . sortBy (comparing snd) $ verticesDegree g
 
 -- | Get the neighbors of a vertex.
-neighbors :: Graph.Graph -> Graph.Vertex -> [Graph.Vertex]
+neighbors :: G.Graph -> G.Vertex -> [G.Vertex]
 neighbors g v = g Array.! v
 
 -- | Check whether a graph has no loops.
 -- (vertices connected to themselves)
--- hasLoop :: Graph.Graph -> Bool
--- hasLoop g = any vLoops $ Graph.vertices g
+-- hasLoop :: G.Graph -> Bool
+-- hasLoop g = any vLoops $ G.vertices g
 --     where vLoops v = v `elem` neighbors g v
 
 -- | Check whether a graph is undirected
--- isUndirected :: Graph.Graph -> Bool
+-- isUndirected :: G.Graph -> Bool
 -- isUndirected g =
---   (sort . Graph.edges) g == (sort . Graph.edges . Graph.transposeG) g
+--   (sort . G.edges) g == (sort . G.edges . G.transposeG) g
 
 -- * Coloring
 
@@ -137,57 +140,61 @@ emptyVertColorMap :: VertColorMap
 emptyVertColorMap = IntMap.empty
 
 -- | Check whether a graph is colorable.
--- isColorable :: Graph.Graph -> Bool
+-- isColorable :: G.Graph -> Bool
 -- isColorable g = isUndirected g && not (hasLoop g)
 
 -- | Get the colors of a list of vertices.
 -- Any uncolored vertices are ignored.
-verticesColors :: VertColorMap -> [Graph.Vertex] -> [Color]
+verticesColors :: VertColorMap -> [G.Vertex] -> [Color]
 verticesColors cMap = mapMaybe (`IntMap.lookup` cMap)
 
 -- | Get the set of colors of a list of vertices.
 -- Any uncolored vertices are ignored.
-verticesColorSet :: VertColorMap -> [Graph.Vertex] -> IntSet.IntSet
+verticesColorSet :: VertColorMap -> [G.Vertex] -> IntSet.IntSet
 verticesColorSet cMap = IntSet.fromList . verticesColors cMap
 
 -- | Get the colors of the neighbors of a vertex.
-neighColors :: Graph.Graph -> VertColorMap -> Graph.Vertex -> [Color]
+neighColors :: G.Graph -> VertColorMap -> G.Vertex -> [Color]
 neighColors g cMap v = verticesColors cMap $ neighbors g v
 
 {-# ANN colorNode "HLint: ignore Use alternative" #-}
 -- | Color one node.
-colorNode :: Graph.Graph -> VertColorMap -> Graph.Vertex -> Color
+colorNode :: InterfGraph -> VertColorMap -> G.Vertex -> Color
 -- use of "head" is A-ok as the source is an infinite list
-colorNode g cMap v = head $ filter notNeighColor [8..41] -- [8..25], si el filtrado es null => spill
-    where notNeighColor = (`notElem` neighColors g cMap v)
+colorNode (g, nfv, vfk) cMap v =
+  let notNeighColor = (`notElem` neighColors g cMap v)
+  in if isFloat nfv v then
+    head $ filter notNeighColor [26..40]
+  else
+    head $ filter notNeighColor [8..25] -- si el filtrado es null => spill
 
 -- | Color a node returning the updated color map.
-colorNodeInMap :: Graph.Graph -> Graph.Vertex -> VertColorMap -> VertColorMap
+colorNodeInMap :: InterfGraph -> G.Vertex -> VertColorMap -> VertColorMap
 colorNodeInMap g v cMap = IntMap.insert v newcolor cMap
     where newcolor = colorNode g cMap v
 
 -- | Color greedily all nodes in the given order.
--- colorInOrder :: Graph.Graph -> [Graph.Vertex] -> VertColorMap
+-- colorInOrder :: G.Graph -> [G.Vertex] -> VertColorMap
 -- colorInOrder g = foldr (colorNodeInMap g) emptyVertColorMap
 
 -- | Color greedily all nodes, larger first.
--- colorLF :: Graph.Graph -> VertColorMap
+-- colorLF :: G.Graph -> VertColorMap
 -- colorLF g = colorInOrder g $ verticesByDegreeAsc g
 
 -- | (vertex, (saturation, degree)) for a vertex.
-vertexSaturation :: Graph.Graph
+vertexSaturation :: InterfGraph
                  -> VertColorMap
-                 -> Graph.Vertex
-                 -> (Graph.Vertex, (Satur, Int))
-vertexSaturation g cMap v =
+                 -> G.Vertex
+                 -> (G.Vertex, (Satur, Int))
+vertexSaturation (g, _, _) cMap v =
   (v, (IntSet.size (verticesColorSet cMap neigh), length neigh))
     where neigh = neighbors g v
 
 -- | (vertex, (colordegree, degree)) for a vertex.
--- vertexColorDegree :: Graph.Graph
+-- vertexColorDegree :: G.Graph
 --                   -> VertColorMap
---                   -> Graph.Vertex
---                   -> (Graph.Vertex, (Int, Int))
+--                   -> G.Vertex
+--                   -> (G.Vertex, (Int, Int))
 -- vertexColorDegree g cMap v =
 --   (v, (length (verticesColors cMap neigh), length neigh))
 --     where neigh = neighbors g v
@@ -197,13 +204,13 @@ vertexSaturation g cMap v =
 -- choose&delete one vertex among the remaining ones. A helper function
 -- is used to induce an order so that the next vertex can be chosen.
 colorDynamicOrder :: Ord a
-                  =>  (Graph.Graph
+                  =>  (InterfGraph
                       -> VertColorMap
-                      -> Graph.Vertex
-                      -> (Graph.Vertex, a)) -- ^ Helper to induce the choice
-                  -> Graph.Graph -- ^ Target graph
+                      -> G.Vertex
+                      -> (G.Vertex, a)) -- ^ Helper to induce the choice
+                  -> InterfGraph -- ^ Target graph
                   -> VertColorMap -- ^ Accumulating vertex color map
-                  -> [Graph.Vertex] -- ^ List of remaining vertices
+                  -> [G.Vertex] -- ^ List of remaining vertices
                   -> VertColorMap -- ^ Output vertex color map
 colorDynamicOrder _ _ cMap [] = cMap
 colorDynamicOrder ordind g cMap l = colorDynamicOrder ordind g newmap newlist
@@ -216,17 +223,17 @@ colorDynamicOrder ordind g cMap l = colorDynamicOrder ordind g newmap newlist
 -- highest degree. This is slower than "colorLF" as we must dynamically
 -- recalculate which node to color next among all remaining ones but
 -- produces better results.
--- colorDcolor :: Graph.Graph -> VertColorMap
+-- colorDcolor :: G.Graph -> VertColorMap
 -- colorDcolor g =
---   colorDynamicOrder vertexColorDegree g emptyVertColorMap $ Graph.vertices g
+--   colorDynamicOrder vertexColorDegree g emptyVertColorMap $ G.vertices g
 
 -- | Color greedily all nodes, highest saturation, then highest degree.
 -- This is slower than "colorLF" as we must dynamically recalculate
 -- which node to color next among all remaining ones but produces better
 -- results.
-colorDsatur :: Graph.Graph -> VertColorMap
-colorDsatur g =
-  colorDynamicOrder vertexSaturation g emptyVertColorMap $ Graph.vertices g
+colorDsatur :: InterfGraph -> VertColorMap
+colorDsatur g@(g', _, _) =
+  colorDynamicOrder vertexSaturation g emptyVertColorMap $ G.vertices g'
 
 -- | ColorVertMap from VertColorMap.
 -- colorVertMap :: VertColorMap -> ColorVertMap
@@ -234,3 +241,12 @@ colorDsatur g =
 --                  (flip (IntMap.insertWith ((:) . head)) . replicate 1)
 --                  IntMap.empty
 
+
+isFloat :: (G.Vertex -> IGraphEdge) -> G.Vertex -> Bool
+isFloat nfv v =
+  let (x, _, _) = nfv v
+  in tacType x == Just TFloat
+  where
+    tacType :: TACInfo -> Maybe Type
+    tacType (TACVar s _) = Just $ symType s
+    tacType (Temp _ t _) = Just t
