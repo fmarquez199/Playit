@@ -5,7 +5,10 @@
  *  Francisco Javier    12-11163
  *  Natascha Gamboa     12-11250
 -}
-module Playit.BackEnd.RegAlloc.FlowGraph (genFlowGraph, printFGNodes) where
+module Playit.BackEnd.RegAlloc.FlowGraph (
+    genFlowGraph
+  , printFGNodes
+  ) where
 
 import Playit.BackEnd.Types
 import Playit.BackEnd.Utils (tacNewLabel, tacLabel)
@@ -50,6 +53,7 @@ getLeaders (i:is) index
 
   where
     jumps = [T.Call,T.If,T.GoTo,T.Lt,T.Lte,T.Gt,T.Gte,T.Eq,T.Neq]
+    
     isJump :: TAC -> Bool
     isJump instr = T.tacOperand instr `elem` jumps
 

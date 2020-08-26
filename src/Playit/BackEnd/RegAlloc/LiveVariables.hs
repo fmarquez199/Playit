@@ -1,4 +1,8 @@
-module Playit.BackEnd.RegAlloc.LiveVariables (getLiveVars, initRegAlloc, printLiveVars) where
+module Playit.BackEnd.RegAlloc.LiveVariables (
+    getLiveVars
+  , initRegAlloc
+  , printLiveVars
+  ) where
 
 import Control.Monad             (when, mapM_)
 import Control.Monad.Trans.State (get, put)

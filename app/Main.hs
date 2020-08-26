@@ -95,4 +95,3 @@ main = do
             genFinalCode tac inter color ("./output/" ++ outputFile)
           else
             mapM_ putStrLn errs
-

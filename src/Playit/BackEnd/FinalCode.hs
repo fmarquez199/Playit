@@ -7,29 +7,16 @@
 -}
 module Playit.BackEnd.FinalCode (genFinalCode) where
 
-import Control.Monad.IO.Class (liftIO)
-import Data.Maybe             (isJust, fromJust)
+import Control.Monad.IO.Class                (liftIO)
+import Data.Maybe                            (isJust, fromJust)
 import Playit.BackEnd.RegAlloc.GraphColoring (VertColorMap)
-import Playit.BackEnd.Types   (TAC, TACOP, TACInfo(..), InterfGraph)
-import Playit.BackEnd.Utils   (tacNewLabel, tacLabel)
-import Playit.FrontEnd.Types  (Type(..), symType)
-import TACType               (ThreeAddressCode(..), Operation(..), Operand(..))
+import Playit.BackEnd.Types                  (TAC, TACOP, TACInfo(..), InterfGraph)
+import Playit.BackEnd.Utils                  (tacNewLabel, tacLabel)
+import Playit.FrontEnd.Types                 (Type(..), symType)
+import TACType                               (ThreeAddressCode(..), Operation(..), Operand(..))
 import qualified Data.Graph  as G
 import qualified Data.IntMap as I
 
-tacInfo :: TACOP -> Maybe TACInfo
-tacInfo (Just (Id tac)) = Just tac
-tacInfo _ = Nothing
-
-tacType :: TACOP -> Maybe Type
-tacType (Just (Constant (_, t))) = Just t
-tacType (Just (Id (TACVar s _))) = Just $ symType s
-tacType (Just (Id (Temp _ t _))) = Just t
-tacType _ = Nothing
-
-isFloat :: Maybe Type -> Bool
-isFloat (Just TFloat) = True
-isFloat _ = False
 
 -- ThreeAddressCode NewLabel (Just l) Nothing Nothing
 genFinalCode :: [TAC] -> InterfGraph -> I.IntMap Int -> String -> IO ()
@@ -110,13 +97,6 @@ genThreeOperandsOp tac i@(_, _, t) color name = do
       appendFile name code
     _ -> appendFile name ""
 
-makeReg :: I.IntMap Int -> Int -> String
-makeReg color number = 
-  let n = fromJust $ I.lookup number color
-  in if n > 25 then "$f" ++ show (2 * n - 50) else "$" ++ show n
-
-getTempNum :: (TACInfo -> Maybe G.Vertex) -> Maybe TACInfo -> Int
-getTempNum t tacInfo = fromJust $ t $ fromJust $ tacInfo
 
 -- ThreeAddressCode Minus (Just x) (Just y) Nothing
 -- ThreeAddressCode Length (Just x) (Just y) _
@@ -130,6 +110,7 @@ genTwoOperandsOp tac (_, _, t) color name = do
     reg1 = (makeReg color $ getTempNum t $ tacInfo $ tacRvalue1 tac) ++ "\n"
     code = inst ++ dest ++ reg1
   appendFile name code
+
 
 -- ThreeAddressCode Return Nothing (Just x) Nothing
 -- ThreeAddressCode Call Nothing (Just f) (Just n)
@@ -155,16 +136,6 @@ genJumps tac (_, _, t) color name = case tacRvalue2 tac of
         let cond = makeReg color $ getTempNum t $ tacInfo $ tacRvalue1 tac
         in appendFile name $ goto ++ cond ++ ", " ++ dest -- If
     else appendFile name $ goto ++ dest -- GoTo
-
-epilogue :: String -> IO ()
-epilogue name = appendFile name "#epilogo se vende por separado\n"
-
-isCall :: Operation -> Bool
-isCall Call = True
-isCall _ = False
-
-prologue :: String -> IO ()
-prologue name = appendFile name "#prologo se vende por separado\n"
 
 -- ThreeAddressCode Print Nothing (Just e) Nothing
 -- ThreeAddressCode Read Nothing (Just e) Nothing
@@ -218,3 +189,45 @@ genAssign tac (_, _, t) color name =
 -- ThreeAddressCode Param Nothing (Just p) Nothing
 genParam :: TAC -> InterfGraph -> I.IntMap Int -> String -> IO ()
 genParam tac (_, _, t) color name = appendFile name ""
+
+epilogue :: String -> IO ()
+epilogue name = appendFile name "#epilogo se vende por separado\n"
+
+prologue :: String -> IO ()
+prologue name = appendFile name "#prologo se vende por separado\n"
+
+
+---- Auxs
+
+-- | Pone el nombre de los regs
+makeReg :: I.IntMap Int -> Int -> String
+makeReg color number = 
+  let n = fromJust $ I.lookup number color
+  in if n > 25 then "$f" ++ show (2 * n - 50) else "$" ++ show n
+
+-- | Ayuda a encontrar la clave para moverse en el mapa
+getTempNum :: (TACInfo -> Maybe G.Vertex) -> Maybe TACInfo -> Int
+getTempNum t tacInfo = fromJust $ t $ fromJust $ tacInfo
+
+-- |
+tacInfo :: TACOP -> Maybe TACInfo
+tacInfo (Just (Id tac)) = Just tac
+tacInfo _ = Nothing
+
+-- |
+tacType :: TACOP -> Maybe Type
+tacType (Just (Constant (_, t))) = Just t
+tacType (Just (Id (TACVar s _))) = Just $ symType s
+tacType (Just (Id (Temp _ t _))) = Just t
+tacType _ = Nothing
+
+-- |
+isFloat :: Maybe Type -> Bool
+isFloat (Just TFloat) = True
+isFloat _ = False
+
+-- |
+isCall :: Operation -> Bool
+isCall Call = True
+isCall _    = False
+

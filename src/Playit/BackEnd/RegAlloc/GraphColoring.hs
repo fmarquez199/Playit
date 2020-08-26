@@ -53,28 +53,28 @@
   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 -}
 
-module Playit.BackEnd.RegAlloc.GraphColoring (colorDsatur, VertColorMap) where
---   ( -- * Types
---     Color
---   , VertColorMap
---   , ColorVertMap
---     -- * Creation
---   , emptyVertColorMap
---     -- * Coloring
---   , colorInOrder
---   , colorLF
--- colorDsatur
---   , colorDcolor
---   , isColorable
---     -- * Color map transformations
---   , colorVertMap
---     -- * Vertex characteristics
---   , verticesByDegreeDesc
---   , verticesByDegreeAsc
---   , neighbors
---   , hasLoop
---   , isUndirected
-  -- ) where
+module Playit.BackEnd.RegAlloc.GraphColoring
+  ( -- * Types
+    -- Color
+    VertColorMap
+  -- , ColorVertMap
+    -- * Creation
+  -- , emptyVertColorMap
+    -- * Coloring
+  -- , colorInOrder
+  -- , colorLF
+  , colorDsatur
+  -- , colorDcolor
+  -- , isColorable
+    -- * Color map transformations
+  -- , colorVertMap
+    -- * Vertex characteristics
+  -- , verticesByDegreeDesc
+  -- , verticesByDegreeAsc
+  -- , neighbors
+  -- , hasLoop
+  -- , isUndirected
+  ) where
 
 import Data.Maybe
 import Data.Ord
