@@ -858,7 +858,7 @@ stack build
 ### Ejecutar el compilador
 
 ```sh
-stack exec playit-exe test/<nombre archivo>.game 
+stack exec playit programas/<nombre archivo>.game 
 ```
 
 ### Compilar y Ejecutar el compilador
