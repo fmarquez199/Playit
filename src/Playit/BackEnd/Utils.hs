@@ -12,7 +12,7 @@ import Data.Maybe
 import Playit.BackEnd.Types
 import Playit.FrontEnd.SymbolTable (lookupInSymTab)
 import Playit.FrontEnd.Types
-import Playit.FrontEnd.Utils       (getName)
+import Playit.FrontEnd.Utils       (getName, typeVar)
 import qualified Data.Map          as M
 import qualified TACType           as T
 
@@ -164,9 +164,9 @@ tacRead = T.ThreeAddressCode T.Read Nothing Nothing Nothing
 
 -------------------------------------------------------------------------------
 -- | Modify the symbol offset
-modifyOffSet :: TACOP -> OffSet -> TACOP
-modifyOffSet (Just (T.Id (Temp n t _))) newO    = tacVariable $ Temp n t newO
-modifyOffSet (Just (T.Id (TACVar info _))) newO = tacVariable $ TACVar info newO
+modifyOffSet :: TACOP -> OffSet -> Width -> TACOP
+modifyOffSet (Just (T.Id (Temp n t _))) o w = tacVariable $ Temp n t (o, w)
+modifyOffSet (Just (T.Id (TACVar i _))) o w = tacVariable $ TACVar i (o, w)
 -------------------------------------------------------------------------------
 
 
@@ -189,6 +189,19 @@ getWidth TNull              = 4 -- Reservemos ese espacio asi igual
 getWidth _                  = -1 -- This shouldn't happen
 -------------------------------------------------------------------------------
 
+asigStr :: TACOP -> Int -> String -> TACOP -> TACOP -> TACMonad ()
+asigStr v _ "" _ _ = tell []
+asigStr v l s i t = do
+  tell (tacAssign i (tacConstant (show l, TInt)))
+  tell (tacAssign t (tacConstant ([head s], TChar)))
+  tell (tacSet v i t)
+  asigStr v (l + 1) (tail s) i t
+
+copyStr :: TACOP -> TACOP -> TACOP -> Int -> Int -> TACMonad ()
+copyStr lv rv t i n = if i > n then tell [] else do
+  tell (tacGet t rv (tacConstant (show i, TInt)))
+  tell (tacSet lv (tacConstant (show i, TInt)) t)
+  copyStr lv rv t (i + 1) n
 
 -------------------------------------------------------------------------------
 lenArray :: Expr -> Int
@@ -233,11 +246,11 @@ breakI = do
 
 
 -------------------------------------------------------------------------------
-newTemp :: Type -> OffSet -> TACMonad TACOP
-newTemp typ actO = do
+newTemp :: Type -> Width -> OffSet -> TACMonad TACOP
+newTemp typ w o = do
   state@Operands{temps = ts} <- get
-  let t = if typ == TFloat then Temp ("$t" ++ show (1 - M.size ts)) typ actO
-      else Temp ("$t" ++ show (M.size ts - 2)) typ actO
+  let t = if typ == TFloat then Temp ("$t" ++ show (1 - M.size ts)) typ (o, w)
+      else Temp ("$t" ++ show (M.size ts - 2)) typ (o, w)
   put state{temps = M.insert t True ts}
   return $ tacVariable t
 -------------------------------------------------------------------------------
@@ -266,6 +279,16 @@ resetOffset :: TACMonad ()
 resetOffset = do
   state <- get
   put state{base = 0}
+
+getOffset :: Var -> TACMonad (TACOP, OffSet, Width)
+getOffset var = do
+  Operands{vars = vs} <- get
+  if M.member var vs then
+    case (fromJust $ fromJust $ M.lookup var vs) of
+      v@(T.Id (Temp _ _ (o, w))) -> return (Just v, o, w)
+      v@(T.Id (TACVar _ (o, w))) -> return (Just v, o, w)
+      _ -> return (Nothing, 0, 0)
+  else return (Nothing, 0, 0)
 -------------------------------------------------------------------------------
 
 
@@ -286,11 +309,11 @@ pushVariable var temp = do
   else do
     let info = head . fromJust $ lookupInSymTab (getName var) st
 
-    state@Operands{base= actO} <- get
+    state@Operands{base = actO} <- get
     put state{vars = M.insert var temp vs}
     
     if category info == Parameters Reference then
-      return $ tacVariable $ TACVar info actO
+      return $ tacVariable $ TACVar info (actO, getWidth (typeVar var))
     else
       return temp
 -------------------------------------------------------------------------------
@@ -310,7 +333,7 @@ pushSubroutine s isProc = do
 getParam :: Type -> Int -> TACMonad TACOP
 getParam t x = do
   state@Operands{temps = ts} <- get
-  let a = Temp ("$a" ++ show x) t (-1)
+  let a = Temp ("$a" ++ show x) t (-1, getWidth t)
   put state{temps = M.insert a True ts}
   return $ tacVariable a
 -------------------------------------------------------------------------------
@@ -320,10 +343,10 @@ getParam t x = do
 setMemoryTemps :: TACMonad (TACOP,TACOP,TACOP,TACOP,TACOP)
 setMemoryTemps = do
   param0 <- getParam TInt 0
-  head   <- pushOffset 8  >>= newTemp TInt
-  elem   <- pushOffset 12 >>= newTemp TInt
-  temp1  <- pushOffset 4  >>= newTemp TInt
-  temp2  <- pushOffset 4  >>= newTemp TInt
+  head   <- pushOffset 8  >>= newTemp TInt 4
+  elem   <- pushOffset 12 >>= newTemp TInt 4
+  temp1  <- pushOffset 4  >>= newTemp TInt 4
+  temp2  <- pushOffset 4  >>= newTemp TInt 4
   return (head, elem, param0, temp1, temp2)
 -------------------------------------------------------------------------------
 
@@ -381,7 +404,7 @@ malloc = do
   -- temp2: Contenido de _head cuando hay mem y flag isFree de _elem cuando no
   let
     (zero,one,two,three,sixteen) = setElemIndexs
-    retn                         = tacVariable $ Temp "_return" TInt (-1)
+    retn                         = tacVariable $ Temp "_return" TInt (-1, 4)
     allocate                     = tacLabel "allocate"
     noMemory                     = tacLabel "noMemory"
     lookMem                      = tacLabel "lookMemory"
@@ -472,7 +495,7 @@ malloc = do
 free :: TACMonad ()
 free = do
   (head,elem,par0,temp1,temp2) <- setMemoryTemps
-  fre <- pushOffset 4 >>= newTemp TInt -- Dir de mem a liberar
+  fre <- pushOffset 4 >>= newTemp TInt 4 -- Dir de mem a liberar
   -- temp1: Guarda la direccion de memoria a ser liberada
   -- temp2: Flag isFree
   let

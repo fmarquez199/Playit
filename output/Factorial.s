@@ -26,9 +26,9 @@ sw $s6, -28($sp)
 sw $s7, -32($sp)
 sw $fp, -36($sp)
 addi $sp, $sp, -40
-_main: li $9, 0
-li $8, 
-1: li $8, Dime lo que deseas hacer: calcular factorial (f) o salir (x): 
+_main: 
+li $9, 0
+1: 
 addi $a0, $8, 0
 li $v0, 4
 syscall
@@ -36,4 +36,3 @@ la $a0, string
 addi $a1, $zero, 80
 li $v0, 8
 syscall
-li $10, x

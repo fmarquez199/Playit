@@ -39,7 +39,7 @@ genFinalCode tac g c n =
   else
     let h = head tac
     in case tacOperand h of
-      x | x `elem` [Add, Sub, Mult, Div, Mod, Gt, Gte, Lt, Lte, Eq, Neq] ->
+      x | x `elem` [Add, Sub, Mult, Div, Mod, Gt, Gte, Lt, Lte, Eq, Neq, Get, Set] ->
         liftIO (print ("tac: " ++ show (tacInfo $ tacRvalue2 h))) >> genThreeOperandsOp h g c n >> genFinalCode (tail tac) g c n
       x | x `elem` [Minus, Length, Ref, Deref] ->
         genTwoOperandsOp h g c n >> genFinalCode (tail tac) g c n
@@ -50,7 +50,7 @@ genFinalCode tac g c n =
       Assign ->
         genAssign h g c n >> genFinalCode (tail tac) g c n
       NewLabel ->
-        appendFile n (show h) >> genFinalCode (tail tac) g c n
+        appendFile n (show h ++ "\n") >> genFinalCode (tail tac) g c n
       Param -> genParam h g c n >> genFinalCode (tail tac) g c n
       _ -> appendFile n "" >> genFinalCode (tail tac) g c n
 
