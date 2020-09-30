@@ -24,16 +24,19 @@ import qualified TACType        as TACT
 
 type TempReg = String
 type OffSet  = Int
+type Width   = Int
 type TAC     = TACT.ThreeAddressCode TACInfo Type
 type TACOP   = Maybe (TACT.Operand TACInfo Type)
 
-data TACInfo = Temp Id Type OffSet
-             | TACVar SymbolInfo OffSet
+data TACInfo = Temp Id Type (OffSet, Width)
+             | TACVar SymbolInfo (OffSet, Width)
              deriving (Eq, Ord)
 
 instance TACT.SymEntryCompatible TACInfo where
-  getSymID (Temp n _ o)    = "[" ++ show o ++ "]->(" ++ n ++ ")"
-  getSymID (TACVar info o) = "[" ++ show o ++ "]->(" ++ symId info ++ ")"
+  getSymID (Temp n _ (o, w))    = n
+  -- getSymID (Temp n _ (o, w))    = "[" ++ show o ++ "]->(" ++ n ++ ")"
+  getSymID (TACVar info (o, w)) = symId info
+  -- getSymID (TACVar info (o, w)) = "[" ++ show o ++ "]->(" ++ symId info ++ ")"
 
 instance Show TACInfo where
   show = TACT.getSymID
