@@ -76,22 +76,23 @@ main = do
             -- putStrLn $ "\nActual offset: " ++ show (actOffS state)
             mapM_ print tac
             let (fg@(graph, getNodeFromVertex, getVertexFromKey), leaders) = genFlowGraph tac
-                nodes = map getNodeFromVertex (vertices graph)
+                -- nodes = map getNodeFromVertex (vertices graph)
             putStrLn $ "\nFlow Graph: " ++ show graph
-            putStrLn $ "\nNodes: " ++ printFGNodes nodes
-            -- print leaders
-            regAlloc <- execStateT (getLiveVars fg) (initRegAlloc nodes)
-            let
-              liveVars = fromList $ map snd $ toList $ bLiveVars regAlloc
-              inter@(ig, nodeFromVertex, vertexFromKey) = genInterferenceGraph liveVars
-              igNodes = map nodeFromVertex (vertices ig)
-              color =  colorDsatur ig
-            putStrLn $ "\nLive Vars: " ++ printLiveVars (toList (bLiveVars regAlloc))
-            putStrLn $ "\nInterference Graph: " ++ printIGNodes igNodes
-            putStrLn $ "\nDSatur coloring: " ++ show color
-            -- putStrLn $ "Ahora el código final en " ++ checkedFile
-            let outputFile = last (strSplitAll "\\" (fst (strSplit "." checkedFile))) ++ ".s"
-            writeFile ("./output/" ++ outputFile) ".text\n"
-            genFinalCode tac inter color ("./output/" ++ outputFile)
+            -- putStrLn $ "\nNodes: " ++ printFGNodes nodes
+            print leaders
+            -- regAlloc <- execStateT (getLiveVars fg) (initRegAlloc nodes)
+            return ()
+            -- let
+            --   liveVars = fromList $ map snd $ toList $ bLiveVars regAlloc
+            --   inter@(ig, nodeFromVertex, vertexFromKey) = genInterferenceGraph liveVars
+            --   igNodes = map nodeFromVertex (vertices ig)
+            --   color =  colorDsatur ig
+            -- putStrLn $ "\nLive Vars: " ++ printLiveVars (toList (bLiveVars regAlloc))
+            -- putStrLn $ "\nInterference Graph: " ++ printIGNodes igNodes
+            -- putStrLn $ "\nDSatur coloring: " ++ show color
+            -- -- putStrLn $ "Ahora el código final en " ++ checkedFile
+            -- let outputFile = last (strSplitAll "\\" (fst (strSplit "." checkedFile))) ++ ".s"
+            -- writeFile ("./output/" ++ outputFile) ".text\n"
+            -- genFinalCode tac inter color ("./output/" ++ outputFile)
           else
             mapM_ putStrLn errs

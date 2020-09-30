@@ -18,7 +18,8 @@
 
 world %Pruebas%:
 
-  Rune x = *a*
+  @Rune x = *a*
+  @Power x = 2
 @ Operaciones aritmeticas
   @Power i0 = x + 1
   @Power i1 = x - 1
@@ -54,6 +55,22 @@ world %Pruebas%:
   @  x++
   @lock (x < 10)
   @.~
+
+Power steps = 1
+Power n = 10
+play:
+  steps++
+  Button:
+    | n % 2 == 0 }
+      n = n // 2
+    | notPressed }
+      n = 3*n+1
+  .~
+lock (n != 2)
+.~
+
+drop steps
+
 
 @  controller x = 0 -> 10: @ lock i % 2 == 0:
   @  gameOver
