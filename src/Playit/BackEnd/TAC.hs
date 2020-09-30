@@ -32,7 +32,7 @@ tacInitState = Operands M.empty temps M.empty [] brk cont 0 False False []
 
 
 gen :: Instr -> TACMonad ()
-gen ast = tell (tacCall Nothing "_main" 0 ++ [tacNewLabel (tacLabel "_main")]) >>
+gen ast = tell (tacCall Nothing "main" 0 ++ [tacNewLabel (tacLabel "main")]) >>
           genCode ast
 
 -- 

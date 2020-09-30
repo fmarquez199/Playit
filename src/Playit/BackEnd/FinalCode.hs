@@ -83,10 +83,10 @@ genThreeOperandsOp tac i@(_, _, t) color name = do
     x | x `elem` [Add, Sub, Mult, Div, Mod] ->
       if isFloat $ tacType $ tacLvalue tac then do
         let
-          save = "sw $v0, -4[$sp]\nsw $v1, -8[$sp]\naddi $sp, $sp, -8\n"
+          save = "sw $v0, -4($sp)\nsw $v1, -8($sp)\naddi $sp, $sp, -8\n"
           mfc1 = "mfc1.d $v0, " ++ reg1 ++ "\n"
           rslt = "addi " ++ dest ++ "$v0, 0\n"
-          load = "lw $v0, 4[$sp]\nlw $v1, 8[$sp]\naddi $sp, $sp, 8\n"
+          load = "lw $v0, 4($sp)\nlw $v1, 8($sp)\naddi $sp, $sp, 8\n"
           code = save ++ inst ++ reg1 ++ reg1 ++ reg2 ++ mfc1 ++ rslt ++ load
         appendFile name code
       else
@@ -106,8 +106,8 @@ genThreeOperandsOp tac i@(_, _, t) color name = do
     Set -> do -- x[i] = y
       let
         y = init $ init reg1
-        code = "add " ++ dest ++ dest ++ y ++ "\nsw " ++ dest ++ reg2
-      appendFile name code
+        code = "add " ++ dest ++ dest ++ y ++ "\nsw " ++ dest ++ "0("
+      appendFile name $ code ++ init reg2 ++ ")\n"
     _ -> appendFile name ""
 
 makeReg :: I.IntMap Int -> Int -> String
