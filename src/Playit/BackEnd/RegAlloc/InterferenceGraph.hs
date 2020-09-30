@@ -33,7 +33,7 @@ addEdge liveVars vars var = (var,var,vars')
 
 printIGNodes :: [(TACInfo, TACInfo, [TACInfo])] -> String
 printIGNodes [] = ""
-printIGNodes ((node,key,succs):nodes) = 
+printIGNodes ((node, key, succs):nodes) = 
   "\n\nNode Key(" ++ show key ++ ")\n" ++
   show node ++ "\n" ++
   concatMap (("\t->" ++ ) . show) succs ++
