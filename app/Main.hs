@@ -23,7 +23,7 @@ import Playit.FrontEnd.Errors            (lexerErrors, showLexerErrors)
 import Playit.FrontEnd.Lexer             (alexScanTokens)
 import Playit.FrontEnd.Parser            (parse)
 import Playit.FrontEnd.SymbolTable       (stInitState)
-import Playit.FrontEnd.Types             (SymTabState(..))
+import Playit.FrontEnd.Types             (SymTabState(..), printData)
 import System.Environment                (getArgs)
 import System.IO                         (readFile)
 import Data.Graph                        (vertices)
@@ -90,9 +90,10 @@ main = do
             -- putStrLn $ "\nLive Vars: " ++ printLiveVars (toList (bLiveVars regAlloc))
             -- putStrLn $ "\nInterference Graph: " ++ printIGNodes igNodes
             -- putStrLn $ "\nDSatur coloring: " ++ show color
-            -- -- putStrLn $ "Ahora el código final en " ++ checkedFile
+            -- putStrLn $ "Ahora el código final en " ++ checkedFile
             -- let outputFile = last (strSplitAll "/" (fst (strSplit "." checkedFile))) ++ ".s"
-            -- writeFile ("./output/" ++ outputFile) ".text\n"
+            -- writeFile ("./output/" ++ outputFile) $ ".data\n" ++ printData st
+            -- appendFile ("./output/" ++ outputFile) "\n.text\n"
             -- genFinalCode tac inter color ("./output/" ++ outputFile)
           else
             mapM_ putStrLn errs

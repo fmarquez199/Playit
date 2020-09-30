@@ -335,6 +335,14 @@ instance Show SymbolInfo where
       "\n    Extra:\n  " ++ intercalate "  " (map show i) ++ "\n"
     else ""
 
+printSymbolInfoData :: SymbolInfo -> String
+printSymbolInfoData (SymbolInfo n t s c _) =
+  if c == Variables then show s ++ n ++ case t of
+    TInt -> ": .buffer 4\n"
+    TFloat -> ": .buffer 8"
+    x | elem x [TChar, TBool] -> ": .buffer 1\n"
+    TStr -> ": .buffer 80\n"
+  else ""
 
 {- | New type that represents the symbol table
  * Hash table:
@@ -357,6 +365,14 @@ instance Show SymTab where
         if k `elem` symbols' then k ++ " -> " ++ concatMap showInfo (reverse v) ++ "\n"
         else ""
       symbols = concatMap showTable table
+
+printData :: SymTab -> String
+printData (SymTab st) = do
+  let showTable (k, v) = if elem k symbols' then concatMap showInfo (reverse v) ++ "\n" else ""
+      symbols'     = map fst $ M.toList $ M.filter (any (>0)) stWithScopes
+      stWithScopes = M.map (map scope) st
+      showInfo i   = if scope i > 0 then printSymbolInfoData i else ""
+  concatMap showTable $ M.toList st
 
 
 -- State that stores the symbol table, active scopes, total scopes and subroutines promises

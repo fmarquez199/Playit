@@ -14,7 +14,7 @@ sw $t7, -44($sp)
 sw $t8, -48($sp)
 sw $t9, -52($sp)
 addi $sp, $sp, -56
-Call _main
+#Call main
 sw $ra, 0($sp)
 sw $s0, -4($sp)
 sw $s1, -8($sp)
@@ -26,12 +26,12 @@ sw $s6, -28($sp)
 sw $s7, -32($sp)
 sw $fp, -36($sp)
 addi $sp, $sp, -40
-_main: 
+main: 
 li $9, 0
 li $8, 1
 add $10, $10, $9
-sw $10, $8
+sw $10, 0($8)
 li $9, 1
-li $8, H
+lbu $8, "H"
 add $10, $10, $9
-sw $10, $8
+sw $10, 0($8)
