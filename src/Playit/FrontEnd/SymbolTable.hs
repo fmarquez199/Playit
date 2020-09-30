@@ -190,6 +190,7 @@ getSize e = error $ "Expresion para tamaño de arreglo incorrecta: " ++ show e
 -- | Inserts the subroutine's name into symbol table
 defineSubroutine :: Id -> Category -> Pos -> MonadSymTab ()
 defineSubroutine n category p = do
+  -- Pragma {-# LANGUAGE NamedFieldPuns             #-} can be useful
   SymTabState{symTab = st, proms = promises, actS = scopes, currS = current} <- get
   fileCode <- ask
   let infos = lookupInScopes scopes n st
