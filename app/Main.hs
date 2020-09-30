@@ -79,7 +79,7 @@ main = do
                 -- nodes = map getNodeFromVertex (vertices graph)
             putStrLn $ "\nFlow Graph: " ++ show graph
             -- putStrLn $ "\nNodes: " ++ printFGNodes nodes
-            print leaders
+            -- print leaders
             -- regAlloc <- execStateT (getLiveVars fg) (initRegAlloc nodes)
             return ()
             -- let
@@ -91,7 +91,7 @@ main = do
             -- putStrLn $ "\nInterference Graph: " ++ printIGNodes igNodes
             -- putStrLn $ "\nDSatur coloring: " ++ show color
             -- -- putStrLn $ "Ahora el código final en " ++ checkedFile
-            -- let outputFile = last (strSplitAll "\\" (fst (strSplit "." checkedFile))) ++ ".s"
+            -- let outputFile = last (strSplitAll "/" (fst (strSplit "." checkedFile))) ++ ".s"
             -- writeFile ("./output/" ++ outputFile) ".text\n"
             -- genFinalCode tac inter color ("./output/" ++ outputFile)
           else
