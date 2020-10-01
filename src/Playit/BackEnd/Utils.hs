@@ -273,7 +273,6 @@ newTemp typ w o = do
 
 
 -------------------------------------------------------------------------------
--- Tal vez colocar labs como [String]
 newLabel :: TACMonad TACOP
 newLabel = do
   state@Operands{labs = ls} <- get
