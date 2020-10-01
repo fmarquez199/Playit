@@ -50,7 +50,7 @@ data Operands = Operands {
   vars  :: M.Map Var TACOP,
   temps :: M.Map TACInfo Bool,
   lits  :: M.Map TACOP TACOP,
-  labs  :: [Int],   -- Labels
+  labs  :: [String],   -- Labels
   brkL  :: TACOP,   -- brake label
   contL :: TACOP,   -- continue label
   base  :: OffSet,

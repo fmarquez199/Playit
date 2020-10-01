@@ -9,6 +9,7 @@ module Playit.BackEnd.FinalCode (genFinalCode) where
 
 import Control.Monad.IO.Class                (liftIO)
 import Data.Maybe                            (isJust, fromJust)
+import Data.List                             (subsequences)
 import Playit.BackEnd.RegAlloc.GraphColoring (VertColorMap)
 import Playit.BackEnd.Types                  (TAC, TACOP, TACInfo(..), InterfGraph)
 import Playit.BackEnd.Utils                  (tacNewLabel, tacLabel)
@@ -36,8 +37,13 @@ genFinalCode tac g c n =
         genSyscalls h g c n >> genFinalCode (tail tac) g c n
       Assign ->
         genAssign h g c n >> genFinalCode (tail tac) g c n
-      NewLabel ->
-        appendFile n (show h ++ "\n") >> genFinalCode (tail tac) g c n
+      NewLabel -> do
+        if elem "l." $ subsequences $ show h then
+          let lbl = tail $ init $ reverse $ snd $ splitAt 2 $ reverse $ show h
+          in appendFile n (lbl ++ ":\n")
+        else
+          appendFile n (show h ++ "\n") >> prologue n
+        genFinalCode (tail tac) g c n
       Param -> genParam h g c n >> genFinalCode (tail tac) g c n
       _ -> appendFile n "" >> genFinalCode (tail tac) g c n
 
@@ -143,7 +149,7 @@ genJumps tac (_, _, t) color name = case tacRvalue2 tac of
       _ -> --return a value into a register
         let
           dest = makeReg color $ getTempNum t $ tacInfo $ tacRvalue1 tac
-          code = "addi $v0, " ++ dest ++ ", 0"
+          code = "addi $v0, " ++ dest ++ ", 0\n"
         in appendFile name code >> epilogue name
   _ -> do
     let

@@ -265,7 +265,7 @@ newTemp typ w o = do
 newLabel :: TACMonad TACOP
 newLabel = do
   state@Operands{labs = ls} <- get
-  let newL = length ls
+  let newL = "l." ++ show (length ls)
   put state{labs = newL:ls}
   return $ tacLabel $ show newL
 -------------------------------------------------------------------------------
