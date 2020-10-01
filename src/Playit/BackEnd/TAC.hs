@@ -5,7 +5,7 @@
  *  Francisco Javier    12-11163
  *  Natascha Gamboa     12-11250
 -}
-module Playit.BackEnd.TAC (tacInitState, gen) where
+module Playit.BackEnd.TAC (tacInitState, genTAC) where
 
 import Control.Monad.IO.Class      (liftIO)
 import Control.Monad               (when, unless, void)
@@ -32,8 +32,8 @@ tacInitState = Operands M.empty temps M.empty [] brk cont 0 False False []
     temps    = M.fromList [(retnReg, False), (nullReg, False)]
 
 
-gen :: Instr -> TACMonad ()
-gen ast = tell (tacCall Nothing "main" 0 ++ [tacNewLabel (tacLabel "main")]) >>
+genAC :: Instr -> TACMonad ()
+genAC ast = tell (tacCall Nothing "main" 0 ++ [tacNewLabel (tacLabel "main")]) >>
           genCode ast >> genSubroutines
 
 -- 
@@ -628,9 +628,6 @@ forInstrs is nextL (begin, cont, iterVar) = do
 -- 
 genParams :: [Expr] -> Int -> TACMonad ()
 genParams [] _ = tell []
-genParams [p] n = do
-  param <- genExpr p
-  tell $ [tacParam param (n + 0)]
 genParams (p:ps) n = do
   param <- genExpr p
   tell $ [tacParam param n]
