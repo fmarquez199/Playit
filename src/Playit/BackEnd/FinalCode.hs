@@ -41,8 +41,9 @@ genFinalCode tac g c n =
         if elem "l." $ subsequences $ show h then
           let lbl = tail $ init $ reverse $ snd $ splitAt 2 $ reverse $ show h
           in appendFile n (lbl ++ ":\n")
-        else
-          appendFile n (show h ++ "\n") >> prologue n
+        else do
+          appendFile n (show h ++ "\n")
+          if "main: " == show h then putStrLn "compiling" else prologue n
         genFinalCode (tail tac) g c n
       Param -> genParam h g c n >> genFinalCode (tail tac) g c n
       _ -> appendFile n "" >> genFinalCode (tail tac) g c n

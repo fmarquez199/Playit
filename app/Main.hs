@@ -96,6 +96,6 @@ main = do
             -- putStrLn $ "Ahora el código final en " ++ checkedFile
             let outputFile = last (strSplitAll "/" (fst (strSplit "." checkedFile))) ++ ".s"
             writeFile ("./output/" ++ outputFile) "\n.text\n"
-            genFinalCode tac inter color ("./output/" ++ outputFile)
+            genFinalCode (tail tac) inter color ("./output/" ++ outputFile)
           else
             mapM_ putStrLn errs
