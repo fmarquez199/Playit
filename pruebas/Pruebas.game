@@ -18,28 +18,9 @@
 
 world %Pruebas%:
 
-  @Rune x = *a*
-  @Power x = 2
-  @Runes x = |)*H*, *o*, *l*, *a*(|
-  @Skill l = 0'0
-  Runes y = ~H~
-  @Runes x = y
-
   @Skill l = 1'0
   @Skill m = 1'0
   @Skill n = 1'0
-  @Skill o = 1'0
-  @Skill p = 1'0
-  @Skill q = 1'0
-  @Skill r = 1'0
-  @Skill s = 1'0
-  @Skill t = 1'0
-  @Skill u = 1'0
-  @Skill v = 1'0
-  @Skill w = 1'0
-  @Skill x = 1'0
-  @Skill y = 1'0
-  @Skill z = 1'0
   
 @ Operaciones aritmeticas
   @Power i0 = x + 1
@@ -76,22 +57,6 @@ world %Pruebas%:
   @  x++
   @lock (x < 10)
   @.~
-
-Power steps = 1
-Power n = 10
-play:
-  steps++
-  Button:
-    | n % 2 == 0 }
-      n = n // 2
-    | notPressed }
-      n = 3*n+1
-  .~
-lock (n != 2)
-.~
-
-drop steps
-
 
 @  controller x = 0 -> 10: @ lock i % 2 == 0:
   @  gameOver
@@ -144,6 +109,11 @@ drop steps
   @Runes j = joystick ~Here we go~
   @drop s
   @drop ~hola mundo!!~
+
+@ Strings
+  Runes y = ~Hola, soy un string~
+  @drop y
+  drop ~Este es otro string~
 
 
 "'Ejemplos por implementar, arriba estan cosas probadas que funcionan'"

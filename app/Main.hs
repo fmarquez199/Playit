@@ -104,10 +104,10 @@ main = do
               four = unlines $ map (strJoin ": ") $ filter w (map (strSplitAll ": ") $ tail $ lines d)
               one = unlines $ map (strJoin ": ") $ filter o (map (strSplitAll ": ") $ tail $ lines d)
               d' = ".data\n" ++ double ++ four ++ one
-            putStrLn $ show double
-            putStrLn $ show four
-            putStrLn $ show one
-            putStrLn $ show d'
+            -- putStrLn $ show double
+            -- putStrLn $ show four
+            -- putStrLn $ show one
+            -- putStrLn $ show d'
             writeFile ("./output/" ++ outputFile) $ d' ++ "\n.text\n"
             genFinalCode (tail tac) inter color ("./output/" ++ outputFile)
             -- close outputFile
