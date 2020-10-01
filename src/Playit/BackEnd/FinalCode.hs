@@ -33,7 +33,7 @@ genFinalCode tac g c n =
         genTwoOperandsOp h g c n >> genFinalCode (tail tac) g c n
       x | x `elem` [Return, Call, If, GoTo] ->
         genJumps h g c n >> genFinalCode (tail tac) g c n
-      x | x `elem` [Print, Read] ->
+      x | x `elem` [Print, Read, Exit] ->
         genSyscalls h g c n >> genFinalCode (tail tac) g c n
       Assign ->
         genAssign h g c n >> genFinalCode (tail tac) g c n
@@ -168,6 +168,7 @@ genJumps tac (_, _, t) color name = case tacRvalue2 tac of
 -- ThreeAddressCode Print Nothing (Just e) Nothing
 -- ThreeAddressCode Read Nothing Nothing Nothing
 -- ThreeAddressCode Assign Nothing (Just x) Nothing
+-- ThreeAddressCode Exit Nothing Nothing Nothing
 genSyscalls :: TAC -> InterfGraph -> I.IntMap Int -> String -> IO ()
 genSyscalls tac (_, _, t) color name = case tacOperand tac of
   Print -> -- syscalls 1,3,4,11
@@ -193,6 +194,7 @@ genSyscalls tac (_, _, t) color name = case tacOperand tac of
           code = "la $a0, " ++ label ++ "\n" ++ len ++ "li $v0, 8\nsyscall\n"
         in appendFile name code
       -- t -> putStrLn $ "Read " ++ [t]
+  Exit -> appendFile name "li $v0, 10\nsyscall\n"
   _ -> -- syscall 9
     let arg = makeReg color $ getTempNum t $ tacInfo $ tacRvalue1 tac
     in appendFile name $ "addi $a0, " ++ arg ++ ", 0\nli $v0, 9\nsyscall\n"

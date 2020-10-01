@@ -34,12 +34,12 @@ tacInitState = Operands M.empty temps M.empty [] brk cont 0 False False []
 
 gen :: Instr -> TACMonad ()
 gen ast = tell (tacCall Nothing "main" 0 ++ [tacNewLabel (tacLabel "main")]) >>
-          genCode ast
+          genCode ast >> genSubroutines
 
 -- 
 genCode :: Instr -> TACMonad ()
 genCode i = case i of
-  (Program is _)             -> mapM_ genCode is >> genSubroutines
+  (Program is _)             -> mapM_ genCode is >> tell [tacExit]
   (Assigs is _)              -> mapM_ genCode is
   (Assig v e _)              -> genAssig v e
   (Break _)                  -> genBreak
