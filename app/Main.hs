@@ -67,6 +67,9 @@ main = do
           (ast, state@SymTabState{symTab = st}, errs) <- runRWST parseCode fileCode stInitState
           
           if null errs then do
+            writeFile "./output/data" ".data\n"
+            appendFile "./output/data" "boolTrue4: .asciiz \"Win\"\n"
+            appendFile "./output/data" "boolFalse4: .asciiz \"Lose\"\n"
             (_, state, tac) <- runRWST (gen ast) ast (tacInitState (symTab state))
             print state
             print ast -- >> print st >> printPromises (proms state)
@@ -76,24 +79,23 @@ main = do
             -- putStrLn $ "\nActual offset: " ++ show (actOffS state)
             mapM_ print tac
             let (fg@(graph, getNodeFromVertex, getVertexFromKey), leaders) = genFlowGraph tac
-                -- nodes = map getNodeFromVertex (vertices graph)
+                nodes = map getNodeFromVertex (vertices graph)
             putStrLn $ "\nFlow Graph: " ++ show graph
             -- putStrLn $ "\nNodes: " ++ printFGNodes nodes
             -- print leaders
-            -- regAlloc <- execStateT (getLiveVars fg) (initRegAlloc nodes)
-            return ()
-            -- let
-            --   liveVars = fromList $ map snd $ toList $ bLiveVars regAlloc
-            --   inter@(ig, nodeFromVertex, vertexFromKey) = genInterferenceGraph liveVars
-            --   igNodes = map nodeFromVertex (vertices ig)
-            --   color =  colorDsatur ig
+            regAlloc <- execStateT (getLiveVars fg) (initRegAlloc nodes)
+            -- return ()
+            let
+              liveVars = fromList $ map snd $ toList $ bLiveVars regAlloc
+              inter@(ig, nodeFromVertex, vertexFromKey) = genInterferenceGraph liveVars
+              igNodes = map nodeFromVertex (vertices ig)
+              color =  colorDsatur inter
             -- putStrLn $ "\nLive Vars: " ++ printLiveVars (toList (bLiveVars regAlloc))
             -- putStrLn $ "\nInterference Graph: " ++ printIGNodes igNodes
             -- putStrLn $ "\nDSatur coloring: " ++ show color
             -- putStrLn $ "Ahora el código final en " ++ checkedFile
-            -- let outputFile = last (strSplitAll "/" (fst (strSplit "." checkedFile))) ++ ".s"
-            -- writeFile ("./output/" ++ outputFile) $ ".data\n" ++ printData st
-            -- appendFile ("./output/" ++ outputFile) "\n.text\n"
-            -- genFinalCode tac inter color ("./output/" ++ outputFile)
+            let outputFile = last (strSplitAll "/" (fst (strSplit "." checkedFile))) ++ ".s"
+            writeFile ("./output/" ++ outputFile) "\n.text\n"
+            genFinalCode tac inter color ("./output/" ++ outputFile)
           else
             mapM_ putStrLn errs

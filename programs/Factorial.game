@@ -19,40 +19,35 @@ monster iterativo(Power n) Power:
 .~
 
 world %Factorial%:
-  Power f
-  Runes msg
   play:
-    msg = ~Dime lo que deseas hacer: calcular factorial (f) o salir (x): ~
-    Runes act = joystick msg
+    Runes msg1 = ~Que deseas hacer calcular factorial .f. o salir .x. ~
+    Runes act = joystick msg1
     Runes exit = ~x~
     Button:
       | act == exit } gameOver
     .~
-    msg = ~Por favor dime un entero mayor o igual que 0: ~
-    Power num = joystick msg
+    Power num = joystick ~Por favor dime un entero mayor o igual que 0 ~
     Button:
       | num < 0 }
-        msg = ~El numero es negativo, empieza de nuevo.~
-        drop msg
+        drop ~El numero es negativo empieza de nuevo~
         keepPlaying
     .~
-    msg = ~Por favor dime un modo de calcular: iterativo (i) o recursivo (r): ~
-    Runes way = joystick msg, fac = ~El factorial de ~, is = ~ es ~
+    Runes msg2 = ~Como calculo iterativamente .i. o recursivamente .r. ~
+    Runes way = joystick msg2, fac = ~El factorial de ~, is = ~ es ~
     Button:
       | way == ~i~ }
-        Power f = kill iterativo(num)
-        drop fac, num, is, f
+        Power fi = kill iterativo(num)
+        drop fac, num, is, fi
       | way == ~r~ }
-        Power f = kill recursivo(num)
-        drop fac, num, is, f
+        Power fr = kill recursivo(num)
+        drop fac, num, is, fr
       | notPressed }
-        msg = ~No escogiste un modo permitido para calcular, empieza otra vez.~
-        drop msg
+        drop ~No escogiste un modo de calculo valido empieza otra vez~
         keepPlaying
     .~
     @ Si la f se declara dentro del Button anterior deberia ser visibe aqui?
     @ drop ~El factorial del numero indicado es ~, kill portalPowerToRunes(f)
   lock Win
   .~
-  drop ~Bye, bye~
+  drop ~Bye~
 .~

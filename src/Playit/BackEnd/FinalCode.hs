@@ -27,7 +27,7 @@ genFinalCode tac g c n =
     let h = head tac
     in case tacOperand h of
       x | x `elem` [Add, Sub, Mult, Div, Mod, Gt, Gte, Lt, Lte, Eq, Neq, Get, Set] ->
-        liftIO (print ("tac: " ++ show (tacInfo $ tacRvalue2 h))) >> genThreeOperandsOp h g c n >> genFinalCode (tail tac) g c n
+        liftIO (print (show h ++ " tac: " ++ show (tacInfo $ tacRvalue2 h))) >> genThreeOperandsOp h g c n >> genFinalCode (tail tac) g c n
       x | x `elem` [Minus, Length, Ref, Deref] ->
         genTwoOperandsOp h g c n >> genFinalCode (tail tac) g c n
       x | x `elem` [Return, Call, If, GoTo] ->
@@ -64,36 +64,47 @@ genThreeOperandsOp tac i@(_, _, t) color name = do
   let
     inst = show (tacOperand tac) ++ " "
     dest = (makeReg color $ getTempNum t $ tacInfo $ tacLvalue tac) ++ ", "
-    reg1 = (makeReg color $ getTempNum t $ tacInfo $ tacRvalue1 tac) ++ ", "
-    reg2 = (makeReg color $ getTempNum t $ tacInfo $ tacRvalue2 tac) ++ "\n"
   case tacOperand tac of
-    x | x `elem` [Add, Sub, Mult, Div, Mod] ->
-      if isFloat $ tacType $ tacLvalue tac then do
-        let
-          save = "sw $v0, -4($sp)\nsw $v1, -8($sp)\naddi $sp, $sp, -8\n"
-          mfc1 = "mfc1.d $v0, " ++ reg1 ++ "\n"
-          rslt = "addi " ++ dest ++ "$v0, 0\n"
-          load = "lw $v0, 4($sp)\nlw $v1, 8($sp)\naddi $sp, $sp, 8\n"
-          code = save ++ inst ++ reg1 ++ reg1 ++ reg2 ++ mfc1 ++ rslt ++ load
-        appendFile name code
-      else
-        let code = inst ++ dest ++ reg1 ++ reg2 
-        in appendFile name code
+    x | x `elem` [Add, Sub, Mult, Div, Mod] -> let
+      reg1 = (makeReg color $ getTempNum t $ tacInfo $ tacRvalue1 tac) ++ ", "
+      in case tacInfo $ tacRvalue2 tac of
+        Nothing ->
+          let reg2 = show (fromJust $ tacRvalue2 tac) ++ "\n"
+          in if isFloat $ tacType $ tacLvalue tac then do
+            let
+              save = "sw $v0, -4($sp)\nsw $v1, -8($sp)\naddi $sp, $sp, -8\n"
+              mfc1 = "mfc1.d $v0, " ++ reg1 ++ "\n"
+              rslt = "addi " ++ dest ++ "$v0, 0\n"
+              load = "lw $v0, 4($sp)\nlw $v1, 8($sp)\naddi $sp, $sp, 8\n"
+              code = save ++ inst ++ reg1 ++ reg1 ++ reg2 ++ mfc1 ++ rslt
+            appendFile name $ code ++ load
+          else
+            let code = inst ++ dest ++ reg1 ++ reg2 
+            in appendFile name code
+        _ ->
+          let reg2 = (makeReg color $ getTempNum t $ tacInfo $ tacRvalue2 tac)
+          in appendFile name $ inst ++ dest ++ reg1 ++ reg2 ++ "\n"
     x | x `elem` [Gt, Gte, Lt, Lte, Eq, Neq] ->
-      let code = inst ++ dest ++ reg1 ++ reg2 
-      in appendFile name code
+      let reg2 = show (fromJust $ tacRvalue2 tac) ++ "\n"
+          reg1 = if isJust $ tacInfo $ tacRvalue1 tac then
+            (makeReg color $ getTempNum t $ tacInfo $ tacRvalue1 tac) ++ ", "
+          else show (fromJust $ tacRvalue1 tac) ++ ", "
+      in appendFile name $ inst ++ dest ++ reg1 ++ reg2
     Call ->
       let save = "addi " ++ dest ++ "$v0, 0\n"
       in genJumps tac i color name >> appendFile name save
     Get -> do-- x = y[i]
       let
-        y = init $ init reg1
-        code = "add " ++ reg1 ++ reg1 ++ reg2 ++ "\nlw " ++ dest ++ y
+        reg1 = (makeReg color $ getTempNum t $ tacInfo $ tacRvalue1 tac)
+        y = reg1 ++ ", "
+        reg2 = (makeReg color $ getTempNum t $ tacInfo $ tacRvalue2 tac)
+        code = "add " ++ y ++ y ++ reg2 ++ "\nlw " ++ dest ++ reg1
       appendFile name code
     Set -> do -- x[i] = y
       let
-        y = init $ init reg1
-        code = "add " ++ dest ++ dest ++ y ++ "\nsw " ++ dest ++ "0("
+        reg1 = (makeReg color $ getTempNum t $ tacInfo $ tacRvalue1 tac)
+        reg2 = (makeReg color $ getTempNum t $ tacInfo $ tacRvalue2 tac)
+        code = "add " ++ dest ++ dest ++ reg1 ++ "\nsw " ++ dest ++ "0("
       appendFile name $ code ++ init reg2 ++ ")\n"
     _ -> appendFile name ""
 
@@ -103,13 +114,17 @@ genThreeOperandsOp tac i@(_, _, t) color name = do
 -- ThreeAddressCode Ref (Just x) (Just y) Nothing
 -- ThreeAddressCode Deref (Just x) (Just y) Nothing
 genTwoOperandsOp :: TAC -> InterfGraph -> I.IntMap Int -> String -> IO ()
-genTwoOperandsOp tac (_, _, t) color name = do
-  let
-    inst = show (tacOperand tac) ++ " "
-    dest = (makeReg color $ getTempNum t $ tacInfo $ tacLvalue tac) ++ ", "
-    reg1 = (makeReg color $ getTempNum t $ tacInfo $ tacRvalue1 tac) ++ "\n"
-    code = inst ++ dest ++ reg1
-  appendFile name code
+genTwoOperandsOp tac (_, _, t) color name =
+  let inst = show (tacOperand tac) ++ " "
+      dest = (makeReg color $ getTempNum t $ tacInfo $ tacLvalue tac) ++ ", "
+  in case tacInfo $ tacRvalue1 tac of
+    Nothing ->
+      let label = show (fromJust $ tacRvalue1 tac) ++ "\n"
+      in appendFile name $ inst ++ dest ++  label
+    _ -> let
+      reg1 = (makeReg color $ getTempNum t $ tacInfo $ tacRvalue1 tac) ++ "\n"
+      code = inst ++ dest ++ reg1
+      in appendFile name code
 
 
 -- ThreeAddressCode Return Nothing (Just x) Nothing
@@ -120,12 +135,16 @@ genTwoOperandsOp tac (_, _, t) color name = do
 genJumps :: TAC -> InterfGraph -> I.IntMap Int -> String -> IO ()
 genJumps tac (_, _, t) color name = case tacRvalue2 tac of
   Nothing -> case tacRvalue1 tac of
-    Nothing -> epilogue name >> activateCaller name -- Return Proc
-    _ -> do -- Return Func
-      let
-        dest = makeReg color $ getTempNum t $ tacInfo $ tacRvalue1 tac
-        code = "addi $v0, " ++ dest ++ ", 0"
-      appendFile name code >> epilogue name >> activateCaller name
+    Nothing -> epilogue name -- Return Proc
+    _ -> case tacInfo $ tacRvalue1 tac of -- Return Func
+      Nothing -> --return a constant
+        let code = "addi $v0, " ++ show (fromJust $ tacRvalue1 tac) ++ ", 0\n"
+        in appendFile name code >> epilogue name
+      _ -> --return a value into a register
+        let
+          dest = makeReg color $ getTempNum t $ tacInfo $ tacRvalue1 tac
+          code = "addi $v0, " ++ dest ++ ", 0"
+        in appendFile name code >> epilogue name
   _ -> do
     let
       goto = show (tacOperand tac) ++ " "
@@ -133,7 +152,7 @@ genJumps tac (_, _, t) color name = case tacRvalue2 tac of
     if isJust $ tacRvalue1 tac then
       if isCall $ tacOperand tac then -- Call Subroutines
         let code = goto ++ show (fromJust $ tacRvalue1 tac) ++ "\n"
-        in activateCalled name >> appendFile name code >> prologue name
+        in activateCalled name >> appendFile name code >> activateCaller name
       else
         let cond = makeReg color $ getTempNum t $ tacInfo $ tacRvalue1 tac
         in appendFile name $ goto ++ cond ++ ", " ++ dest -- If
@@ -203,7 +222,7 @@ epilogue name = appendFile name (mvsp ++ epi0 ++ epi1 ++ epi2) where
   mvsp = "addi $sp, $sp, 40\nlw $ra, 0($sp)\nlw $s0, -4($sp)\n"
   epi0 = "lw $s1, -8($sp)\nlw $s2, -12($sp)\nlw $s3, -16($sp)\n"
   epi1 = "lw $s4, -20($sp)\nlw $s5, -24($sp)\nlw $s6, -28($sp)\n"
-  epi2 = "lw $s7, -32($sp)\nlw $fp, -36($sp)\njr $ra"
+  epi2 = "lw $s7, -32($sp)\nlw $fp, -36($sp)\njr $ra\n"
 
 activateCaller :: String -> IO ()
 activateCaller name = appendFile name (ac1 ++ ac2 ++ ac3 ++ ac4 ++ ac5) where

@@ -157,10 +157,14 @@ tacPrint e = T.ThreeAddressCode T.Print Nothing e Nothing
 
 
 -------------------------------------------------------------------------------
-tacRead :: TAC
-tacRead = T.ThreeAddressCode T.Read Nothing Nothing Nothing
+tacRead :: TACOP -> TAC
+tacRead d = T.ThreeAddressCode T.Read Nothing d Nothing
 -------------------------------------------------------------------------------
 
+-------------------------------------------------------------------------------
+tacRef :: TACOP -> TACOP -> TAC
+tacRef x y = T.ThreeAddressCode T.Ref x y Nothing
+-------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
 -- | Modify the symbol offset
