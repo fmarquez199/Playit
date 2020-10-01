@@ -145,7 +145,7 @@ genJumps tac (_, _, t) color name = case tacRvalue2 tac of
     Nothing -> epilogue name -- Return Proc
     _ -> case tacInfo $ tacRvalue1 tac of -- Return Func
       Nothing -> --return a constant
-        let code = "addi $v0, " ++ show (fromJust $ tacRvalue1 tac) ++ ", 0\n"
+        let code = "addi $v0, $0, " ++ show (fromJust $ tacRvalue1 tac) ++ "\n"
         in appendFile name code >> epilogue name
       _ -> --return a value into a register
         let
@@ -169,27 +169,33 @@ genJumps tac (_, _, t) color name = case tacRvalue2 tac of
 -- ThreeAddressCode Read Nothing Nothing Nothing
 -- ThreeAddressCode Assign Nothing (Just x) Nothing
 genSyscalls :: TAC -> InterfGraph -> I.IntMap Int -> String -> IO ()
-genSyscalls tac (_, _, t) color name =
-  if isJust $ tacInfo $ tacRvalue1 tac then
+genSyscalls tac (_, _, t) color name = case tacOperand tac of
+  Print -> -- syscalls 1,3,4,11
+    if isJust $ tacInfo $ tacRvalue1 tac then
+      let arg = makeReg color $ getTempNum t $ tacInfo $ tacRvalue1 tac
+      in appendFile name $ "li $v0, 1\naddi $a0, " ++ arg ++ ", 0\nsyscall\n"
+    else
+      let label = show (fromJust $ tacRvalue1 tac) ++ "\nsyscall\n"
+      in case last $ show $ fromJust $ tacRvalue1 tac of
+        '1' -> appendFile name $ "li $v0, 1\nlw $a0, " ++ label
+        '3' -> appendFile name $ "li $v0, 3\nl.d $f12, " ++ label
+        _ -> appendFile name $ "li $v0, 4\nla $a0, " ++ label
+        -- t -> putStrLn $ "Print " ++ [t]
+  Read -> -- syscalls 5,7,8,12
+    let label = show (fromJust $ tacRvalue1 tac)
+    in case last $ show $ fromJust $ tacRvalue1 tac of
+      '5' -> let code = "li $v0, 5\nsyscall\nsw $v0, " ++ label ++ "\n"
+        in appendFile name code
+      '7' -> let code = "li $v0, 7\nsyscall\nswl $f0, " ++ label
+        in appendFile name $ code ++ "\nswr $f0, " ++ label ++ "4\n"
+      _ -> let
+          len  = "li $a1, len" ++ show (fromJust $ tacRvalue1 tac) ++ "\n"
+          code = "la $a0, " ++ label ++ "\n" ++ len ++ "li $v0, 8\nsyscall\n"
+        in appendFile name code
+      -- t -> putStrLn $ "Read " ++ [t]
+  _ -> -- syscall 9
     let arg = makeReg color $ getTempNum t $ tacInfo $ tacRvalue1 tac
-    in case tacOperand tac of
-      Print -> -- syscalls 1,2,4,11
-        let sys = "syscall\n"
-        in case tacType $ tacRvalue1 tac of
-          Just TInt ->
-            appendFile name $ "addi $a0, " ++ arg ++ ", 0\nli $v0, 1\n" ++ sys
-          Just TFloat ->
-            appendFile name $ "addi FP12, " ++ arg ++ ", 0\nli $v0, 2\n" ++ sys
-          Just TStr ->
-            appendFile name $ "addi $a0, " ++ arg ++ ", 0\nli $v0, 4\n" ++ sys
-          Just TChar ->
-            appendFile name $ "addi $a0, " ++ arg ++ ", 0\nli $v0, 11\n" ++ sys
-          _ -> appendFile name ""
-      -- syscall 9 
-      _ -> appendFile name $ "addi $a0, " ++ arg ++ ", 0\nli $v0, 9\nsyscall\n"
-  else -- syscall 8
-    let code = "la $a0, string\naddi $a1, $zero, 80\nli $v0, 8\nsyscall\n"
-    in appendFile name code
+    in appendFile name $ "addi $a0, " ++ arg ++ ", 0\nli $v0, 9\nsyscall\n"
 
 -- ThreeAddressCode Assign (Just x) (Just y) Nothing
 -- ThreeAddressCode Assign (Just x) Nothing Nothing
@@ -203,7 +209,7 @@ genAssign tac (_, _, t) color name =
     _ ->
       if isJust $ tacInfo $ tacRvalue1 tac then do
         let
-          reg1 = show (fromJust $ t $ fromJust $ tacInfo $ tacRvalue1 tac)
+          reg1 = makeReg color $ getTempNum t $ tacInfo $ tacRvalue1 tac
           code = "addi " ++ dest ++ ", " ++ reg1 ++ ", 0\n"
         putStrLn reg1
         appendFile name code
@@ -293,7 +299,7 @@ show' :: Operation -> String
 show' Add = "add"
 show' Sub = "sub"
 show' Minus = "neg"
-show' Mult = "neg"
+show' Mult = "mul"
 show' Div = "div"
 show' Mod = "rem"
 show' And = "and"

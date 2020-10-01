@@ -20,11 +20,9 @@ monster iterativo(Power n) Power:
 
 world %Factorial%:
   play:
-    Runes msg1 = ~Que deseas hacer calcular factorial .f. o salir .x. ~
-    Runes act = joystick msg1
-    Runes exit = ~x~
+    Power act = joystick ~Que deseas hacer calcular factorial .1. o salir .0. ~
     Button:
-      | act == exit } gameOver
+      | act == 0 } gameOver
     .~
     Power num = joystick ~Por favor dime un entero mayor o igual que 0 ~
     Button:
@@ -32,16 +30,14 @@ world %Factorial%:
         drop ~El numero es negativo empieza de nuevo~
         keepPlaying
     .~
-    Runes fac = ~El factorial de ~, is = ~ es ~
-    Runes msg2 = ~Como calculo iterativamente .1. o recursivamente .0. ~
-    Power way = joystick msg2
+    Power way = joystick ~Calculo iterativamente .1. o recursivamente .0. ~
     Button:
       | way == 1 }
         Power fi = kill iterativo(num)
-        drop fac, num, is, fi
+        drop ~Iterativamente el factorial de ~, num, ~ es ~, fi
       | way == 0 }
         Power fr = kill recursivo(num)
-        drop fac, num, is, fr
+        drop ~Recursivamente el factorial de ~, num, ~ da ~, fr
       | notPressed }
         drop ~No escogiste un modo de calculo valido empieza otra vez~
         keepPlaying
