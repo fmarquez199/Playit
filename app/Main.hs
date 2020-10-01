@@ -67,9 +67,9 @@ main = do
           (ast, state@SymTabState{symTab = st}, errs) <- runRWST parseCode fileCode stInitState
           
           if null errs then do
-            writeFile "./output/data" ".data\nboolTrue4: .asciiz \"Win\"\n"
-            appendFile "./output/data" "boolFalse4: .asciiz \"Lose\"\n"
-            (_, state, tac) <- runRWST (gen ast) ast (tacInitState (symTab state))
+            writeFile "./output/data" ".data\nboolTrue: .asciiz \"Win\"\n"
+            appendFile "./output/data" "boolFalse: .asciiz \"Lose\"\n"
+            (_, state, tac) <- runRWST (genTAC ast) ast (tacInitState (symTab state))
             print state
             print ast -- >> print st >> printPromises (proms state)
             -- putStrLn $ "\nActive scopes: " ++ show (actS state)
