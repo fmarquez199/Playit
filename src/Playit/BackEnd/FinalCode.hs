@@ -10,6 +10,7 @@ module Playit.BackEnd.FinalCode (genFinalCode) where
 import Control.Monad.IO.Class                (liftIO)
 import Data.Maybe                            (isJust, fromJust)
 import Data.List                             (subsequences)
+import Data.Strings                          (strSplit)
 import Playit.BackEnd.RegAlloc.GraphColoring (VertColorMap)
 import Playit.BackEnd.Types                  (TAC, TACOP, TACInfo(..), InterfGraph)
 import Playit.BackEnd.Utils                  (tacNewLabel, tacLabel)
@@ -177,23 +178,24 @@ genSyscalls tac (_, _, t) color name = case tacOperand tac of
       in appendFile name $ "li $v0, 1\naddi $a0, " ++ arg ++ ", 0\nsyscall\n"
     else
       let label = show (fromJust $ tacRvalue1 tac) ++ "\nsyscall\n"
-      in case last $ show $ fromJust $ tacRvalue1 tac of
-        '1' -> appendFile name $ "li $v0, 1\nlw $a0, " ++ label
-        '3' -> appendFile name $ "li $v0, 3\nl.d $f12, " ++ label
+      in case strSplit "_" $ show $ fromJust $ tacRvalue1 tac of
+        (_, "int") -> appendFile name $ "li $v0, 1\nlw $a0, " ++ label
+        (_, "float") -> appendFile name $ "li $v0, 3\nl.d $f12, " ++ label
+        -- (_, "str") -> appendFile name $ "li $v0, 4\nla $a0, " ++ label
         _ -> appendFile name $ "li $v0, 4\nla $a0, " ++ label
-        -- t -> putStrLn $ "Print " ++ [t]
+        -- t -> putStrLn $ "Print " ++ fst t ++ "_" ++ snd t
   Read -> -- syscalls 5,7,8,12
     let label = show (fromJust $ tacRvalue1 tac)
-    in case last $ show $ fromJust $ tacRvalue1 tac of
-      '5' -> let code = "li $v0, 5\nsyscall\nsw $v0, " ++ label ++ "\n"
+    in case strSplit "_" $ show $ fromJust $ tacRvalue1 tac of
+      (_, "int") -> let code = "li $v0, 5\nsyscall\nsw $v0, " ++ label ++ "\n"
         in appendFile name code
-      '7' -> let code = "li $v0, 7\nsyscall\nswl $f0, " ++ label
-        in appendFile name $ code ++ "\nswr $f0, " ++ label ++ "4\n"
-      _ -> let
+      (_, "float") -> let code = "li $v0, 7\nsyscall\nswl $f0, " ++ label
+        in appendFile name $ code ++ "\nswr $f0, " ++ label ++ "\n"
+      (_, "str") -> let
           len  = "li $a1, len" ++ show (fromJust $ tacRvalue1 tac) ++ "\n"
           code = "la $a0, " ++ label ++ "\n" ++ len ++ "li $v0, 8\nsyscall\n"
         in appendFile name code
-      -- t -> putStrLn $ "Read " ++ [t]
+      t -> putStrLn $ "Read " ++ fst t ++ "_" ++ snd t
   Exit -> appendFile name "li $v0, 10\nsyscall\n"
   _ -> -- syscall 9
     let arg = makeReg color $ getTempNum t $ tacInfo $ tacRvalue1 tac
