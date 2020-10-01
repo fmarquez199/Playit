@@ -11,7 +11,7 @@ module Main where
 import Control.Monad                     (mapM_)
 import Control.Monad.Trans.RWS           (runRWST)
 import Control.Monad.Trans.State         (execStateT)
-import Data.Strings                      (strEndsWith, strSplit, strSplitAll)
+import Data.Strings                      (strEndsWith, strSplit, strSplitAll, strStartsWith, strJoin)
 import Playit.BackEnd.RegAlloc.FlowGraph
 import Playit.BackEnd.RegAlloc.GraphColoring
 import Playit.BackEnd.RegAlloc.InterferenceGraph
@@ -95,7 +95,19 @@ main = do
             -- putStrLn $ "Ahora el código final en " ++ checkedFile
             let outputFile = last (strSplitAll "/" (fst (strSplit "." checkedFile))) ++ ".s"
             d <- readFile "./output/data"
-            writeFile ("./output/" ++ outputFile) $ d ++ "\n.text\n"
+            let
+              db s = strStartsWith (last s) ".double"
+              w s = strStartsWith (last s) ".space" || strStartsWith (last s) ".word"
+              o s = strStartsWith (last s) ".asciiz" 
+              double = unlines $ map (strJoin ": ") $ filter db (map (strSplitAll ": ") $ tail $ lines d)
+              four = unlines $ map (strJoin ": ") $ filter w (map (strSplitAll ": ") $ tail $ lines d)
+              one = unlines $ map (strJoin ": ") $ filter o (map (strSplitAll ": ") $ tail $ lines d)
+              d' = ".data\n" ++ double ++ four ++ one
+            putStrLn $ show double
+            putStrLn $ show four
+            putStrLn $ show one
+            putStrLn $ show d'
+            writeFile ("./output/" ++ outputFile) $ d' ++ "\n.text\n"
             genFinalCode (tail tac) inter color ("./output/" ++ outputFile)
           else
             mapM_ putStrLn errs
