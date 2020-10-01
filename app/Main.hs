@@ -67,8 +67,7 @@ main = do
           (ast, state@SymTabState{symTab = st}, errs) <- runRWST parseCode fileCode stInitState
           
           if null errs then do
-            writeFile "./output/data" ".data\n"
-            appendFile "./output/data" "boolTrue4: .asciiz \"Win\"\n"
+            writeFile "./output/data" ".data\nboolTrue4: .asciiz \"Win\"\n"
             appendFile "./output/data" "boolFalse4: .asciiz \"Lose\"\n"
             (_, state, tac) <- runRWST (gen ast) ast (tacInitState (symTab state))
             print state
@@ -95,7 +94,8 @@ main = do
             -- putStrLn $ "\nDSatur coloring: " ++ show color
             -- putStrLn $ "Ahora el código final en " ++ checkedFile
             let outputFile = last (strSplitAll "/" (fst (strSplit "." checkedFile))) ++ ".s"
-            writeFile ("./output/" ++ outputFile) "\n.text\n"
+            d <- readFile "./output/data"
+            writeFile ("./output/" ++ outputFile) $ d ++ "\n.text\n"
             genFinalCode (tail tac) inter color ("./output/" ++ outputFile)
           else
             mapM_ putStrLn errs

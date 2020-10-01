@@ -32,13 +32,14 @@ world %Factorial%:
         drop ~El numero es negativo empieza de nuevo~
         keepPlaying
     .~
-    Runes msg2 = ~Como calculo iterativamente .i. o recursivamente .r. ~
-    Runes way = joystick msg2, fac = ~El factorial de ~, is = ~ es ~
+    Runes fac = ~El factorial de ~, is = ~ es ~
+    Runes msg2 = ~Como calculo iterativamente .1. o recursivamente .0. ~
+    Power way = joystick msg2
     Button:
-      | way == ~i~ }
+      | way == 1 }
         Power fi = kill iterativo(num)
         drop fac, num, is, fi
-      | way == ~r~ }
+      | way == 0 }
         Power fr = kill recursivo(num)
         drop fac, num, is, fr
       | notPressed }

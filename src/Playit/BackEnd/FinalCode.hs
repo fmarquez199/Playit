@@ -69,7 +69,7 @@ genFinalCode tac g c n =
 genThreeOperandsOp :: TAC -> InterfGraph -> I.IntMap Int -> String -> IO ()
 genThreeOperandsOp tac i@(_, _, t) color name = do
   let
-    inst = show (tacOperand tac) ++ " "
+    inst = show' (tacOperand tac) ++ " "
     dest = (makeReg color $ getTempNum t $ tacInfo $ tacLvalue tac) ++ ", "
   case tacOperand tac of
     x | x `elem` [Add, Sub, Mult, Div, Mod] -> let
@@ -92,7 +92,7 @@ genThreeOperandsOp tac i@(_, _, t) color name = do
           let reg2 = (makeReg color $ getTempNum t $ tacInfo $ tacRvalue2 tac)
           in appendFile name $ inst ++ dest ++ reg1 ++ reg2 ++ "\n"
     x | x `elem` [Gt, Gte, Lt, Lte, Eq, Neq] ->
-      let reg2 = show (fromJust $ tacRvalue2 tac) ++ "\n"
+      let reg2 = (tail . init $ show (fromJust $ tacRvalue2 tac)) ++ "\n"
           reg1 = if isJust $ tacInfo $ tacRvalue1 tac then
             (makeReg color $ getTempNum t $ tacInfo $ tacRvalue1 tac) ++ ", "
           else show (fromJust $ tacRvalue1 tac) ++ ", "
@@ -122,7 +122,7 @@ genThreeOperandsOp tac i@(_, _, t) color name = do
 -- ThreeAddressCode Deref (Just x) (Just y) Nothing
 genTwoOperandsOp :: TAC -> InterfGraph -> I.IntMap Int -> String -> IO ()
 genTwoOperandsOp tac (_, _, t) color name =
-  let inst = show (tacOperand tac) ++ " "
+  let inst = show' (tacOperand tac) ++ " "
       dest = (makeReg color $ getTempNum t $ tacInfo $ tacLvalue tac) ++ ", "
   in case tacInfo $ tacRvalue1 tac of
     Nothing ->
@@ -154,8 +154,8 @@ genJumps tac (_, _, t) color name = case tacRvalue2 tac of
         in appendFile name code >> epilogue name
   _ -> do
     let
-      goto = show (tacOperand tac) ++ " "
-      dest = show (fromJust $ tacRvalue2 tac) ++ "\n"
+      goto = show' (tacOperand tac) ++ " "
+      dest = (tail . init $ show (fromJust $ tacRvalue2 tac)) ++ "\n"
     if isJust $ tacRvalue1 tac then
       if isCall $ tacOperand tac then -- Call Subroutines
         let code = goto ++ show (fromJust $ tacRvalue1 tac) ++ "\n"
@@ -205,6 +205,7 @@ genAssign tac (_, _, t) color name =
         let
           reg1 = show (fromJust $ t $ fromJust $ tacInfo $ tacRvalue1 tac)
           code = "addi " ++ dest ++ ", " ++ reg1 ++ ", 0\n"
+        putStrLn reg1
         appendFile name code
       else 
         let immediate = show (fromJust $ tacRvalue1 tac) ++ "\n"
@@ -287,3 +288,28 @@ isFloat _ = False
 isCall :: Operation -> Bool
 isCall Call = True
 isCall _    = False
+
+show' :: Operation -> String
+show' Add = "add"
+show' Sub = "sub"
+show' Minus = "neg"
+show' Mult = "neg"
+show' Div = "div"
+show' Mod = "rem"
+show' And = "and"
+show' Or = "or"
+show' Gt = "bgt"
+show' Gte = "bge"
+show' Lt = "blt"
+show' Lte = "ble"
+show' Eq = "beq"
+show' Neq = "bne"
+show' GoTo = "b"
+show' If = "bnez"
+show' Call = "jal"
+show' Return = "jr"
+show' Get = "lw"
+show' Set = "sw"
+show' Ref = "la"
+show' Deref = "lw"
+show' _ = "NM"
