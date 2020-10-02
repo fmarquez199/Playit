@@ -25,7 +25,8 @@ import Playit.FrontEnd.Parser            (parse)
 import Playit.FrontEnd.SymbolTable       (stInitState)
 import Playit.FrontEnd.Types             (SymTabState(..), printData)
 import System.Environment                (getArgs)
-import System.IO                         (readFile)
+import System.Directory                  (createDirectoryIfMissing)
+import System.IO                         (readFile, openFile, writeFile, appendFile, IOMode(ReadWriteMode))
 import Data.Graph                        (vertices)
 import Data.Map                          (toList)
 import Data.Set                          (fromList)
@@ -42,7 +43,6 @@ checkExt []         = Left "\nError: no file given\n"
 checkExt (file:_:_) = Left "\nError: more than one file given\n"
 checkExt [file]     = if strEndsWith file ".game" then Right file
                       else  Left "\nError: extension for file not valid\n"
-
 
 main :: IO ()
 main = do
@@ -67,10 +67,11 @@ main = do
           (ast, state@SymTabState{symTab = st}, errs) <- runRWST parseCode fileCode stInitState
           
           if null errs then do
-            writeFile "./output/data" ".data\nboolTrue4: .asciiz \"Win\"\n"
-            appendFile "./output/data" "boolFalse4: .asciiz \"Lose\"\n"
-            (_, state, tac) <- runRWST (gen ast) ast (tacInitState (symTab state))
-            print state
+            createDirectoryIfMissing True "./output/"
+            writeFile dataFilePath ".data\nboolTrue: .asciiz \"Win\"\n"
+            appendFile dataFilePath "boolFalse: .asciiz \"Lose\"\n"
+            (_, state, tac) <- runRWST (genTAC ast) ast (tacInitState (symTab state))
+            -- print state
             print ast -- >> print st >> printPromises (proms state)
             -- putStrLn $ "\nActive scopes: " ++ show (actS state)
             -- putStrLn $ "\nActual scope:" ++ show (stScope state)
@@ -79,7 +80,7 @@ main = do
             mapM_ print tac
             let (fg@(graph, getNodeFromVertex, getVertexFromKey), leaders) = genFlowGraph tac
                 nodes = map getNodeFromVertex (vertices graph)
-            putStrLn $ "\nFlow Graph: " ++ show graph
+            -- putStrLn $ "\nFlow Graph: " ++ show graph
             -- putStrLn $ "\nNodes: " ++ printFGNodes nodes
             -- print leaders
             regAlloc <- execStateT (getLiveVars fg) (initRegAlloc nodes)
@@ -94,7 +95,7 @@ main = do
             -- putStrLn $ "\nDSatur coloring: " ++ show color
             -- putStrLn $ "Ahora el código final en " ++ checkedFile
             let outputFile = last (strSplitAll "/" (fst (strSplit "." checkedFile))) ++ ".s"
-            d <- readFile "./output/data"
+            d <- readFile dataFilePath
             let
               db s = strStartsWith (last s) ".double"
               w s = strStartsWith (last s) ".space" || strStartsWith (last s) ".word"
@@ -103,11 +104,12 @@ main = do
               four = unlines $ map (strJoin ": ") $ filter w (map (strSplitAll ": ") $ tail $ lines d)
               one = unlines $ map (strJoin ": ") $ filter o (map (strSplitAll ": ") $ tail $ lines d)
               d' = ".data\n" ++ double ++ four ++ one
-            putStrLn $ show double
-            putStrLn $ show four
-            putStrLn $ show one
-            putStrLn $ show d'
+            -- putStrLn $ show double
+            -- putStrLn $ show four
+            -- putStrLn $ show one
+            -- putStrLn $ show d'
             writeFile ("./output/" ++ outputFile) $ d' ++ "\n.text\n"
             genFinalCode (tail tac) inter color ("./output/" ++ outputFile)
+            -- close outputFile
           else
             mapM_ putStrLn errs

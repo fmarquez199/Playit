@@ -15,6 +15,9 @@
 @monster m(Power|}5{| s) Power:
 @  unlock 0
 @.~
+@monster m(Runes str) Runes:
+@  unlock str
+@.~
 
 world %Pruebas%:
 
@@ -25,27 +28,9 @@ world %Pruebas%:
   @Runes y = ~H~
   @Runes x = y
 
-  @Power i
-
-  @controller i = 1 -> 5:
-  @  drop i
-  @.~
-
   @Skill l = 1'0
   @Skill m = 1'0
   @Skill n = 1'0
-  @Skill o = 1'0
-  @Skill p = 1'0
-  @Skill q = 1'0
-  @Skill r = 1'0
-  @Skill s = 1'0
-  @Skill t = 1'0
-  @Skill u = 1'0
-  @Skill v = 1'0
-  @Skill w = 1'0
-  @Skill x = 1'0
-  @Skill y = 1'0
-  @Skill z = 1'0
   
 @ Operaciones aritmeticas
   @Power i0 = x + 1
@@ -113,6 +98,12 @@ world %Pruebas%:
   @  i2 = i0 * i1
   @.~
 
+  @Power i
+
+  @controller i = 1 -> 5:
+  @  drop i
+  @.~
+
 @  Button:
   @  | Lose       } x = 0
   @  | x > 3      } x = 10
@@ -153,6 +144,12 @@ world %Pruebas%:
   @Runes j = joystick ~Here we go~
   @drop s
   @drop ~hola mundo!!~
+
+@ Strings
+  Runes y = ~Hola, soy un string~
+  @Runes s = kill m(y) @ not implemented
+  @drop y
+  drop ~Este es otro string~
 
 
 "'Ejemplos por implementar, arriba estan cosas probadas que funcionan'"
