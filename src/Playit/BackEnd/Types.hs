@@ -57,7 +57,7 @@ data Operands = Operands {
   -- fp    :: OffSet,
   callF :: Bool, -- Dice si generar TAC para free
   callM :: Bool, -- Dice si generar TAC para malloc
-  subs  :: [(Id, InstrSeq, Bool)], -- subrutinas a generar su codigo
+  subs  :: [(Id, Params, InstrSeq, Bool)], -- subrutinas a generar su codigo
   astST :: SymTab
 } deriving (Eq, Ord)
 

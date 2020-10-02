@@ -22,8 +22,14 @@ world %Pruebas%:
   @Power x = 2
   @Runes x = |)*H*, *o*, *l*, *a*(|
   @Skill l = 0'0
-  Runes y = ~H~
+  @Runes y = ~H~
   @Runes x = y
+
+  @Power i
+
+  @controller i = 1 -> 5:
+  @  drop i
+  @.~
 
   @Skill l = 1'0
   @Skill m = 1'0
@@ -77,20 +83,23 @@ world %Pruebas%:
   @lock (x < 10)
   @.~
 
-Power steps = 1
-Power n = 10
-play:
-  steps++
-  Button:
-    | n % 2 == 0 }
-      n = n // 2
-    | notPressed }
-      n = 3*n+1
+  Power steps = 0
+  Power n = joystick ~Dime un numero positivo ~
+  play:
+    Button:
+      | n == 1 } gameOver
+    .~
+    steps++
+    Button:
+      | n % 2 == 0 }
+        n = n // 2
+      | notPressed }
+        n = n*3+1
+    .~
+  lock (n > 1)
   .~
-lock (n != 2)
-.~
 
-drop steps
+  drop steps
 
 
 @  controller x = 0 -> 10: @ lock i % 2 == 0:

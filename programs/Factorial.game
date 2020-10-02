@@ -8,11 +8,12 @@ monster recursivo(Power n) Power:
 
 monster iterativo(Power n) Power:
   Power factorial = 1
-  Button:
-    | n == 0 || n == 1 } unlock 1
-    | n < 0 } unlock n
-  .~ 
-  controller Power i = 2 -> n + 1: @ Verificar offset de i aqui
+  @Button:
+  @  | n == 0 || n == 1 } unlock 1
+  @  | n < 0 } unlock n
+  @.~
+  Power i
+  controller i = 2 -> n + 1: @ Verificar offset de i aqui
     factorial = factorial * i
   .~
   unlock factorial

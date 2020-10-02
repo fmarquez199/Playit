@@ -63,9 +63,9 @@ genSubroutines = do
   when (callF state) (resetOffset >> free)
 
 
-genSubroutine :: (Id, InstrSeq, Bool) -> TACMonad ()
-genSubroutine (s, i, isProc) =
-  resetOffset >> tell [tacNewLabel $ tacLabel s] >> mapM_ genCode i >> 
+genSubroutine :: (Id, Params, InstrSeq, Bool) -> TACMonad ()
+genSubroutine (s, _, is, isProc) = resetOffset >>
+  tell [tacNewLabel $ tacLabel s] >> mapM_ genCode is >>
     when isProc (genReturn Nothing)
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
@@ -150,12 +150,20 @@ genAssig v e = case typeVar v of
         tell [tacPrint rv]
         tell [tacRead (tacLabel (show v ++ "_int"))]
         tell [tacDeref v' (tacLabel (show v ++ "_int"))]
+      -- FuncCall (Call f params) _ -> do
+      --   pushSubroutine f False
+      --   genParams (map fst params) 0
+      --   v' <- pushOffset 4 >>= newTemp TInt 4 >>= genVar v
+      --   liftIO $ appendFile "output/data" $ show v ++ "_int: .space 4\n"
+      --   tell (tacCall v' f $ length params)
+      --   tell (tacAssign (tacLabel (show v ++ "_int")) t)
       e -> do
         let d = show v ++ "_int: .space 4\n"
         liftIO $ appendFile "output/data" d
         t <- genExpr e
         v' <- pushOffset 4 >>= newTemp TInt 4 >>= genVar v
         tell (tacAssign v' t)
+        tell (tacAssign (tacLabel (show v ++ "_int")) t)
   TFloat -> do
     case e of
       Literal (Floatt f) _ -> do
@@ -184,6 +192,7 @@ genAssig v e = case typeVar v of
         t <- genExpr e
         v' <- pushOffset 8 >>= newTemp TFloat 8 >>= genVar v
         tell (tacAssign v' t)
+        tell (tacAssign (tacLabel (show v ++ "_float")) t)
   t -> do
     -- | isIndexVar var && isIndexExpr e -> do
     --   tell (tacGet )    
@@ -323,7 +332,7 @@ genFree varId = do
 -- Hace prologo
 genProcCall :: Subroutine -> TACMonad ()
 genProcCall (Call s params) = do
-  pushSubroutine s True
+  pushSubroutine s params True
   genParams (map fst params) 0
   -- Prologo antes de pasar el poder al proc
   tell (tacCall Nothing s $ length params)
@@ -579,7 +588,7 @@ genRead = do
 -- Hace prologo
 genFuncCall :: Subroutine -> Type -> TACMonad TACOP
 genFuncCall (Call f params) t = do
-  pushSubroutine f False
+  pushSubroutine f params False
   genParams (map fst params) 0
   lv <- pushOffset (getWidth t) >>= newTemp t (getWidth t) -- Deberia ser el offset del tipo de retorno de la funcion, como lo obtengo?
   -- Prologo antes de pasar el poder al proc
@@ -598,27 +607,29 @@ genType t = return (tacConstant (show (getWidth t), TInt))
 
 
 -------------------------------------------------------------------------------
-forComparison :: Id -> Expr -> Expr -> TACOP -> TACMonad (TACOP, TACOP, TACOP)
+forComparison :: Id -> Expr -> Expr -> TACOP -> TACMonad (Id, TACOP, TACOP, TACOP)
 forComparison n e1 e2 nextL = do
   begin   <- newLabel
   cont    <- continue
   iterVar <- genExpr (Variable (Var n TInt) TInt)
   e1Temp  <- genExpr e1
   tell (tacAssign iterVar e1Temp)
+  tell (tacAssign (tacLabel (n ++ "_int")) iterVar)
   e2Temp  <- genExpr e2
   tell [tacNewLabel begin]
   genComparison iterVar e2Temp fall nextL LessEq
-  return (begin, cont, iterVar)
+  return (n, begin, cont, iterVar)
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
-forInstrs :: InstrSeq -> TACOP -> (TACOP, TACOP, TACOP) -> TACMonad ()
-forInstrs is nextL (begin, cont, iterVar) = do
+forInstrs :: InstrSeq -> TACOP -> (Id, TACOP, TACOP, TACOP) -> TACMonad ()
+forInstrs is nextL (n, begin, cont, iterVar) = do
   mapM_ genCode is
   tell [tacNewLabel cont]
   iterVarIncr <- genBinOp Add TInt iterVar (tacConstant ("1", TInt))
   tell (tacAssign iterVar iterVarIncr)
+  tell (tacAssign (tacLabel (n ++ "_int")) iterVar)
   tell (tacGoto begin)
   tell [tacNewLabel nextL]
 -------------------------------------------------------------------------------

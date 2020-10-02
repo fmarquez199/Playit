@@ -2,8 +2,7 @@
 
 world %ParOImpar%:
   
-  Power numero
-  numero = joystick ~Introduzca un numero entero: ~
+  Power numero = joystick ~Introduzca un numero entero: ~
   
   Button:
   | numero % 2 == 0 } drop ~es par~

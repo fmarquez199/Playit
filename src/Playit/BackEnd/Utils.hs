@@ -336,11 +336,11 @@ pushVariable var temp = do
 
 
 -------------------------------------------------------------------------------
-pushSubroutine :: Id -> Bool -> TACMonad ()
-pushSubroutine s isProc = do
+pushSubroutine :: Id -> Params -> Bool -> TACMonad ()
+pushSubroutine s ps isProc = do
   state@Operands{subs = subroutines, astST = st} <- get
   let ast = getAST . extraInfo . head . fromJust $ lookupInSymTab s st
-  put state{subs = (s, ast, isProc):subroutines}
+  put state{subs = (s, ps, ast, isProc):subroutines}
 -------------------------------------------------------------------------------
 
 

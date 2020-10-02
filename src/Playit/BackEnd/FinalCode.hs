@@ -28,11 +28,11 @@ genFinalCode tac g c n =
   else
     let h = head tac
     in case tacOperand h of
-      x | x `elem` [Add, Sub, Mult, Div, Mod, Gt, Gte, Lt, Lte, Eq, Neq, Get, Set] ->
+      x | x `elem` [Add, Sub, Mult, Div, Mod, Gt, Gte, Lt, Lte, Eq, Neq, Get, Set, Call] ->
         liftIO (print (show h ++ " tac: " ++ show (tacInfo $ tacRvalue2 h))) >> genThreeOperandsOp h g c n >> genFinalCode (tail tac) g c n
       x | x `elem` [Minus, Length, Ref, Deref] ->
         genTwoOperandsOp h g c n >> genFinalCode (tail tac) g c n
-      x | x `elem` [Return, Call, If, GoTo] ->
+      x | x `elem` [Return, If, GoTo] ->
         genJumps h g c n >> genFinalCode (tail tac) g c n
       x | x `elem` [Print, Read, Exit] ->
         genSyscalls h g c n >> genFinalCode (tail tac) g c n
@@ -100,7 +100,7 @@ genThreeOperandsOp tac i@(_, _, t) color name = do
       in appendFile name $ inst ++ dest ++ reg1 ++ reg2
     Call ->
       let save = "addi " ++ dest ++ "$v0, 0\n"
-      in genJumps tac i color name >> appendFile name save
+      in genJumps tac i color name >> putStrLn (show $ t $ fromJust $ tacInfo $ tacLvalue tac) >> appendFile name save
     Get -> do-- x = y[i]
       let
         reg1 = (makeReg color $ getTempNum t $ tacInfo $ tacRvalue1 tac)
@@ -136,7 +136,7 @@ genTwoOperandsOp tac (_, _, t) color name =
 
 
 -- ThreeAddressCode Return Nothing (Just x) Nothing
--- ThreeAddressCode Return Nothing Nothing Nothing
+-- ThreeAddressCode Return Nothing Nothing NothinggetTempNum t 
 -- ThreeAddressCode Call Nothing (Just f) (Just n)
 -- ThreeAddressCode If Nothing (Just b) (Just label)
 -- ThreeAddressCode GoTo Nothing Nothing (Just label)
@@ -174,6 +174,7 @@ genSyscalls :: TAC -> InterfGraph -> I.IntMap Int -> String -> IO ()
 genSyscalls tac (_, _, t) color name = case tacOperand tac of
   Print -> -- syscalls 1,3,4,11
     if isJust $ tacInfo $ tacRvalue1 tac then
+      putStrLn "HOLA" >>
       let arg = makeReg color $ getTempNum t $ tacInfo $ tacRvalue1 tac
       in appendFile name $ "li $v0, 1\naddi $a0, " ++ arg ++ ", 0\nsyscall\n"
     else
@@ -205,21 +206,31 @@ genSyscalls tac (_, _, t) color name = case tacOperand tac of
 -- ThreeAddressCode Assign (Just x) Nothing Nothing
 genAssign :: TAC -> InterfGraph -> I.IntMap Int -> String -> IO ()
 genAssign tac (_, _, t) color name =
-  let dest = makeReg color $ getTempNum t $ tacInfo $ tacLvalue tac
-  in case tacRvalue1 tac of
-    Nothing ->
-      let code = "li " ++ dest ++ ", 0\n"
-      in appendFile name code
-    _ ->
-      if isJust $ tacInfo $ tacRvalue1 tac then do
-        let
-          reg1 = makeReg color $ getTempNum t $ tacInfo $ tacRvalue1 tac
-          code = "addi " ++ dest ++ ", " ++ reg1 ++ ", 0\n"
-        putStrLn reg1
-        appendFile name code
-      else 
-        let immediate = show (fromJust $ tacRvalue1 tac) ++ "\n"
-        in appendFile name $ "li " ++ dest ++ ", " ++ immediate
+  if isJust $ tacInfo $ tacLvalue tac then
+    let dest = makeReg color $ getTempNum t $ tacInfo $ tacLvalue tac
+    in case tacRvalue1 tac of
+      Nothing ->
+        let code = "li " ++ dest ++ ", 0\n"
+        in appendFile name code
+      _ ->
+        if isJust $ tacInfo $ tacRvalue1 tac then do
+          let
+            reg1 = makeReg color $ getTempNum t $ tacInfo $ tacRvalue1 tac
+            code = "addi " ++ dest ++ ", " ++ reg1 ++ ", 0\n"
+          putStrLn reg1
+          appendFile name code
+        else 
+          let immediate = show (fromJust $ tacRvalue1 tac) ++ "\n"
+          in appendFile name $ "li " ++ dest ++ ", " ++ immediate
+  else
+    if isJust $ tacInfo $ tacRvalue1 tac then
+      let value = makeReg color $ getTempNum t $ tacInfo $ tacRvalue1 tac
+          save = "sw " ++ value ++ ", " ++ (show $ fromJust $ tacLvalue tac)
+      in appendFile name $ save ++ "\n"
+    else
+      let value = show (fromJust $ tacRvalue1 tac)
+          save = "sw " ++ value ++ ", " ++ (show $ fromJust $ tacLvalue tac)
+      in appendFile name $ save ++ "\n"
 
 -- ThreeAddressCode Param Nothing (Just p) (Just n)
 genParam :: TAC -> InterfGraph -> I.IntMap Int -> String -> IO ()

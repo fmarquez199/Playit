@@ -450,19 +450,19 @@ Guards :: { [(Expr, InstrSeq)] }
 Guard :: { (Expr, InstrSeq) }
   : "|" Expression "}" EndLines PushScope Instructions EndLines
     { %
-      guard $2 $6
+      guard $2 (reverse $6)
     }
   | "|" Expression "}" PushScope Instructions EndLines
     { %
-      guard $2 $5
+      guard $2 (reverse $5)
     }
   | "|" else "}" EndLines PushScope Instructions EndLines
     { %
-      return ((Literal (Boolean True) TBool), $6)
+      return ((Literal (Boolean True) TBool), (reverse $6))
     }
   | "|" else "}" PushScope Instructions EndLines
     { %
-      return ((Literal (Boolean True) TBool), $5)
+      return ((Literal (Boolean True) TBool), (reverse $5))
     }
 -------------------------------Grammar Errors----------------------------------
   -- | Expression "}" EndLines PushScope Instructions EndLines
