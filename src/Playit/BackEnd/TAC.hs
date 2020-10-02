@@ -103,11 +103,12 @@ genAssig v e = case typeVar v of
       Literal (Str s) _ -> do
         let 
           literal = show v
+          litLabel = literal ++ "_str"
           strLen  = show $ length s
-          strData = _word ("len_" ++ literal) strLen ++ _asciiz literal s
+          strData = _word ("len_" ++ literal) strLen ++ _asciiz litLabel s
         liftIO $ appendFile dataFilePath strData
         v' <- pushOffset 4 >>= newTemp TInt 4 >>= genVar v
-        tell [tacRef v' (tacLabel (literal ++ "_str"))]
+        tell [tacRef v' (tacLabel litLabel)]
       
       Variable v' _ -> do
         (rv, offset, width) <- getOffset v'
@@ -118,20 +119,27 @@ genAssig v e = case typeVar v of
         copyStr lv rv t 1 (width - 4)
 
       Read (Literal (Str s) _) _ -> do
-        let d x = ": .space 80\n" ++ x ++ "_prompt: .asciiz \"" ++ s ++ "\"\n"
-        liftIO $ appendFile dataFilePath $ (show v) ++ "_str" ++ (d $ show v)
+        let 
+          var     = show v
+          varBuffer = var ++ "_str"
+          strLabel  = var ++ "_prompt"
+          strData = _space varBuffer "80" ++ _asciiz strLabel s
+        
+        liftIO $ appendFile dataFilePath strData
         v' <- pushOffset 4 >>= newTemp TInt 4 >>= genVar v
-        tell [tacPrint (tacLabel (show v ++ "_prompt"))]
-        tell [tacRead (tacLabel (show v ++ "_str"))]
-        tell [tacRef v' (tacLabel (show v ++ "_str"))]
+        tell [tacPrint (tacConstant (s, TStr)) (tacLabel strLabel)]
+        tell [tacRead (tacConstant (var, TStr)) (tacLabel varBuffer)] -- TODO: var o temp?
+        tell [tacRef v' (tacLabel varBuffer)]
 
       Read (Variable v' _) _ -> do
         (rv, _, _) <- getOffset v'
         lv <- pushOffset 4 >>= newTemp TInt 4 >>= genVar v
         let d = show v ++ "_str: .space 80\n"
+          -- =
+        
         liftIO $ appendFile dataFilePath d
-        tell [tacPrint rv]
-        tell [tacRead (tacLabel (show v ++ "_str"))]
+        tell [tacPrint rv rv] -- TODO: rv -> string a imprimir
+        tell [tacRead (tacConstant (show v, TStr)) (tacLabel (show v ++ "_str"))]
         tell [tacRef lv (tacLabel (show v ++ "_str"))]
 
       t -> error $ "NotImplementedError " ++ show t -- This shouldn't happen
@@ -141,23 +149,26 @@ genAssig v e = case typeVar v of
         liftIO $ appendFile dataFilePath $ (show v) ++ "_int: .space 4\n"
         v' <- pushOffset 4 >>= newTemp TInt 4 >>= genVar v
         tell (tacAssign v' (tacConstant (show i, TInt)))
+      
       Variable v' _ -> do
         (rv, _, _) <- getOffset v'
         lv <- pushOffset 4 >>= newTemp TInt 4 >>= genVar v
         tell (tacAssign lv rv)
+      
       Read (Literal (Str s) _) _ -> do
         let d x = ": .space 4\n" ++ x ++ "_prompt: .asciiz \"" ++ s ++ "\"\n"
         liftIO $ appendFile dataFilePath $ (show v) ++ "_int" ++ (d $ show v)
         v' <- pushOffset 4 >>= newTemp TInt 4 >>= genVar v
-        tell [tacPrint (tacLabel (show v ++ "_prompt"))]
-        tell [tacRead (tacLabel (show v ++ "_int"))]
+        tell [tacPrint (tacConstant (s, TInt)) (tacLabel (show v ++ "_prompt"))]
+        tell [tacRead (tacConstant (show v, TInt)) (tacLabel (show v ++ "_int"))]
         tell [tacDeref v' (tacLabel (show v ++ "_int"))]
+      
       Read (Variable v' _) _ -> do
         (rv, _, _) <- getOffset v'
         liftIO $ appendFile dataFilePath $ show v ++ "_int: .space 4\n"
         v' <- pushOffset 4 >>= newTemp TInt 4 >>= genVar v
-        tell [tacPrint rv]
-        tell [tacRead (tacLabel (show v ++ "_int"))]
+        tell [tacPrint rv rv] -- TODO: rv -> string a imprimir
+        tell [tacRead (tacConstant (show v, TInt)) (tacLabel (show v ++ "_int"))]
         tell [tacDeref v' (tacLabel (show v ++ "_int"))]
       -- FuncCall (Call f params) _ -> do
       --   pushSubroutine f False
@@ -188,13 +199,13 @@ genAssig v e = case typeVar v of
         let n = show v
             d x = ": .space 8\n" ++ x ++ "_prompt: .asciiz \"" ++ s ++ "\"\n"
         liftIO $ appendFile dataFilePath $ n ++ "_float" ++ d n
-        tell [tacPrint (tacLabel (show v ++ "_prompt"))]
-        tell [tacRead (tacLabel (show v ++ "_float"))]
+        tell [tacPrint (tacConstant (s, TFloat)) (tacLabel (show v ++ "_prompt"))]
+        tell [tacRead (tacConstant (show v, TFloat)) (tacLabel (show v ++ "_float"))]
       Read (Variable v' _) _ -> do
         (rv, _, _) <- getOffset v'
         liftIO $ appendFile dataFilePath $ show v ++ "_float: .space 8\n"
-        tell [tacPrint rv]
-        tell [tacRead (tacLabel (show v ++ "_float"))]
+        tell [tacPrint rv rv] -- TODO: rv -> string a imprimir
+        tell [tacRead (tacConstant (show v, TFloat)) (tacLabel (show v ++ "_float"))]
       e -> do
         let d = show v ++ "_float: .space 8\n"
         liftIO $ appendFile dataFilePath d
@@ -293,32 +304,32 @@ genPrint [e] =
     Literal (Str s) _ -> do
       let d = _asciiz (concat (words s)) s
       liftIO $ appendFile dataFilePath d
-      tell [tacPrint (tacLabel (concat (words s) ++ "_str"))]
+      tell [tacPrint (tacConstant (s, TStr)) (tacLabel (concat (words s) ++ "_str"))]
     Literal (Integer i) _ -> do
       let d = "integer" ++ show i ++ "_int: .word" ++ show i ++ "\n"
       liftIO $ appendFile dataFilePath d
-      tell [tacPrint (tacLabel ("integer" ++ show i ++ "_int"))]
+      tell [tacPrint (tacConstant (show i, TInt)) (tacLabel ("integer" ++ show i ++ "_int"))]
     Literal (Floatt f) _ -> do
       let d = "float" ++ show f ++ "_float: .double" ++ show f ++ "\n"
       liftIO $ appendFile dataFilePath d
-      tell [tacPrint (tacLabel ("float" ++ show f ++ "_float"))]
+      tell [tacPrint (tacConstant (show f, TFloat)) (tacLabel ("float" ++ show f ++ "_float"))]
     Literal (Boolean b) _ ->
       let c = if b then tacLabel "boolTrue" else tacLabel "boolFalse"
-      in tell [tacPrint c]
+      in tell [tacPrint (tacConstant (show b, TBool)) c]
     Literal (Character c) _ -> do
       let d = "char" ++ c:"_char: .asciiz \"" ++ c:"\"\n"
       liftIO $ appendFile dataFilePath d
-      tell [tacPrint (tacLabel ("char" ++ [c] ++ "_char"))]
-    Literal (ArrLst ls) _ -> do
+      tell [tacPrint (tacConstant (show c, TChar)) (tacLabel ("char" ++ [c] ++ "_char"))]
+    Literal (ArrLst ls) t -> do
       let a = replace "," "" $ init . tail $ show ls
           d = "array" ++ a ++ "_str: .asciiz " ++ show (show ls) ++ "\n"
       liftIO $ appendFile dataFilePath d
-      tell [tacPrint (tacLabel ("array" ++ a ++ "_str"))]
+      tell [tacPrint (tacConstant (show ls, t)) (tacLabel ("array" ++ a ++ "_str"))]
     Literal _ _ -> tell []
     Variable v _ -> case typeVar v of
-      TInt -> tell [tacPrint (tacLabel (show v ++ "_int"))]
-      TFloat -> tell [tacPrint (tacLabel (show v ++ "_float"))]
-      TStr -> tell [tacPrint (tacLabel (show v ++ "_str"))]
+      TInt -> tell [tacPrint (tacConstant (show v, TInt)) (tacLabel (show v ++ "_int"))]
+      TFloat -> tell [tacPrint (tacConstant (show v, TFloat)) (tacLabel (show v ++ "_float"))]
+      TStr -> tell [tacPrint (tacConstant (show v, TStr)) (tacLabel (show v ++ "_str"))]
     _ -> tell []
 genPrint (e:es) = genPrint [e] >> genPrint es
 
@@ -429,17 +440,17 @@ genBoolExpr e trueL falseL =
 
 genComparison :: TACOP -> TACOP -> TACOP -> TACOP -> BinOp -> TACMonad ()
 genComparison leftExpr rightExpr trueL falseL op = do
-    let
-      trueNotFall  = not $ isFall trueL
-      falseNotFall = not $ isFall falseL
-    
-    if trueNotFall && falseNotFall then
-      tell (tacBin (binOpToTACOP op) leftExpr rightExpr trueL) >> tell (tacGoto falseL)
+  let
+    trueNotFall  = not $ isFall trueL
+    falseNotFall = not $ isFall falseL
+  
+  if trueNotFall && falseNotFall then
+    tell (tacBin (binOpToTACOP op) leftExpr rightExpr trueL) >> tell (tacGoto falseL)
+  else
+    if trueNotFall then tell (tacBin (binOpToTACOP op) leftExpr rightExpr trueL)
     else
-      if trueNotFall then tell (tacBin (binOpToTACOP op) leftExpr rightExpr trueL)
-      else
-        when falseNotFall $
-          tell (tacBin (negation $ binOpToTACOP op) leftExpr rightExpr falseL)
+      when falseNotFall $
+        tell (tacBin (negation $ binOpToTACOP op) leftExpr rightExpr falseL)
 
 
 -- 

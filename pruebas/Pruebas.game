@@ -68,25 +68,6 @@ world %Pruebas%:
   @lock (x < 10)
   @.~
 
-  Power steps = 0
-  Power n = joystick ~Dime un numero positivo ~
-  play:
-    Button:
-      | n == 1 } gameOver
-    .~
-    steps++
-    Button:
-      | n % 2 == 0 }
-        n = n // 2
-      | notPressed }
-        n = n*3+1
-    .~
-  lock (n > 1)
-  .~
-
-  drop steps
-
-
 @  controller x = 0 -> 10: @ lock i % 2 == 0:
   @  gameOver
   @  keepPlaying
@@ -141,15 +122,33 @@ world %Pruebas%:
 
 @ I/O
   @Runes s = ~3g~
-  @Runes j = joystick ~Here we go~
+  Runes j = joystick ~Here we go~
   @drop s
   @drop ~hola mundo!!~
 
 @ Strings
-  Runes y = ~Hola, soy un string~
+  @Runes y = ~Hola, soy un string~
   @Runes s = kill m(y) @ not implemented
   @drop y
-  drop ~Este es otro string~
+  @drop ~Este es otro string~
+
+@ Ejemplo
+  @Power steps = 0
+  @Power n = joystick ~Dime un numero positivo ~
+  @play:
+  @  Button:
+  @    | n == 1 } gameOver
+  @  .~
+  @  steps++
+  @  Button:
+  @    | n % 2 == 0 }
+  @      n = n // 2
+  @    | notPressed }
+  @      n = n*3+1
+  @  .~
+  @lock (n > 1)
+  @.~
+  @drop steps
 
 
 "'Ejemplos por implementar, arriba estan cosas probadas que funcionan'"

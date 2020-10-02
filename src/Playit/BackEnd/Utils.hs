@@ -151,14 +151,19 @@ tacParam p n = T.ThreeAddressCode T.Param Nothing p (tacConstant (show n, TInt))
 
 
 -------------------------------------------------------------------------------
-tacPrint :: TACOP -> TAC
-tacPrint e = T.ThreeAddressCode T.Print Nothing e Nothing
+-- 
+tacPrint :: TACOP -- ^ String to print in TAC
+         -> TACOP -- ^ Label in .data section that have the string to print
+         -> TAC
+tacPrint e dataLabel = T.ThreeAddressCode T.Print Nothing e dataLabel
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
-tacRead :: TACOP -> TAC
-tacRead d = T.ThreeAddressCode T.Read Nothing d Nothing
+tacRead :: TACOP -- ^ Var to store the input
+        -> TACOP -- ^ Label in .data section that have the buffer to store the input
+        -> TAC
+tacRead var buffer = T.ThreeAddressCode T.Read Nothing var buffer
 -------------------------------------------------------------------------------
 
 
@@ -573,7 +578,7 @@ free = do
 -- | Generates the code for defining strings (.asciiz data)
 -- 
 _asciiz :: String -> String -> String
-_asciiz name str = "\n" ++ name ++ "_str: .asciiz \"" ++ str ++ "\""
+_asciiz name str = "\n" ++ name ++ ": .asciiz \"" ++ str ++ "\""
 
 -- | Generates the code for '.word' data
 -- 
