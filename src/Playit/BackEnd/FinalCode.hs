@@ -274,6 +274,7 @@ makeReg color number =
   in if n > 25 then "$f" ++ show (2 * n - 50) else "$" ++ show n
 
 -- | Ayuda a encontrar la clave para moverse en el mapa
+-- TODO: a veces da error con fromJust de Nothing
 getTempNum :: (TACInfo -> Maybe G.Vertex) -> Maybe TACInfo -> Int
 getTempNum t tacInfo = fromJust $ t $ fromJust $ tacInfo
 
