@@ -283,7 +283,7 @@ newLabel = do
 
 
 -------------------------------------------------------------------------------
-pushOffset :: Int -> TACMonad OffSet
+pushOffset :: Width -> TACMonad OffSet
 pushOffset width = do
   state@Operands{base = actO} <- get
   let newO = actO + width
@@ -355,6 +355,7 @@ getParam t x = do
 
 
 -------------------------------------------------------------------------------
+-- Used in 'malloc' and 'free'
 setMemoryTemps :: TACMonad (TACOP,TACOP,TACOP,TACOP,TACOP)
 setMemoryTemps = do
   param0 <- getParam TInt 0
@@ -367,6 +368,7 @@ setMemoryTemps = do
 
 
 -------------------------------------------------------------------------------
+-- Used in 'malloc' and 'free'
 setElemIndexs :: (TACOP,TACOP,TACOP,TACOP,TACOP)
 setElemIndexs = (zero,one,two,three,sixteen)
   where
@@ -561,3 +563,29 @@ free = do
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 
+
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-- Assembler .data section code generation
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+
+-- | Generates the code for defining strings (.asciiz data)
+-- 
+_asciiz :: String -> String -> String
+_asciiz name str = "\n" ++ name ++ "_str: .asciiz \"" ++ str ++ "\""
+
+-- | Generates the code for '.word' data
+-- 
+_word :: String -> String -> String
+_word name num = "\n" ++ name ++ ": .word " ++ num
+
+-- | Generates the code for '.space' data
+-- 
+_space :: String -> String -> String
+_space name num = "\n" ++ name ++ ": .space " ++ num
+
+-- | Generates the code for '.double' data
+-- 
+_double :: String -> String -> String
+_double name num = "\n" ++ name ++ ": .double " ++ num
