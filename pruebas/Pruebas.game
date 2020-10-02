@@ -15,9 +15,13 @@
 @monster m(Power|}5{| s) Power:
 @  unlock 0
 @.~
+@monster m(Runes str) Runes:
+@  unlock str
+@.~
 
 world %Pruebas%:
 
+  @Power x
   @Skill l = 1'0
   @Skill m = 1'0
   @Skill n = 1'0
@@ -112,6 +116,7 @@ world %Pruebas%:
 
 @ Strings
   Runes y = ~Hola, soy un string~
+  @Runes s = kill m(y) @ not implemented
   @drop y
   drop ~Este es otro string~
 
