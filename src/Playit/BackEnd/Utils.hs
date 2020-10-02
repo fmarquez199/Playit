@@ -564,33 +564,82 @@ free = do
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
--- Flow Graph
--------------------------------------------------------------------------------
--------------------------------------------------------------------------------
-
-
--------------------------------------------------------------------------------
--------------------------------------------------------------------------------
 -- Assembler .data section code generation
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 
+-------------------------------------------------------------------------------
 -- | Generates the code for defining strings (.asciiz data)
 -- 
 _asciiz :: String -> String -> String
 _asciiz name str = "\n" ++ name ++ ": .asciiz \"" ++ str ++ "\""
+-------------------------------------------------------------------------------
 
+-------------------------------------------------------------------------------
 -- | Generates the code for '.word' data
 -- 
 _word :: String -> String -> String
 _word name num = "\n" ++ name ++ ": .word " ++ num
+-------------------------------------------------------------------------------
 
+-------------------------------------------------------------------------------
 -- | Generates the code for '.space' data
 -- 
 _space :: String -> String -> String
 _space name num = "\n" ++ name ++ ": .space " ++ num
+-------------------------------------------------------------------------------
 
+-------------------------------------------------------------------------------
 -- | Generates the code for '.double' data
 -- 
 _double :: String -> String -> String
 _double name num = "\n" ++ name ++ ": .double " ++ num
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-- Assembler instructions code generation
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+
+-- load and store
+
+lw :: String -> String -> String
+lw regDest dir = "\nlw " ++ regDest ++ ", " ++ dir
+
+la :: String -> String -> String
+la regDest dir = "\nla " ++ regDest ++ ", " ++ dir
+
+li :: String -> String -> String
+li regDest int = "\nli " ++ regDest ++ ", " ++ int
+
+sw :: String -> String -> String
+sw regSour dir = "\nsw " ++ regSour ++ ", " ++ dir
+
+-- aritmetic
+
+add :: String -> String -> String -> String
+add result reg1 reg2 = "\nadd " ++ result ++ ", " ++ reg1 ++ ", " ++ reg2
+
+addi :: String -> String -> String -> String
+addi result reg1 reg2 = "\naddi " ++ result ++ ", " ++ reg1 ++ ", " ++ reg2
+
+sub :: String -> String -> String -> String
+sub result reg1 reg2 = "\nsub " ++ result ++ ", " ++ reg1 ++ ", " ++ reg2
+
+mult :: String -> String -> String -> String
+mult result reg1 reg2 = "\nmult " ++ result ++ ", " ++ reg1 ++ ", " ++ reg2
+
+
+-- data transfer
+
+-- | Copy the content of regSour to regDest
+-- move
+
+-- mfc1.d Rd, FRs1
+
+-- Mueve  desde  el  Coprocesador  1
+-- un valor de doble precisión
+
+-- Mueve  el  contenido  de  los  registros  de  punto-flotante
+-- FRs1 y FRs1+1 hacia los registros Rd y Rd+1 de la CPU
