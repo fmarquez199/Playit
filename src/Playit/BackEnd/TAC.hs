@@ -134,14 +134,15 @@ genAssig v e = case typeVar v of
       Read (Variable v' _) _ -> do
         (rv, _, _) <- getOffset v'
         lv <- pushOffset 4 >>= newTemp TInt 4 >>= genVar v
-        let d = show v ++ "_str: .space 80\n"
-          -- =
+        let 
+          var      = show v
+          varLabel = var ++ "_str: .space 80\n"
         
-        liftIO $ appendFile dataFilePath d
-        tell [tacPrint rv rv] -- TODO: rv -> string a imprimir
-        tell [tacRead (tacConstant (show v, TStr)) (tacLabel (show v ++ "_str"))]
-        tell [tacRef lv (tacLabel (show v ++ "_str"))]
-
+        liftIO $ appendFile dataFilePath (_space varLabel "80")
+        tell [tacPrint rv rv] -- TODO!!: rv -> string a imprimir
+        tell [tacRead (tacConstant (var, TStr)) (tacLabel varLabel)]
+        tell [tacRef lv (tacLabel varLabel)]
+      -- TODO!!: casos con EmptyVAlue -> read sin str para imprimir
       t -> error $ "NotImplementedError " ++ show t -- This shouldn't happen
   TInt -> do
     case e of
@@ -167,9 +168,11 @@ genAssig v e = case typeVar v of
         (rv, _, _) <- getOffset v'
         liftIO $ appendFile dataFilePath $ show v ++ "_int: .space 4\n"
         v' <- pushOffset 4 >>= newTemp TInt 4 >>= genVar v
-        tell [tacPrint rv rv] -- TODO: rv -> string a imprimir
+        tell [tacPrint rv rv] -- TODO!!: rv -> string a imprimir
         tell [tacRead (tacConstant (show v, TInt)) (tacLabel (show v ++ "_int"))]
         tell [tacDeref v' (tacLabel (show v ++ "_int"))]
+
+      -- TODO!!: Fix params
       -- FuncCall (Call f params) _ -> do
       --   pushSubroutine f False
       --   genParams (map fst params) 0
@@ -177,6 +180,7 @@ genAssig v e = case typeVar v of
       --   liftIO $ appendFile "output/data" $ show v ++ "_int: .space 4\n"
       --   tell (tacCall v' f $ length params)
       --   tell (tacAssign (tacLabel (show v ++ "_int")) t)
+
       e -> do
         let d = show v ++ "_int: .space 4\n"
         liftIO $ appendFile dataFilePath d
@@ -204,7 +208,7 @@ genAssig v e = case typeVar v of
       Read (Variable v' _) _ -> do
         (rv, _, _) <- getOffset v'
         liftIO $ appendFile dataFilePath $ show v ++ "_float: .space 8\n"
-        tell [tacPrint rv rv] -- TODO: rv -> string a imprimir
+        tell [tacPrint rv rv] -- TODO!!: rv -> string a imprimir
         tell [tacRead (tacConstant (show v, TFloat)) (tacLabel (show v ++ "_float"))]
       e -> do
         let d = show v ++ "_float: .space 8\n"
@@ -297,34 +301,48 @@ genWhile e is nextL = do
 
 -- syscall 4
 -- TODO: width del tipo string
+-- TODO: integrar lo que hay en genAssig
 genPrint :: [Expr] -> TACMonad ()
 genPrint [] = tell []
 genPrint [e] = 
   case e of
-    Literal (Str s) _ -> do
-      let d = _asciiz (concat (words s)) s
-      liftIO $ appendFile dataFilePath d
-      tell [tacPrint (tacConstant (s, TStr)) (tacLabel (concat (words s) ++ "_str"))]
+    Literal (Str s) _ -> let strLabel = concat (words s) ++ "_str"
+      in do
+        liftIO $ appendFile dataFilePath (_asciiz strLabel s)
+        tell [tacPrint (tacConstant (s, TStr)) (tacLabel strLabel)]
+    
     Literal (Integer i) _ -> do
-      let d = "integer" ++ show i ++ "_int: .word" ++ show i ++ "\n"
-      liftIO $ appendFile dataFilePath d
-      tell [tacPrint (tacConstant (show i, TInt)) (tacLabel ("integer" ++ show i ++ "_int"))]
+      let 
+        lit      = show i
+        litLabel = "integer" ++ lit ++"_int"
+      
+      liftIO $ appendFile dataFilePath (_word litLabel lit)
+      tell [tacPrint (tacConstant (lit, TInt)) (tacLabel litLabel)]
+    
     Literal (Floatt f) _ -> do
-      let d = "float" ++ show f ++ "_float: .double" ++ show f ++ "\n"
-      liftIO $ appendFile dataFilePath d
-      tell [tacPrint (tacConstant (show f, TFloat)) (tacLabel ("float" ++ show f ++ "_float"))]
+      let
+        lit      = show f
+        litLabel = "float" ++ lit ++"_float"
+
+      liftIO $ appendFile dataFilePath (_double litLabel lit)
+      tell [tacPrint (tacConstant (lit, TFloat)) (tacLabel litLabel)]
+    
     Literal (Boolean b) _ ->
       let c = if b then tacLabel "boolTrue" else tacLabel "boolFalse"
       in tell [tacPrint (tacConstant (show b, TBool)) c]
+    
     Literal (Character c) _ -> do
-      let d = "char" ++ c:"_char: .asciiz \"" ++ c:"\"\n"
-      liftIO $ appendFile dataFilePath d
-      tell [tacPrint (tacConstant (show c, TChar)) (tacLabel ("char" ++ [c] ++ "_char"))]
+      let litLabel = "char" ++ c : "_char"
+      liftIO $ appendFile dataFilePath (_asciiz litLabel [c])
+      tell [tacPrint (tacConstant (show c, TChar)) (tacLabel litLabel)]
+    
     Literal (ArrLst ls) t -> do
-      let a = replace "," "" $ init . tail $ show ls
-          d = "array" ++ a ++ "_str: .asciiz " ++ show (show ls) ++ "\n"
-      liftIO $ appendFile dataFilePath d
-      tell [tacPrint (tacConstant (show ls, t)) (tacLabel ("array" ++ a ++ "_str"))]
+      let 
+        arr      = show ls
+        arrLabel = "array_" ++ replace "," "" (init $ tail arr) ++ "_str"
+      liftIO $ appendFile dataFilePath (_asciiz arrLabel arr)
+      tell [tacPrint (tacConstant (arr, t)) (tacLabel arrLabel)]
+    
     Literal _ _ -> tell []
     Variable v _ -> case typeVar v of
       TInt -> tell [tacPrint (tacConstant (show v, TInt)) (tacLabel (show v ++ "_int"))]
@@ -338,7 +356,7 @@ genPrint (e:es) = genPrint [e] >> genPrint es
 genFree :: Id -> TACMonad ()
 genFree varId = do
   state@Operands{vars = vs, astST = st} <- get
-  let -- Si se cambia por 'free Expr' no tendria que buscar en la symtab
+  let -- TODO: Si se cambia por 'free Expr' no tendria que buscar en la symtab
     varT = symType . head . fromJust $ lookupInSymTab varId st
     var  = fromJust $ M.lookup (Var varId varT) vs
   tell [tacParam var 0]
@@ -464,6 +482,9 @@ genNull = return $ tacVariable $ Temp "_null" TInt (4, 4)
   ArrLst -> caso que llega hasta aqui?
   Register
   Union
+  integrar lo que hay en genAssig
+  
+  TODO!!: colocarlo en el .data, si es un array colocar su tam
 -}
 genLiteral :: Literal -> Type -> TACMonad TACOP
 genLiteral l typeL =
@@ -581,7 +602,7 @@ genTerOp eB eT eF tOp = do
   return lv
 
 
--- 
+-- TODO!!: poner en .data el arreglo y su tam
 genArrayList :: [Expr] -> Int -> Int -> TACOP -> TACMonad TACOP
 genArrayList [] _ index arrTemp               =
   let len = tacConstant (show index, TInt)
@@ -595,6 +616,8 @@ genArrayList (elem:elems) width index arrTemp = do
 
 -- syscall 8
 -- TODO: width del tipo string
+-- Creo que no llega hasta aqui, en genAssig toco sus casos
+-- TODO: integrar aqui lo que hay en genAssig y asi esta en un solo sitio
 genRead :: TACMonad TACOP
 genRead = do
   lv    <- pushOffset 4 >>= newTemp TInt 4
