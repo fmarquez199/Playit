@@ -69,7 +69,8 @@ main = do
           
           if null errs then do
             createDirectoryIfMissing True "./output/"
-            writeFile dataFilePath "\t.data\nboolTrue: .asciiz \"Win\"\n"
+            writeFile dataFilePath $ "# Assemble " ++ show checkedFile ++ "\n##"
+            appendFile dataFilePath "\n\t.data\nboolTrue: .asciiz \"Win\"\n"
             appendFile dataFilePath "boolFalse: .asciiz \"Lose\"\n"
             appendFile dataFilePath "newLine: .asciiz \"\\n\"\n"
             (_, state, tac) <- runRWST (genTAC ast) ast (tacInitState (symTab state))
@@ -96,7 +97,7 @@ main = do
             -- putStrLn $ "\nInterference Graph: " ++ printIGNodes igNodes
             -- putStrLn $ "\nDSatur coloring: " ++ show color
             -- putStrLn $ "Ahora el código final en " ++ checkedFile
-            let outputFile = last (strSplitAll "/" (fst (strSplit "." checkedFile))) ++ ".s"
+            let outputFile = last (strSplitAll "/" (fst (strSplit "." checkedFile))) ++ ".asm"
             d <- readFile dataFilePath
             let
               db s = strStartsWith (last s) ".double"
@@ -105,7 +106,7 @@ main = do
               double = unlines $ nub $ map (strJoin ": ") $ filter db (map (strSplitAll ": ") $ tail $ lines d)
               four = unlines $ nub $ map (strJoin ": ") $ filter w (map (strSplitAll ": ") $ tail $ lines d)
               one = unlines $ nub $ map (strJoin ": ") $ filter o (map (strSplitAll ": ") $ tail $ lines d)
-              d' = ".data\n" ++ double ++ four ++ one ++ "\n.text\n"
+              d' = ".data\n" ++ double ++ four ++ one ++ "\n\t.text\n"
             writeFile ("./output/" ++ outputFile) d'
             genFinalCode (tail tac) inter color ("./output/" ++ outputFile)
             -- close outputFile

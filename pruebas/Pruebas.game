@@ -20,17 +20,14 @@
 
 world %Pruebas%:
 
-  @Skill l = 1'0
-  @Skill m = 1'0
-  @Skill n = 1'0
-  
 @ Operaciones aritmeticas
-  @Power x = 2
+  Power x = 2
   @Power i0 = x + 1
-  @Power i1 = x - 1
+  Power i1 = x - 1
   @Power i2 = x * 1
   @Power i4 = x % 1
   @Power i5 = x // 1
+  @Skill f = 1'0
   @Skill f2 = f / 0'5
   @Skill f1 = 2'0
 
@@ -129,7 +126,7 @@ world %Pruebas%:
   @drop ~hola mundo!!~
 
 @ Strings
-  Runes x = |)*H*, *o*, *l*, *a*(|
+  @Rune|}4{| x = |)*H*, *o*, *l*, *a*(|
   @Runes y = ~H~
   @Runes x = y
   @Runes y = ~Hola, soy un string~

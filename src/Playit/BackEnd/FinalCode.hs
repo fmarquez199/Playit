@@ -23,307 +23,349 @@ import qualified Data.IntMap as I
 -- ThreeAddressCode NewLabel (Just l) Nothing Nothing
 genFinalCode :: [TAC] -> InterfGraph -> VertColorMap -> String -> IO ()
 genFinalCode [] _ _ fileName = appendFile fileName ""
-genFinalCode tac g c n =
-  let h = head tac
-  in 
-  case tacOperand h of
+genFinalCode tac g c file    = do
+  let 
+    tacInstr = head tac
+    tacNext  = tail tac
+  
+  case tacOperand tacInstr of
     -- Faltan And, Or
     -- Not supported Anexo, Concat
     x | x `elem` [Add, Sub, Mult, Div, Mod, Gt, Gte, Lt, Lte, Eq, Neq, Get, Set, Call] ->
       
-      liftIO (print (show h ++ " tac: " ++ show (tacInfo $ tacRvalue2 h))) >> 
-        genThreeOperandsOp h g c n >> 
-          genFinalCode (tail tac) g c n
+      -- liftIO (print (show tacInstr ++ " tac: " ++ show (tacInfo $ tacRvalue2 tacInstr))) >> 
+      comment ("\n\t# 3 Operands operation: " ++ show tacInstr) file >>
+      genThreeOperandsOp tacInstr g c file
 
-    x | x `elem` [Minus, Ref, Deref] -> genTwoOperandsOp h g c n >> genFinalCode (tail tac) g c n
-    x | x `elem` [Return, If, GoTo]          -> genJumps h g c n         >> genFinalCode (tail tac) g c n
-    x | x `elem` [Print, Read, Exit]         -> genSyscalls h g c n      >> genFinalCode (tail tac) g c n
+    x | x `elem` [Minus, Ref, Deref] -> genTwoOperandsOp tacInstr g c file
+    x | x `elem` [Return, If, GoTo]  -> genJumps tacInstr g c file        
+    x | x `elem` [Print, Read, Exit] -> genSyscalls tacInstr g c file     
     
     NewLabel -> do
-      if take 2 (show h) == "l." then
-        -- let lbl = tail . init . reverse . snd . splitAt 2 . reverse $ show h
+      if take 2 (show tacInstr) == "l." then
+        -- let lbl = tail . init . reverse . snd . splitAt 2 . reverse $ show tacInstr
         -- in 
-          appendFile n (show h ++ ":\n")
+          appendFile file (show tacInstr ++ ":\n")
       else do
-        appendFile n (show h ++ "\n")
-        if "main: " == show h then putStrLn "compiling" else prologue n
-      
-      genFinalCode (tail tac) g c n
+        appendFile file (show tacInstr ++ "\n")
+        if "main: " == show tacInstr then 
+          putStrLn "" 
+        else prologue file
     
-    -- Length -> genLength h -- busca el label en .data que corresponda, si x = # [1,2] -> en TAC guardar el array en .data y colocarle un nombre y tu tam
-    Assign -> genAssign h g c n >> genFinalCode (tail tac) g c n
-    Param  -> genParam h g c n  >> genFinalCode (tail tac) g c n
+    -- Length -> genLength tacInstr -- busca el label en .data que corresponda, si x = # [1,2] -> en TAC guardar el array en .data y colocarle un nombre y tu tam
+    Assign -> genAssign tacInstr g c file
+    Param  -> genParam tacInstr g c file 
     -- Access
-    _      -> appendFile n ""   >> genFinalCode (tail tac) g c n
+    o -> comment ("\n\t# Operand not supported yet: " ++ show o) file
+  
+  genFinalCode tacNext g c file
 
--- ThreeAddressCode Add (Just x) (Just y) (Just z)
--- ThreeAddressCode Sub (Just x) (Just y) (Just z)
--- ThreeAddressCode Mult (Just x) (Just y) (Just z)
--- ThreeAddressCode Div (Just x) (Just y) (Just z)
--- ThreeAddressCode Mod (Just x) (Just y) (Just z)
--- ThreeAddressCode Gt (Just x) (Just y) (Just z)
--- ThreeAddressCode Gte (Just x) (Just y) (Just z)
--- ThreeAddressCode Lt (Just x) (Just y) (Just z)
--- ThreeAddressCode Lte (Just x) (Just y) (Just z)
--- ThreeAddressCode Eq (Just x) (Just y) (Just z)
--- ThreeAddressCode Neq (Just x) (Just y) (Just z)
--- ThreeAddressCode Call (Just x) (Just f) (Just n)
--- ThreeAddressCode Get (Just x) (Just y) (Just i)
--- ThreeAddressCode Set (Just x) (Just i) (Just y)
--- No considerados:
+-- TODO:
 -- ThreeAddressCode Anexo (Just x) (Just y) (Just z)
 -- ThreeAddressCode Concat (Just x) (Just y) (Just z)
 -- ThreeAddressCode Access (Just x) (Just r) (Just f)
 genThreeOperandsOp :: TAC -> InterfGraph -> I.IntMap Int -> String -> IO ()
-genThreeOperandsOp tac i@(_, _, t) color name = do
+genThreeOperandsOp tac i@(_, _, t) color file =
   let
     inst = show' (tacOperand tac) ++ " "
     dest = (makeReg color $ getReg' t $ tacInfo $ tacLvalue tac) ++ ", "
+  in
   case tacOperand tac of
-    x | x `elem` [Add, Sub, Mult, Div, Mod] -> let
-      reg1 = (makeReg color $ getReg' t $ tacInfo $ tacRvalue1 tac) ++ ", "
-      in case tacInfo $ tacRvalue2 tac of
+    x | x `elem` [Add, Sub, Mult, Div, Mod] -> do
+      comment (", " ++ show x) file
+      let
+        reg1 = (makeReg color $ getReg' t $ tacInfo $ tacRvalue1 tac) ++ ", "
+      
+      case tacInfo $ tacRvalue2 tac of
         Nothing ->
           let code = inst ++ dest ++ reg1 ++ show (fromJust $ tacRvalue2 tac) 
-          in appendFile name $ code  ++ "\n"
+          in comment ", rv2 is Norhing" file >> appendFile file code
         _ ->
-          let reg2 = (makeReg color $ getReg' t $ tacInfo $ tacRvalue2 tac)
-          in if isFloat $ tacType $ tacLvalue tac then
-            if x == Div && not (isFloat $ tacType $ tacRvalue1 tac) then
-              let next1 = '$':(show $ 1 + (read (init (init (tail reg1))) :: Int))
-                  next2 = '$':(show $ 1 + (read (tail reg2) :: Int))
-                  svfrs' = "s.d $f10 0($sp)\ns.d $f12 -8($sp)\nsw " ++ next1
-                  svfrs = svfrs' ++ ", -16($sp)\naddi $sp, $sp, -20\nli "
-                  mvr1' = next1 ++ ", 0\nmtc1.d " ++ reg1 ++ ", $f12\nlw "
-                  mvr1 = mvr1' ++ next1 ++ ", 4($sp)\nsw " ++ next2 ++ ", 4($s"
-                  mvr2' = "p)\nli " ++ next2 ++ ", 0\nmtc1.d " ++ reg2 ++ ", "
-                  mvr2 = mvr2' ++ "$f10\ndiv.d " ++ dest ++ ", $f12, $f10\n"
-                  rcvrs1 = "addi $sp, $sp, 20\nlw " ++ next2 ++ ", -16($sp)\n"
-                  rcvrs2 = "l.d $f10, 0($sp)\nl.d $f12, -8($sp)\n"
-                  code = svfrs ++ mvr1 ++ mvr2 ++ rcvrs1 ++ rcvrs2
-              in appendFile name $ floatingDiv ++ code
+          let 
+            reg2 = (makeReg color $ getReg' t $ tacInfo $ tacRvalue2 tac)
+          in 
+          if isFloat $ tacType $ tacLvalue tac then do
+            comment ", Float" file
+
+            if x == Div && not (isFloat $ tacType $ tacRvalue1 tac) then do
+              let 
+                next1 = '$':(show $ 1 + (read (init (init (tail reg1))) :: Int))
+                next2 = '$':(show $ 1 + (read (tail reg2) :: Int))
+              
+              comment ", div (/)" file
+              floatingDiv file
+              s_d    "$f10" "0($sp)"    file
+              s_d    "$f12" "-8($sp)"   file
+              sw     next1 "-16($sp)"   file
+              addi   "$sp" "$sp" "-20"  file
+              li     next1 "0"          file
+              mtc1_d reg1 "$f12"        file
+              lw     next1 "4($sp)"     file
+              sw     next2 "4($sp)"     file
+              li     next2 "0"          file
+              mtc1_d reg2 "$f10"        file
+              div_d  dest "$f12" "$f10" file
+              addi   "$sp" "$sp" "20"   file
+              lw     next2 "-16($sp)"   file
+              l_d    "$f10" "0($sp)"    file
+              l_d    "$f12" "-8($sp)"   file
             else
-              let code = (init inst) ++ ".d " ++ dest ++ reg1 ++ reg2 ++ "\n"
-              in appendFile name code
-          else appendFile name $ inst ++ dest ++ reg1 ++ reg2 ++ "\n"
+              let code = (init inst) ++ ".d " ++ dest ++ reg1 ++ reg2
+              in
+              comment ", op != Div or rv2 is float. Se asume es float" file >>
+                appendFile file code
+          else 
+            comment ", Int" >> appendFile file $ inst ++ dest ++ reg1 ++ reg2
 
     x | x `elem` [Gt, Gte, Lt, Lte, Eq, Neq] ->
-      let reg2 = (tail . init $ show (fromJust $ tacRvalue2 tac)) ++ "\n"
-          reg1 = if isJust $ tacInfo $ tacRvalue1 tac then
+      let 
+        reg2 = (tail . init $ show (fromJust $ tacRvalue2 tac))
+        reg1 = 
+          if isJust $ tacInfo $ tacRvalue1 tac then
             (makeReg color $ getReg' t $ tacInfo $ tacRvalue1 tac) ++ ", "
-          else show (fromJust $ tacRvalue1 tac) ++ ", "
-      in appendFile name $ inst ++ dest ++ reg1 ++ reg2
-    Call ->
-      let save = "addi " ++ dest ++ "$v0, 0\n"
+          else 
+            show (fromJust $ tacRvalue1 tac) ++ ", "
       in 
-      genJumps tac i color name >> 
-        putStrLn (show $ tacInfo $ tacLvalue tac) >> 
-          appendFile name save
-    Get -> do-- x = y[i]
-      let
-        reg1 = (makeReg color $ getReg' t $ tacInfo $ tacRvalue1 tac)
-        y = reg1 ++ ", "
-        reg2 = (makeReg color $ getReg' t $ tacInfo $ tacRvalue2 tac)
-        code = "add " ++ y ++ y ++ reg2 ++ "\nlw " ++ dest ++ reg1
-      appendFile name code
-    Set -> do -- x[i] = y
+        comment (", " ++ show x) file >>
+          appendFile file (inst ++ dest ++ reg1 ++ reg2)
+    Call ->
+      comment ", Subroutine call" file >>
+        genJumps tac i color file >> addi dest "$v0" "0" file
+    Get -> -- x = y[i]
       let
         reg1 = (makeReg color $ getReg' t $ tacInfo $ tacRvalue1 tac)
         reg2 = (makeReg color $ getReg' t $ tacInfo $ tacRvalue2 tac)
-        code = "add " ++ dest ++ dest ++ reg1 ++ "\nsw " ++ dest ++ "0("
-      appendFile name $ code ++ init reg2 ++ ")\n"
-    _ -> appendFile name ""
+      in
+        comment ", Get" file >> add reg1 reg1 reg2 file >> lw  dest reg1 file
+    Set -> -- x[i] = y
+      let
+        reg1 = (makeReg color $ getReg' t $ tacInfo $ tacRvalue1 tac)
+        reg2 = (makeReg color $ getReg' t $ tacInfo $ tacRvalue2 tac)
+      in
+        comment ", Set" file >>
+          add dest dest reg1 file >> sw dest ("0(" ++ init reg2 ++ ")") file
+    o -> 
+      comment ("\n\t# Operand not supported yet: " ++ show o) file
 
 
--- ThreeAddressCode Minus (Just x) (Just y) Nothing
--- ThreeAddressCode Ref (Just x) (Just y) Nothing
--- ThreeAddressCode Deref (Just x) (Just y) Nothing
 genTwoOperandsOp :: TAC -> InterfGraph -> VertColorMap -> String -> IO ()
-genTwoOperandsOp tac (_, _, getReg) color file =
+genTwoOperandsOp tac (_, _, getReg) color file = do
+  comment ("\n\t# 2 Operands operation: " ++ show tac) file
   let
     inst = show' (tacOperand tac) ++ " "
     dest = (makeReg color $ getReg' getReg $ tacInfo $ tacLvalue tac) ++ ", "
-  in 
+  
   case tacInfo $ tacRvalue1 tac of
     Nothing -> -- No puedes tener un label en estos operadores.
-      let label = show (fromJust $ tacRvalue1 tac) ++ "\n"
-      in appendFile file $ inst ++ dest ++  label
-    _ -> let
-      reg1 = (makeReg color $ getReg' getReg $ tacInfo $ tacRvalue1 tac) ++ "\n"
-      float = isFloat $ tacType $ tacRvalue1 tac
-      inst' = if float then (init inst) ++ ".d " else inst
-      code = inst' ++ dest ++ reg1
-      in appendFile file code
+      let label = show (fromJust $ tacRvalue1 tac)
+      in comment ", rv1 is Nothing" file >> appendFile file (inst ++ dest ++  label)
+    _ -> 
+      let
+        reg1 = (makeReg color $ getReg' getReg $ tacInfo $ tacRvalue1 tac) 
+        float = isFloat $ tacType $ tacRvalue1 tac
+        inst' = if float then (init inst) ++ ".d " else inst
+        code = inst' ++ dest ++ reg1
+      in 
+        appendFile file code
 
 
--- ThreeAddressCode Return Nothing (Just x) Nothing
--- ThreeAddressCode Return Nothing Nothing NothinggetTempNum t 
--- ThreeAddressCode Call Nothing (Just f) (Just n)
--- ThreeAddressCode If Nothing (Just b) (Just label)
--- ThreeAddressCode GoTo Nothing Nothing (Just label)
 genJumps :: TAC -> InterfGraph -> VertColorMap -> String -> IO ()
-genJumps tac (_, _, t) color name = case tacRvalue2 tac of
-  Nothing -> case tacRvalue1 tac of
-    Nothing -> epilogue name -- Return Proc
-    _ -> case tacInfo $ tacRvalue1 tac of -- Return Func
-      Nothing -> --return a constant
-        let code = "addi $v0, $0, " ++ show (fromJust $ tacRvalue1 tac) ++ "\n"
-        in appendFile name code >> epilogue name
-      _ -> --return a value into a register
-        let
-          dest = makeReg color $ getReg' t $ tacInfo $ tacRvalue1 tac
-          code = "addi $v0, " ++ dest ++ ", 0\n"
-        in appendFile name code >> epilogue name
-  _ -> do
-    let
-      goto = show' (tacOperand tac) ++ " "
-      dest = (tail . init $ show (fromJust $ tacRvalue2 tac)) ++ "\n"
-    if isJust $ tacRvalue1 tac then
-      if isCall $ tacOperand tac then -- Call Subroutines
-        let code = goto ++ show (fromJust $ tacRvalue1 tac) ++ "\n"
-        in activateCalled name >> appendFile name code >> activateCaller name
-      else
-        let cond = makeReg color $ getReg' t $ tacInfo $ tacRvalue1 tac
-        in appendFile name $ goto ++ cond ++ ", " ++ dest -- If
-    else appendFile name $ goto ++ dest -- GoTo
+genJumps tac (_, _, t) color file = do
+  comment "\n\t# Jump" file
+  case tacRvalue2 tac of
+    Nothing -> 
+      case tacRvalue1 tac of
+        Nothing -> comment ", return from Proc" file >> epilogue file
+        _       -> comment ", return from Func" file >> 
+          case tacInfo $ tacRvalue1 tac of
+            --return a constant
+            Nothing -> 
+              let retVal = show (fromJust $ tacRvalue1 tac)
+              in comment ", return constant" file >> move "$v0" retVal file >> epilogue file
+            --return a value into a register
+            _ -> 
+              let retVal = makeReg color $ getReg' t $ tacInfo $ tacRvalue1 tac
+              in comment ", return varule" file >> move "$v0" retVal file >> epilogue file
+    _ -> do
+      let
+        goto = show' (tacOperand tac) ++ " "
+        dest = (tail . init $ show (fromJust $ tacRvalue2 tac))
+      if isJust $ tacRvalue1 tac then
+        if isCall $ tacOperand tac then
+          let code = goto ++ show (fromJust $ tacRvalue1 tac)
+          in 
+            comment ", Call Subroutines" file >> activateCalled file >> 
+              appendFile file code >> activateCaller file
+        else
+          let cond = makeReg color $ getReg' t $ tacInfo $ tacRvalue1 tac
+          in comment ", if" file >> appendFile file (goto ++ cond ++ ", " ++ dest)
+      else 
+        comment ", goto" file >> appendFile file (goto ++ dest)
 
--- ThreeAddressCode Print Nothing (Just e) Nothing
--- ThreeAddressCode Read Nothing Nothing Nothing
--- ThreeAddressCode Assign Nothing (Just x) Nothing
--- ThreeAddressCode Exit Nothing Nothing Nothing
+
 genSyscalls :: TAC -> InterfGraph -> VertColorMap -> String -> IO ()
-genSyscalls tac (_, _, t) color file = case tacOperand tac of
-  Print -> do -- syscalls 1,3,4,11
-    {- 
-     * code in $v0 |    service   | args
-     *      1      | int          | $a0
-     *      2      | float        | $f12
-     *      3      | double       | $f12
-     *      4      | string       | $a0
-     *      11     | char         | $a0. Prints ASCII char corresponding to contents of low-order byte
-     *      34     | hex int      | $a0
-     *      35     | binary int   | $a0
-     *      36     | unsigned int | $a0
+genSyscalls tac (_, _, t) color file = 
+  let
+    rv2 = tacRvalue2 tac
+  in
+  case tacOperand tac of
+    Print -> do
+      {- 
+        * code in $v0 |    service   | args
+        *      1      | int          | $a0
+        *      2      | float        | $f12
+        *      3      | double       | $f12
+        *      4      | string       | $a0
+        *      11     | char         | $a0. Prints ASCII char corresponding to contents of low-order byte
+        *      34     | hex int      | $a0
+        *      35     | binary int   | $a0
+        *      36     | unsigned int | $a0
+      -}
+      comment "\n\t# Print" file
 
-      li $v0, 4
-      la $a0, strLabel
-      syscall
-    -}
-    let Label strLabel = fromJust $ tacRvalue2 tac
-    li "$v0" "4" file
-    la "$a0" strLabel file
-    syscall file
+      if isJust $ tacInfo rv2 then do
+        comment (", Int, rv2: " ++ show rv2) file
+        let arg = makeReg color $ getReg' t $ tacInfo rv2
+        li   "$v0" "1" file
+        move "$a0" arg file
+        syscall        file
+      else do
+        let label = show (fromJust rv2)
 
-    -- if isJust $ tacInfo $ tacRvalue2 tac then
-    --   putStrLn "HOLA" >>
-    --   let arg = makeReg color $ getReg' t $ tacInfo $ tacRvalue2 tac
-    --   in appendFile file $ "li $v0, 1\naddi $a0, " ++ arg ++ ", 0\nsyscall\n"
-    -- else do
-    --   let label = show (fromJust $ tacRvalue2 tac) ++ "\nsyscall\n"
-    --   case strSplit "_" $ show $ fromJust $ tacRvalue2 tac of
-    --     (_, "int") -> appendFile file $ "li $v0, 1\nlw $a0, " ++ label
-    --     (_, "float") -> appendFile file $ "li $v0, 3\nl.d $f12, " ++ label
-    --     -- (_, "str") -> appendFile file $ "li $v0, 4\nla $a0, " ++ label
-    --     _ -> appendFile file $ "li $v0, 4\nla $a0, " ++ label
-    --     -- t -> putStrLn $ "Print " ++ fst t ++ "_" ++ snd t
+        case strSplit "_" label of
+          (_, "int")   -> comment ", Int" file >> li "$v0" "1" file >> lw  "$a0"  label file
+          (_, "float") -> comment ", Double" file >> li "$v0" "3" file >> l_d "$f12" label file
+          _            -> comment ", String" file >> li "$v0" "4" file >> la  "$a0"  label file
 
-    --   appendFile file "li $v0, 4\nla $a0, newLine\nsyscall\n"
+        syscall file
+        li "$v0" "4"       file
+        la "$a0" "newLine" file
+        syscall file
 
-  Read -> -- syscalls 5,7,8,12
-    {- 
-      * code in $v0 |    service   | arg | result
-      *      5      | int          |     | $v0 
-      *      6      | float        |     | $f0
-      *      7      | double       |     | $f0
-      *      12     | char         |     | $v0
-      *      8      | string       | $a0, input buffer addr     | Follows semantics of UNIX 'fgets'. For specified length n, string can be no longer than n-1. 
-      *             |              | $a1, max num chars to read | If less than that, adds newline to end. In either case, then pads with null byte If n = 1, input is ignored and null byte placed at buffer address. If n < 1, input is ignored and nothing is written to the buffer.
-      *      14     | read from file
-      * Null terminated strings
-      *      51     |
-      *      52     |
-      *      53     |
-      *      54     |
-
-      li $v0, 4
-      la $a0, strLabel
-      syscall
-    -}
-    let label = show (fromJust $ tacRvalue2 tac)
-    in 
-    case strSplit "_" $ show $ fromJust $ tacRvalue2 tac of
-      
-      (_, "int") -> let code = "li $v0, 5\nsyscall\nsw $v0, " ++ label ++ "\n"
-        in appendFile file code
-      
-      (_, "float") -> let code = "li $v0, 7\nsyscall\nswl $f0, " ++ label
-        in appendFile file $ code ++ "\nswr $f0, " ++ label ++ "\n"
-      
-      (_, "str") -> let
-          len  = "li $a1, len" ++ show (fromJust $ tacRvalue2 tac) ++ "\n"
-          code = "la $a0, " ++ label ++ "\n" ++ len ++ "li $v0, 8\nsyscall\n"
-        in appendFile file code
-      t -> putStrLn $ "Read " ++ fst t ++ "_" ++ snd t
-      
-  Exit -> appendFile file "\n\tli $v0, 10\n\tsyscall\n"
-  _ -> -- syscall 9
-  {-
-   * sbrk (allocate heap memory) | $a0 = number of bytes to allocate | $v0 contains address of allocated memory 
-   ##### Crear jugadores
-    # $t0: 	Jugador actual.
-    # $t1:	Numero de jugadores
-    # $t2:	Nombre del jugador
-    #####
-      # Creo al jugador 1
-        li $v0, 9
-        li $a0, 24
-        syscall
+    Read -> -- syscalls 5,7,8,12
+      {- 
+        * code in $v0 |    service   | arg | result
+        *      5      | int          |     | $v0 
+        *      6      | float        |     | $f0
+        *      7      | double       |     | $f0
+        *      12     | char         |     | $v0
+        *      8      | string       | $a0, input buffer addr     |
+        *             |              | $a1, max num chars to read |
+                Follows semantics of UNIX 'fgets'. For specified length n, string 
+                can be no longer than n-1, if less than that, adds newline to end. 
+                In either case, then pads with null byte If n = 1, input is ignored 
+                and null byte placed at buffer address. If n < 1, input is ignored 
+                and nothing is written to the buffer.
         
-        sw $v0, jugadores	# Enlazo el jugador 1 a la lista y se establece como el primero de la lista
-                #( no necesariamente es el primero que va a jugar)
-        move $t0, $v0		# Actualizo el jugador actual con el primero insertado
-        li $t1, 0		# Inicializo el numero de jugadores
-  -}
-    let arg = makeReg color $ getReg' t $ tacInfo $ tacRvalue1 tac
-    in appendFile file $ "addi $a0, " ++ arg ++ ", 0\nli $v0, 9\nsyscall\n"
+        *      14     | read from file
+        * Null terminated strings
+        *      51     |
+        *      52     |
+        *      53     |
+        *      54     |
 
--- ThreeAddressCode Assign (Just x) (Just y) Nothing
--- ThreeAddressCode Assign (Just x) Nothing Nothing
+          la $s0, <label donde se guarda el valor del input>
+          
+          li $v0, 8
+          la $a0, buffer	# Load byte space into address, donde se guarda el input
+          li $a1, 12 	    # allot the byte space for string
+          syscall
+
+          # Guardo el input
+          lw $t0, ($a0)	
+          sw $t0, 0($s0)
+      -}
+      let label = show (fromJust rv2)
+      in 
+      comment "\n\t# Read" file >>
+        case strSplit "_" label of
+          
+          (_, "int") -> comment ", Int" file >> 
+            li "$v0" "5" file >> syscall file >> sw "$v0" label file
+
+          (_, "float") -> do
+            comment ", Float" file
+            li "$v0" "7" file 
+            syscall file
+            swl "$f0" label file 
+            swr "$f0" label file
+          
+          (_, "str") -> do
+            comment ", String" file
+            la "$a0" label file
+            li "$a1" ("len" ++ label) file
+            li "$v0" "8" file
+            syscall file
+
+          t -> comment (", ?, " ++ show tac) file
+        
+    Exit -> appendFile file "\nexit:" >> li "$v0" "10" file >> syscall file
+    _    -> -- syscall 9
+      {-
+        * sbrk (allocate heap memory) | $a0 = number of bytes to allocate | $v0 contains address of allocated memory 
+        ##### Crear jugadores
+          # $t0: 	Jugador actual.
+          # $t1:	Numero de jugadores
+          # $t2:	Nombre del jugador
+          #####
+            # Creo al jugador 1
+              li $v0, 9
+              li $a0, 24
+              syscall
+              
+              sw $v0, jugadores	# Enlazo el jugador 1 a la lista y se establece como el primero de la lista
+                      #( no necesariamente es el primero que va a jugar)
+              move $t0, $v0		# Actualizo el jugador actual con el primero insertado
+              li $t1, 0		# Inicializo el numero de jugadores
+      -}
+      let arg = makeReg color $ getReg' t $ tacInfo $ tacRvalue1 tac
+      in comment "\n\t# Ask for memory" file >>
+        move "$a0" arg file >> li "$v0" "9" file >> syscall file
+
+
 genAssign :: TAC -> InterfGraph -> VertColorMap -> String -> IO ()
-genAssign tac (_, _, getReg) colorGraph file =
-  if isJust $ tacInfo $ tacLvalue tac then
+genAssign tac (_, _, getReg) colorGraph file = do
+  comment "\n\t# Assign" file
+  let
+    lval     = tacLvalue tac
+    lvalInfo = tacInfo lval
+    rv1      = tacRvalue1 tac
+    rv1Info  = tacInfo rv1
+  
+  if isJust lvalInfo then
     let 
-      dest = makeReg colorGraph $ getReg' getReg $ tacInfo $ tacLvalue tac
+      dest = makeReg colorGraph $ getReg' getReg lvalInfo
     in 
-    case tacRvalue1 tac of
-      Nothing -> li dest "0" file
-      _ ->
-        if isJust $ tacInfo $ tacRvalue1 tac then do
+    case rv1 of
+      Nothing -> comment (", rv1 is Nothing ") file >> li dest "0" file
+      _       ->
+        if isJust rv1Info then
           let
-            reg1 = makeReg colorGraph $ getReg' getReg $ tacInfo $ tacRvalue1 tac
-            m = if isFloat $ tacType $ tacLvalue tac then "mov.d " else "move "
-            code = m ++ dest ++ ", " ++ reg1 ++ "\n"
-          putStrLn reg1
-          appendFile file code
+            reg1 = makeReg colorGraph $ getReg' getReg rv1Info
+            mov  = if isFloat $ tacType lval then mov_d else move
+          in
+          comment (", assig var: " ++ show rv1) file >> mov dest reg1 file
+
         else 
-          let immediate = show (fromJust $ tacRvalue1 tac) ++ "\n"
-              load = if elem '_' immediate then "l.d " else "li "
-          in appendFile file $ load ++ dest ++ ", " ++ immediate
+          let imm  = show (fromJust rv1) ++ "\n"
+              load = if elem '_' imm then l_d else li
+          in 
+            comment (", assig const: " ++ show rv1) file >> load dest imm file
   else
     -- cuando se refiere a asignar un valor en el .data
     -- NO, innecesario,
-    if isJust $ tacInfo $ tacRvalue1 tac then
-      let value = makeReg colorGraph $ getReg' getReg $ tacInfo $ tacRvalue1 tac
-          store = if isFloat $ tacType $ tacRvalue1 tac then "s.d " else "sw "
-          save = "\n\t" ++ store  ++ value ++ ", " ++ (show $ fromJust $ tacLvalue tac)
-      in appendFile file $ save
+    comment ", store in mem" file >>
+    if isJust rv1Info then
+      let 
+        value = makeReg colorGraph $ getReg' getReg rv1Info
+        store = if isFloat $ tacType rv1 then s_d else sw
+      in
+        store value (show $ fromJust lval) file
     else
-      let value = show (fromJust $ tacRvalue1 tac)
-          save = "\n\tsw " ++ value ++ ", " ++ (show $ fromJust $ tacLvalue tac)
-      in appendFile file $ save
+      let value = show (fromJust rv1)
+      in sw value (show $ fromJust lval) file
 
 
--- ThreeAddressCode Param Nothing (Just p) (Just n)
 genParam :: TAC -> InterfGraph -> VertColorMap -> String -> IO ()
 genParam tac (_, _, getReg) colorGraph file =
   let 
@@ -334,20 +376,18 @@ genParam tac (_, _, getReg) colorGraph file =
       if isJust paramOp then makeReg colorGraph (getReg' getReg $ tacInfo param)
       else show $ fromJust param
   in
-  comment "\n# Params" file >> putStrLn ("\nparam: "++show param) >>
+  comment ("\n\t# Param: " ++ show tac) file >>
 
     if isFloat $ tacType param then 
       if paramNum < "4" then mov_d ("$f" ++ paramNum) regSour file
       else
-        -- A la pila
         -- offset
-        addi "$sp" "$sp" "-8" file >> sw regSour "($sp)" file
+        comment ", to stack" file >> addi "$sp" "$sp" "-8" file >> sw regSour "($sp)" file
     else
       if paramNum < "4" then move ("$a" ++ paramNum) regSour file
       else
-        -- A la pila
         -- offset
-        addi "$sp" "$sp" "-4" file >> sw regSour "($sp)" file
+        comment ", to stack" file >> addi "$sp" "$sp" "-4" file >> sw regSour "($sp)" file
 
 
 -- | Empila los registros que son responsabilidad del llamado.
@@ -355,7 +395,7 @@ genParam tac (_, _, getReg) colorGraph file =
 -- 
 activateCalled :: String -> IO ()
 activateCalled file = do
-  comment "\n# Activate Called" file
+  comment "\n\t# Activate Called" file
   sw   "$a0" "0($sp)" file
   sw   "$a1" "-4($sp)" file
   sw   "$a2" "-8($sp)" file
@@ -381,7 +421,7 @@ activateCalled file = do
 -- 
 prologue :: String -> IO ()
 prologue file = do
-  comment "\n# Prologue" file
+  comment "\n\t# Prologue" file
   sw   "$ra" "0($sp)" file
   sw   "$s0" "-4($sp)" file
   sw   "$s1" "-8($sp)" file
@@ -400,7 +440,7 @@ prologue file = do
 -- 
 epilogue :: String -> IO ()
 epilogue file = do
-  comment "\n# Epilogue" file
+  comment "\n\t# Epilogue" file
   addi "$sp" "$sp" "40" file
   lw   "$ra" "0($sp)" file
   lw   "$s0" "-4($sp)" file
@@ -419,7 +459,7 @@ epilogue file = do
 -- 
 activateCaller :: String -> IO ()
 activateCaller file = do
-  comment "\n# Activate Caller" file
+  comment "\n\t# Activate Caller" file
   addi "$sp" "$sp" "84" file
   lw   "$a0" "0($sp)" file
   lw   "$a1" "-4($sp)" file
@@ -453,10 +493,10 @@ makeReg colorGraph number =
 -- 
 -- TODO!!: a veces da error con fromJust de Nothing
 getReg' :: (TACInfo -> Maybe G.Vertex) -> Maybe TACInfo -> G.Vertex
-getReg' _      Nothing = error "'tacInfo' is Nothing getReg'\n"
+getReg' _      Nothing = error "\n\n\t'tacInfo' is Nothing getReg'\n\n"
 getReg' getReg tacInfo = 
   if mVertex == Nothing 
-  then error $ "'vertex' is Nothing getReg'\ntacInfo: " ++ show tacInfo
+  then error $ "\n\n\t'vertex' is Nothing getReg'\n\ttacInfo: " ++ show tacInfo ++ "\n\n"
   else fromJust mVertex
   where
     mVertex = getReg $ fromJust tacInfo
@@ -487,29 +527,45 @@ isCall Call = True
 isCall _    = False
 
 show' :: Operation -> String
-show' Add = "add"
-show' Sub = "sub"
-show' Minus = "neg"
-show' Mult = "mul"
-show' Div = "div"
-show' Mod = "rem"
-show' And = "and"
-show' Or = "or"
-show' Gt = "bgt"
-show' Gte = "bge"
-show' Lt = "blt"
-show' Lte = "ble"
-show' Eq = "beq"
-show' Neq = "bne"
-show' GoTo = "b"
-show' If = "bnez"
-show' Call = "jal"
-show' Return = "jr"
-show' Get = "lw"
-show' Set = "sw"
-show' Ref = "la"
-show' Deref = "lw"
-show' _ = "NM"
+show' Add    = "\n\tadd"
+show' Sub    = "\n\tsub"
+show' Minus  = "\n\tneg"
+show' Mult   = "\n\tmul"
+show' Div    = "\n\tdiv"
+show' Mod    = "\n\trem"
+show' And    = "\n\tand"
+show' Or     = "\n\tor"
+show' Gt     = "\n\tbgt"
+show' Gte    = "\n\tbge"
+show' Lt     = "\n\tblt"
+show' Lte    = "\n\tble"
+show' Eq     = "\n\tbeq"
+show' Neq    = "\n\tbne"
+show' GoTo   = "\n\tb"
+show' If     = "\n\tbnez"
+show' Call   = "\n\tjal"
+show' Return = "\n\tjr"
+show' Get    = "\n\tlw"
+show' Set    = "\n\tsw"
+show' Ref    = "\n\tla"
+show' Deref  = "\n\tlw"
+show' _      = "\n\tNM"
 
-floatingDiv :: String
-floatingDiv = "sw $t0, 0($sp)\nsw $t1, -4($sp)\nadd $t0, $0, $sp\naddi $t1, $0, 8\ndiv $t0, $t1\nmfhi $t0\nbeqz $t0, aligned\nlw $t0, 0($sp)\nlw $t1, -4($sp)\naddi $sp, $sp, -4\nb ready\naligned:\nlw $t0, 0($sp)\nlw $t1, -4($sp)\nready:\n"
+floatingDiv :: String -> IO ()
+floatingDiv file = do
+  sw   "$t0" "0($sp)"    file
+  sw   "$t1" "-4($sp)"   file
+  add  "$t0" "$0" "$sp"  file
+  addi "$t1" "$0" "8"    file
+  div' "$t0" "$t0" "$t1" file
+  mfhi "$t0"             file
+  beqz "$t0" "aligned"   file
+  lw   "$t0" "0($sp)"    file
+  lw   "$t1" "-4($sp)"   file
+  addi "$sp" "$sp" "-4"  file
+  b    "ready"           file
+  appendFile file "\naligned:"
+  lw   "$t0" "0($sp)"    file
+  lw   "$t1" "-4($sp)"   file
+  appendFile file "\nready:"
+

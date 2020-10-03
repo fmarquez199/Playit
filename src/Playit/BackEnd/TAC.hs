@@ -22,7 +22,7 @@ import qualified TACType           as T
 
 
 dataFilePath :: String
-dataFilePath = "./output/data.s"
+dataFilePath = "./output/data.asm"
 
 -- Colocar los temps de print, read y null al inicio?
 tacInitState :: SymTab -> Operands
@@ -108,7 +108,9 @@ genAssig v e = case typeVar v of
           litLabel = literal ++ "_str"
           strLen   = show $ length s
         
-        liftIO $ _word ("len_" ++ literal) strLen >> _asciiz litLabel s
+        liftIO $ _word ("len_" ++ literal) strLen dataFilePath
+        liftIO $ _asciiz litLabel s dataFilePath
+
         v' <- pushOffset 4 >>= newTemp TInt 4 >>= genVar v
         -- tell tacAssign vTemp eTemp litLabel
         tell [tacRef v' (tacLabel litLabel)]
@@ -127,7 +129,8 @@ genAssig v e = case typeVar v of
           varBuffer = var ++ "_str"
           strLabel  = var ++ "_prompt"
         
-        liftIO $ _space varBuffer "80" >> _asciiz strLabel s
+        liftIO $ _space varBuffer "80" dataFilePath
+        liftIO $ _asciiz strLabel s dataFilePath
         v' <- pushOffset 4 >>= newTemp TInt 4 >>= genVar v
         tell [tacPrint (tacConstant (s, TStr)) (tacLabel strLabel)]
         tell [tacRead (tacConstant (var, TStr)) (tacLabel varBuffer)] -- TODO: var o temp?
@@ -140,7 +143,7 @@ genAssig v e = case typeVar v of
           var      = show v
           varLabel = var ++ "_str"
         
-        liftIO $ _space varLabel "80"
+        liftIO $ _space varLabel "80" dataFilePath
         tell [tacPrint rv rv] -- TODO: rv -> string a imprimir
         tell [tacRead (tacConstant (var, TStr)) (tacLabel varLabel)]
         tell [tacRef lv (tacLabel varLabel)]
@@ -169,7 +172,7 @@ genAssig v e = case typeVar v of
           intLabel  = var ++ "_prompt"
 
         liftIO $ _space varBuffer "4" dataFilePath
-        liftIO $ _asciiz intLabel dataFilePath
+        liftIO $ _asciiz intLabel s dataFilePath
 
         v' <- pushOffset 4 >>= newTemp TInt 4 >>= genVar v
         tell [tacPrint (tacConstant (s, TInt)) (tacLabel intLabel)]
@@ -231,7 +234,7 @@ genAssig v e = case typeVar v of
           floatLabel  = var ++ "_prompt"
 
         liftIO $ _space varBuffer "8" dataFilePath
-        liftIO $ _asciiz floatLabel dataFilePath
+        liftIO $ _asciiz floatLabel s dataFilePath
 
         tell [tacPrint (tacConstant (s, TFloat)) (tacLabel floatLabel)]
         tell [tacRead (tacConstant (var, TFloat)) (tacLabel varBuffer)]
@@ -380,7 +383,7 @@ genPrint [e] =
     Literal (ArrLst ls) t -> do
       let 
         arr      = show ls
-        arrLabel = "array_" ++ replace "," "" (init $ tail arr) ++ "_str"
+        arrLabel = "array" ++ replace "," "" (init $ tail arr) ++ "_str"
       liftIO $ _asciiz arrLabel arr dataFilePath
       tell [tacPrint (tacConstant (arr, t)) (tacLabel arrLabel)]
     
