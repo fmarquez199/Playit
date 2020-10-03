@@ -8,31 +8,24 @@
 @  Skill b
 @  Battle c
 @.~
-@boss b(Inv i, Skill x):
-@  x = 10'5
-@  Power y = i * 2
+@boss b(Power num):
+@  drop num
 @.~
-@monster m(Power|}5{| s) Power:
-@  unlock 0
-@.~
+monster m(Skill s) Skill:
+  unlock s + 1'5
+.~
 @monster m(Runes str) Runes:
 @  unlock str
 @.~
 
 world %Pruebas%:
 
-  @Rune x = *a*
-  @Power x = 2
-  @Runes x = |)*H*, *o*, *l*, *a*(|
-  @Skill l = 0'0
-  @Runes y = ~H~
-  @Runes x = y
-
   @Skill l = 1'0
   @Skill m = 1'0
   @Skill n = 1'0
   
 @ Operaciones aritmeticas
+  @Power x = 2
   @Power i0 = x + 1
   @Power i1 = x - 1
   @Power i2 = x * 1
@@ -95,8 +88,11 @@ world %Pruebas%:
   @.~
 
 @ Subrutinas
-  @kill b(x,4'5)
-  @x = kill m(10'4)
+  @Power x = 10
+  Skill y = 10'4
+  @kill b(x)
+  @x = kill m(x)
+  y = kill m(y)
   @Power|}x{| arr0     @ Esto esta dando error cuando se inicializa por defecto un arreglo
   @Power|}5{| arr1
   @x = kill m(arr1)
@@ -122,17 +118,20 @@ world %Pruebas%:
 
 @ I/O
   @Runes s = ~3g~
-  Runes j = joystick ~Here we go~
+  @Runes j = joystick ~Here we go~
   @drop s
   @drop ~hola mundo!!~
 
 @ Strings
+  @Runes x = |)*H*, *o*, *l*, *a*(|
+  @Runes y = ~H~
+  @Runes x = y
   @Runes y = ~Hola, soy un string~
   @Runes s = kill m(y) @ not implemented
   @drop y
   @drop ~Este es otro string~
 
-@ Ejemplo
+@ Collaz
   @Power steps = 0
   @Power n = joystick ~Dime un numero positivo ~
   @play:

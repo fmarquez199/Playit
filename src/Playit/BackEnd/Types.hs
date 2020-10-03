@@ -28,6 +28,10 @@ type Width   = Int
 type TAC     = TACT.ThreeAddressCode TACInfo Type
 type TACOP   = Maybe (TACT.Operand TACInfo Type)
 
+-- tac operands
+-- include 
+--    Constant (String, Type)
+--    Label String
 data TACInfo = Temp Id Type (OffSet, Width)
              | TACVar SymbolInfo (OffSet, Width)
              deriving (Eq, Ord)

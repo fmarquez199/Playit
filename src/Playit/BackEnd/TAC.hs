@@ -70,6 +70,8 @@ genSubroutine :: (Id, Params, InstrSeq, Bool) -> TACMonad ()
 genSubroutine (s, _, is, isProc) = resetOffset >>
   tell [tacNewLabel $ tacLabel s] >> mapM_ genCode is >>
     when isProc (genReturn Nothing)
+
+
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 --                            TAC Instructions
@@ -77,7 +79,7 @@ genSubroutine (s, _, is, isProc) = resetOffset >>
 -------------------------------------------------------------------------------
 
 
--- Registros/Uniones
+-- TODO: Registros/Uniones
 genAssig :: Var -> Expr -> TACMonad ()
 genAssig v e = case typeVar v of
   -- Si es el operador ternario la expr puede ser bool o no
@@ -614,7 +616,6 @@ genArrayList (elem:elems) width index arrTemp = do
   genArrayList elems width (index + 1) (modifyOffSet arrTemp actO width)
 
 
--- syscall 8
 -- TODO: width del tipo string
 -- Creo que no llega hasta aqui, en genAssig toco sus casos
 -- TODO: integrar aqui lo que hay en genAssig y asi esta en un solo sitio

@@ -145,7 +145,9 @@ tacCall lv s n = [T.ThreeAddressCode T.Call lv (tacLabel s) (tacConstant (show n
 
 
 -------------------------------------------------------------------------------
-tacParam :: TACOP -> Int -> TAC
+tacParam :: TACOP 
+         -> Int   -- ^ Numero de parametro
+         -> TAC
 tacParam p n = T.ThreeAddressCode T.Param Nothing p (tacConstant (show n, TInt))
 -------------------------------------------------------------------------------
 
@@ -602,39 +604,54 @@ _double name num = "\n" ++ name ++ ": .double " ++ num
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 
+comment :: String -> String -> IO ()
+comment com file = appendFile file com
+
 -- load and store
 
 lw :: String -> String -> String
-lw regDest dir = "\nlw " ++ regDest ++ ", " ++ dir
+lw regDest dir = "\n\tlw " ++ regDest ++ ", " ++ dir
 
 la :: String -> String -> String
-la regDest dir = "\nla " ++ regDest ++ ", " ++ dir
+la regDest dir = "\n\tla " ++ regDest ++ ", " ++ dir
 
-li :: String -> String -> String
-li regDest int = "\nli " ++ regDest ++ ", " ++ int
+li :: String -> String -> String -> IO ()
+li regDest int file = appendFile file $ "\n\tli " ++ regDest ++ ", " ++ int
 
-sw :: String -> String -> String
-sw regSour dir = "\nsw " ++ regSour ++ ", " ++ dir
+sw :: String -> String -> String -> IO ()
+sw regSour dir file = appendFile file $ "\n\tsw " ++ regSour ++ ", " ++ dir
 
 -- aritmetic
 
-add :: String -> String -> String -> String
-add result reg1 reg2 = "\nadd " ++ result ++ ", " ++ reg1 ++ ", " ++ reg2
+add :: String -> String -> String -> String -> IO ()
+add result reg1 reg2 file =
+  appendFile file $ "\n\tadd " ++ result ++ ", " ++ reg1 ++ ", " ++ reg2
 
-addi :: String -> String -> String -> String
-addi result reg1 reg2 = "\naddi " ++ result ++ ", " ++ reg1 ++ ", " ++ reg2
+addi :: String -> String -> String -> String -> IO ()
+addi result reg1 int file =
+  appendFile file $ "\n\taddi " ++ result ++ ", " ++ reg1 ++ ", " ++ int
 
-sub :: String -> String -> String -> String
-sub result reg1 reg2 = "\nsub " ++ result ++ ", " ++ reg1 ++ ", " ++ reg2
+sub :: String -> String -> String -> String -> IO ()
+sub result reg1 reg2 file =
+  appendFile file $ "\n\tsub " ++ result ++ ", " ++ reg1 ++ ", " ++ reg2
 
-mult :: String -> String -> String -> String
-mult result reg1 reg2 = "\nmult " ++ result ++ ", " ++ reg1 ++ ", " ++ reg2
+mult :: String -> String -> String -> String -> IO ()
+mult result reg1 reg2 file =
+  appendFile file $ "\n\tmult " ++ result ++ ", " ++ reg1 ++ ", " ++ reg2
 
 
 -- data transfer
 
--- | Copy the content of regSour to regDest
--- move
+-- | 
+-- Copy the content of regSour to regDest
+-- para los parametros
+move :: String -> String -> String -> IO ()
+move regDest regSour file =
+  appendFile file $ "\n\tmove " ++ regDest ++ ", " ++ regSour
+
+mov_d :: String -> String -> String -> IO ()
+mov_d regDest regSour file =
+  appendFile file $ "\n\tmov.d " ++ regDest ++ ", " ++ regSour
 
 -- mfc1.d Rd, FRs1
 
@@ -643,3 +660,6 @@ mult result reg1 reg2 = "\nmult " ++ result ++ ", " ++ reg1 ++ ", " ++ reg2
 
 -- Mueve  el  contenido  de  los  registros  de  punto-flotante
 -- FRs1 y FRs1+1 hacia los registros Rd y Rd+1 de la CPU
+
+jr :: String -> String -> IO ()
+jr reg file = appendFile file reg
