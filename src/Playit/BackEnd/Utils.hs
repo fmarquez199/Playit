@@ -612,69 +612,69 @@ comment :: String -> String -> IO ()
 comment com file = appendFile file com
 
 syscall :: String -> IO ()
-syscall file = appendFile file "\n\tsyscall\n"
+syscall file = appendFile file "\n\t\tsyscall\n"
 
 -- load and store
 
 lw :: String -> String -> String -> IO ()
-lw regDest dir file = appendFile file $ "\n\tlw " ++ regDest ++ ", " ++ dir
+lw regDest dir file = appendFile file $ "\n\t\tlw " ++ regDest ++ ", " ++ dir
 
 la :: String -> String -> String -> IO ()
-la regDest dir file = appendFile file $ "\n\tla " ++ regDest ++ ", " ++ dir
+la regDest dir file = appendFile file $ "\n\t\tla " ++ regDest ++ ", " ++ dir
 
 li :: String -> String -> String -> IO ()
-li regDest int file = appendFile file $ "\n\tli " ++ regDest ++ ", " ++ int
+li regDest int file = appendFile file $ "\n\t\tli " ++ regDest ++ ", " ++ int
 
 sw :: String -> String -> String -> IO ()
-sw regSour dir file = appendFile file $ "\n\tsw " ++ regSour ++ ", " ++ dir
+sw regSour dir file = appendFile file $ "\n\t\tsw " ++ regSour ++ ", " ++ dir
 
 l_d :: String -> String -> String -> IO ()
-l_d regDest dir file = appendFile file $ "\n\tl.d " ++ regDest ++ ", " ++ dir
+l_d regDest dir file = appendFile file $ "\n\t\tl.d " ++ regDest ++ ", " ++ dir
 
 s_d :: String -> String -> String -> IO ()
-s_d regSour dir file = appendFile file $ "\n\ts.d " ++ regSour ++ ", " ++ dir
+s_d regSour dir file = appendFile file $ "\n\t\ts.d " ++ regSour ++ ", " ++ dir
 
 swl :: String -> String -> String -> IO ()
-swl regSour dir file = appendFile file $ "\n\tswl" ++ regSour ++ ", " ++ dir
+swl regSour dir file = appendFile file $ "\n\t\tswl" ++ regSour ++ ", " ++ dir
 
 swr :: String -> String -> String -> IO ()
-swr regSour dir file = appendFile file $ "\n\tswr" ++ regSour ++ ", " ++ dir
+swr regSour dir file = appendFile file $ "\n\t\tswr" ++ regSour ++ ", " ++ dir
 
 -- aritmetic
 
 add :: String -> String -> String -> String -> IO ()
 add result reg1 reg2 file =
-  appendFile file $ "\n\tadd " ++ result ++ ", " ++ reg1 ++ ", " ++ reg2
+  appendFile file $ "\n\t\tadd " ++ result ++ ", " ++ reg1 ++ ", " ++ reg2
 
 addi :: String -> String -> String -> String -> IO ()
 addi result reg1 int file =
-  appendFile file $ "\n\taddi " ++ result ++ ", " ++ reg1 ++ ", " ++ int
+  appendFile file $ "\n\t\taddi " ++ result ++ ", " ++ reg1 ++ ", " ++ int
 
 sub :: String -> String -> String -> String -> IO ()
 sub result reg1 reg2 file =
-  appendFile file $ "\n\tsub " ++ result ++ ", " ++ reg1 ++ ", " ++ reg2
+  appendFile file $ "\n\t\tsub " ++ result ++ ", " ++ reg1 ++ ", " ++ reg2
 
 mult :: String -> String -> String -> String -> IO ()
 mult result reg1 reg2 file =
-  appendFile file $ "\n\tmult " ++ result ++ ", " ++ reg1 ++ ", " ++ reg2
+  appendFile file $ "\n\t\tmult " ++ result ++ ", " ++ reg1 ++ ", " ++ reg2
 
 div' :: String -> String -> String -> String -> IO ()
 div' result reg1 reg2 file =
-  appendFile file $ "\n\tdiv " ++ result ++ ", " ++ reg1 ++ ", " ++ reg2
+  appendFile file $ "\n\t\tdiv " ++ result ++ ", " ++ reg1 ++ ", " ++ reg2
 
 div_d :: String -> String -> String -> String -> IO ()
 div_d result reg1 reg2 file =
-  appendFile file $ "\n\tdiv.d " ++ result ++ ", " ++ reg1 ++ ", " ++ reg2
+  appendFile file $ "\n\t\tdiv.d " ++ result ++ ", " ++ reg1 ++ ", " ++ reg2
 
 
 -- jumps
 
 
 b :: String -> String -> IO ()
-b label file = appendFile file label
+b label file = appendFile file $ show label
 
 beqz :: String -> String -> String -> IO ()
-beqz comp label file = appendFile file $ "\n\tbeqz " ++ comp ++ ", " ++ label
+beqz comp label file = appendFile file $ "\n\t\tbeqz " ++ comp ++ ", " ++ show label
 
 jr :: String -> String -> IO ()
 jr reg file = appendFile file reg
@@ -688,22 +688,22 @@ jr reg file = appendFile file reg
 -- para los parametros
 move :: String -> String -> String -> IO ()
 move regDest regSour file =
-  appendFile file $ "\n\tmove " ++ regDest ++ ", " ++ regSour
+  appendFile file $ "\n\t\tmove " ++ regDest ++ ", " ++ regSour
 
 
 mov_d :: String -> String -> String -> IO ()
 mov_d regDest regSour file =
-  appendFile file $ "\n\tmov.d " ++ regDest ++ ", " ++ regSour
+  appendFile file $ "\n\t\tmov.d " ++ regDest ++ ", " ++ regSour
 
 
 -- | Copy regSour to regDest. Note ordering
 -- 
 mtc1_d :: String -> String -> String -> IO ()
 mtc1_d regSour regDest file =
-  appendFile file $ "\n\tmtc1.d " ++ regSour ++ ", " ++ regDest
+  appendFile file $ "\n\t\tmtc1.d " ++ regSour ++ ", " ++ regDest
 
 mfhi :: String -> String -> IO ()
-mfhi regDest file = appendFile file $ "\n\tmfhi " ++ regDest
+mfhi regDest file = appendFile file $ "\n\t\tmfhi " ++ regDest
 
 
 -- mfc1.d Rd, FRs1

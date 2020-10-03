@@ -42,23 +42,67 @@ genFinalCode tac g c file    = do
     x | x `elem` [Print, Read, Exit] -> genSyscalls tacInstr g c file     
     
     NewLabel -> do
-      if take 2 (show tacInstr) == "l." then
+      if elem "l." $ subsequences $ show tacInstr then
         -- let lbl = tail . init . reverse . snd . splitAt 2 . reverse $ show tacInstr
         -- in 
-          appendFile file (show tacInstr ++ ":\n")
+          appendFile file ("\n" ++ show tacInstr)
       else do
-        appendFile file (show tacInstr ++ "\n")
-        if "main: " == show tacInstr then 
-          putStrLn "" 
+        appendFile file ("\n" ++ show tacInstr)
+        if "main: " == show tacInstr then return ()
         else prologue file
     
     -- Length -> genLength tacInstr -- busca el label en .data que corresponda, si x = # [1,2] -> en TAC guardar el array en .data y colocarle un nombre y tu tam
     Assign -> genAssign tacInstr g c file
     Param  -> genParam tacInstr g c file 
     -- Access
-    o -> comment ("\n\t# Operand not supported yet: " ++ show o) file
+    o -> comment ("\n\t\t# Operand not supported yet: " ++ show o) file
   
   genFinalCode tacNext g c file
+
+
+-- TODO!!: Chars
+genAssign :: TAC -> InterfGraph -> VertColorMap -> String -> IO ()
+genAssign tac (_, _, getReg) colorGraph file = do
+  comment "\n\t\t# Assign" file
+  let
+    lval     = tacLvalue tac
+    lvalInfo = tacInfo lval
+    rv1      = tacRvalue1 tac
+    rv1Info  = tacInfo rv1
+  
+  if isJust lvalInfo then
+    let 
+      dest = makeReg colorGraph $ getReg' getReg lvalInfo
+    in 
+    case rv1 of
+      Nothing -> comment (", rv1 is Nothing ") file >> li dest "0" file
+      _       ->
+        if isJust rv1Info then
+          let
+            reg1 = makeReg colorGraph $ getReg' getReg rv1Info
+            mov  = if isFloat $ tacType lval then mov_d else move
+          in
+          comment (", var: " ++ show rv1) file >> mov dest reg1 file
+
+        else 
+          let imm  = show (fromJust rv1)
+              load = if elem '_' imm then l_d else li
+          in 
+            comment (", const: " ++ show rv1) file >> load dest imm file
+  else
+    -- cuando se refiere a asignar un valor en el .data
+    -- NO, innecesario,
+    comment ", store in mem" file >>
+    if isJust rv1Info then
+      let 
+        value = makeReg colorGraph $ getReg' getReg rv1Info
+        store = if isFloat $ tacType rv1 then s_d else sw
+      in
+        store value (show $ fromJust lval) file
+    else
+      let value = show (fromJust rv1)
+      in sw value (show $ fromJust lval) file
+
 
 -- TODO:
 -- ThreeAddressCode Anexo (Just x) (Just y) (Just z)
@@ -76,14 +120,17 @@ genThreeOperandsOp tac i@(_, _, t) color file =
       let
         reg1 = (makeReg color $ getReg' t $ tacInfo $ tacRvalue1 tac) ++ ", "
       
+      -- TODO: Primero se deberia verificar si es float o no
       case tacInfo $ tacRvalue2 tac of
         Nothing ->
+          -- TODO: cuando es float la inst no es la correcta
           let code = inst ++ dest ++ reg1 ++ show (fromJust $ tacRvalue2 tac) 
-          in comment ", rv2 is Norhing" file >> appendFile file code
+          in comment ", const" file >> appendFile file code
         _ ->
           let 
             reg2 = (makeReg color $ getReg' t $ tacInfo $ tacRvalue2 tac)
           in 
+          comment ", var" file >>
           if isFloat $ tacType $ tacLvalue tac then do
             comment ", Float" file
 
@@ -145,20 +192,23 @@ genThreeOperandsOp tac i@(_, _, t) color file =
         comment ", Set" file >>
           add dest dest reg1 file >> sw dest ("0(" ++ init reg2 ++ ")") file
     o -> 
-      comment ("\n\t# Operand not supported yet: " ++ show o) file
+      comment ("\n\t\t# Operand not supported yet: " ++ show o) file
 
 
+-- TODO!!: Upper/Lower case, "tacInfo" es Nothing
 genTwoOperandsOp :: TAC -> InterfGraph -> VertColorMap -> String -> IO ()
 genTwoOperandsOp tac (_, _, getReg) color file = do
-  comment ("\n\t# 2 Operands operation: " ++ show tac) file
+  comment ("\n\t\t# 2 Operands operation: " ++ show tac) file
   let
     inst = show' (tacOperand tac) ++ " "
     dest = (makeReg color $ getReg' getReg $ tacInfo $ tacLvalue tac) ++ ", "
   
+  -- TODO: Primero se deberia verificar si es float o no
   case tacInfo $ tacRvalue1 tac of
-    Nothing -> -- No puedes tener un label en estos operadores.
+    Nothing ->
+      -- TODO: cuando es float la inst no es la correcta
       let label = show (fromJust $ tacRvalue1 tac)
-      in comment ", rv1 is Nothing" file >> appendFile file (inst ++ dest ++  label)
+      in comment ", const" file >> appendFile file (inst ++ dest ++  label)
     _ -> 
       let
         reg1 = (makeReg color $ getReg' getReg $ tacInfo $ tacRvalue1 tac) 
@@ -171,7 +221,7 @@ genTwoOperandsOp tac (_, _, getReg) color file = do
 
 genJumps :: TAC -> InterfGraph -> VertColorMap -> String -> IO ()
 genJumps tac (_, _, t) color file = do
-  comment "\n\t# Jump" file
+  comment "\n\t\t# Jump" file
   case tacRvalue2 tac of
     Nothing -> 
       case tacRvalue1 tac of
@@ -203,6 +253,30 @@ genJumps tac (_, _, t) color file = do
         comment ", goto" file >> appendFile file (goto ++ dest)
 
 
+genParam :: TAC -> InterfGraph -> VertColorMap -> String -> IO ()
+genParam tac (_, _, getReg) colorGraph file =
+  let 
+    param    = tacRvalue1 tac
+    paramOp   = tacInfo param
+    Constant (paramNum, _) = fromJust $ tacRvalue2 tac
+    regSour  = 
+      if isJust paramOp then makeReg colorGraph (getReg' getReg $ tacInfo param)
+      else show $ fromJust param
+  in
+  comment ("\n\t\t# Param: " ++ show tac) file >>
+
+    if isFloat $ tacType param then 
+      if paramNum < "4" then mov_d ("$f" ++ show (2 * (read paramNum :: Int) - 50)) regSour file
+      else
+        -- offset
+        comment ", to stack" file >> addi "$sp" "$sp" "-8" file >> sw regSour "($sp)" file
+    else
+      if paramNum < "4" then move ("$a" ++ paramNum) regSour file
+      else
+        -- offset
+        comment ", to stack" file >> addi "$sp" "$sp" "-4" file >> sw regSour "($sp)" file
+
+
 genSyscalls :: TAC -> InterfGraph -> VertColorMap -> String -> IO ()
 genSyscalls tac (_, _, t) color file = 
   let
@@ -221,7 +295,7 @@ genSyscalls tac (_, _, t) color file =
         *      35     | binary int   | $a0
         *      36     | unsigned int | $a0
       -}
-      comment "\n\t# Print" file
+      comment "\n\t\t# Print" file
 
       if isJust $ tacInfo rv2 then do
         comment (", Int, rv2: " ++ show rv2) file
@@ -277,7 +351,7 @@ genSyscalls tac (_, _, t) color file =
       -}
       let label = show (fromJust rv2)
       in 
-      comment "\n\t# Read" file >>
+      comment "\n\t\t# Read" file >>
         case strSplit "_" label of
           
           (_, "int") -> comment ", Int" file >> 
@@ -299,7 +373,7 @@ genSyscalls tac (_, _, t) color file =
 
           t -> comment (", ?, " ++ show tac) file
         
-    Exit -> appendFile file "\nexit:" >> li "$v0" "10" file >> syscall file
+    Exit -> comment "\n\t\t# Exit" file >> li "$v0" "10" file >> syscall file
     _    -> -- syscall 9
       {-
         * sbrk (allocate heap memory) | $a0 = number of bytes to allocate | $v0 contains address of allocated memory 
@@ -319,75 +393,8 @@ genSyscalls tac (_, _, t) color file =
               li $t1, 0		# Inicializo el numero de jugadores
       -}
       let arg = makeReg color $ getReg' t $ tacInfo $ tacRvalue1 tac
-      in comment "\n\t# Ask for memory" file >>
+      in comment "\n\t\t# Ask for memory" file >>
         move "$a0" arg file >> li "$v0" "9" file >> syscall file
-
-
-genAssign :: TAC -> InterfGraph -> VertColorMap -> String -> IO ()
-genAssign tac (_, _, getReg) colorGraph file = do
-  comment "\n\t# Assign" file
-  let
-    lval     = tacLvalue tac
-    lvalInfo = tacInfo lval
-    rv1      = tacRvalue1 tac
-    rv1Info  = tacInfo rv1
-  
-  if isJust lvalInfo then
-    let 
-      dest = makeReg colorGraph $ getReg' getReg lvalInfo
-    in 
-    case rv1 of
-      Nothing -> comment (", rv1 is Nothing ") file >> li dest "0" file
-      _       ->
-        if isJust rv1Info then
-          let
-            reg1 = makeReg colorGraph $ getReg' getReg rv1Info
-            mov  = if isFloat $ tacType lval then mov_d else move
-          in
-          comment (", assig var: " ++ show rv1) file >> mov dest reg1 file
-
-        else 
-          let imm  = show (fromJust rv1) ++ "\n"
-              load = if elem '_' imm then l_d else li
-          in 
-            comment (", assig const: " ++ show rv1) file >> load dest imm file
-  else
-    -- cuando se refiere a asignar un valor en el .data
-    -- NO, innecesario,
-    comment ", store in mem" file >>
-    if isJust rv1Info then
-      let 
-        value = makeReg colorGraph $ getReg' getReg rv1Info
-        store = if isFloat $ tacType rv1 then s_d else sw
-      in
-        store value (show $ fromJust lval) file
-    else
-      let value = show (fromJust rv1)
-      in sw value (show $ fromJust lval) file
-
-
-genParam :: TAC -> InterfGraph -> VertColorMap -> String -> IO ()
-genParam tac (_, _, getReg) colorGraph file =
-  let 
-    param    = tacRvalue1 tac
-    paramOp   = tacInfo param
-    Constant (paramNum, _) = fromJust $ tacRvalue2 tac
-    regSour  = 
-      if isJust paramOp then makeReg colorGraph (getReg' getReg $ tacInfo param)
-      else show $ fromJust param
-  in
-  comment ("\n\t# Param: " ++ show tac) file >>
-
-    if isFloat $ tacType param then 
-      if paramNum < "4" then mov_d ("$f" ++ paramNum) regSour file
-      else
-        -- offset
-        comment ", to stack" file >> addi "$sp" "$sp" "-8" file >> sw regSour "($sp)" file
-    else
-      if paramNum < "4" then move ("$a" ++ paramNum) regSour file
-      else
-        -- offset
-        comment ", to stack" file >> addi "$sp" "$sp" "-4" file >> sw regSour "($sp)" file
 
 
 -- | Empila los registros que son responsabilidad del llamado.
@@ -395,7 +402,7 @@ genParam tac (_, _, getReg) colorGraph file =
 -- 
 activateCalled :: String -> IO ()
 activateCalled file = do
-  comment "\n\t# Activate Called" file
+  comment "\n\t\t# Activate Called" file
   sw   "$a0" "0($sp)" file
   sw   "$a1" "-4($sp)" file
   sw   "$a2" "-8($sp)" file
@@ -421,7 +428,7 @@ activateCalled file = do
 -- 
 prologue :: String -> IO ()
 prologue file = do
-  comment "\n\t# Prologue" file
+  comment "\n\t\t# Prologue" file
   sw   "$ra" "0($sp)" file
   sw   "$s0" "-4($sp)" file
   sw   "$s1" "-8($sp)" file
@@ -440,7 +447,7 @@ prologue file = do
 -- 
 epilogue :: String -> IO ()
 epilogue file = do
-  comment "\n\t# Epilogue" file
+  comment "\n\t\t# Epilogue" file
   addi "$sp" "$sp" "40" file
   lw   "$ra" "0($sp)" file
   lw   "$s0" "-4($sp)" file
@@ -459,7 +466,7 @@ epilogue file = do
 -- 
 activateCaller :: String -> IO ()
 activateCaller file = do
-  comment "\n\t# Activate Caller" file
+  comment "\n\t\t# Activate Caller" file
   addi "$sp" "$sp" "84" file
   lw   "$a0" "0($sp)" file
   lw   "$a1" "-4($sp)" file
@@ -493,10 +500,10 @@ makeReg colorGraph number =
 -- 
 -- TODO!!: a veces da error con fromJust de Nothing
 getReg' :: (TACInfo -> Maybe G.Vertex) -> Maybe TACInfo -> G.Vertex
-getReg' _      Nothing = error "\n\n\t'tacInfo' is Nothing getReg'\n\n"
+getReg' _      Nothing = error "\n\t'tacInfo' is Nothing getReg'\n"
 getReg' getReg tacInfo = 
   if mVertex == Nothing 
-  then error $ "\n\n\t'vertex' is Nothing getReg'\n\ttacInfo: " ++ show tacInfo ++ "\n\n"
+  then error $ "\n\t'vertex' is Nothing getReg'\n\ttacInfo: " ++ show tacInfo ++ "\n"
   else fromJust mVertex
   where
     mVertex = getReg $ fromJust tacInfo
@@ -527,29 +534,29 @@ isCall Call = True
 isCall _    = False
 
 show' :: Operation -> String
-show' Add    = "\n\tadd"
-show' Sub    = "\n\tsub"
-show' Minus  = "\n\tneg"
-show' Mult   = "\n\tmul"
-show' Div    = "\n\tdiv"
-show' Mod    = "\n\trem"
-show' And    = "\n\tand"
-show' Or     = "\n\tor"
-show' Gt     = "\n\tbgt"
-show' Gte    = "\n\tbge"
-show' Lt     = "\n\tblt"
-show' Lte    = "\n\tble"
-show' Eq     = "\n\tbeq"
-show' Neq    = "\n\tbne"
-show' GoTo   = "\n\tb"
-show' If     = "\n\tbnez"
-show' Call   = "\n\tjal"
-show' Return = "\n\tjr"
-show' Get    = "\n\tlw"
-show' Set    = "\n\tsw"
-show' Ref    = "\n\tla"
-show' Deref  = "\n\tlw"
-show' _      = "\n\tNM"
+show' Add    = "\n\t\tadd"
+show' Sub    = "\n\t\tsub"
+show' Minus  = "\n\t\tneg"
+show' Mult   = "\n\t\tmul"
+show' Div    = "\n\t\tdiv"
+show' Mod    = "\n\t\trem"
+show' And    = "\n\t\tand"
+show' Or     = "\n\t\tor"
+show' Gt     = "\n\t\tbgt"
+show' Gte    = "\n\t\tbge"
+show' Lt     = "\n\t\tblt"
+show' Lte    = "\n\t\tble"
+show' Eq     = "\n\t\tbeq"
+show' Neq    = "\n\t\tbne"
+show' GoTo   = "\n\t\tb"
+show' If     = "\n\t\tbnez"
+show' Call   = "\n\t\tjal"
+show' Return = "\n\t\tjr"
+show' Get    = "\n\t\tlw"
+show' Set    = "\n\t\tsw"
+show' Ref    = "\n\t\tla"
+show' Deref  = "\n\t\tlw"
+show' _      = "\n\t\tNM"
 
 floatingDiv :: String -> IO ()
 floatingDiv file = do

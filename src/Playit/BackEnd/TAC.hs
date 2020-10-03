@@ -499,7 +499,8 @@ genBoolExpr e trueL falseL =
   -- Functions
   -- Ternary operator
   -- 
-    e -> error $ "Unexpected boolean expression:  " ++ show e
+  -- TODO!!: Caso cuando es una variable
+    e -> error $ "\n\tUnexpected boolean expression:  " ++ show e ++ "\n"
 
 
 genComparison :: TACOP -> TACOP -> TACOP -> TACOP -> BinOp -> TACMonad ()
