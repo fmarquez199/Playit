@@ -104,12 +104,13 @@ genAssig v e = case typeVar v of
     case e of
       Literal (Str s) _ -> do
         let 
-          literal = show v
+          literal  = show v
           litLabel = literal ++ "_str"
-          strLen  = show $ length s
-          strData = _word ("len_" ++ literal) strLen ++ _asciiz litLabel s
-        liftIO $ appendFile dataFilePath strData
+          strLen   = show $ length s
+        
+        liftIO $ _word ("len_" ++ literal) strLen >> _asciiz litLabel s
         v' <- pushOffset 4 >>= newTemp TInt 4 >>= genVar v
+        -- tell tacAssign vTemp eTemp litLabel
         tell [tacRef v' (tacLabel litLabel)]
       
       Variable v' _ -> do
@@ -125,9 +126,8 @@ genAssig v e = case typeVar v of
           var     = show v
           varBuffer = var ++ "_str"
           strLabel  = var ++ "_prompt"
-          strData = _space varBuffer "80" ++ _asciiz strLabel s
         
-        liftIO $ appendFile dataFilePath strData
+        liftIO $ _space varBuffer "80" >> _asciiz strLabel s
         v' <- pushOffset 4 >>= newTemp TInt 4 >>= genVar v
         tell [tacPrint (tacConstant (s, TStr)) (tacLabel strLabel)]
         tell [tacRead (tacConstant (var, TStr)) (tacLabel varBuffer)] -- TODO: var o temp?
@@ -138,18 +138,22 @@ genAssig v e = case typeVar v of
         lv <- pushOffset 4 >>= newTemp TInt 4 >>= genVar v
         let 
           var      = show v
-          varLabel = var ++ "_str: .space 80\n"
+          varLabel = var ++ "_str"
         
-        liftIO $ appendFile dataFilePath (_space varLabel "80")
-        tell [tacPrint rv rv] -- TODO!!: rv -> string a imprimir
+        liftIO $ _space varLabel "80"
+        tell [tacPrint rv rv] -- TODO: rv -> string a imprimir
         tell [tacRead (tacConstant (var, TStr)) (tacLabel varLabel)]
         tell [tacRef lv (tacLabel varLabel)]
+        
       -- TODO!!: casos con EmptyVAlue -> read sin str para imprimir
       t -> error $ "NotImplementedError " ++ show t -- This shouldn't happen
+
+-- TODO: No guardar valores numericos en .data, ya se colocan en un temp para no mas accesos a mem
   TInt -> do
     case e of
       Literal (Integer i) _ -> do
-        liftIO $ appendFile dataFilePath $ (show v) ++ "_int: .space 4\n"
+        liftIO $ _space (show v ++ "_int") "4" dataFilePath
+        
         v' <- pushOffset 4 >>= newTemp TInt 4 >>= genVar v
         tell (tacAssign v' (tacConstant (show i, TInt)))
       
@@ -159,20 +163,32 @@ genAssig v e = case typeVar v of
         tell (tacAssign lv rv)
       
       Read (Literal (Str s) _) _ -> do
-        let d x = ": .space 4\n" ++ x ++ "_prompt: .asciiz \"" ++ s ++ "\"\n"
-        liftIO $ appendFile dataFilePath $ (show v) ++ "_int" ++ (d $ show v)
+        let 
+          var = show v 
+          varBuffer = var ++ "_int"
+          intLabel  = var ++ "_prompt"
+
+        liftIO $ _space varBuffer "4" dataFilePath
+        liftIO $ _asciiz intLabel dataFilePath
+
         v' <- pushOffset 4 >>= newTemp TInt 4 >>= genVar v
-        tell [tacPrint (tacConstant (s, TInt)) (tacLabel (show v ++ "_prompt"))]
-        tell [tacRead (tacConstant (show v, TInt)) (tacLabel (show v ++ "_int"))]
-        tell [tacDeref v' (tacLabel (show v ++ "_int"))]
+        tell [tacPrint (tacConstant (s, TInt)) (tacLabel intLabel)]
+        tell [tacRead (tacConstant (var, TInt)) (tacLabel varBuffer)]
+        tell [tacDeref v' (tacLabel varBuffer)]
       
       Read (Variable v' _) _ -> do
         (rv, _, _) <- getOffset v'
-        liftIO $ appendFile dataFilePath $ show v ++ "_int: .space 4\n"
+        let 
+          var = show v 
+          varBuffer = var ++ "_int"
+          -- intLabel  = var ++ "_prompt"
+
+        liftIO $ _space varBuffer "4" dataFilePath
+        
         v' <- pushOffset 4 >>= newTemp TInt 4 >>= genVar v
-        tell [tacPrint rv rv] -- TODO!!: rv -> string a imprimir
-        tell [tacRead (tacConstant (show v, TInt)) (tacLabel (show v ++ "_int"))]
-        tell [tacDeref v' (tacLabel (show v ++ "_int"))]
+        tell [tacPrint rv rv] -- TODO: rv -> string a imprimir
+        tell [tacRead (tacConstant (var, TInt)) (tacLabel varBuffer)]
+        tell [tacDeref v' (tacLabel varBuffer)]
 
       -- TODO!!: Fix params
       -- FuncCall (Call f params) _ -> do
@@ -184,12 +200,17 @@ genAssig v e = case typeVar v of
       --   tell (tacAssign (tacLabel (show v ++ "_int")) t)
 
       e -> do
-        let d = show v ++ "_int: .space 4\n"
-        liftIO $ appendFile dataFilePath d
+        let 
+          var = show v 
+          varBuffer = var ++ "_int"
+
+        liftIO $ _space varBuffer "4" dataFilePath
+
         t <- genExpr e
         v' <- pushOffset 4 >>= newTemp TInt 4 >>= genVar v
         tell (tacAssign v' t)
-        tell (tacAssign (tacLabel (show v ++ "_int")) t)
+        tell (tacAssign (tacLabel varBuffer) t)
+
   TFloat -> do
     case e of
       Literal (Floatt f) _ -> do
@@ -197,34 +218,51 @@ genAssig v e = case typeVar v of
         let d = show v ++ "_float: .double " ++ show f ++ "\n"
         liftIO $ appendFile dataFilePath d
         tell (tacAssign v' (tacConstant (show f, TFloat)))
+      
       Variable v' _ -> do
         (rv, _, _) <- getOffset v'
         lv <- pushOffset 8 >>= newTemp TFloat 8 >>= genVar v
         tell (tacAssign lv rv)
+      
       Read (Literal (Str s) _) _ -> do
-        let n = show v
-            d x = ": .space 8\n" ++ x ++ "_prompt: .asciiz \"" ++ s ++ "\"\n"
-        liftIO $ appendFile dataFilePath $ n ++ "_float" ++ d n
-        tell [tacPrint (tacConstant (s, TFloat)) (tacLabel (show v ++ "_prompt"))]
-        tell [tacRead (tacConstant (show v, TFloat)) (tacLabel (show v ++ "_float"))]
+        let 
+          var = show v 
+          varBuffer = var ++ "_float"
+          floatLabel  = var ++ "_prompt"
+
+        liftIO $ _space varBuffer "8" dataFilePath
+        liftIO $ _asciiz floatLabel dataFilePath
+
+        tell [tacPrint (tacConstant (s, TFloat)) (tacLabel floatLabel)]
+        tell [tacRead (tacConstant (var, TFloat)) (tacLabel varBuffer)]
+      
       Read (Variable v' _) _ -> do
         (rv, _, _) <- getOffset v'
-        liftIO $ appendFile dataFilePath $ show v ++ "_float: .space 8\n"
-        tell [tacPrint rv rv] -- TODO!!: rv -> string a imprimir
-        tell [tacRead (tacConstant (show v, TFloat)) (tacLabel (show v ++ "_float"))]
+        let 
+          var = show v 
+          varBuffer = var ++ "_float"
+
+        liftIO $ _space varBuffer "8" dataFilePath
+
+        tell [tacPrint rv rv] -- TODO: rv -> string a imprimir
+        tell [tacRead (tacConstant (var, TFloat)) (tacLabel varBuffer)]
+      
       e -> do
-        let d = show v ++ "_float: .space 8\n"
-        liftIO $ appendFile dataFilePath d
+        let 
+          var = show v 
+          varBuffer = var ++ "_float"
+
+        liftIO $ _space varBuffer "8" dataFilePath
+
         t <- genExpr e
         v' <- pushOffset 8 >>= newTemp TFloat 8 >>= genVar v
         tell (tacAssign v' t)
-        tell (tacAssign (tacLabel (show v ++ "_float")) t)
+        tell (tacAssign (tacLabel var) t)
+
   t -> do
-    -- | isIndexVar var && isIndexExpr e -> do
-    --   tell (tacGet )    
-    {- if isIndexVar var then 
-      tell (tacSet vTemp index eTemp)
-      else   -}
+    -- isIndexVar var && isIndexExpr e -> do
+    -- if isIndexVar var then tell (tacSet vTemp index eTemp)
+    -- else   
     eTemp <- genExpr e
     {- 
       if isField var then
@@ -301,7 +339,6 @@ genWhile e is nextL = do
   tell [tacNewLabel nextL]
 
 
--- syscall 4
 -- TODO: width del tipo string
 -- TODO: integrar lo que hay en genAssig
 genPrint :: [Expr] -> TACMonad ()
@@ -310,7 +347,7 @@ genPrint [e] =
   case e of
     Literal (Str s) _ -> let strLabel = concat (words s) ++ "_str"
       in do
-        liftIO $ appendFile dataFilePath (_asciiz strLabel s)
+        liftIO $ _asciiz strLabel s dataFilePath
         tell [tacPrint (tacConstant (s, TStr)) (tacLabel strLabel)]
     
     Literal (Integer i) _ -> do
@@ -318,7 +355,7 @@ genPrint [e] =
         lit      = show i
         litLabel = "integer" ++ lit ++"_int"
       
-      liftIO $ appendFile dataFilePath (_word litLabel lit)
+      liftIO $ _word litLabel lit dataFilePath
       tell [tacPrint (tacConstant (lit, TInt)) (tacLabel litLabel)]
     
     Literal (Floatt f) _ -> do
@@ -326,30 +363,34 @@ genPrint [e] =
         lit      = show f
         litLabel = "float" ++ lit ++"_float"
 
-      liftIO $ appendFile dataFilePath (_double litLabel lit)
+      liftIO $ _double litLabel lit dataFilePath
       tell [tacPrint (tacConstant (lit, TFloat)) (tacLabel litLabel)]
     
     Literal (Boolean b) _ ->
-      let c = if b then tacLabel "boolTrue" else tacLabel "boolFalse"
-      in tell [tacPrint (tacConstant (show b, TBool)) c]
+      -- "\nboolTrue: .asciiz \"Win\"\n"
+      -- appendFile dataFilePath "boolFalse: .asciiz \"Lose\"\n"
+      let boolLabel = if b then tacLabel "boolTrue" else tacLabel "boolFalse"
+      in tell [tacPrint (tacConstant (show b, TBool)) boolLabel]
     
     Literal (Character c) _ -> do
       let litLabel = "char" ++ c : "_char"
-      liftIO $ appendFile dataFilePath (_asciiz litLabel [c])
+      liftIO $ _asciiz litLabel [c] dataFilePath
       tell [tacPrint (tacConstant (show c, TChar)) (tacLabel litLabel)]
     
     Literal (ArrLst ls) t -> do
       let 
         arr      = show ls
         arrLabel = "array_" ++ replace "," "" (init $ tail arr) ++ "_str"
-      liftIO $ appendFile dataFilePath (_asciiz arrLabel arr)
+      liftIO $ _asciiz arrLabel arr dataFilePath
       tell [tacPrint (tacConstant (arr, t)) (tacLabel arrLabel)]
     
-    Literal _ _ -> tell []
+    Literal _ _ -> tell [] -- Register [Expr]
+
     Variable v _ -> case typeVar v of
       TInt -> tell [tacPrint (tacConstant (show v, TInt)) (tacLabel (show v ++ "_int"))]
       TFloat -> tell [tacPrint (tacConstant (show v, TFloat)) (tacLabel (show v ++ "_float"))]
       TStr -> tell [tacPrint (tacConstant (show v, TStr)) (tacLabel (show v ++ "_str"))]
+    
     _ -> tell []
 genPrint (e:es) = genPrint [e] >> genPrint es
 
@@ -416,7 +457,7 @@ genExpr e = case e of
     genBinOp b t e1Temp e2Temp
   IfSimple eB eT eF t -> genTerOp eB eT eF t
   ArrayList es t      ->
-    let width = getWidth t {- (baseTypeT t) -}
+    let width = getWidth t {- (baseTypeT t) -} -- TODO!!: Verificar
     in pushOffset width >>= newTemp t width >>= genArrayList es width 0
   Null                -> genNull
   Read e _            -> genPrint [e] >> genRead
@@ -484,12 +525,13 @@ genNull = return $ tacVariable $ Temp "_null" TInt (4, 4)
   ArrLst -> caso que llega hasta aqui?
   Register
   Union
-  integrar lo que hay en genAssig
   
+  integrar lo que hay en genAssig
   TODO!!: colocarlo en el .data, si es un array colocar su tam
 -}
-genLiteral :: Literal -> Type -> TACMonad TACOP
-genLiteral l typeL =
+-- import Text.Regex.Posix ((=~))
+genLiteral :: Literal -> Type -> {- String -> -} TACMonad TACOP
+genLiteral l typeL {- _dataLabel -} =
   -- case l of
     {-
       ArrLst elems -> -- No llega aqui
@@ -498,7 +540,11 @@ genLiteral l typeL =
     -- EmptyVal -> 
     -- Register es -> -- actualizar el valor de cada campo
     -- _ ->
-  return $ tacConstant (show l, typeL)
+  -- if l of
+  --   Str s -> liftIO $ _word ("len_" ++ literal) strLen >> _asciiz litLabel s
+  --   return 
+  -- else 
+    return $ tacConstant (show l, typeL)
 
 
 -- 
@@ -511,7 +557,7 @@ genLiteral l typeL =
 genVar :: Var -> TACOP -> TACMonad TACOP
 genVar var temp =
   case var of
-    Param _ _ Reference -> do -- No llega
+    Param _ _ Reference -> do -- TODO: No llega aqui
       liftIO (print ("Llegue a genVar param por ref: " ++ show var))
       tacVar <- pushVariable var temp
       tell (tacUn T.Deref temp tacVar) >> return temp
@@ -604,7 +650,8 @@ genTerOp eB eT eF tOp = do
   return lv
 
 
--- TODO!!: poner en .data el arreglo y su tam
+-- Tamano en el primer elemento
+-- TODO: poner en .data el arreglo y su tam ??
 genArrayList :: [Expr] -> Int -> Int -> TACOP -> TACMonad TACOP
 genArrayList [] _ index arrTemp               =
   let len = tacConstant (show index, TInt)
@@ -656,7 +703,7 @@ forComparison n e1 e2 nextL = do
   iterVar <- genExpr (Variable (Var n TInt) TInt)
   e1Temp  <- genExpr e1
   tell (tacAssign iterVar e1Temp)
-  tell (tacAssign (tacLabel (n ++ "_int")) iterVar)
+  tell (tacAssign (tacLabel (n ++ "_int")) iterVar) -- TODO: quitar para no acceder a memoria
   e2Temp  <- genExpr e2
   tell [tacNewLabel begin]
   genComparison iterVar e2Temp fall nextL LessEq
@@ -671,7 +718,7 @@ forInstrs is nextL (n, begin, cont, iterVar) = do
   tell [tacNewLabel cont]
   iterVarIncr <- genBinOp Add TInt iterVar (tacConstant ("1", TInt))
   tell (tacAssign iterVar iterVarIncr)
-  tell (tacAssign (tacLabel (n ++ "_int")) iterVar)
+  tell (tacAssign (tacLabel (n ++ "_int")) iterVar) -- TODO: quitar para no acceder a memoria
   tell (tacGoto begin)
   tell [tacNewLabel nextL]
 -------------------------------------------------------------------------------
@@ -686,3 +733,17 @@ genParams (p:ps) n = do
   tell $ [tacParam param n]
   genParams ps $ n + 1
 -------------------------------------------------------------------------------
+
+
+--  containsErrorString :: String -> Bool
+--  containsErrorString x = x =~ "ERROR" :: Bool
+
+--  fileContainsErrorString fileName = do
+--     s <- readFile fileName
+--     return $ containsErrorString s
+
+
+-- isLabelInData :: String -> String -> IO Bool
+-- isLabelInData label file = do
+--   _data <- readFile file
+--   return (label =~ label :: Bool)

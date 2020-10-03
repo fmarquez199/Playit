@@ -60,9 +60,9 @@ instance (SymEntryCompatible a, Show a, Show b) => Show (ThreeAddressCode a b) w
 -- Access for records and unions
   show (ThreeAddressCode Access (Just x) (Just r) (Just f)) = "\t" ++ show x ++ " := " ++ show r ++ "." ++ show f
 -- Input/Output
-  show (ThreeAddressCode Read Nothing (Just e) Nothing)  = "\tread " ++ show e
-  show (ThreeAddressCode Read Nothing Nothing Nothing)  = "\tread"
-  show (ThreeAddressCode Print Nothing (Just e) Nothing) = "\tprint " ++ show e
+  show (ThreeAddressCode Read Nothing (Just e) _)       = "\tread " ++ show e
+  show (ThreeAddressCode Read Nothing Nothing _)        = "\tread"
+  show (ThreeAddressCode Print Nothing (Just e) _)      = "\tprint " ++ show e
 -- Exit program
   show (ThreeAddressCode Exit Nothing Nothing Nothing)   = "\texit"
   show (ThreeAddressCode Abort Nothing Nothing Nothing)  = "\tabort"

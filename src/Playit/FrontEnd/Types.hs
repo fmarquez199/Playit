@@ -171,16 +171,16 @@ data Expr =
   deriving (Eq, Ord)
 
 instance Show Expr where
-    show (ArrayList lst t)     = {-"("++show t++")"++-}"[" ++ intercalate "," (map show lst) ++ "]"
-    show (FuncCall s t)        = {-"("++show t++")"++-}"kill " ++ show s
-    show (IdType t)            = show t
-    show (IfSimple e1 e2 e3 t) = {-"("++show t++")"++-}show e1 ++ " ? " ++ show e2 ++ " : " ++ show e3
-    show (Literal lit t)       = {-"("++show t++")"++-}show lit
-    show Null                  = "DeathZone"
-    show (Binary op e1 e2 t)   = {-"("++show t++")"++-}"(" ++ show e1 ++ show op ++ show e2 ++ ")"
-    show (Unary op e1 t)       = {-"("++show t++")"++-}show op ++ show e1
-    show (Read e t)            = "joystick " ++ show e
-    show (Variable var t)      = {-"E("++show t++")"++-}show var
+  show (ArrayList lst t)     = {-"("++show t++")"++-}"[" ++ intercalate "," (map show lst) ++ "]"
+  show (FuncCall s t)        = {-"("++show t++")"++-}"kill " ++ show s
+  show (IdType t)            = show t
+  show (IfSimple e1 e2 e3 t) = {-"("++show t++")"++-}show e1 ++ " ? " ++ show e2 ++ " : " ++ show e3
+  show (Literal lit t)       = {-"("++show t++")"++-}show lit
+  show Null                  = "DeathZone"
+  show (Binary op e1 e2 t)   = {-"("++show t++")"++-}"(" ++ show e1 ++ show op ++ show e2 ++ ")"
+  show (Unary op e1 t)       = {-"("++show t++")"++-}show op ++ show e1
+  show (Read e t)            = "joystick " ++ show e
+  show (Variable var t)      = {-"E("++show t++")"++-}show var
 
 data Literal =
   ArrLst [Literal] | -- >> Arrays and lists
@@ -199,8 +199,8 @@ instance Show Literal where
     show (ArrLst l@(Character _:_)) = show $ map ((\x->read x::Char) . show) l
     show (ArrLst l@(Integer _:_))   = show $ map ((\x->read x::Int) . show) l
     show (ArrLst l@(Floatt _:_))    = show $ map ((\x->read x::Float) . show) l
-    show (Register inits)           = "{" ++ intercalate "," (map show inits) ++ "}"
     show (ArrLst l)                 = concatMap show l
+    show (Register inits)           = "{" ++ intercalate "," (map show inits) ++ "}"
     show (Boolean val)              = show val
     show (Character val)            = show val
     show (Integer val)              = show val

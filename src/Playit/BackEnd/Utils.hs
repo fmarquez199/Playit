@@ -115,8 +115,11 @@ tacNewLabel label = T.ThreeAddressCode T.NewLabel label Nothing Nothing
 
 
 -------------------------------------------------------------------------------
-tacAssign :: TACOP -> TACOP -> [TAC]
-tacAssign lv rv = [T.ThreeAddressCode T.Assign lv rv Nothing]
+-- TODO:
+tacAssign :: TACOP -> TACOP 
+          -- -> TACOP -- ^ Label in .data to refer when assign strings and arrays
+          -> [TAC]
+tacAssign lv rv {- _dataLabel -} = [T.ThreeAddressCode T.Assign lv rv Nothing]
 -------------------------------------------------------------------------------
 
 
@@ -404,8 +407,8 @@ setElemIndexs = (zero,one,two,three,sixteen)
 
 
 -------------------------------------------------------------------------------
-syscall :: Int -> TACOP -> [TACOP] -> TACMonad ()
-syscall v0 lv params = do
+tacSyscall :: Int -> TACOP -> [TACOP] -> TACMonad ()
+tacSyscall v0 lv params = do
   tell (map (\(x,y) -> tacParam x y) [(x,y) | x <- params, y <- [0..length params - 1]])
   tell [tacParam (tacConstant (show v0, TInt)) 0] -- $v0
   tell (tacCall lv "syscall" (length params + 1))
@@ -441,7 +444,7 @@ malloc = do
   tell (tacAssign temp1 par0)
 
   -- _return := syscall9(requestedBytes)
-  syscall 9 retn [temp1]
+  tacSyscall 9 retn [temp1]
 
   -- if _return = 0 goto 2
   tell (tacBin T.Eq retn zero noMemory)
@@ -449,7 +452,7 @@ malloc = do
 -- 1: Hay memoria disponible, entonces crea el bloque con la info
   tell [tacNewLabel allocate]
   -- _elem     := syscall9(16)
-  syscall 9 elem [sixteen]
+  tacSyscall 9 elem [sixteen]
   -- _elem[0]  := _head[0]
   tell (tacGet temp2 head zero)
   tell (tacSet elem zero temp2)
@@ -573,29 +576,29 @@ free = do
 -------------------------------------------------------------------------------
 -- | Generates the code for defining strings (.asciiz data)
 -- 
-_asciiz :: String -> String -> String
-_asciiz name str = "\n" ++ name ++ ": .asciiz \"" ++ str ++ "\""
+_asciiz :: String -> String -> String -> IO ()
+_asciiz name str file = appendFile file $ "\n" ++ name ++ ": .asciiz " ++ show str
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
 -- | Generates the code for '.word' data
 -- 
-_word :: String -> String -> String
-_word name num = "\n" ++ name ++ ": .word " ++ num
+_word :: String -> String -> String -> IO ()
+_word name num file = appendFile file $ "\n" ++ name ++ ": .word " ++ num
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
 -- | Generates the code for '.space' data
 -- 
-_space :: String -> String -> String
-_space name num = "\n" ++ name ++ ": .space " ++ num
+_space :: String -> String -> String -> IO ()
+_space name num file = appendFile file $ "\n" ++ name ++ ": .space " ++ num
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
 -- | Generates the code for '.double' data
 -- 
-_double :: String -> String -> String
-_double name num = "\n" ++ name ++ ": .double " ++ num
+_double :: String -> String -> String -> IO ()
+_double name num file = appendFile file $ "\n" ++ name ++ ": .double " ++ num
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -607,13 +610,16 @@ _double name num = "\n" ++ name ++ ": .double " ++ num
 comment :: String -> String -> IO ()
 comment com file = appendFile file com
 
+syscall :: String -> IO ()
+syscall file = appendFile file "\n\tsyscall\n"
+
 -- load and store
 
-lw :: String -> String -> String
-lw regDest dir = "\n\tlw " ++ regDest ++ ", " ++ dir
+lw :: String -> String -> String -> IO ()
+lw regDest dir file = appendFile file $ "\n\tlw " ++ regDest ++ ", " ++ dir
 
-la :: String -> String -> String
-la regDest dir = "\n\tla " ++ regDest ++ ", " ++ dir
+la :: String -> String -> String -> IO ()
+la regDest dir file = appendFile file $ "\n\tla " ++ regDest ++ ", " ++ dir
 
 li :: String -> String -> String -> IO ()
 li regDest int file = appendFile file $ "\n\tli " ++ regDest ++ ", " ++ int

@@ -11,6 +11,7 @@ module Main where
 import Control.Monad                     (mapM_)
 import Control.Monad.Trans.RWS           (runRWST)
 import Control.Monad.Trans.State         (execStateT)
+import Data.List                          (nub)
 import Data.Strings                      (strEndsWith, strSplit, strSplitAll, strStartsWith, strJoin)
 import Playit.BackEnd.RegAlloc.FlowGraph
 import Playit.BackEnd.RegAlloc.GraphColoring
@@ -26,7 +27,7 @@ import Playit.FrontEnd.SymbolTable       (stInitState)
 import Playit.FrontEnd.Types             (SymTabState(..), printData)
 import System.Environment                (getArgs)
 import System.Directory                  (createDirectoryIfMissing)
-import System.IO                         (readFile, openFile, writeFile, appendFile, IOMode(ReadWriteMode))
+import System.IO                         (readFile, writeFile, appendFile)
 import Data.Graph                        (vertices)
 import Data.Map                          (toList)
 import Data.Set                          (fromList)
@@ -68,8 +69,9 @@ main = do
           
           if null errs then do
             createDirectoryIfMissing True "./output/"
-            writeFile dataFilePath ".data\nboolTrue: .asciiz \"Win\"\n"
+            writeFile dataFilePath "\t.data\nboolTrue: .asciiz \"Win\"\n"
             appendFile dataFilePath "boolFalse: .asciiz \"Lose\"\n"
+            appendFile dataFilePath "newLine: .asciiz \"\\n\"\n"
             (_, state, tac) <- runRWST (genTAC ast) ast (tacInitState (symTab state))
             -- print state
             print ast -- >> print st >> printPromises (proms state)
@@ -100,15 +102,11 @@ main = do
               db s = strStartsWith (last s) ".double"
               w s = strStartsWith (last s) ".space" || strStartsWith (last s) ".word"
               o s = strStartsWith (last s) ".asciiz" 
-              double = unlines $ map (strJoin ": ") $ filter db (map (strSplitAll ": ") $ tail $ lines d)
-              four = unlines $ map (strJoin ": ") $ filter w (map (strSplitAll ": ") $ tail $ lines d)
-              one = unlines $ map (strJoin ": ") $ filter o (map (strSplitAll ": ") $ tail $ lines d)
-              d' = ".data\n" ++ double ++ four ++ one
-            -- putStrLn $ show double
-            -- putStrLn $ show four
-            -- putStrLn $ show one
-            -- putStrLn $ show d'
-            writeFile ("./output/" ++ outputFile) $ d' ++ "\n.text\n"
+              double = unlines $ nub $ map (strJoin ": ") $ filter db (map (strSplitAll ": ") $ tail $ lines d)
+              four = unlines $ nub $ map (strJoin ": ") $ filter w (map (strSplitAll ": ") $ tail $ lines d)
+              one = unlines $ nub $ map (strJoin ": ") $ filter o (map (strSplitAll ": ") $ tail $ lines d)
+              d' = ".data\n" ++ double ++ four ++ one ++ "\n.text\n"
+            writeFile ("./output/" ++ outputFile) d'
             genFinalCode (tail tac) inter color ("./output/" ++ outputFile)
             -- close outputFile
           else

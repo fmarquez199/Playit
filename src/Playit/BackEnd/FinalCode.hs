@@ -41,8 +41,9 @@ genFinalCode tac g c n =
     
     NewLabel -> do
       if take 2 (show h) == "l." then
-        let lbl = tail . init . reverse . snd . splitAt 2 . reverse $ show h
-        in appendFile n (lbl ++ ":\n")
+        -- let lbl = tail . init . reverse . snd . splitAt 2 . reverse $ show h
+        -- in 
+          appendFile n (show h ++ ":\n")
       else do
         appendFile n (show h ++ "\n")
         if "main: " == show h then putStrLn "compiling" else prologue n
@@ -83,21 +84,29 @@ genThreeOperandsOp tac i@(_, _, t) color name = do
       reg1 = (makeReg color $ getReg' t $ tacInfo $ tacRvalue1 tac) ++ ", "
       in case tacInfo $ tacRvalue2 tac of
         Nothing ->
-          let reg2 = show (fromJust $ tacRvalue2 tac) ++ "\n"
-          in if isFloat $ tacType $ tacLvalue tac then do
-            let
-              save = "sw $v0, -4($sp)\nsw $v1, -8($sp)\naddi $sp, $sp, -8\n"
-              mfc1 = "mfc1.d $v0, " ++ reg1 ++ "\n"
-              rslt = "addi " ++ dest ++ "$v0, 0\n"
-              load = "lw $v0, 4($sp)\nlw $v1, 8($sp)\naddi $sp, $sp, 8\n"
-              code = save ++ inst ++ reg1 ++ reg1 ++ reg2 ++ mfc1 ++ rslt
-            appendFile name $ code ++ load
-          else
-            let code = inst ++ dest ++ reg1 ++ reg2 
-            in appendFile name code
+          let code = inst ++ dest ++ reg1 ++ show (fromJust $ tacRvalue2 tac) 
+          in appendFile name $ code  ++ "\n"
         _ ->
           let reg2 = (makeReg color $ getReg' t $ tacInfo $ tacRvalue2 tac)
-          in appendFile name $ inst ++ dest ++ reg1 ++ reg2 ++ "\n"
+          in if isFloat $ tacType $ tacLvalue tac then
+            if x == Div && not (isFloat $ tacType $ tacRvalue1 tac) then
+              let next1 = '$':(show $ 1 + (read (init (init (tail reg1))) :: Int))
+                  next2 = '$':(show $ 1 + (read (tail reg2) :: Int))
+                  svfrs' = "s.d $f10 0($sp)\ns.d $f12 -8($sp)\nsw " ++ next1
+                  svfrs = svfrs' ++ ", -16($sp)\naddi $sp, $sp, -20\nli "
+                  mvr1' = next1 ++ ", 0\nmtc1.d " ++ reg1 ++ ", $f12\nlw "
+                  mvr1 = mvr1' ++ next1 ++ ", 4($sp)\nsw " ++ next2 ++ ", 4($s"
+                  mvr2' = "p)\nli " ++ next2 ++ ", 0\nmtc1.d " ++ reg2 ++ ", "
+                  mvr2 = mvr2' ++ "$f10\ndiv.d " ++ dest ++ ", $f12, $f10\n"
+                  rcvrs1 = "addi $sp, $sp, 20\nlw " ++ next2 ++ ", -16($sp)\n"
+                  rcvrs2 = "l.d $f10, 0($sp)\nl.d $f12, -8($sp)\n"
+                  code = svfrs ++ mvr1 ++ mvr2 ++ rcvrs1 ++ rcvrs2
+              in appendFile name $ floatingDiv ++ code
+            else
+              let code = (init inst) ++ ".d " ++ dest ++ reg1 ++ reg2 ++ "\n"
+              in appendFile name code
+          else appendFile name $ inst ++ dest ++ reg1 ++ reg2 ++ "\n"
+
     x | x `elem` [Gt, Gte, Lt, Lte, Eq, Neq] ->
       let reg2 = (tail . init $ show (fromJust $ tacRvalue2 tac)) ++ "\n"
           reg1 = if isJust $ tacInfo $ tacRvalue1 tac then
@@ -108,7 +117,6 @@ genThreeOperandsOp tac i@(_, _, t) color name = do
       let save = "addi " ++ dest ++ "$v0, 0\n"
       in 
       genJumps tac i color name >> 
-        -- lval es Nothing cuando es proc
         putStrLn (show $ tacInfo $ tacLvalue tac) >> 
           appendFile name save
     Get -> do-- x = y[i]
@@ -142,7 +150,9 @@ genTwoOperandsOp tac (_, _, getReg) color file =
       in appendFile file $ inst ++ dest ++  label
     _ -> let
       reg1 = (makeReg color $ getReg' getReg $ tacInfo $ tacRvalue1 tac) ++ "\n"
-      code = inst ++ dest ++ reg1
+      float = isFloat $ tacType $ tacRvalue1 tac
+      inst' = if float then (init inst) ++ ".d " else inst
+      code = inst' ++ dest ++ reg1
       in appendFile file code
 
 
@@ -183,7 +193,7 @@ genJumps tac (_, _, t) color name = case tacRvalue2 tac of
 -- ThreeAddressCode Exit Nothing Nothing Nothing
 genSyscalls :: TAC -> InterfGraph -> VertColorMap -> String -> IO ()
 genSyscalls tac (_, _, t) color file = case tacOperand tac of
-  Print -> -- syscalls 1,3,4,11
+  Print -> do -- syscalls 1,3,4,11
     {- 
      * code in $v0 |    service   | args
      *      1      | int          | $a0
@@ -199,20 +209,26 @@ genSyscalls tac (_, _, t) color file = case tacOperand tac of
       la $a0, strLabel
       syscall
     -}
-    if isJust $ tacInfo $ tacRvalue2 tac then
-      putStrLn "HOLA" >>
-      let arg = makeReg color $ getReg' t $ tacInfo $ tacRvalue2 tac
-      in appendFile file $ "li $v0, 1\naddi $a0, " ++ arg ++ ", 0\nsyscall\n"
-    else
-      let label = show (fromJust $ tacRvalue2 tac) ++ "\nsyscall\n"
-      in 
-        case strSplit "_" $ show $ fromJust $ tacRvalue2 tac of
-          (_, "int") -> appendFile file $ "li $v0, 1\nlw $a0, " ++ label
-          (_, "float") -> appendFile file $ "li $v0, 3\nl.d $f12, " ++ label
-          -- (_, "str") -> appendFile file $ "li $v0, 4\nla $a0, " ++ label
-          _ -> appendFile file $ "li $v0, 4\nla $a0, " ++ label
-          -- t -> putStrLn $ "Print " ++ fst t ++ "_" ++ snd t
-  
+    let Label strLabel = fromJust $ tacRvalue2 tac
+    li "$v0" "4" file
+    la "$a0" strLabel file
+    syscall file
+
+    -- if isJust $ tacInfo $ tacRvalue2 tac then
+    --   putStrLn "HOLA" >>
+    --   let arg = makeReg color $ getReg' t $ tacInfo $ tacRvalue2 tac
+    --   in appendFile file $ "li $v0, 1\naddi $a0, " ++ arg ++ ", 0\nsyscall\n"
+    -- else do
+    --   let label = show (fromJust $ tacRvalue2 tac) ++ "\nsyscall\n"
+    --   case strSplit "_" $ show $ fromJust $ tacRvalue2 tac of
+    --     (_, "int") -> appendFile file $ "li $v0, 1\nlw $a0, " ++ label
+    --     (_, "float") -> appendFile file $ "li $v0, 3\nl.d $f12, " ++ label
+    --     -- (_, "str") -> appendFile file $ "li $v0, 4\nla $a0, " ++ label
+    --     _ -> appendFile file $ "li $v0, 4\nla $a0, " ++ label
+    --     -- t -> putStrLn $ "Print " ++ fst t ++ "_" ++ snd t
+
+    --   appendFile file "li $v0, 4\nla $a0, newLine\nsyscall\n"
+
   Read -> -- syscalls 5,7,8,12
     {- 
       * code in $v0 |    service   | arg | result
@@ -249,7 +265,7 @@ genSyscalls tac (_, _, t) color file = case tacOperand tac of
         in appendFile file code
       t -> putStrLn $ "Read " ++ fst t ++ "_" ++ snd t
       
-  Exit -> appendFile file "li $v0, 10\nsyscall\n"
+  Exit -> appendFile file "\n\tli $v0, 10\n\tsyscall\n"
   _ -> -- syscall 9
   {-
    * sbrk (allocate heap memory) | $a0 = number of bytes to allocate | $v0 contains address of allocated memory 
@@ -285,22 +301,26 @@ genAssign tac (_, _, getReg) colorGraph file =
         if isJust $ tacInfo $ tacRvalue1 tac then do
           let
             reg1 = makeReg colorGraph $ getReg' getReg $ tacInfo $ tacRvalue1 tac
+            m = if isFloat $ tacType $ tacLvalue tac then "mov.d " else "move "
+            code = m ++ dest ++ ", " ++ reg1 ++ "\n"
           putStrLn reg1
-          addi dest reg1 "0" file
+          appendFile file code
         else 
           let immediate = show (fromJust $ tacRvalue1 tac) ++ "\n"
-          in li dest immediate file
+              load = if elem '_' immediate then "l.d " else "li "
+          in appendFile file $ load ++ dest ++ ", " ++ immediate
   else
     -- cuando se refiere a asignar un valor en el .data
     -- NO, innecesario,
     if isJust $ tacInfo $ tacRvalue1 tac then
       let value = makeReg colorGraph $ getReg' getReg $ tacInfo $ tacRvalue1 tac
-          save = "sw " ++ value ++ ", " ++ (show $ fromJust $ tacLvalue tac)
-      in appendFile file $ save ++ "\n"
+          store = if isFloat $ tacType $ tacRvalue1 tac then "s.d " else "sw "
+          save = "\n\t" ++ store  ++ value ++ ", " ++ (show $ fromJust $ tacLvalue tac)
+      in appendFile file $ save
     else
       let value = show (fromJust $ tacRvalue1 tac)
-          save = "sw " ++ value ++ ", " ++ (show $ fromJust $ tacLvalue tac)
-      in appendFile file $ save ++ "\n"
+          save = "\n\tsw " ++ value ++ ", " ++ (show $ fromJust $ tacLvalue tac)
+      in appendFile file $ save
 
 
 -- ThreeAddressCode Param Nothing (Just p) (Just n)
@@ -330,57 +350,11 @@ genParam tac (_, _, getReg) colorGraph file =
         addi "$sp" "$sp" "-4" file >> sw regSour "($sp)" file
 
 
--- | Desempila los registros que son responsabilidad del llamador
--- * Despues de regresar de la subrutina
--- 
-activateCaller :: String -> IO ()
-activateCaller file =
-  comment "\n# Activate Caller" file
-  addi "$sp" "$sp" "84" file
-  lw   "$a0" "0($sp)" file
-  lw   "$a1" "-4($sp)" file
-  lw   "$a2" "-8($sp)" file
-  lw   "$a3" "-12($sp)" file
-  lw   "$t0" "-16($sp)" file
-  lw   "$t1" "-20($sp)" file
-  lw   "$t2" "-24($sp)" file
-  lw   "$t3" "-28($sp)" file
-  lw   "$t4" "-32($sp)" file
-  lw   "$t5" "-36($sp)" file
-  lw   "$t6" "-40($sp)" file
-  lw   "$t7" "-44($sp)" file
-  lw   "$t8" "-48($sp)" file
-  lw   "$t9" "-52($sp)" file
-  lw   "$f0" "-60($sp)" file
-  lw   "$f1" "-68($sp)" file
-  lw   "$f2" "-76($sp)" file
-  lw   "$f3" "-84($sp)" file
-
-
--- | Empila los registros que son responsabilidad del llamador.
+-- | Empila los registros que son responsabilidad del llamado.
 -- * Antes de pasar control a la subrutina
 -- 
-prologue :: String -> IO ()
-prologue file =
-  comment "\n# Prologue" file
-  sw   "$ra" "0($sp)" file
-  sw   "$s0" "-4($sp)" file
-  sw   "$s1" "-8($sp)" file
-  sw   "$s2" "-12($sp)" file
-  sw   "$s3" "-16($sp)" file
-  sw   "$s4" "-20($sp)" file
-  sw   "$s5" "-24($sp)" file
-  sw   "$s6" "-28($sp)" file
-  sw   "$s7" "-32($sp)" file
-  sw   "$fp" "-36($sp)" file
-  addi "$sp" "$sp" "-40" file
-
-
--- | Empila los registros que son responsabilidad del llamado.
--- * Antes de ejecutar subrutina
--- 
 activateCalled :: String -> IO ()
-activateCalled file =
+activateCalled file = do
   comment "\n# Activate Called" file
   sw   "$a0" "0($sp)" file
   sw   "$a1" "-4($sp)" file
@@ -402,11 +376,30 @@ activateCalled file =
   sw   "$f3" "-84($sp)" file
   addi "$sp" "$sp" "-84" file
 
+-- | Empila los registros que son responsabilidad del llamador.
+-- * Antes de ejecutar subrutina
+-- 
+prologue :: String -> IO ()
+prologue file = do
+  comment "\n# Prologue" file
+  sw   "$ra" "0($sp)" file
+  sw   "$s0" "-4($sp)" file
+  sw   "$s1" "-8($sp)" file
+  sw   "$s2" "-12($sp)" file
+  sw   "$s3" "-16($sp)" file
+  sw   "$s4" "-20($sp)" file
+  sw   "$s5" "-24($sp)" file
+  sw   "$s6" "-28($sp)" file
+  sw   "$s7" "-32($sp)" file
+  sw   "$fp" "-36($sp)" file
+  addi "$sp" "$sp" "-40" file
+
+
 -- | Desempila los registros que son responsabilidad del llamado.
 -- * Antes de regresar control
 -- 
 epilogue :: String -> IO ()
-epilogue file =
+epilogue file = do
   comment "\n# Epilogue" file
   addi "$sp" "$sp" "40" file
   lw   "$ra" "0($sp)" file
@@ -420,6 +413,33 @@ epilogue file =
   lw   "$s7" "-32($sp)" file
   lw   "$fp" "-36($sp)" file
   jr   "$ra" file
+
+-- | Desempila los registros que son responsabilidad del llamador
+-- * Despues de regresar de la subrutina
+-- 
+activateCaller :: String -> IO ()
+activateCaller file = do
+  comment "\n# Activate Caller" file
+  addi "$sp" "$sp" "84" file
+  lw   "$a0" "0($sp)" file
+  lw   "$a1" "-4($sp)" file
+  lw   "$a2" "-8($sp)" file
+  lw   "$a3" "-12($sp)" file
+  lw   "$t0" "-16($sp)" file
+  lw   "$t1" "-20($sp)" file
+  lw   "$t2" "-24($sp)" file
+  lw   "$t3" "-28($sp)" file
+  lw   "$t4" "-32($sp)" file
+  lw   "$t5" "-36($sp)" file
+  lw   "$t6" "-40($sp)" file
+  lw   "$t7" "-44($sp)" file
+  lw   "$t8" "-48($sp)" file
+  lw   "$t9" "-52($sp)" file
+  lw   "$f0" "-60($sp)" file
+  lw   "$f1" "-68($sp)" file
+  lw   "$f2" "-76($sp)" file
+  lw   "$f3" "-84($sp)" file
+
 
 ---- Auxs
 
@@ -490,3 +510,6 @@ show' Set = "sw"
 show' Ref = "la"
 show' Deref = "lw"
 show' _ = "NM"
+
+floatingDiv :: String
+floatingDiv = "sw $t0, 0($sp)\nsw $t1, -4($sp)\nadd $t0, $0, $sp\naddi $t1, $0, 8\ndiv $t0, $t1\nmfhi $t0\nbeqz $t0, aligned\nlw $t0, 0($sp)\nlw $t1, -4($sp)\naddi $sp, $sp, -4\nb ready\naligned:\nlw $t0, 0($sp)\nlw $t1, -4($sp)\nready:\n"

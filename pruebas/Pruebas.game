@@ -11,9 +11,9 @@
 @boss b(Power num):
 @  drop num
 @.~
-monster m(Skill s) Skill:
-  unlock s + 1'5
-.~
+@monster m(Skill s) Skill:
+@  unlock s + 1'5
+@.~
 @monster m(Runes str) Runes:
 @  unlock str
 @.~
@@ -77,6 +77,12 @@ world %Pruebas%:
   @controller i = 1 -> 5:
   @  drop i
   @.~
+  
+  @Power x, n = 1
+  @controller x = 1 -> 10 lock x < 5: @ lock i % 2 == 0:
+  @  n = n * x
+  @  drop n
+  @.~
 
 @  Button:
   @  | Lose       } x = 0
@@ -89,10 +95,10 @@ world %Pruebas%:
 
 @ Subrutinas
   @Power x = 10
-  Skill y = 10'4
+  @Skill y = 10'4
   @kill b(x)
   @x = kill m(x)
-  y = kill m(y)
+  @y = kill m(y)
   @Power|}x{| arr0     @ Esto esta dando error cuando se inicializa por defecto un arreglo
   @Power|}5{| arr1
   @x = kill m(arr1)
@@ -123,7 +129,7 @@ world %Pruebas%:
   @drop ~hola mundo!!~
 
 @ Strings
-  @Runes x = |)*H*, *o*, *l*, *a*(|
+  Runes x = |)*H*, *o*, *l*, *a*(|
   @Runes y = ~H~
   @Runes x = y
   @Runes y = ~Hola, soy un string~

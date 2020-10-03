@@ -51,9 +51,9 @@ instance Show TACInfo where
   tabla de simbolos ya creada
 -}
 data Operands = Operands {
-  vars  :: M.Map Var TACOP,
-  temps :: M.Map TACInfo Bool,
-  lits  :: M.Map TACOP TACOP,
+  vars  :: M.Map Var TACOP, -- (var, temp donde esta guardada)
+  temps :: M.Map TACInfo Bool, -- (temp, ocupado)
+  lits  :: M.Map TACOP TACOP, -- (literal, temp donde esta guardado)
   labs  :: [String],   -- Labels
   brkL  :: TACOP,   -- brake label
   contL :: TACOP,   -- continue label
@@ -63,6 +63,7 @@ data Operands = Operands {
   callM :: Bool, -- Dice si generar TAC para malloc
   subs  :: [(Id, Params, InstrSeq, Bool)], -- subrutinas a generar su codigo
   astST :: SymTab
+  -- _data :: [(tipo de .data, label, valor)]
 } deriving (Eq, Ord)
 
 instance Show Operands where
