@@ -291,7 +291,7 @@ genAssig v e = case typeVar v of
         tell (tacAssign v' t)
         -- tell (tacAssign (tacLabel var) t)
         tell (tacAssign (tacLabel varBuffer) t)
-
+-- 
   t -> do
     -- isIndexVar var && isIndexExpr e -> do
     -- if isIndexVar var then tell (tacSet vTemp index eTemp)
@@ -528,7 +528,8 @@ genBoolExpr e trueL falseL =
         when (isFall falseL) $ tell [tacNewLabel e1FalseL]
       else
         when (isFall trueL) $ tell [tacNewLabel e1TrueL]
-  -- Functions
+  -- TODO: Creo que parecido a variables
+    -- FuncCall (Call n ps) _ ->
   -- Ternary operator
   -- 
     Variable var _ -> do
