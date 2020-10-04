@@ -41,13 +41,13 @@ genFinalCode tac g c file    = do
     x | x `elem` [Return, If, GoTo]  -> genJumps tacInstr g c file        
     x | x `elem` [Print, Read, Exit] -> genSyscalls tacInstr g c file     
     
-    NewLabel -> do
+    NewLabel ->
+      let lbl = tail . init . reverse . snd . splitAt 2 . reverse $ show tacInstr
+      in 
       if elem "l." $ subsequences $ show tacInstr then
-        -- let lbl = tail . init . reverse . snd . splitAt 2 . reverse $ show tacInstr
-        -- in 
-          appendFile file ("\n" ++ show tacInstr)
+          appendFile file ("\n" ++ lbl)
       else do
-        appendFile file ("\n" ++ show tacInstr)
+        appendFile file ("\n" ++ lbl)
         if "main: " == show tacInstr then return ()
         else prologue file
     
@@ -429,10 +429,10 @@ activateCalled file = do
   sw   "$t7" "-44($sp)" file
   sw   "$t8" "-48($sp)" file
   sw   "$t9" "-52($sp)" file
-  sw   "$f0" "-60($sp)" file
-  sw   "$f1" "-68($sp)" file
-  sw   "$f2" "-76($sp)" file
-  sw   "$f3" "-84($sp)" file
+  s_d  "$f0" "-60($sp)" file
+  s_d  "$f1" "-68($sp)" file
+  s_d  "$f2" "-76($sp)" file
+  s_d  "$f3" "-84($sp)" file
   addi "$sp" "$sp" "-84" file
 
 -- | Empila los registros que son responsabilidad del llamador.
@@ -494,10 +494,10 @@ activateCaller file = do
   lw   "$t7" "-44($sp)" file
   lw   "$t8" "-48($sp)" file
   lw   "$t9" "-52($sp)" file
-  lw   "$f0" "-60($sp)" file
-  lw   "$f1" "-68($sp)" file
-  lw   "$f2" "-76($sp)" file
-  lw   "$f3" "-84($sp)" file
+  l_d  "$f0" "-60($sp)" file
+  l_d  "$f1" "-68($sp)" file
+  l_d  "$f2" "-76($sp)" file
+  l_d  "$f3" "-84($sp)" file
 
 
 ---- Auxs
