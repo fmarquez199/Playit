@@ -235,7 +235,7 @@ genJumps tac (_, _, t) color file = do
             --return a value into a register
             _ -> 
               let retVal = makeReg color $ getReg' t $ tacInfo $ tacRvalue1 tac
-              in comment ", return varule" file >> move "$v0" retVal file >> epilogue file
+              in comment ", return var" file >> move "$v0" retVal file >> epilogue file
     _ -> do
       let
         goto = show' (tacOperand tac) ++ " "
