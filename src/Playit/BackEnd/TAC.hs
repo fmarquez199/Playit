@@ -425,6 +425,18 @@ genPrint [e] =
       TInt -> tell [tacPrint (tacConstant (show v, TInt)) (tacLabel (show v ++ "_int"))]
       TFloat -> tell [tacPrint (tacConstant (show v, TFloat)) (tacLabel (show v ++ "_float"))]
       TStr -> tell [tacPrint (tacConstant (show v, TStr)) (tacLabel (show v ++ "_str"))]
+      TBool -> do
+        var <- pushOffset 1 >>= newTemp TBool >>= genVar v
+        nextL  <- newLabel
+        trueL  <- newLabel
+        falseL <- newLabel
+        genBoolExpr e trueL falseL
+        tell [tacNewLabel trueL]
+        tell [tacPrint var (tacLabel "boolTrue")]
+        tell (tacGoto nextL)
+        tell [tacNewLabel falseL]
+        tell [tacPrint var (tacLabel "boolFalse")]
+        tell [tacNewLabel nextL]
     
     _ -> tell []
 genPrint (e:es) = genPrint [e] >> genPrint es

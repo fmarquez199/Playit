@@ -20,13 +20,25 @@
 
 world %Pruebas%:
 
-  Power x = 2
-  Power y = 3
+  @Power x = 2
+  @Power y = 3
   @Skill f = 1'0
 
 
 @ Operaciones aritmeticas
-  @Power i0 = x + 1
+  Power i = 1
+  Battle p0 = i == i
+  drop p0
+  Battle p1 = i != i
+  drop p1
+  Battle p2 = i <= i
+  drop p2
+  Battle p3 = i < i
+  drop p3
+  Battle p4 = i > i
+  drop p4
+  Battle p5 = i >= i
+  drop p5
   @Power i1 = x - 1
   @Power i2 = x * 1
   @Power i4 = x % 1
