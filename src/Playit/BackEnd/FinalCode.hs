@@ -20,7 +20,6 @@ import qualified Data.Graph  as G
 import qualified Data.IntMap as I
 
 
--- ThreeAddressCode NewLabel (Just l) Nothing Nothing
 genFinalCode :: [TAC] -> InterfGraph -> VertColorMap -> String -> IO ()
 genFinalCode [] _ _ fileName = appendFile fileName ""
 genFinalCode tac g c file    = do
@@ -33,7 +32,6 @@ genFinalCode tac g c file    = do
     -- Not supported Anexo, Concat
     x | x `elem` [Add, Sub, Mult, Div, Mod, Gt, Gte, Lt, Lte, Eq, Neq, Get, Set, Call] ->
       
-      -- liftIO (print (show tacInstr ++ " tac: " ++ show (tacInfo $ tacRvalue2 tacInstr))) >> 
       comment ("\n\t\t# 3 Operands operation: " ++ show tacInstr) file >>
       genThreeOperandsOp tacInstr g c file
 
@@ -42,16 +40,22 @@ genFinalCode tac g c file    = do
     x | x `elem` [Print, Read, Exit] -> genSyscalls tacInstr g c file     
     
     NewLabel ->
-      let lbl = tail . init . reverse . snd . splitAt 2 . reverse $ show tacInstr
+      let 
+        l   = show tacInstr
+        lbl = tail . init . reverse . snd . splitAt 2 $ reverse l
       in 
-      if elem "l." $ subsequences $ show tacInstr then
+      if elem "l." $ subsequences l then
           appendFile file ("\n" ++ lbl ++ ":")
       else do
-        appendFile file ("\n" ++ show tacInstr)
-        if "main: " == show tacInstr then return ()
+        appendFile file ("\n" ++ l)
+        if "main: " == l then return ()
         else prologue file
     
-    -- Length -> genLength tacInstr -- busca el label en .data que corresponda, si x = # [1,2] -> en TAC guardar el array en .data y colocarle un nombre y tu tam
+    -- TODO:
+    -- busca el label en .data que corresponda, si x = # [1,2] -> en TAC guardar 
+    -- el array en .data y colocarle un nombre y tu tam
+    -- Length -> genLength tacInstr
+
     Assign -> genAssign tacInstr g c file
     Param  -> genParam tacInstr g c file 
     -- Access
@@ -91,7 +95,7 @@ genAssign tac (_, _, getReg) colorGraph file = do
             comment (", const: " ++ show rv1) file >> load dest imm file
   else
     -- cuando se refiere a asignar un valor en el .data
-    -- NO, innecesario,
+    -- TODO: Quitar
     comment ", store in mem" file >>
     if isJust rv1Info then
       let 
@@ -376,6 +380,7 @@ genSyscalls tac (_, _, t) color file =
             swl "$f0" label file 
             swr "$f0" label file
           
+          -- TODO!!: check
           (_, "str") -> do
             comment ", String" file
             la "$a0" label file
