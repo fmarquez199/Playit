@@ -531,7 +531,12 @@ genBoolExpr e trueL falseL =
   -- Functions
   -- Ternary operator
   -- 
-  -- TODO!!: Caso cuando es una variable
+  -- TODO!!: falls
+    -- Variable var _ -> do
+    --   cond <- pushOffset 1 >>= newTemp TBool 1 >>= genVar var
+    --   tell (tacIf cond trueL)
+    --   tell [tacNewLabel falseL)
+
     e -> error $ "\n\tUnexpected boolean expression:  " ++ show e ++ "\n"
 
 

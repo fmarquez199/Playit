@@ -45,9 +45,9 @@ genFinalCode tac g c file    = do
       let lbl = tail . init . reverse . snd . splitAt 2 . reverse $ show tacInstr
       in 
       if elem "l." $ subsequences $ show tacInstr then
-          appendFile file ("\n" ++ lbl)
+          appendFile file ("\n" ++ lbl ++ ":")
       else do
-        appendFile file ("\n" ++ lbl)
+        appendFile file ("\n" ++ show tacInstr ++ ":")
         if "main: " == show tacInstr then return ()
         else prologue file
     
