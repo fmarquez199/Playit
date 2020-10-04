@@ -126,8 +126,9 @@ genThreeOperandsOp tac i@(_, _, t) color file =
   let
     rv1  = tacRvalue1 tac
     rv2  = tacRvalue2 tac
-    inst = show' (tacOperand tac) ++ " "
-    dest = (makeReg color $ getReg' t $ tacInfo $ tacLvalue tac) ++ ", "
+    inst = show' (tacOperand tac)
+    dest = makeReg color $ getReg' t $ tacInfo $ tacLvalue tac
+    dest' = dest ++ ", "
     reg1 = makeReg color $ getReg' t $ tacInfo rv1
     reg2 = makeReg color $ getReg' t $ tacInfo rv2
   in
@@ -141,7 +142,7 @@ genThreeOperandsOp tac i@(_, _, t) color file =
       case tacInfo rv2 of
         Nothing ->
           -- TODO: cuando es float la inst no es la correcta
-          let code = inst ++ dest ++ reg1' ++ show (fromJust rv2) 
+          let code = inst ++ dest' ++ reg1' ++ show (fromJust rv2) 
           in comment ", const" file >> appendFile file code
         _ ->
           let 
@@ -174,12 +175,12 @@ genThreeOperandsOp tac i@(_, _, t) color file =
               l_d    "$f10" "0($sp)"    file
               l_d    "$f12" "-8($sp)"   file
             else
-              let code = (init inst) ++ ".d " ++ dest ++ reg1' ++ reg2
+              let code = (init inst) ++ ".d " ++ dest' ++ reg1' ++ reg2
               in
               comment ", op != Div or rv2 is float. Se asume es float" file >>
                 appendFile file code
           else 
-            comment ", Int" >> appendFile file $ inst ++ dest ++ reg1' ++ reg2
+            comment ", Int" >> appendFile file $ inst ++ dest' ++ reg1' ++ reg2
 
     op | op `elem` [Gt, Gte, Lt, Lte, Eq, Neq] ->
       if isFloat $ tacType $ rv1 then
@@ -198,7 +199,7 @@ genThreeOperandsOp tac i@(_, _, t) color file =
         in 
           comment (", " ++ show op) file >>
           appendFile file (inst ++ dest ++ reg2' ++ dir)
-    
+
     Call ->
       comment "\n\t\t# Subroutine call" file >> genJumps tac i color file >>
       addi dest "$v0" "0" file
@@ -584,29 +585,29 @@ isCall Call = True
 isCall _    = False
 
 show' :: Operation -> String
-show' Add    = "\n\t\tadd"
-show' Sub    = "\n\t\tsub"
-show' Minus  = "\n\t\tneg"
-show' Mult   = "\n\t\tmul"
-show' Div    = "\n\t\tdiv"
-show' Mod    = "\n\t\trem"
-show' And    = "\n\t\tand"
-show' Or     = "\n\t\tor"
-show' Gt     = "\n\t\tbgt"
-show' Gte    = "\n\t\tbge"
-show' Lt     = "\n\t\tblt"
-show' Lte    = "\n\t\tble"
-show' Eq     = "\n\t\tbeq"
-show' Neq    = "\n\t\tbne"
-show' GoTo   = "\n\t\tb"
-show' If     = "\n\t\tbnez"
-show' Call   = "\n\t\tjal"
-show' Return = "\n\t\tjr"
-show' Get    = "\n\t\tlw"
-show' Set    = "\n\t\tsw"
-show' Ref    = "\n\t\tla"
-show' Deref  = "\n\t\tlw"
-show' _      = "\n\t\tNM"
+show' Add    = "\n\t\tadd "
+show' Sub    = "\n\t\tsub "
+show' Minus  = "\n\t\tneg "
+show' Mult   = "\n\t\tmul "
+show' Div    = "\n\t\tdiv "
+show' Mod    = "\n\t\trem "
+show' And    = "\n\t\tand "
+show' Or     = "\n\t\tor "
+show' Gt     = "\n\t\tbgt "
+show' Gte    = "\n\t\tbge "
+show' Lt     = "\n\t\tblt "
+show' Lte    = "\n\t\tble "
+show' Eq     = "\n\t\tbeq "
+show' Neq    = "\n\t\tbne "
+show' GoTo   = "\n\t\tb "
+show' If     = "\n\t\tbnez "
+show' Call   = "\n\t\tjal "
+show' Return = "\n\t\tjr "
+show' Get    = "\n\t\tlw "
+show' Set    = "\n\t\tsw "
+show' Ref    = "\n\t\tla "
+show' Deref  = "\n\t\tlw "
+show' _      = "\n\t\tNM "
 
 -- | Align floats
 -- 
