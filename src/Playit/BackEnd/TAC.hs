@@ -326,7 +326,7 @@ genFor :: Id -> Expr -> Expr -> InstrSeq -> TACOP -> TACMonad ()
 genFor n e1 e2 is nextL = forComparison n e1 e2 nextL >>= forInstrs is nextL
 
 
--- 
+-- para arrays
 genForEach :: Id -> Expr -> InstrSeq -> TACOP -> TACMonad ()
 genForEach n e is nextL = do
   let
@@ -349,7 +349,7 @@ genForEach n e is nextL = do
   tell (tacGoto begin)
   tell [tacNewLabel nextL]
 
--- 
+-- for con condicion
 genForWhile :: Id -> Expr -> Expr -> Expr -> InstrSeq -> TACOP -> TACMonad ()
 genForWhile n e1 e2 cond is nextL = do
   iteration <- forComparison n e1 e2 nextL

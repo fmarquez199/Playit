@@ -20,12 +20,12 @@
 
 world %Pruebas%:
 
-  @Power x = 1
+  Power x = 1
   @Power y = 3
   @Skill f = 5'4
 
 @ Operaciones aritmeticas
-  @Power i0
+  @Power i0 = 12
   @i0 = x + y
   @drop i0
   @Skill f1 = f * f
@@ -80,19 +80,22 @@ world %Pruebas%:
 
 @  play:
   @  gameOver
-  @   i0 = 9   @ No se esta cambiando el valor, esta bien??
+  @  i0 = 9
   @  keepPlaying  @ deberia saler del ciclo
   @  Button:
   @    | x == 7 }
   @      x = x * y
   @      gameOver
-  @    | x == 4 } keepPlaying  @ deberia saltarse x=4 y seguir imprimiendo x
+  @    | x == 4 } 
+  @      x++ @ para que no haya loop infinito
+  @      keepPlaying
   @  .~
-  @  drop x  @ el primer drop lo hace mal, x=1 pero muestra 0
+  @  drop x
   @  x++
   @lock (x < 10)
   @.~
   @drop x
+  @drop i0
 @
   @Power i
 @  controller i = 1 -> 10: @ lock i % 2 == 0:
@@ -122,8 +125,8 @@ world %Pruebas%:
 @ I/O
   @Power geti = joystick ~Un Entero~
   @drop geti
-Skill getf = joystick ~Un flotante~
-drop getf
+  @Skill getf = joystick ~Un flotante~
+  @drop getf
   @Runes gets = joystick ~Un String~
   @drop gets
 @Runes getc = joystick ~Un Char~
