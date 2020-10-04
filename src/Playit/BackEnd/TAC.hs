@@ -529,7 +529,10 @@ genBoolExpr e trueL falseL =
       else
         when (isFall trueL) $ tell [tacNewLabel e1TrueL]
   -- TODO: Creo que parecido a variables
-    -- FuncCall (Call n ps) _ ->
+    -- FuncCall s t -> do
+    --   call <- genFuncCall s t
+    --   tell (tacIf call trueL)
+    --   tell [tacNewLabel falseL]
   -- Ternary operator
   -- 
     Variable var _ -> do
