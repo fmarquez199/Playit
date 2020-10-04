@@ -116,37 +116,6 @@ genAssign tac (_, _, getReg) colorGraph file = do
       in sw value (show $ fromJust lval) file
 
 
-  -- if isJust $ tacInfo $ tacLvalue tac then
-  --   let dest = makeReg color $ getTempNum t $ tacInfo $ tacLvalue tac
-  --   in case tacRvalue1 tac of
-  --     Nothing ->
-  --       let code = "li " ++ dest ++ ", 0\n"
-  --       in appendFile name code
-  --     _ ->
-  --       if isJust $ tacInfo $ tacRvalue1 tac then do
-  --         let
-  --           reg1 = makeReg color $ getTempNum t $ tacInfo $ tacRvalue1 tac
-  --           m = if isFloat $ tacType $ tacLvalue tac then "mov.d " else "move "
-  --           code = m ++ dest ++ ", " ++ reg1 ++ "\n"
-  --         appendFile name code
-  --       else
-  --         let i = show (fromJust $ tacRvalue1 tac)
-  --             i' = if i == "True" then "1" else if i == "False" then "0" else i
-  --             load = if elem '_' i then "l.d " else "li "
-  --         in appendFile name $ load ++ dest ++ ", " ++ i' ++ "\n"
-  -- else
-  --   if isJust $ tacInfo $ tacRvalue1 tac then
-  --     let value = makeReg color $ getTempNum t $ tacInfo $ tacRvalue1 tac
-  --         store = if isFloat $ tacType $ tacRvalue1 tac then "s.d " else "sw "
-  --         save = store  ++ value ++ ", " ++ (show $ fromJust $ tacLvalue tac)
-  --     in appendFile name $ save ++ "\n"
-  --   else
-  --     let value = show (fromJust $ tacRvalue1 tac)
-  --         save = "sw " ++ value ++ ", " ++ (show $ fromJust $ tacLvalue tac)
-  --     in appendFile name $ save ++ "\n"
-
-
-
 -- TODO:
 -- ThreeAddressCode Anexo (Just x) (Just y) (Just z)
 -- ThreeAddressCode Concat (Just x) (Just y) (Just z)
