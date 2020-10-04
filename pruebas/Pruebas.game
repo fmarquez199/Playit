@@ -47,7 +47,7 @@ world %Pruebas%:
 @Rune low = .*x*
 
 @ Operaciones boleanas
-  Battle b @= Lose
+  @Battle b @= Lose
   @b = !Win
   @b = Lose || Win
 @  b = Win && Lose
@@ -62,10 +62,10 @@ world %Pruebas%:
   @Battle b1 = Win ? (3 == 6) : (3 > 6)
   @Skill f1 = Lose ? 6'0 : 3'0
 @Battle b2 = b ? (3 == 6) : (3 > 6)
-Skill f0 = 6'5
-Skill f1 = 3'4
-Skill f2 = b ? f0 : f1
-drop f2
+@Skill f0 = 6'5
+@Skill f1 = 3'4
+@Skill f2 = b ? f0 : f1
+@drop f2
 
 @  play:
   @  gameOver

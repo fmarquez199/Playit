@@ -677,14 +677,13 @@ div_d result reg1 reg2 file =
 -- jumps
 
 
-b :: String -> String -> IO ()
-b label file = appendFile file $ "\n\t\tb " ++ label
-
 beqz :: String -> String -> String -> IO ()
-beqz comp label file = appendFile file $ "\n\t\tbeqz " ++ comp ++ ", " ++ show label
+beqz comp label file = appendFile file $ "\n\t\tbeqz " ++ comp ++ ", " ++ label
 
-jr :: String -> String -> IO ()
-jr reg file = appendFile file $ "\n\t\tjr " ++ reg
+b, jal, jr :: String -> String -> IO ()
+b   label file = appendFile file $ "\n\t\tb " ++ label
+jal dir   file = appendFile file $ "\n\t\tjal " ++ dir
+jr  reg   file = appendFile file $ "\n\t\tjr " ++ reg
 
 
 -- data transfer

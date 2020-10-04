@@ -21,8 +21,8 @@ import qualified Data.IntMap as I
 
 
 genFinalCode :: [TAC] -> InterfGraph -> VertColorMap -> String -> IO ()
-genFinalCode [] _ _ fileName = appendFile fileName ""
-genFinalCode tac g c file    = do
+genFinalCode [] _ _ file  = activateCalled file >> activateCaller file
+genFinalCode tac g c file = do
   let 
     tacInstr = head tac
     tacNext  = tail tac
@@ -30,7 +30,7 @@ genFinalCode tac g c file    = do
   case tacOperand tacInstr of
     -- Faltan And, Or
     -- Not supported Anexo, Concat
-    x | x `elem` [Add, Sub, Mult, Div, Mod, Gt, Gte, Lt, Lte, Eq, Neq, Get, Set, Call] ->
+    x | x `elem` [Add, Sub, Mult, Div, Mod, Gt, Gte, Lt, Lte, Eq, Neq, Get, Set] ->
       
       comment ("\n\t\t# 3 Operands operation: " ++ show tacInstr) file >>
       genThreeOperandsOp tacInstr g c file
@@ -154,7 +154,7 @@ genThreeOperandsOp tac i@(_, _, t) color file =
                 next2 = '$':(show $ 1 + (read (tail reg2) :: Int))
               
               comment ", div (/)" file
-              floatingDiv file
+              alignFloats "div" file
               s_d    "$f10" "0($sp)"    file
               s_d    "$f12" "-8($sp)"   file
               sw     next1 "-16($sp)"   file
@@ -186,13 +186,15 @@ genThreeOperandsOp tac i@(_, _, t) color file =
         reg2' = 
           if isJust $ tacInfo rv1 then reg1 ++ ", "
           else 
-            if rv1' == "Win" then "1 " else if rv1' == "Lose" then "0 " else rv1' ++ ", "
+            if rv1' == "Win" then "1 " 
+            else if rv1' == "Lose" then "0 " 
+            else rv1' ++ ", "
       in 
         comment (", " ++ show x) file >>
           appendFile file (inst ++ dest ++ reg2' ++ dir)
     
     Call ->
-      comment ", Subroutine call" file >>
+      comment "\n\t\t# Subroutine call" file >>
         genJumps tac i color file >> addi dest "$v0" "0" file
     Get -> 
       -- x = y[i]
@@ -254,11 +256,15 @@ genJumps tac (_, _, t) color file = do
         goto = show' (tacOperand tac) ++ " "
         dest = (tail . init $ show (fromJust $ tacRvalue2 tac))
       if isJust $ tacRvalue1 tac then
-        if isCall $ tacOperand tac then
+        if isCall $ tacOperand tac then do
           let code = goto ++ show (fromJust $ tacRvalue1 tac)
-          in 
-            comment ", Call Subroutines" file >> activateCalled file >> 
-              appendFile file code >> activateCaller file
+          
+          comment ", Call Subroutines" file
+          comment "\n\t\t# Activate Called" file
+          jal "activate_called" file
+          appendFile file code
+          comment "\n\t\t# Activate Caller" file
+          jal "activate_caller" file
         else
           let cond = makeReg color $ getReg' t $ tacInfo $ tacRvalue1 tac
           in comment ", if" file >> appendFile file (goto ++ cond ++ ", " ++ dest)
@@ -428,7 +434,7 @@ genSyscalls tac (_, _, t) color file =
 -- 
 activateCalled :: String -> IO ()
 activateCalled file = do
-  comment "\n\t\t# Activate Called" file
+  appendFile file "\n\nactivate_called:"
   sw   "$a0" "0($sp)" file
   sw   "$a1" "-4($sp)" file
   sw   "$a2" "-8($sp)" file
@@ -444,11 +450,13 @@ activateCalled file = do
   sw   "$t8" "-48($sp)" file
   sw   "$t9" "-52($sp)" file
   -- TODO!!: preguntar por alineacion
-  s_d  "$f0" "-60($sp)" file
-  s_d  "$f2" "-68($sp)" file
-  s_d  "$f4" "-76($sp)" file
-  s_d  "$f6" "-84($sp)" file
-  addi "$sp" "$sp" "-84" file
+  alignFloats "act_called" file
+  s_d  "$f0" "-56($sp)" file
+  s_d  "$f2" "-64($sp)" file
+  s_d  "$f4" "-72($sp)" file
+  s_d  "$f6" "-80($sp)" file
+  addi "$sp" "$sp" "-80" file
+  jr   "$ra"             file
 
 -- | Empila los registros que son responsabilidad del llamador.
 -- * Antes de ejecutar subrutina
@@ -486,15 +494,15 @@ epilogue file = do
   lw   "$s6" "-28($sp)" file
   lw   "$s7" "-32($sp)" file
   lw   "$fp" "-36($sp)" file
-  jr   "$ra" file
+  jr   "$ra"            file
 
 -- | Desempila los registros que son responsabilidad del llamador
 -- * Despues de regresar de la subrutina
 -- 
 activateCaller :: String -> IO ()
 activateCaller file = do
-  comment "\n\t\t# Activate Caller" file
-  addi "$sp" "$sp" "84" file
+  appendFile file "\nactivate_caller:"
+  addi "$sp" "$sp" "80" file
   lw   "$a0" "0($sp)" file
   lw   "$a1" "-4($sp)" file
   lw   "$a2" "-8($sp)" file
@@ -510,10 +518,12 @@ activateCaller file = do
   lw   "$t8" "-48($sp)" file
   lw   "$t9" "-52($sp)" file
   -- TODO!!: preguntar por alineacion
-  l_d  "$f0" "-60($sp)" file
-  l_d  "$f2" "-68($sp)" file
-  l_d  "$f4" "-76($sp)" file
-  l_d  "$f6" "-84($sp)" file
+  alignFloats "act_caller" file
+  l_d  "$f0" "-56($sp)" file
+  l_d  "$f2" "-64($sp)" file
+  l_d  "$f4" "-72($sp)" file
+  l_d  "$f6" "-80($sp)" file
+  jr   "$ra"             file
 
 
 ---- Auxs
@@ -586,21 +596,29 @@ show' Ref    = "\n\t\tla"
 show' Deref  = "\n\t\tlw"
 show' _      = "\n\t\tNM"
 
-floatingDiv :: String -> IO ()
-floatingDiv file = do
+-- | Align floats
+-- 
+alignFloats :: String -> String -> IO ()
+alignFloats lbl file = do
+  let
+    ready = "ready_" ++ lbl
+    aligned = "aligned_" ++ lbl
+
+  comment "\n\t# Start Align Floats" file
   sw   "$t0" "0($sp)"    file
   sw   "$t1" "-4($sp)"   file
   add  "$t0" "$0" "$sp"  file
   addi "$t1" "$0" "8"    file
   div' "$t0" "$t0" "$t1" file
   mfhi "$t0"             file
-  beqz "$t0" "aligned"   file
+  beqz "$t0" aligned     file
   lw   "$t0" "0($sp)"    file
   lw   "$t1" "-4($sp)"   file
   addi "$sp" "$sp" "-4"  file
-  b    "ready"           file
-  appendFile file "\naligned:"
+  b    ready             file
+  appendFile file $ "\n" ++ aligned ++ ":"
   lw   "$t0" "0($sp)"    file
   lw   "$t1" "-4($sp)"   file
-  appendFile file "\nready:"
+  appendFile file $ "\n" ++ ready ++ ":"
+  comment "\n\t# End Align Floats" file
 
