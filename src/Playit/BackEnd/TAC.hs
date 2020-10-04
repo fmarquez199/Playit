@@ -529,11 +529,20 @@ genBoolExpr e trueL falseL =
       else
         when (isFall trueL) $ tell [tacNewLabel e1TrueL]
   -- TODO: Creo que parecido a variables
-    -- FuncCall s t -> do
+    FuncCall s t -> do
     --   call <- genFuncCall s t
-    --   tell (tacIf call trueL)
-    --   tell [tacNewLabel falseL]
-  -- Ternary operator
+      let 
+        isTrueNotFall  = not $ isFall trueL
+        isFalseNotFall = not $ isFall falseL
+        
+      cond <- genFuncCall s t
+      if isTrueNotFall && isFalseNotFall then do
+        tell (tacBin T.Eq cond (tacConstant ("Win", TBool)) trueL)
+        tell (tacGoto falseL)
+      else if isTrueNotFall then
+        tell (tacBin T.Eq cond (tacConstant ("Win", TBool)) trueL)
+      else when isFalseNotFall $
+        tell (tacBin T.Eq cond (tacConstant ("Lose", TBool)) falseL)
   -- 
     Variable var _ -> do
       let 

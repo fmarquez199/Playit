@@ -1,3 +1,19 @@
+monster sqrt(Skill f) Skill:
+  Skill prev = 1'0, new = 0'5 * (1'0 + f)
+  controller Power i = 0 -> 1000 lock kill abs(new - prev) <= 0'000001:
+    prev = new
+    new = 0'5 * (new + f / new)
+  .~
+  unlock new
+.~
+
+monster abs(Skill f) Skill:
+  Button:
+    | f > 0'0 } unlock f
+  .~
+  unlock -f
+.~
+
 world %Cuadratica%:
   Skill a = joystick ~Ingrese el coeficiente cuadratico .a.~
   Skill b = joystick ~Ingrese el coeficiente lineal .b.~
@@ -5,10 +21,10 @@ world %Cuadratica%:
   Button:
     | a != 0'0 }
         Skill const1 = 4'0, const2 = 2'0, x1, x2
-        Skill disc = kill sqrt(sqr(b) - const1 * a * c)
+        Skill disc = kill sqrt(kill sqrt(b) - const1 * a * c)
         Button:
-          | b >= 0'0 } x1 = -(b + d)
-          | notPressed } x1 = d - b
+          | b >= 0'0 } x1 = -(b + disc)
+          | notPressed } x1 = disc - b
         .~
         x1 = x1 / (const2 * a)
         x2 = c / (x1 * a)

@@ -309,7 +309,7 @@ lookupInScopes scopes sym symTab
   
   where
     symInfo  = lookupInSymTab sym symTab
-    symInfos = [si | si<-fromJust symInfo,s<-scopes,scope si `elem` [s,0]] 
+    symInfos = [si | si <- fromJust symInfo, s <- scopes, scope si `elem` [s,0]] 
 -------------------------------------------------------------------------------
 
 

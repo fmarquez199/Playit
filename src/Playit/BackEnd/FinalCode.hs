@@ -129,8 +129,8 @@ genThreeOperandsOp tac i@(_, _, t) color file =
     reg2 = makeReg color $ getReg' t $ tacInfo rv2
   in
   case tacOperand tac of
-    x | x `elem` [Add, Sub, Mult, Div, Mod] -> do
-      comment (", " ++ show x) file
+    op | op `elem` [Add, Sub, Mult, Div, Mod] -> do
+      comment (", " ++ show op) file
       let
         reg1' = reg1 ++ ", "
       
@@ -148,7 +148,7 @@ genThreeOperandsOp tac i@(_, _, t) color file =
           if isFloat $ tacType $ tacLvalue tac then do
             comment ", Float" file
 
-            if x == Div && not (isFloat $ tacType rv1) then do
+            if op == Div && not (isFloat $ tacType rv1) then do
               let 
                 next1 = '$':(show $ 1 + (read (init (init (tail reg1'))) :: Int))
                 next2 = '$':(show $ 1 + (read (tail reg2) :: Int))
@@ -178,7 +178,7 @@ genThreeOperandsOp tac i@(_, _, t) color file =
           else 
             comment ", Int" >> appendFile file $ inst ++ dest ++ reg1' ++ reg2
 
-    x | x `elem` [Gt, Gte, Lt, Lte, Eq, Neq] ->
+    op | op `elem` [Gt, Gte, Lt, Lte, Eq, Neq] ->
       let 
         rv2'  = fromJust rv2
         dir   = tail . init $ show rv2'
@@ -190,12 +190,12 @@ genThreeOperandsOp tac i@(_, _, t) color file =
             else if rv1' == "Lose" then "0 " 
             else rv1' ++ ", "
       in 
-        comment (", " ++ show x) file >>
-          appendFile file (inst ++ dest ++ reg2' ++ dir)
+        comment (", " ++ show op) file >>
+        appendFile file (inst ++ dest ++ reg2' ++ dir)
     
     Call ->
-      comment "\n\t\t# Subroutine call" file >>
-        genJumps tac i color file >> addi dest "$v0" "0" file
+      comment "\n\t\t# Subroutine call" file >> genJumps tac i color file >>
+      addi dest "$v0" "0" file
     Get -> 
       -- x = y[i]
       comment ", Get" file >> add reg1 reg1 reg2 file >> lw  dest reg1 file
