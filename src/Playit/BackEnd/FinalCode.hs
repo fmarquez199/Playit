@@ -47,7 +47,7 @@ genFinalCode tac g c file    = do
       if elem "l." $ subsequences $ show tacInstr then
           appendFile file ("\n" ++ lbl ++ ":")
       else do
-        appendFile file ("\n" ++ show tacInstr ++ ":")
+        appendFile file ("\n" ++ show tacInstr)
         if "main: " == show tacInstr then return ()
         else prologue file
     
