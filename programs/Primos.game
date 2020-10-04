@@ -1,0 +1,29 @@
+monster primo(Power n) Battle:
+  Power divisor = 2
+  play:
+    Button:
+      | n % divisor == 0 } unlock Lose
+    .~
+  lock divisor * divisor <= n
+  .~
+  unlock Win
+.~
+
+world %Primos%:
+  Power max = joystick ~Indica cuantos primos quieres~
+  Button:
+    | max <= 0 } drop ~Esta bien si no deseas ninguno~
+    | notPressed }
+      Power num = 2
+      play:
+        Button:
+          | kill primo(num) }
+            drop num
+            max--
+          | notPressed } num++
+        .~
+      lock max > 0
+      .~
+  .~
+  drop ~Chau~
+.~

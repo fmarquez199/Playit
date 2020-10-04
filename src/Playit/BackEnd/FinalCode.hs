@@ -58,6 +58,11 @@ genFinalCode tac g c file    = do
 
     Assign -> genAssign tacInstr g c file
     Param  -> genParam tacInstr g c file 
+    Call   ->
+      let lv = isJust $ tacLvalue tacInstr
+      in
+      if lv then genThreeOperandsOp tacInstr g c file
+      else       genJumps tacInstr g c file
     -- Access
     o -> comment ("\n\t\t# Operand not supported yet: " ++ show o) file
   
@@ -87,10 +92,11 @@ genAssign tac (_, _, getReg) colorGraph file = do
             mov  = if isFloat $ tacType lval then mov_d else move
           in
           comment (", var: " ++ show rv1) file >> mov dest reg1 file
-
-        else 
-          let imm  = show (fromJust rv1)
-              load = if elem '_' imm then l_d else li
+        else           
+          let 
+            i    = show (fromJust rv1)
+            imm  = if i == "True" then "1" else if i == "False" then "0" else i
+            load = if elem '_' imm then l_d else li
           in 
             comment (", const: " ++ show rv1) file >> load dest imm file
   else
@@ -234,8 +240,11 @@ genJumps tac (_, _, t) color file = do
           case tacInfo $ tacRvalue1 tac of
             --return a constant
             Nothing -> 
-              let retVal = "$" ++ show (fromJust $ tacRvalue1 tac)
-              in comment ", return constant" file >> move "$v0" retVal file >> epilogue file
+              let 
+                rv1    = show (fromJust $ tacRvalue1 tac)
+                retVal = if rv1 == "True" then "1" else if rv1 == "False" then "0" else rv1
+              in 
+                comment ", return constant" file >> li "$v0" retVal file >> epilogue file
             --return a value into a register
             _ -> 
               let retVal = makeReg color $ getReg' t $ tacInfo $ tacRvalue1 tac

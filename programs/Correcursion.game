@@ -1,49 +1,47 @@
-monster par(Power n) Battle:
+monster par(Power n1) Battle:
   Button:
-    | n == 0 } unlock Win
-    | n == 1 } unlock Lose
+    | n1 == 0 } unlock Win
+    | n1 == 1 } unlock Lose
     | notPressed } @unlock (kill impar(n - 1)) Esto no agarra bien el tipo de retorno de la promesa y por eso da type error. Deberia inferir que es el tipo de retorno de esta funcion y cuando se defina se checkea que sea asi
-      Battle r = kill impar(n - 1)
+      Battle r = kill impar(n1 - 1)
       unlock r
   .~
 .~
 
-monster impar(Power n) Battle:
+monster impar(Power n2) Battle:
   Button:
-    | n == 0 } unlock Lose
-    | n == 1 } unlock Win
-    | notPressed } unlock kill par(n - 1)
+    | n2 == 0 } unlock Lose
+    | n2 == 1 } unlock Win
+    | notPressed } unlock kill par(n2 - 1)
   .~
 .~
 
-boss respuesta1(Battle p):
+boss respuesta1(Battle p1):
   Button:
-    | p } drop ~Es par :)~
+    | p1 } drop ~Es par~
   .~
-  drop ~No es par :(~
+  drop ~No es par~
 .~
 
-boss respuesta2(Battle p):
+boss respuesta2(Battle p2):
   Button:
-    | p } drop ~Es impar :)~
+    | p2 } drop ~Es impar~
   .~
-  drop ~No es impar :(~
+  drop ~No es impar~
 .~
 
 world %Correcursion%:
     play:
-      Runes p = joystick ~Quieres determinar paridad (y|n|exit): ~
+      Power n = joystick ~Dime un entero~
+      drop ~Que quieres determinar~
+      Power opts = joystick ~paridad .1. disparidad .2. o salir .0.~
       Button:
-        | p == ~exit~ } gameOver
-        | p == ~y~ }
-          Power n = joystick ~Dime un entero: ~
-          kill respuesta1(kill par(n))
-        | p == ~n~ }
-          Power n = joystick ~Dime un entero: ~
-          kill respuesta2(kill impar(n))
-        | notPressed } drop ~No me dijiste nada :(~
+        | opts == 0 } gameOver
+        | opts == 1 } kill respuesta1(kill par(n))
+        | opts == 2 } kill respuesta2(kill impar(n))
+        | notPressed } drop ~No me dijiste nada~
       .~
     lock Win
     .~
-    drop ~Bye, bye~
+    drop ~Bye~
 .~

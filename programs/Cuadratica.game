@@ -1,0 +1,19 @@
+world %Cuadratica%:
+  Skill a = joystick ~Ingrese el coeficiente cuadratico .a.~
+  Skill b = joystick ~Ingrese el coeficiente lineal .b.~
+  Skill c = joystick ~Ingrese el termino independiente .c.~
+  Button:
+    | a != 0'0 }
+        Skill const1 = 4'0, const2 = 2'0, x1, x2
+        Skill disc = kill sqrt(sqr(b) - const1 * a * c)
+        Button:
+          | b >= 0'0 } x1 = -(b + d)
+          | notPressed } x1 = d - b
+        .~
+        x1 = x1 / (const2 * a)
+        x2 = c / (x1 * a)
+        drop ~Las raices de su ecuacion son~, x1, x2
+    | notPressed } drop ~El coeficiente cuadratico no puede ser nulo~
+  .~
+  drop ~Sayounara~
+.~
