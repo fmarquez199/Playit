@@ -286,7 +286,7 @@ genParam tac (_, _, getReg) colorGraph file =
       if isFloat $ tacType $ tacLvalue tac then 
         mov_d arg ("$f" ++ param) file
       else
-        move arg ("$a" ++ param) file
+        comment "\n\t\t# Get arg from param" file >> move arg ("$a" ++ param) file
 
 
 genSyscalls :: TAC -> InterfGraph -> VertColorMap -> String -> IO ()
@@ -429,6 +429,7 @@ activateCalled file = do
   sw   "$t7" "-44($sp)" file
   sw   "$t8" "-48($sp)" file
   sw   "$t9" "-52($sp)" file
+  -- TODO!!: preguntar por alineacion
   s_d  "$f0" "-60($sp)" file
   s_d  "$f2" "-68($sp)" file
   s_d  "$f4" "-76($sp)" file
@@ -494,6 +495,7 @@ activateCaller file = do
   lw   "$t7" "-44($sp)" file
   lw   "$t8" "-48($sp)" file
   lw   "$t9" "-52($sp)" file
+  -- TODO!!: preguntar por alineacion
   l_d  "$f0" "-60($sp)" file
   l_d  "$f2" "-68($sp)" file
   l_d  "$f4" "-76($sp)" file

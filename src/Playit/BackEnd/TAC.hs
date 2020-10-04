@@ -68,7 +68,7 @@ genSubroutines = do
 
 genSubroutine :: (Id, Params, InstrSeq, Bool) -> TACMonad ()
 genSubroutine (s, ps, is, isProc) = resetOffset >>
-  tell [tacNewLabel $ tacLabel s] >> mapM_ genCode is >>
+  tell [tacNewLabel $ tacLabel s] >> getParams s ps 0 >> mapM_ genCode is >>
     when isProc (genReturn Nothing)
 
 {-  El problema es que en efecto cuando consulto el parámetro este no ha sido 
