@@ -251,7 +251,8 @@ genAssig v e = case typeVar v of
         liftIO $ _double varBuffer (show f) dataFilePath
         v' <- pushOffset 8 >>= newTemp TFloat 8 >>= genVar v
         -- tell (tacAssign v' (tacConstant (show f, TFloat)) (tacLabel varBuffer) )
-        tell (tacAssign v' (tacConstant (show f, TFloat)) )
+        -- tell (tacAssign v' (tacConstant (show f, TFloat)) )
+        tell (tacAssign v' (tacLabel varBuffer) )
         tell (tacAssign (tacLabel varBuffer) v') -- TODO: quitar para no acceder a memoria
       
       Variable v' _ -> do

@@ -20,8 +20,8 @@
 
 world %Pruebas%:
 
-  Power x = 1
-  Power y = 3
+  @Power x = 1
+  @Power y = 3
   @Skill f = 5'4
 
 @ Operaciones aritmeticas
@@ -31,6 +31,10 @@ world %Pruebas%:
   @Skill f1 = f * f
   @Skill f3 = f / f
   @Skill f4 = x / y
+  Power i0 = 5, i1 = 2
+  Skill f0
+  f0 = i0 / i1
+  drop f0
 @Power i1 = x - 1
 @Power i2 = x * 1
 @Power i4 = x % 1
@@ -118,8 +122,8 @@ world %Pruebas%:
 @ I/O
   @Power geti = joystick ~Un Entero~
   @drop geti
-  Skill getf = joystick ~Un flotante~
-  drop getf
+@Skill getf = joystick ~Un flotante~
+@drop getf
   @Runes gets = joystick ~Un String~
   @drop gets
 @Runes getc = joystick ~Un Char~
