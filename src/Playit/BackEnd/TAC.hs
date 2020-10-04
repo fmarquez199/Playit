@@ -184,8 +184,9 @@ genAssig v e = case typeVar v of
         let varBuffer = show v ++ "_int"
         liftIO $ _space varBuffer "4" dataFilePath
         v' <- pushOffset 4 >>= newTemp TInt 4 >>= genVar v
+        -- tell (tacAssign v' (tacConstant (show i, TInt)) (tacLabel varBuffer) )
         tell (tacAssign v' (tacConstant (show i, TInt)))
-        -- tell (tacAssign v' (tacLabel varBuffer))
+        tell (tacAssign (tacLabel varBuffer) v') -- TODO: quitar para no acceder a memoria
       
       Variable v' _ -> do
         (rv, _, _) <- getOffset v'
@@ -250,7 +251,8 @@ genAssig v e = case typeVar v of
         liftIO $ _double varBuffer (show f) dataFilePath
         v' <- pushOffset 8 >>= newTemp TFloat 8 >>= genVar v
         -- tell (tacAssign v' (tacConstant (show f, TFloat)) (tacLabel varBuffer) )
-        tell (tacAssign v' (tacLabel varBuffer))
+        tell (tacAssign v' (tacConstant (show f, TFloat)) )
+        tell (tacAssign (tacLabel varBuffer) v') -- TODO: quitar para no acceder a memoria
       
       Variable v' _ -> do
         (rv, _, _) <- getOffset v'
@@ -428,10 +430,12 @@ genPrint [e] =
     
     Literal _ _ -> tell [] -- Register [Expr]
 
-    Variable v _ -> case typeVar v of
-      TInt -> tell [tacPrint (tacConstant (show v, TInt)) (tacLabel (show v ++ "_int"))]
-      TFloat -> tell [tacPrint (tacConstant (show v, TFloat)) (tacLabel (show v ++ "_float"))]
-      TStr -> tell [tacPrint (tacConstant (show v, TStr)) (tacLabel (show v ++ "_str"))]
+    Variable v _ -> 
+    -- TODO: buscar en el estado el temporal en donde esta la variable y colocarlo en lugar del lalbel
+      case typeVar v of
+        TInt   -> tell [tacPrint (tacConstant (show v, TInt)) (tacLabel (show v ++ "_int"))]
+        TFloat -> tell [tacPrint (tacConstant (show v, TFloat)) (tacLabel (show v ++ "_float"))]
+        TStr   -> tell [tacPrint (tacConstant (show v, TStr)) (tacLabel (show v ++ "_str"))]
     
     _ -> tell []
 genPrint (e:es) = genPrint [e] >> genPrint es

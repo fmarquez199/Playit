@@ -115,9 +115,9 @@ tacNewLabel label = T.ThreeAddressCode T.NewLabel label Nothing Nothing
 
 
 -------------------------------------------------------------------------------
--- TODO:
 tacAssign :: TACOP -> TACOP 
-          -- -> TACOP -- ^ Label in .data to refer when assign strings and arrays
+          -- -> TACOP -- ^ Label in .data to refer (TODO: just when assign strings and arrays)
+                      -- para int y float debe ser su temp
           -> [TAC]
 tacAssign lv rv {- _dataLabel -} = [T.ThreeAddressCode T.Assign lv rv Nothing]
 -------------------------------------------------------------------------------

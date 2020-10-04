@@ -78,6 +78,8 @@ genAssign tac (_, _, getReg) colorGraph file = do
     lvalInfo = tacInfo lval
     rv1      = tacRvalue1 tac
     rv1Info  = tacInfo rv1
+    -- rv2      = tacRvalue2 tac
+    -- rv2Info  = tacInfo rv2
   
   if isJust lvalInfo then
     let 
@@ -221,7 +223,7 @@ genTwoOperandsOp tac (_, _, getReg) color file = do
       let 
         label = show (fromJust $ tacRvalue1 tac)
         float = isFloat $ tacType $ tacRvalue1 tac
-        inst' = if float then (init inst) ++ ".d " else inst -- check, gen lw not l.d
+        inst' = if float then (init inst) ++ ".d " else inst -- TODO!!: check, gen lw not l.d
       in 
         comment ", const" file >> appendFile file (inst' ++ dest ++ label)
     _ -> 
@@ -338,12 +340,12 @@ genSyscalls tac (_, _, t) color file =
         move "$a0" arg file
         syscall        file
       else do
-        let label = show (fromJust rv2)
+        let out = show (fromJust rv2)
 
-        case strSplit "_" label of
-          (_, "int")   -> comment ", Int" file >> li "$v0" "1" file >> lw  "$a0"  label file
-          (_, "float") -> comment ", Double" file >> li "$v0" "3" file >> l_d "$f12" label file
-          _            -> comment ", String" file >> li "$v0" "4" file >> la  "$a0"  label file
+        case strSplit "_" out of
+          (_, "int")   -> comment ", Int" file >> li "$v0" "1" file >> lw  "$a0"  out file
+          (_, "float") -> comment ", Double" file >> li "$v0" "3" file >> l_d "$f12" out file
+          _            -> comment ", String" file >> li "$v0" "4" file >> la  "$a0"  out file
 
         syscall file
         li "$v0" "4"       file

@@ -22,8 +22,7 @@ world %Pruebas%:
 
   Power x = 1
   Power y = 3
-  Skill f = 5'4
-
+  @Skill f = 5'4
 
 @ Operaciones aritmeticas
   @Power i0
@@ -40,12 +39,12 @@ world %Pruebas%:
 @Skill f2 = f / 0'5
 
 @ Operaciones unarias
-  Power  y2
-  y2 = -y
-  drop y2
-  Skill  f2
-  f2 = -f
-  drop f2
+  @Power  y2
+  @y2 = -y
+  @drop y2
+  @Skill  f2
+  @f2 = -f
+  @drop f2
 @Skill   f = -5'2
 @Skill   f' = -f
 @Power  y1 = -5
@@ -77,42 +76,64 @@ world %Pruebas%:
 
 @  play:
   @  gameOver
-  @  Power i = 9
-  @  keepPlaying
-  @  drop x
+  @   i0 = 9   @ No se esta cambiando el valor, esta bien??
+  @  keepPlaying  @ deberia saler del ciclo
+  @  Button:
+  @    | x == 7 }
+  @      x = x * y
+  @      gameOver
+  @    | x == 4 } keepPlaying  @ deberia saltarse x=4 y seguir imprimiendo x
+  @  .~
+  @  drop x  @ el primer drop lo hace mal, x=1 pero muestra 0
   @  x++
-  @lock (x < 6)
+  @lock (x < 10)
   @.~
-
-@  controller x = 0 -> 10: @ lock i % 2 == 0:
+  @drop x
+@
+  @Power i
+@  controller i = 1 -> 10: @ lock i % 2 == 0:
   @  gameOver
   @  keepPlaying
   @  Button:
-  @    | x == 7 }
-  @      i0 = x * i1
+  @    | i == 7 }
+  @      x = i * y
   @      gameOver
+  @    | i == 4 } keepPlaying
   @  .~
-  @  i2 = i0 * i1
-  @.~
-
-  @controller Power i = 1 -> 5:
   @  drop i
+  @  x = i
   @.~
-  
-  @Power x, n = 1
-  @controller x = 1 -> 10 lock x < 5: @ lock i % 2 == 0:
-  @  n = n * x
-  @  drop n
-  @.~
+  @drop i
+  @drop x
 
 @  Button:
+  @  | x < 3      } x = 10
+  @  | x == 1    } x = 12
   @  | Lose       } x = 0
-  @  | x > 3      } x = 10
-  @  | x == 20    } x = 1
-  @  | Lose       } x = 0
-  @  | Win        } x = 30 @ AST no se genera bien. La x en el default tiene el mismo valor que aquí
+  @  | Win        } x = 30
   @  | notPressed } x = 720
   @.~
+  @drop x
+
+@ I/O
+  @Power geti = joystick ~Un Entero~
+  @drop geti
+  Skill getf = joystick ~Un flotante~
+  drop getf
+  @Runes gets = joystick ~Un String~
+  @drop gets
+@Runes getc = joystick ~Un Char~
+@drop getc
+@Runes getnull = joystick
+@drop getnull
+
+@ Strings
+  @Rune|}4{| x = |)*H*, *o*, *l*, *a*(|
+  @Runes y = ~Hola, soy un string~
+  @Runes x = y
+  @drop y
+  @drop ~Este es otro string~
+@Runes s = kill m(y) @ not implemented
 
 @ Subrutinas
   @Power x = 10
@@ -120,7 +141,7 @@ world %Pruebas%:
   @kill b(x)
   @x = kill m(x)
   @y = kill m(y)
-  @Power|}x{| arr0     @ Esto esta dando error cuando se inicializa por defecto un arreglo
+  @Power|}x{| arr0    @ Err cuando init por defecto un arreglo
   @Power|}5{| arr1
   @x = kill m(arr1)
 
@@ -142,21 +163,6 @@ world %Pruebas%:
   @kill b(apt1,10'6)
   @free apt1
   @free apt2
-
-@ I/O
-  @Runes s = ~3g~
-  @Runes j = joystick ~Here we go~
-  @drop s
-  @drop ~hola mundo!!~
-
-@ Strings
-  @Rune|}4{| x = |)*H*, *o*, *l*, *a*(|
-  @Runes y = ~H~
-  @Runes x = y
-  @Runes y = ~Hola, soy un string~
-  @Runes s = kill m(y) @ not implemented
-  @drop y
-  @drop ~Este es otro string~
 
 
 "'Ejemplos por implementar en TAC, arriba estan cosas probadas que funcionan'"
