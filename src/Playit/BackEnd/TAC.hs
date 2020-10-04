@@ -174,8 +174,10 @@ genAssig v e = case typeVar v of
         tell [tacRead (tacConstant (var, TStr)) (tacLabel varLabel)]
         tell [tacRef lv (tacLabel varLabel)]
         
-      -- TODO!!: casos con EmptyVAlue -> read sin str para imprimir
-      t -> error $ "NotImplementedError " ++ show t -- This shouldn't happen
+      -- TODO!!: 
+      -- casos con EmptyVAlue -> read sin str para imprimir
+      -- funciones
+      t -> error $ "NotImplementedError " ++ show t
 
 -- TODO: No guardar valores numericos en .data, ya se colocan en un temp para no mas accesos a mem
   TInt -> do
@@ -222,15 +224,6 @@ genAssig v e = case typeVar v of
         tell [tacRead (tacConstant (var, TInt)) (tacLabel varBuffer)]
         tell [tacDeref v' (tacLabel varBuffer)]
         tell (tacAssign (tacLabel varBuffer) v')
-
-      -- TODO!!: Fix params
-      -- FuncCall (Call f params) _ -> do
-      --   pushSubroutine f False
-      --   genParams (map fst params) 0
-      --   v' <- pushOffset 4 >>= newTemp TInt 4 >>= genVar v
-      --   liftIO $ appendFile "output/data" $ show v ++ "_int: .space 4\n"
-      --   tell (tacCall v' f $ length params)
-      --   tell (tacAssign (tacLabel (show v ++ "_int")) t)
 
       e -> do
         let 
@@ -540,7 +533,7 @@ genBoolExpr e trueL falseL =
         when (isFall falseL) $ tell [tacNewLabel e1FalseL]
       else
         when (isFall trueL) $ tell [tacNewLabel e1TrueL]
-  -- TODO: Creo que parecido a variables
+  -- 
     FuncCall s t -> do
       let 
         isTrueNotFall  = not $ isFall trueL
