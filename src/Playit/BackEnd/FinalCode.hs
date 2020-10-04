@@ -121,32 +121,36 @@ genAssign tac (_, _, getReg) colorGraph file = do
 genThreeOperandsOp :: TAC -> InterfGraph -> I.IntMap Int -> String -> IO ()
 genThreeOperandsOp tac i@(_, _, t) color file =
   let
+    rv1  = tacRvalue1 tac
+    rv2  = tacRvalue2 tac
     inst = show' (tacOperand tac) ++ " "
     dest = (makeReg color $ getReg' t $ tacInfo $ tacLvalue tac) ++ ", "
+    reg1 = makeReg color $ getReg' t $ tacInfo rv1
+    reg2 = makeReg color $ getReg' t $ tacInfo rv2
   in
   case tacOperand tac of
     x | x `elem` [Add, Sub, Mult, Div, Mod] -> do
       comment (", " ++ show x) file
       let
-        reg1 = (makeReg color $ getReg' t $ tacInfo $ tacRvalue1 tac) ++ ", "
+        reg1' = reg1 ++ ", "
       
       -- TODO: Primero se deberia verificar si es float o no
-      case tacInfo $ tacRvalue2 tac of
+      case tacInfo rv2 of
         Nothing ->
           -- TODO: cuando es float la inst no es la correcta
-          let code = inst ++ dest ++ reg1 ++ show (fromJust $ tacRvalue2 tac) 
+          let code = inst ++ dest ++ reg1' ++ show (fromJust rv2) 
           in comment ", const" file >> appendFile file code
         _ ->
           let 
-            reg2 = (makeReg color $ getReg' t $ tacInfo $ tacRvalue2 tac)
+            reg2 = (makeReg color $ getReg' t $ tacInfo rv2)
           in 
           comment ", var" file >>
           if isFloat $ tacType $ tacLvalue tac then do
             comment ", Float" file
 
-            if x == Div && not (isFloat $ tacType $ tacRvalue1 tac) then do
+            if x == Div && not (isFloat $ tacType rv1) then do
               let 
-                next1 = '$':(show $ 1 + (read (init (init (tail reg1))) :: Int))
+                next1 = '$':(show $ 1 + (read (init (init (tail reg1'))) :: Int))
                 next2 = '$':(show $ 1 + (read (tail reg2) :: Int))
               
               comment ", div (/)" file
@@ -156,7 +160,7 @@ genThreeOperandsOp tac i@(_, _, t) color file =
               sw     next1 "-16($sp)"   file
               addi   "$sp" "$sp" "-20"  file
               li     next1 "0"          file
-              mtc1_d reg1 "$f12"        file
+              mtc1_d reg1' "$f12"       file
               lw     next1 "4($sp)"     file
               sw     next2 "4($sp)"     file
               li     next2 "0"          file
@@ -167,40 +171,36 @@ genThreeOperandsOp tac i@(_, _, t) color file =
               l_d    "$f10" "0($sp)"    file
               l_d    "$f12" "-8($sp)"   file
             else
-              let code = (init inst) ++ ".d " ++ dest ++ reg1 ++ reg2
+              let code = (init inst) ++ ".d " ++ dest ++ reg1' ++ reg2
               in
               comment ", op != Div or rv2 is float. Se asume es float" file >>
                 appendFile file code
           else 
-            comment ", Int" >> appendFile file $ inst ++ dest ++ reg1 ++ reg2
+            comment ", Int" >> appendFile file $ inst ++ dest ++ reg1' ++ reg2
 
     x | x `elem` [Gt, Gte, Lt, Lte, Eq, Neq] ->
       let 
-        reg2 = (tail . init $ show (fromJust $ tacRvalue2 tac))
-        reg1 = 
-          if isJust $ tacInfo $ tacRvalue1 tac then
-            (makeReg color $ getReg' t $ tacInfo $ tacRvalue1 tac) ++ ", "
+        rv2'  = fromJust rv2
+        dir   = tail . init $ show rv2'
+        rv1'  = show (fromJust rv1)
+        reg2' = 
+          if isJust $ tacInfo rv1 then reg1 ++ ", "
           else 
-            show (fromJust $ tacRvalue1 tac) ++ ", "
+            if rv1' == "Win" then "1 " else if rv1' == "Lose" then "0 " else rv1' ++ ", "
       in 
         comment (", " ++ show x) file >>
-          appendFile file (inst ++ dest ++ reg1 ++ reg2)
+          appendFile file (inst ++ dest ++ reg2' ++ dir)
+    
     Call ->
       comment ", Subroutine call" file >>
         genJumps tac i color file >> addi dest "$v0" "0" file
-    Get -> -- x = y[i]
-      let
-        reg1 = (makeReg color $ getReg' t $ tacInfo $ tacRvalue1 tac)
-        reg2 = (makeReg color $ getReg' t $ tacInfo $ tacRvalue2 tac)
-      in
-        comment ", Get" file >> add reg1 reg1 reg2 file >> lw  dest reg1 file
-    Set -> -- x[i] = y
-      let
-        reg1 = (makeReg color $ getReg' t $ tacInfo $ tacRvalue1 tac)
-        reg2 = (makeReg color $ getReg' t $ tacInfo $ tacRvalue2 tac)
-      in
-        comment ", Set" file >>
-          add dest dest reg1 file >> sw dest ("0(" ++ init reg2 ++ ")") file
+    Get -> 
+      -- x = y[i]
+      comment ", Get" file >> add reg1 reg1 reg2 file >> lw  dest reg1 file
+    Set -> 
+      -- x[i] = y
+      comment ", Set" file >>
+        add dest dest reg1 file >> sw dest ("0(" ++ init reg2 ++ ")") file
     o -> 
       comment ("\n\t\t# Operand not supported yet: " ++ show o) file
 
