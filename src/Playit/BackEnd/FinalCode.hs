@@ -96,7 +96,7 @@ genAssign tac (_, _, getReg) colorGraph file = do
           let 
             i    = show (fromJust rv1)
             imm  = if i == "True" then "1" else if i == "False" then "0" else i
-            load = if elem '_' imm then l_d else li
+            load = if elem "_float" $ subsequences imm then l_d else li
           in 
             comment (", const: " ++ show rv1) file >> load dest imm file
   else
@@ -142,7 +142,7 @@ genThreeOperandsOp tac i@(_, _, t) color file =
           in comment ", const" file >> appendFile file code
         _ ->
           let 
-            reg2 = (makeReg color $ getReg' t $ tacInfo rv2)
+            reg2 = makeReg color $ getReg' t $ tacInfo rv2
           in 
           comment ", var" file >>
           if isFloat $ tacType $ tacLvalue tac then do
@@ -218,17 +218,20 @@ genTwoOperandsOp tac (_, _, getReg) color file = do
   -- TODO: Primero se deberia verificar si es float o no
   case tacInfo $ tacRvalue1 tac of
     Nothing ->
-      -- TODO: cuando es float la inst no es la correcta
-      let label = show (fromJust $ tacRvalue1 tac)
-      in comment ", const" file >> appendFile file (inst ++ dest ++  label)
+      let 
+        label = show (fromJust $ tacRvalue1 tac)
+        float = isFloat $ tacType $ tacRvalue1 tac
+        inst' = if float then (init inst) ++ ".d " else inst -- check, gen lw not l.d
+      in 
+        comment ", const" file >> appendFile file (inst' ++ dest ++ label)
     _ -> 
       let
-        reg1 = (makeReg color $ getReg' getReg $ tacInfo $ tacRvalue1 tac) 
         float = isFloat $ tacType $ tacRvalue1 tac
         inst' = if float then (init inst) ++ ".d " else inst
+        reg1 = makeReg color $ getReg' getReg $ tacInfo $ tacRvalue1 tac
         code = inst' ++ dest ++ reg1
       in 
-        appendFile file code
+        comment ", var" file >> appendFile file code
 
 
 genJumps :: TAC -> InterfGraph -> VertColorMap -> String -> IO ()
@@ -369,6 +372,7 @@ genSyscalls tac (_, _, t) color file =
         *      53     |
         *      54     |
 
+          
           la $s0, <label donde se guarda el valor del input>
           
           li $v0, 8
@@ -392,14 +396,16 @@ genSyscalls tac (_, _, t) color file =
             comment ", Float" file
             li "$v0" "7" file 
             syscall file
-            swl "$f0" label file 
-            swr "$f0" label file
+            -- swl "$f0" label file 
+            -- swr "$f0" label file
+            s_d "$f0" label file
           
           -- TODO!!: check
           (_, "str") -> do
             comment ", String" file
             la "$a0" label file
-            li "$a1" ("len" ++ label) file
+            -- li "$a1" ("len" ++ label) file
+            li "$a1" "120" file
             li "$v0" "8" file
             syscall file
 

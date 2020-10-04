@@ -638,14 +638,17 @@ sw regSour dir file = appendFile file $ "\n\t\tsw " ++ regSour ++ ", " ++ dir
 l_d :: String -> String -> String -> IO ()
 l_d regDest dir file = appendFile file $ "\n\t\tl.d " ++ regDest ++ ", " ++ dir
 
+li_d :: String -> String -> String -> IO ()
+li_d regDest dir file = appendFile file $ "\n\t\tli.d " ++ regDest ++ ", " ++ dir
+
 s_d :: String -> String -> String -> IO ()
 s_d regSour dir file = appendFile file $ "\n\t\ts.d " ++ regSour ++ ", " ++ dir
 
 swl :: String -> String -> String -> IO ()
-swl regSour dir file = appendFile file $ "\n\t\tswl" ++ regSour ++ ", " ++ dir
+swl regSour dir file = appendFile file $ "\n\t\tswl " ++ regSour ++ ", " ++ dir
 
 swr :: String -> String -> String -> IO ()
-swr regSour dir file = appendFile file $ "\n\t\tswr" ++ regSour ++ ", " ++ dir
+swr regSour dir file = appendFile file $ "\n\t\tswr " ++ regSour ++ ", " ++ dir
 
 -- aritmetic
 

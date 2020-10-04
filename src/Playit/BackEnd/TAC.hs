@@ -181,10 +181,11 @@ genAssig v e = case typeVar v of
   TInt -> do
     case e of
       Literal (Integer i) _ -> do
-        liftIO $ _space (show v ++ "_int") "4" dataFilePath
-        
+        let varBuffer = show v ++ "_int"
+        liftIO $ _space varBuffer "4" dataFilePath
         v' <- pushOffset 4 >>= newTemp TInt 4 >>= genVar v
         tell (tacAssign v' (tacConstant (show i, TInt)))
+        -- tell (tacAssign v' (tacLabel varBuffer))
       
       Variable v' _ -> do
         (rv, _, _) <- getOffset v'
@@ -245,17 +246,18 @@ genAssig v e = case typeVar v of
   TFloat -> do
     case e of
       Literal (Floatt f) _ -> do
-        v' <- pushOffset 8 >>= newTemp TFloat 8 >>= genVar v
         let varBuffer = show v ++ "_float"
         liftIO $ _double varBuffer (show f) dataFilePath
-        -- tell (tacAssign v' (tacConstant (show f, TFloat)))
+        v' <- pushOffset 8 >>= newTemp TFloat 8 >>= genVar v
+        -- tell (tacAssign v' (tacConstant (show f, TFloat)) (tacLabel varBuffer) )
         tell (tacAssign v' (tacLabel varBuffer))
       
       Variable v' _ -> do
         (rv, _, _) <- getOffset v'
         lv <- pushOffset 8 >>= newTemp TFloat 8 >>= genVar v
         tell (tacAssign lv rv)
-      
+        tell (tacAssign (tacLabel (show v ++ "_float")) rv)
+
       Read (Literal (Str s) _) _ -> do
         let 
           var = show v 
@@ -265,8 +267,10 @@ genAssig v e = case typeVar v of
         liftIO $ _space varBuffer "8" dataFilePath
         liftIO $ _asciiz floatLabel s dataFilePath
 
+        v' <- pushOffset 8 >>= newTemp TInt 8 >>= genVar v
         tell [tacPrint (tacConstant (s, TFloat)) (tacLabel floatLabel)]
         tell [tacRead (tacConstant (var, TFloat)) (tacLabel varBuffer)]
+        tell [tacDeref v' (tacLabel varBuffer)]
       
       Read (Variable v' _) _ -> do
         (rv, _, _) <- getOffset v'
@@ -276,15 +280,18 @@ genAssig v e = case typeVar v of
 
         liftIO $ _space varBuffer "8" dataFilePath
 
+        v' <- pushOffset 8 >>= newTemp TInt 8 >>= genVar v
         tell [tacPrint rv rv] -- TODO: rv -> string a imprimir
         tell [tacRead (tacConstant (var, TFloat)) (tacLabel varBuffer)]
+        tell [tacDeref v' (tacLabel varBuffer)]
+        tell (tacAssign (tacLabel varBuffer) v')
       
       e -> do
         let 
           var = show v 
           varBuffer = var ++ "_float"
 
-        liftIO $ _space varBuffer "8" dataFilePath
+        -- liftIO $ _space varBuffer "8" dataFilePath
 
         t <- genExpr e
         v' <- pushOffset 8 >>= newTemp TFloat 8 >>= genVar v
@@ -530,7 +537,6 @@ genBoolExpr e trueL falseL =
         when (isFall trueL) $ tell [tacNewLabel e1TrueL]
   -- TODO: Creo que parecido a variables
     FuncCall s t -> do
-    --   call <- genFuncCall s t
       let 
         isTrueNotFall  = not $ isFall trueL
         isFalseNotFall = not $ isFall falseL

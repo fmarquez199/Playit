@@ -15,22 +15,24 @@ monster impar(Power n2) Battle:
   Button:
     | n2 == 0 } unlock Lose
     | n2 == 1 } unlock Win
-    | notPressed } unlock kill par(n2 - 1)
+    | notPressed } 
+      Battle r = kill par(n2 - 1)
+      unlock r
   .~
 .~
 
 boss respuesta1(Battle p1):
   Button:
     | p1 } drop ~Es par~
+    | notPressed } drop ~No es par~
   .~
-  drop ~No es par~
 .~
 
 boss respuesta2(Battle p2):
   Button:
     | p2 } drop ~Es impar~
+    | notPressed } drop ~No es impar~
   .~
-  drop ~No es impar~
 .~
 
 world %Correcursion%:

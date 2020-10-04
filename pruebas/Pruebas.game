@@ -22,28 +22,34 @@ world %Pruebas%:
 
   Power x = 1
   Power y = 3
-  @Skill f = 1'0
+  Skill f = 5'4
 
 
 @ Operaciones aritmeticas
-  Power i0
-  i0 = x + y
-  drop i0
-  @Power i1 = x - 1
-  @Power i2 = x * 1
-  @Power i4 = x % 1
-  @Power i5 = x // 1
-  @Skill f0 = f + 2'5
+  @Power i0
+  @i0 = x + y
+  @drop i0
   @Skill f1 = f * f
-  @Skill f2 = f / 0'5
   @Skill f3 = f / f
   @Skill f4 = x / y
+@Power i1 = x - 1
+@Power i2 = x * 1
+@Power i4 = x % 1
+@Power i5 = x // 1
+@Skill f0 = f + 2'5
+@Skill f2 = f / 0'5
 
 @ Operaciones unarias
-  @Power  y = -5
-  @Power  y' = -y
-  @Skill   f = -5'2
-  @Skill   f' = -f
+  Power  y2
+  y2 = -y
+  drop y2
+  Skill  f2
+  f2 = -f
+  drop f2
+@Skill   f = -5'2
+@Skill   f' = -f
+@Power  y1 = -5
+@Power  y2 = -y
 @Rune   c = *4*
 @Rune  up = ^*x*
 @Rune low = .*x*
@@ -52,12 +58,12 @@ world %Pruebas%:
   @Battle b @= Lose
   @b = !Win
   @b = Lose || Win
-@  b = Win && Lose
-@b = Lose || b
-@b = Lose && b
+  @b = Win && Lose
+  @b = Lose || b
+  @b = Lose && b
+  @b = i5 < i2
 @b = Win && 3 > 6
-@Battle p = 3 > 6
-@p = i5 < i2
+@b = 3 > 6
 
 @ Operador ternario
   @Battle b
