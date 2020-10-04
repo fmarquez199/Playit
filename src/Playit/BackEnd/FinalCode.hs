@@ -34,7 +34,7 @@ genFinalCode tac g c file    = do
     x | x `elem` [Add, Sub, Mult, Div, Mod, Gt, Gte, Lt, Lte, Eq, Neq, Get, Set, Call] ->
       
       -- liftIO (print (show tacInstr ++ " tac: " ++ show (tacInfo $ tacRvalue2 tacInstr))) >> 
-      comment ("\n\t# 3 Operands operation: " ++ show tacInstr) file >>
+      comment ("\n\t\t# 3 Operands operation: " ++ show tacInstr) file >>
       genThreeOperandsOp tacInstr g c file
 
     x | x `elem` [Minus, Ref, Deref] -> genTwoOperandsOp tacInstr g c file
@@ -284,9 +284,9 @@ genParam tac (_, _, getReg) colorGraph file =
         arg   = makeReg colorGraph $ getReg' getReg $ tacInfo $ tacRvalue2 tac
       in 
       if isFloat $ tacType $ tacLvalue tac then 
-        mov_d arg ("$f" ++ param)
+        mov_d arg ("$f" ++ param) file
       else
-        move arg ("$a" ++ param)
+        move arg ("$a" ++ param) file
 
 
 genSyscalls :: TAC -> InterfGraph -> VertColorMap -> String -> IO ()

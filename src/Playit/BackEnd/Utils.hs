@@ -157,6 +157,13 @@ tacParam p n = T.ThreeAddressCode T.Param Nothing p (tacConstant (show n, TInt))
 
 
 -------------------------------------------------------------------------------
+-- Para pasarlo como arg
+tacParam' :: TACOP -> Int -> TACOP -> TAC
+tacParam' p n r = T.ThreeAddressCode T.Param p (tacConstant (show n, TInt)) r
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
 -- 
 tacPrint :: TACOP -- ^ String to print in TAC
          -> TACOP -- ^ Label in .data section that have the string to print
@@ -671,13 +678,13 @@ div_d result reg1 reg2 file =
 
 
 b :: String -> String -> IO ()
-b label file = appendFile file $ show label
+b label file = appendFile file $ "\n\t\tb " ++ label
 
 beqz :: String -> String -> String -> IO ()
 beqz comp label file = appendFile file $ "\n\t\tbeqz " ++ comp ++ ", " ++ show label
 
 jr :: String -> String -> IO ()
-jr reg file = appendFile file reg
+jr reg file = appendFile file $ "\n\t\tjr " ++ reg
 
 
 -- data transfer

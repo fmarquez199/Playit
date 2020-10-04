@@ -247,7 +247,7 @@ genAssig v e = case typeVar v of
       Literal (Floatt f) _ -> do
         v' <- pushOffset 8 >>= newTemp TFloat 8 >>= genVar v
         let varBuffer = show v ++ "_float"
-        liftIO $ _double varBuffer (show f)
+        liftIO $ _double varBuffer (show f) dataFilePath
         -- tell (tacAssign v' (tacConstant (show f, TFloat)))
         tell (tacAssign v' (tacLabel varBuffer))
       
