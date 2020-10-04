@@ -230,7 +230,7 @@ genJumps tac (_, _, t) color file = do
           case tacInfo $ tacRvalue1 tac of
             --return a constant
             Nothing -> 
-              let retVal = show (fromJust $ tacRvalue1 tac)
+              let retVal = "$" ++ show (fromJust $ tacRvalue1 tac)
               in comment ", return constant" file >> move "$v0" retVal file >> epilogue file
             --return a value into a register
             _ -> 
