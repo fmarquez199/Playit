@@ -1,0 +1,60 @@
+monster mult1(Power n, Power m) Power:
+  Power z1 = 0
+  play:
+    z1 = z1 + m
+    n--
+  lock n > 0
+  .~
+  unlock z1
+.~
+
+monster div(Power a, Power b) Power:
+  Power q = 0
+  play:
+    a = a - b
+    q++
+  lock x >= b
+  .~
+  unlock q
+.~
+
+monster mult2(Power u, Power v) Power:
+  monster impar(Power k) Battle:
+    unlock k % 2 != 0
+  .~
+
+  Power z2 = 0
+  play:
+    Button:
+      | kill impar(u) } z2 = z2 + v
+    .~
+    u = u // 2
+    v = v * 2
+  lock u != 0
+  unlock z2
+  .~
+
+monster gcd(Power x, Power y) Power:
+  play:
+    Button:
+      | x > y } x = x - y
+      | notPressed} y = y - x
+    .~
+  lock x != y
+  .~
+  unlock x
+.~
+
+world %Enteros%:
+  @ Funciones tomadas de Wirth, N. (1973)
+  Power num1 = joystick ~Indique un primer numero~
+  Power num2 = joystick ~Indique un segundo numero~
+  Power m1 = kill mult1(num1, num2)
+  Power m2 = kill mult2(num1, num2)
+  Power d = kill div(num1, num2)
+  Power mcd = kill gcd(num1, num2)
+  drop ~La multiplicacion de~, num1, ~y~, num2, ~es~, m1
+  drop ~por el primer metodo y por el segundo es~, m2
+  drop ~su cociente es~, d, ~y su maximo comun divisor es~, mcd
+  drop ~Saludos~
+.~

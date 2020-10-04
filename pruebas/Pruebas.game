@@ -45,75 +45,118 @@ world %Pruebas%:
   @Power i5 = x // 1
   @Skill f0 = f + 2'5
   @Skill f1 = f * f
-  @Skill f2 = f / 0'5
   @Skill f3 = f / f
   @Skill f4 = x / y
+  @Power i0 = 5, i1 = 2
+  @Skill f0
+  @f0 = i0 / i1
+  @drop f0
+@Power i1 = x - 1
+@Power i2 = x * 1
+@Power i4 = x % 1
+@Power i5 = x // 1
+@Skill f0 = f + 2'5
+@Skill f2 = f / 0'5
 
 @ Operaciones unarias
-  @Power  y = -5
-  @Power  y' = -y
-  @Skill   f = -5'2
-  @Skill   f' = -f
+  @Power  y2
+  @y2 = -y
+  @drop y2
+  @Skill  f2
+  @f2 = -f
+  @drop f2
+@Skill   f = -5'2
+@Skill   f' = -f
+@Power  y1 = -5
+@Power  y2 = -y
 @Rune   c = *4*
 @Rune  up = ^*x*
 @Rune low = .*x*
 
 @ Operaciones boleanas
-  @Battle b
+  @Battle b @= Lose
   @b = !Win
   @b = Lose || Win
   @b = Win && Lose
-@b = Win && b   @ caso no soportado en TAC
+  @b = Lose || b
+  @b = Lose && b
+  @b = i5 < i2
 @b = Win && 3 > 6
-@Battle p = 3 > 6
-@p = i5 < i2
+@b = 3 > 6
 
 @ Operador ternario
   @Battle b
   @Battle b1 = Win ? (3 == 6) : (3 > 6)
   @Skill f1 = Lose ? 6'0 : 3'0
 @Battle b2 = b ? (3 == 6) : (3 > 6)
-@Skill f2 = b ? 6'0 : 3'0 @ caso no soportado en TAC
+@Skill f0 = 6'5
+@Skill f1 = 3'4
+@Skill f2 = b ? f0 : f1
+@drop f2
 
 @  play:
   @  gameOver
-  @  Power i = 9
-  @  keepPlaying
+  @  i0 = 9
+  @  keepPlaying  @ deberia saler del ciclo
+  @  Button:
+  @    | x == 7 }
+  @      x = x * y
+  @      gameOver
+  @    | x == 4 } 
+  @      x++ @ para que no haya loop infinito
+  @      keepPlaying
+  @  .~
+  @  drop x
   @  x++
   @lock (x < 10)
   @.~
-
-@  controller x = 0 -> 10: @ lock i % 2 == 0:
+  @drop x
+  @drop i0
+@
+  @Power i
+@  controller i = 1 -> 10: @ lock i % 2 == 0:
   @  gameOver
   @  keepPlaying
   @  Button:
-  @    | x == 7 }
-  @      i0 = x * i1
+  @    | i == 7 }
+  @      x = i * y
   @      gameOver
+  @    | i == 4 } keepPlaying
   @  .~
-  @  i2 = i0 * i1
-  @.~
-
-  @Power i
-
-  @controller i = 1 -> 5:
   @  drop i
+  @  x = i
   @.~
-  
-  @Power x, n = 1
-  @controller x = 1 -> 10 lock x < 5: @ lock i % 2 == 0:
-  @  n = n * x
-  @  drop n
-  @.~
+  @drop i
+  @drop x
 
 @  Button:
+  @  | x < 3      } x = 10
+  @  | x == 1    } x = 12
   @  | Lose       } x = 0
-  @  | x > 3      } x = 10
-  @  | x == 20    } x = 1
-  @  | Lose       } x = 0
-  @  | Win        } x = 30 @ AST no se genera bien. La x en el default tiene el mismo valor que aquí
+  @  | Win        } x = 30
   @  | notPressed } x = 720
   @.~
+  @drop x
+
+@ I/O
+  @Power geti = joystick ~Un Entero~
+  @drop geti
+  @Skill getf = joystick ~Un flotante~
+  @drop getf
+  @Runes gets = joystick ~Un String~
+  @drop gets
+@Runes getc = joystick ~Un Char~
+@drop getc
+@Runes getnull = joystick
+@drop getnull
+
+@ Strings
+  @Rune|}4{| x = |)*H*, *o*, *l*, *a*(|
+  @Runes y = ~Hola, soy un string~
+  @Runes x = y
+  @drop y
+  @drop ~Este es otro string~
+@Runes s = kill m(y) @ not implemented
 
 @ Subrutinas
   @Power x = 10
@@ -121,7 +164,7 @@ world %Pruebas%:
   @kill b(x)
   @x = kill m(x)
   @y = kill m(y)
-  @Power|}x{| arr0     @ Esto esta dando error cuando se inicializa por defecto un arreglo
+  @Power|}x{| arr0    @ Err cuando init por defecto un arreglo
   @Power|}5{| arr1
   @x = kill m(arr1)
 
@@ -143,21 +186,6 @@ world %Pruebas%:
   @kill b(apt1,10'6)
   @free apt1
   @free apt2
-
-@ I/O
-  @Runes s = ~3g~
-  @Runes j = joystick ~Here we go~
-  @drop s
-  @drop ~hola mundo!!~
-
-@ Strings
-  @Rune|}4{| x = |)*H*, *o*, *l*, *a*(|
-  @Runes y = ~H~
-  @Runes x = y
-  @Runes y = ~Hola, soy un string~
-  @Runes s = kill m(y) @ not implemented
-  @drop y
-  @drop ~Este es otro string~
 
 
 "'Ejemplos por implementar en TAC, arriba estan cosas probadas que funcionan'"

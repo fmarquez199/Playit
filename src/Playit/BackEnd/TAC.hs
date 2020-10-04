@@ -68,7 +68,7 @@ genSubroutines = do
 
 genSubroutine :: (Id, Params, InstrSeq, Bool) -> TACMonad ()
 genSubroutine (s, ps, is, isProc) = resetOffset >>
-  tell [tacNewLabel $ tacLabel s] >> mapM_ genCode is >>
+  tell [tacNewLabel $ tacLabel s] >> getParams s ps 0 >> mapM_ genCode is >>
     when isProc (genReturn Nothing)
 
 {-  El problema es que en efecto cuando consulto el parámetro este no ha sido 
@@ -181,10 +181,12 @@ genAssig v e = case typeVar v of
   TInt -> do
     case e of
       Literal (Integer i) _ -> do
-        liftIO $ _space (show v ++ "_int") "4" dataFilePath
-        
+        let varBuffer = show v ++ "_int"
+        liftIO $ _space varBuffer "4" dataFilePath
         v' <- pushOffset 4 >>= newTemp TInt 4 >>= genVar v
+        -- tell (tacAssign v' (tacConstant (show i, TInt)) (tacLabel varBuffer) )
         tell (tacAssign v' (tacConstant (show i, TInt)))
+        tell (tacAssign (tacLabel varBuffer) v') -- TODO: quitar para no acceder a memoria
       
       Variable v' _ -> do
         (rv, _, _) <- getOffset v'
@@ -245,17 +247,20 @@ genAssig v e = case typeVar v of
   TFloat -> do
     case e of
       Literal (Floatt f) _ -> do
-        v' <- pushOffset 8 >>= newTemp TFloat 8 >>= genVar v
         let varBuffer = show v ++ "_float"
         liftIO $ _double varBuffer (show f) dataFilePath
-        -- tell (tacAssign v' (tacConstant (show f, TFloat)))
-        tell (tacAssign v' (tacLabel varBuffer))
+        v' <- pushOffset 8 >>= newTemp TFloat 8 >>= genVar v
+        -- tell (tacAssign v' (tacConstant (show f, TFloat)) (tacLabel varBuffer) )
+        -- tell (tacAssign v' (tacConstant (show f, TFloat)) )
+        tell (tacAssign v' (tacLabel varBuffer) )
+        tell (tacAssign (tacLabel varBuffer) v') -- TODO: quitar para no acceder a memoria
       
       Variable v' _ -> do
         (rv, _, _) <- getOffset v'
         lv <- pushOffset 8 >>= newTemp TFloat 8 >>= genVar v
         tell (tacAssign lv rv)
-      
+        tell (tacAssign (tacLabel (show v ++ "_float")) rv)
+
       Read (Literal (Str s) _) _ -> do
         let 
           var = show v 
@@ -265,8 +270,10 @@ genAssig v e = case typeVar v of
         liftIO $ _space varBuffer "8" dataFilePath
         liftIO $ _asciiz floatLabel s dataFilePath
 
+        v' <- pushOffset 8 >>= newTemp TInt 8 >>= genVar v
         tell [tacPrint (tacConstant (s, TFloat)) (tacLabel floatLabel)]
         tell [tacRead (tacConstant (var, TFloat)) (tacLabel varBuffer)]
+        tell [tacDeref v' (tacLabel varBuffer)]
       
       Read (Variable v' _) _ -> do
         (rv, _, _) <- getOffset v'
@@ -276,22 +283,25 @@ genAssig v e = case typeVar v of
 
         liftIO $ _space varBuffer "8" dataFilePath
 
+        v' <- pushOffset 8 >>= newTemp TInt 8 >>= genVar v
         tell [tacPrint rv rv] -- TODO: rv -> string a imprimir
         tell [tacRead (tacConstant (var, TFloat)) (tacLabel varBuffer)]
+        tell [tacDeref v' (tacLabel varBuffer)]
+        tell (tacAssign (tacLabel varBuffer) v')
       
       e -> do
         let 
           var = show v 
           varBuffer = var ++ "_float"
 
-        liftIO $ _space varBuffer "8" dataFilePath
+        -- liftIO $ _space varBuffer "8" dataFilePath
 
         t <- genExpr e
         v' <- pushOffset 8 >>= newTemp TFloat 8 >>= genVar v
         tell (tacAssign v' t)
         -- tell (tacAssign (tacLabel var) t)
         tell (tacAssign (tacLabel varBuffer) t)
-
+-- 
   t -> do
     -- isIndexVar var && isIndexExpr e -> do
     -- if isIndexVar var then tell (tacSet vTemp index eTemp)
@@ -316,7 +326,7 @@ genFor :: Id -> Expr -> Expr -> InstrSeq -> TACOP -> TACMonad ()
 genFor n e1 e2 is nextL = forComparison n e1 e2 nextL >>= forInstrs is nextL
 
 
--- 
+-- para arrays
 genForEach :: Id -> Expr -> InstrSeq -> TACOP -> TACMonad ()
 genForEach n e is nextL = do
   let
@@ -339,7 +349,7 @@ genForEach n e is nextL = do
   tell (tacGoto begin)
   tell [tacNewLabel nextL]
 
--- 
+-- for con condicion
 genForWhile :: Id -> Expr -> Expr -> Expr -> InstrSeq -> TACOP -> TACMonad ()
 genForWhile n e1 e2 cond is nextL = do
   iteration <- forComparison n e1 e2 nextL
@@ -437,7 +447,7 @@ genPrint [e] =
         tell [tacNewLabel falseL]
         tell [tacPrint var (tacLabel "boolFalse")]
         tell [tacNewLabel nextL]
-    
+
     _ -> tell []
 genPrint (e:es) = genPrint [e] >> genPrint es
 
@@ -540,14 +550,34 @@ genBoolExpr e trueL falseL =
         when (isFall falseL) $ tell [tacNewLabel e1FalseL]
       else
         when (isFall trueL) $ tell [tacNewLabel e1TrueL]
-  -- Functions
-  -- Ternary operator
+  -- TODO: Creo que parecido a variables
+    FuncCall s t -> do
+      let 
+        isTrueNotFall  = not $ isFall trueL
+        isFalseNotFall = not $ isFall falseL
+        
+      cond <- genFuncCall s t
+      if isTrueNotFall && isFalseNotFall then do
+        tell (tacBin T.Eq cond (tacConstant ("Win", TBool)) trueL)
+        tell (tacGoto falseL)
+      else if isTrueNotFall then
+        tell (tacBin T.Eq cond (tacConstant ("Win", TBool)) trueL)
+      else when isFalseNotFall $
+        tell (tacBin T.Eq cond (tacConstant ("Lose", TBool)) falseL)
   -- 
-  -- TODO!!: falls
-    -- Variable var _ -> do
-    --   cond <- pushOffset 1 >>= newTemp TBool 1 >>= genVar var
-    --   tell (tacIf cond trueL)
-    --   tell [tacNewLabel falseL)
+    Variable var _ -> do
+      let 
+        isTrueNotFall  = not $ isFall trueL
+        isFalseNotFall = not $ isFall falseL
+        
+      cond <- pushOffset 1 >>= newTemp TBool 1 >>= genVar var
+      if isTrueNotFall && isFalseNotFall then do
+        tell (tacBin T.Eq cond (tacConstant ("Win", TBool)) trueL)
+        tell (tacGoto falseL)
+      else if isTrueNotFall then
+        tell (tacBin T.Eq cond (tacConstant ("Win", TBool)) trueL)
+      else when isFalseNotFall $
+        tell (tacBin T.Eq cond (tacConstant ("Lose", TBool)) falseL)
 
     e -> error $ "\n\tUnexpected boolean expression:  " ++ show e ++ "\n"
 

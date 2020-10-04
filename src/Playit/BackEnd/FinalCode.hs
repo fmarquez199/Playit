@@ -20,10 +20,9 @@ import qualified Data.Graph  as G
 import qualified Data.IntMap as I
 
 
--- ThreeAddressCode NewLabel (Just l) Nothing Nothing
 genFinalCode :: [TAC] -> InterfGraph -> VertColorMap -> String -> IO ()
-genFinalCode [] _ _ fileName = appendFile fileName ""
-genFinalCode tac g c file    = do
+genFinalCode [] _ _ file  = activateCalled file >> activateCaller file
+genFinalCode tac g c file = do
   let 
     tacInstr = head tac
     tacNext  = tail tac
@@ -31,9 +30,8 @@ genFinalCode tac g c file    = do
   case tacOperand tacInstr of
     -- Faltan And, Or
     -- Not supported Anexo, Concat
-    x | x `elem` [Add, Sub, Mult, Div, Mod, Gt, Gte, Lt, Lte, Eq, Neq, Get, Set, Call] ->
+    x | x `elem` [Add, Sub, Mult, Div, Mod, Gt, Gte, Lt, Lte, Eq, Neq, Get, Set] ->
       
-      -- liftIO (print (show tacInstr ++ " tac: " ++ show (tacInfo $ tacRvalue2 tacInstr))) >> 
       comment ("\n\t\t# 3 Operands operation: " ++ show tacInstr) file >>
       genThreeOperandsOp tacInstr g c file
 
@@ -42,18 +40,29 @@ genFinalCode tac g c file    = do
     x | x `elem` [Print, Read, Exit] -> genSyscalls tacInstr g c file     
     
     NewLabel ->
-      let lbl = tail . init . reverse . snd . splitAt 2 . reverse $ show tacInstr
+      let 
+        l   = show tacInstr
+        lbl = tail . init . reverse . snd . splitAt 2 $ reverse l
       in 
-      if elem "l." $ subsequences $ show tacInstr then
+      if elem "l." $ subsequences l then
           appendFile file ("\n" ++ lbl ++ ":")
       else do
-        appendFile file ("\n" ++ show tacInstr)
-        if "main: " == show tacInstr then return ()
+        appendFile file ("\n" ++ l)
+        if "main: " == l then return ()
         else prologue file
     
-    -- Length -> genLength tacInstr -- busca el label en .data que corresponda, si x = # [1,2] -> en TAC guardar el array en .data y colocarle un nombre y tu tam
+    -- TODO:
+    -- busca el label en .data que corresponda, si x = # [1,2] -> en TAC guardar 
+    -- el array en .data y colocarle un nombre y tu tam
+    -- Length -> genLength tacInstr
+
     Assign -> genAssign tacInstr g c file
     Param  -> genParam tacInstr g c file 
+    Call   ->
+      let lv = isJust $ tacLvalue tacInstr
+      in
+      if lv then genThreeOperandsOp tacInstr g c file
+      else       genJumps tacInstr g c file
     -- Access
     o -> comment ("\n\t\t# Operand not supported yet: " ++ show o) file
   
@@ -69,6 +78,8 @@ genAssign tac (_, _, getReg) colorGraph file = do
     lvalInfo = tacInfo lval
     rv1      = tacRvalue1 tac
     rv1Info  = tacInfo rv1
+    -- rv2      = tacRvalue2 tac
+    -- rv2Info  = tacInfo rv2
   
   if isJust lvalInfo then
     let 
@@ -83,15 +94,16 @@ genAssign tac (_, _, getReg) colorGraph file = do
             mov  = if isFloat $ tacType lval then mov_d else move
           in
           comment (", var: " ++ show rv1) file >> mov dest reg1 file
-
-        else 
-          let imm  = show (fromJust rv1)
-              load = if elem '_' imm then l_d else li
+        else           
+          let 
+            i    = show (fromJust rv1)
+            imm  = if i == "True" then "1" else if i == "False" then "0" else i
+            load = if elem '_' i then l_d else li
           in 
             comment (", const: " ++ show rv1) file >> load dest imm file
   else
     -- cuando se refiere a asignar un valor en el .data
-    -- NO, innecesario,
+    -- TODO: Quitar
     comment ", store in mem" file >>
     if isJust rv1Info then
       let 
@@ -111,42 +123,46 @@ genAssign tac (_, _, getReg) colorGraph file = do
 genThreeOperandsOp :: TAC -> InterfGraph -> I.IntMap Int -> String -> IO ()
 genThreeOperandsOp tac i@(_, _, t) color file =
   let
+    rv1  = tacRvalue1 tac
+    rv2  = tacRvalue2 tac
     inst = show' (tacOperand tac) ++ " "
     dest = (makeReg color $ getReg' t $ tacInfo $ tacLvalue tac) ++ ", "
+    reg1 = makeReg color $ getReg' t $ tacInfo rv1
+    reg2 = makeReg color $ getReg' t $ tacInfo rv2
   in
   case tacOperand tac of
-    x | x `elem` [Add, Sub, Mult, Div, Mod] -> do
-      comment (", " ++ show x) file
+    op | op `elem` [Add, Sub, Mult, Div, Mod] -> do
+      comment (", " ++ show op) file
       let
-        reg1 = (makeReg color $ getReg' t $ tacInfo $ tacRvalue1 tac) ++ ", "
+        reg1' = reg1 ++ ", "
       
       -- TODO: Primero se deberia verificar si es float o no
-      case tacInfo $ tacRvalue2 tac of
+      case tacInfo rv2 of
         Nothing ->
           -- TODO: cuando es float la inst no es la correcta
-          let code = inst ++ dest ++ reg1 ++ show (fromJust $ tacRvalue2 tac) 
+          let code = inst ++ dest ++ reg1' ++ show (fromJust rv2) 
           in comment ", const" file >> appendFile file code
         _ ->
           let 
-            reg2 = (makeReg color $ getReg' t $ tacInfo $ tacRvalue2 tac)
+            reg2 = makeReg color $ getReg' t $ tacInfo rv2
           in 
           comment ", var" file >>
           if isFloat $ tacType $ tacLvalue tac then do
             comment ", Float" file
 
-            if x == Div && not (isFloat $ tacType $ tacRvalue1 tac) then do
+            if op == Div && not (isFloat $ tacType rv1) then do
               let 
-                next1 = '$':(show $ 1 + (read (init (init (tail reg1))) :: Int))
+                next1 = '$':(show $ 1 + (read (init (init (tail reg1'))) :: Int))
                 next2 = '$':(show $ 1 + (read (tail reg2) :: Int))
               
               comment ", div (/)" file
-              floatingDiv file
+              alignFloats "div" file
               s_d    "$f10" "0($sp)"    file
               s_d    "$f12" "-8($sp)"   file
               sw     next1 "-16($sp)"   file
               addi   "$sp" "$sp" "-20"  file
               li     next1 "0"          file
-              mtc1_d reg1 "$f12"        file
+              mtc1_d reg1' "$f12"       file
               lw     next1 "4($sp)"     file
               sw     next2 "4($sp)"     file
               li     next2 "0"          file
@@ -157,40 +173,38 @@ genThreeOperandsOp tac i@(_, _, t) color file =
               l_d    "$f10" "0($sp)"    file
               l_d    "$f12" "-8($sp)"   file
             else
-              let code = (init inst) ++ ".d " ++ dest ++ reg1 ++ reg2
+              let code = (init inst) ++ ".d " ++ dest ++ reg1' ++ reg2
               in
               comment ", op != Div or rv2 is float. Se asume es float" file >>
                 appendFile file code
           else 
-            comment ", Int" >> appendFile file $ inst ++ dest ++ reg1 ++ reg2
+            comment ", Int" >> appendFile file $ inst ++ dest ++ reg1' ++ reg2
 
-    x | x `elem` [Gt, Gte, Lt, Lte, Eq, Neq] ->
+    op | op `elem` [Gt, Gte, Lt, Lte, Eq, Neq] ->
       let 
-        reg2 = (tail . init $ show (fromJust $ tacRvalue2 tac))
-        reg1 = 
-          if isJust $ tacInfo $ tacRvalue1 tac then
-            (makeReg color $ getReg' t $ tacInfo $ tacRvalue1 tac) ++ ", "
+        rv2'  = fromJust rv2
+        dir   = tail . init $ show rv2'
+        rv1'  = show (fromJust rv1)
+        reg2' = 
+          if isJust $ tacInfo rv1 then reg1 ++ ", "
           else 
-            show (fromJust $ tacRvalue1 tac) ++ ", "
+            if rv1' == "Win" then "1 " 
+            else if rv1' == "Lose" then "0 " 
+            else rv1' ++ ", "
       in 
-        comment (", " ++ show x) file >>
-          appendFile file (inst ++ dest ++ reg1 ++ reg2)
+        comment (", " ++ show op) file >>
+        appendFile file (inst ++ dest ++ reg2' ++ dir)
+    
     Call ->
-      comment ", Subroutine call" file >>
-        genJumps tac i color file >> addi dest "$v0" "0" file
-    Get -> -- x = y[i]
-      let
-        reg1 = (makeReg color $ getReg' t $ tacInfo $ tacRvalue1 tac)
-        reg2 = (makeReg color $ getReg' t $ tacInfo $ tacRvalue2 tac)
-      in
-        comment ", Get" file >> add reg1 reg1 reg2 file >> lw  dest reg1 file
-    Set -> -- x[i] = y
-      let
-        reg1 = (makeReg color $ getReg' t $ tacInfo $ tacRvalue1 tac)
-        reg2 = (makeReg color $ getReg' t $ tacInfo $ tacRvalue2 tac)
-      in
-        comment ", Set" file >>
-          add dest dest reg1 file >> sw dest ("0(" ++ init reg2 ++ ")") file
+      comment "\n\t\t# Subroutine call" file >> genJumps tac i color file >>
+      addi dest "$v0" "0" file
+    Get -> 
+      -- x = y[i]
+      comment ", Get" file >> add reg1 reg1 reg2 file >> lw  dest reg1 file
+    Set -> 
+      -- x[i] = y
+      comment ", Set" file >>
+        add dest dest reg1 file >> sw dest ("0(" ++ init reg2 ++ ")") file
     o -> 
       comment ("\n\t\t# Operand not supported yet: " ++ show o) file
 
@@ -206,17 +220,20 @@ genTwoOperandsOp tac (_, _, getReg) color file = do
   -- TODO: Primero se deberia verificar si es float o no
   case tacInfo $ tacRvalue1 tac of
     Nothing ->
-      -- TODO: cuando es float la inst no es la correcta
-      let label = show (fromJust $ tacRvalue1 tac)
-      in comment ", const" file >> appendFile file (inst ++ dest ++  label)
+      let 
+        label = show (fromJust $ tacRvalue1 tac)
+        float = isFloat $ tacType $ tacRvalue1 tac
+        inst' = if float then (init inst) ++ ".d " else inst -- TODO!!: check, gen lw not l.d
+      in 
+        comment ", const" file >> appendFile file (inst' ++ dest ++ label)
     _ -> 
       let
-        reg1 = (makeReg color $ getReg' getReg $ tacInfo $ tacRvalue1 tac) 
         float = isFloat $ tacType $ tacRvalue1 tac
         inst' = if float then (init inst) ++ ".d " else inst
+        reg1 = makeReg color $ getReg' getReg $ tacInfo $ tacRvalue1 tac
         code = inst' ++ dest ++ reg1
       in 
-        appendFile file code
+        comment ", var" file >> appendFile file code
 
 
 genJumps :: TAC -> InterfGraph -> VertColorMap -> String -> IO ()
@@ -230,22 +247,29 @@ genJumps tac (_, _, t) color file = do
           case tacInfo $ tacRvalue1 tac of
             --return a constant
             Nothing -> 
-              let retVal = "$" ++ show (fromJust $ tacRvalue1 tac)
-              in comment ", return constant" file >> move "$v0" retVal file >> epilogue file
+              let 
+                rv1    = show (fromJust $ tacRvalue1 tac)
+                retVal = if rv1 == "True" then "1" else if rv1 == "False" then "0" else rv1
+              in 
+                comment ", return constant" file >> li "$v0" retVal file >> epilogue file
             --return a value into a register
             _ -> 
               let retVal = makeReg color $ getReg' t $ tacInfo $ tacRvalue1 tac
-              in comment ", return varule" file >> move "$v0" retVal file >> epilogue file
+              in comment ", return var" file >> move "$v0" retVal file >> epilogue file
     _ -> do
       let
         goto = show' (tacOperand tac) ++ " "
         dest = (tail . init $ show (fromJust $ tacRvalue2 tac))
       if isJust $ tacRvalue1 tac then
-        if isCall $ tacOperand tac then
+        if isCall $ tacOperand tac then do
           let code = goto ++ show (fromJust $ tacRvalue1 tac)
-          in 
-            comment ", Call Subroutines" file >> activateCalled file >> 
-              appendFile file code >> activateCaller file
+          
+          comment ", Call Subroutines" file
+          comment "\n\t\t# Activate Called" file
+          jal "activate_called" file
+          appendFile file code
+          comment "\n\t\t# Activate Caller" file
+          jal "activate_caller" file
         else
           let cond = makeReg color $ getReg' t $ tacInfo $ tacRvalue1 tac
           in comment ", if" file >> appendFile file (goto ++ cond ++ ", " ++ dest)
@@ -286,7 +310,7 @@ genParam tac (_, _, getReg) colorGraph file =
       if isFloat $ tacType $ tacLvalue tac then 
         mov_d arg ("$f" ++ param) file
       else
-        move arg ("$a" ++ param) file
+        comment "\n\t\t# Get arg from param" file >> move arg ("$a" ++ param) file
 
 
 genSyscalls :: TAC -> InterfGraph -> VertColorMap -> String -> IO ()
@@ -316,12 +340,12 @@ genSyscalls tac (_, _, t) color file =
         move "$a0" arg file
         syscall        file
       else do
-        let label = show (fromJust rv2)
+        let out = show (fromJust rv2)
 
-        case strSplit "_" label of
-          (_, "int")   -> comment ", Int" file >> li "$v0" "1" file >> lw  "$a0"  label file
-          (_, "float") -> comment ", Double" file >> li "$v0" "3" file >> l_d "$f12" label file
-          _            -> comment ", String" file >> li "$v0" "4" file >> la  "$a0"  label file
+        case strSplit "_" out of
+          (_, "int")   -> comment ", Int" file >> li "$v0" "1" file >> lw  "$a0"  out file
+          (_, "float") -> comment ", Double" file >> li "$v0" "3" file >> l_d "$f12" out file
+          _            -> comment ", String" file >> li "$v0" "4" file >> la  "$a0"  out file
 
         syscall file
         li "$v0" "4"       file
@@ -350,6 +374,7 @@ genSyscalls tac (_, _, t) color file =
         *      53     |
         *      54     |
 
+          
           la $s0, <label donde se guarda el valor del input>
           
           li $v0, 8
@@ -373,13 +398,16 @@ genSyscalls tac (_, _, t) color file =
             comment ", Float" file
             li "$v0" "7" file 
             syscall file
-            swl "$f0" label file 
-            swr "$f0" label file
+            -- swl "$f0" label file 
+            -- swr "$f0" label file
+            s_d "$f0" label file
           
+          -- TODO!!: check
           (_, "str") -> do
             comment ", String" file
             la "$a0" label file
-            li "$a1" ("len" ++ label) file
+            -- li "$a1" ("len" ++ label) file
+            li "$a1" "120" file
             li "$v0" "8" file
             syscall file
 
@@ -414,7 +442,7 @@ genSyscalls tac (_, _, t) color file =
 -- 
 activateCalled :: String -> IO ()
 activateCalled file = do
-  comment "\n\t\t# Activate Called" file
+  appendFile file "\n\nactivate_called:"
   sw   "$a0" "0($sp)" file
   sw   "$a1" "-4($sp)" file
   sw   "$a2" "-8($sp)" file
@@ -429,11 +457,14 @@ activateCalled file = do
   sw   "$t7" "-44($sp)" file
   sw   "$t8" "-48($sp)" file
   sw   "$t9" "-52($sp)" file
-  s_d  "$f0" "-60($sp)" file
-  s_d  "$f2" "-68($sp)" file
-  s_d  "$f4" "-76($sp)" file
-  s_d  "$f6" "-84($sp)" file
-  addi "$sp" "$sp" "-84" file
+  -- TODO!!: preguntar por alineacion
+  alignFloats "act_called" file
+  s_d  "$f0" "-56($sp)" file
+  s_d  "$f2" "-64($sp)" file
+  s_d  "$f4" "-72($sp)" file
+  s_d  "$f6" "-80($sp)" file
+  addi "$sp" "$sp" "-80" file
+  jr   "$ra"             file
 
 -- | Empila los registros que son responsabilidad del llamador.
 -- * Antes de ejecutar subrutina
@@ -471,15 +502,15 @@ epilogue file = do
   lw   "$s6" "-28($sp)" file
   lw   "$s7" "-32($sp)" file
   lw   "$fp" "-36($sp)" file
-  jr   "$ra" file
+  jr   "$ra"            file
 
 -- | Desempila los registros que son responsabilidad del llamador
 -- * Despues de regresar de la subrutina
 -- 
 activateCaller :: String -> IO ()
 activateCaller file = do
-  comment "\n\t\t# Activate Caller" file
-  addi "$sp" "$sp" "84" file
+  appendFile file "\nactivate_caller:"
+  addi "$sp" "$sp" "80" file
   lw   "$a0" "0($sp)" file
   lw   "$a1" "-4($sp)" file
   lw   "$a2" "-8($sp)" file
@@ -494,10 +525,13 @@ activateCaller file = do
   lw   "$t7" "-44($sp)" file
   lw   "$t8" "-48($sp)" file
   lw   "$t9" "-52($sp)" file
-  l_d  "$f0" "-60($sp)" file
-  l_d  "$f2" "-68($sp)" file
-  l_d  "$f4" "-76($sp)" file
-  l_d  "$f6" "-84($sp)" file
+  -- TODO!!: preguntar por alineacion
+  alignFloats "act_caller" file
+  l_d  "$f0" "-56($sp)" file
+  l_d  "$f2" "-64($sp)" file
+  l_d  "$f4" "-72($sp)" file
+  l_d  "$f6" "-80($sp)" file
+  jr   "$ra"             file
 
 
 ---- Auxs
@@ -570,21 +604,29 @@ show' Ref    = "\n\t\tla"
 show' Deref  = "\n\t\tlw"
 show' _      = "\n\t\tNM"
 
-floatingDiv :: String -> IO ()
-floatingDiv file = do
+-- | Align floats
+-- 
+alignFloats :: String -> String -> IO ()
+alignFloats lbl file = do
+  let
+    ready = "ready_" ++ lbl
+    aligned = "aligned_" ++ lbl
+
+  comment "\n\t# Start Align Floats" file
   sw   "$t0" "0($sp)"    file
   sw   "$t1" "-4($sp)"   file
   add  "$t0" "$0" "$sp"  file
   addi "$t1" "$0" "8"    file
   div' "$t0" "$t0" "$t1" file
   mfhi "$t0"             file
-  beqz "$t0" "aligned"   file
+  beqz "$t0" aligned     file
   lw   "$t0" "0($sp)"    file
   lw   "$t1" "-4($sp)"   file
   addi "$sp" "$sp" "-4"  file
-  b    "ready"           file
-  appendFile file "\naligned:"
+  b    ready             file
+  appendFile file $ "\n" ++ aligned ++ ":"
   lw   "$t0" "0($sp)"    file
   lw   "$t1" "-4($sp)"   file
-  appendFile file "\nready:"
+  appendFile file $ "\n" ++ ready ++ ":"
+  comment "\n\t# End Align Floats" file
 

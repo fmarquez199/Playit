@@ -115,9 +115,9 @@ tacNewLabel label = T.ThreeAddressCode T.NewLabel label Nothing Nothing
 
 
 -------------------------------------------------------------------------------
--- TODO:
 tacAssign :: TACOP -> TACOP 
-          -- -> TACOP -- ^ Label in .data to refer when assign strings and arrays
+          -- -> TACOP -- ^ Label in .data to refer (TODO: just when assign strings and arrays)
+                      -- para int y float debe ser su temp
           -> [TAC]
 tacAssign lv rv {- _dataLabel -} = [T.ThreeAddressCode T.Assign lv rv Nothing]
 -------------------------------------------------------------------------------
@@ -638,14 +638,17 @@ sw regSour dir file = appendFile file $ "\n\t\tsw " ++ regSour ++ ", " ++ dir
 l_d :: String -> String -> String -> IO ()
 l_d regDest dir file = appendFile file $ "\n\t\tl.d " ++ regDest ++ ", " ++ dir
 
+li_d :: String -> String -> String -> IO ()
+li_d regDest dir file = appendFile file $ "\n\t\tli.d " ++ regDest ++ ", " ++ dir
+
 s_d :: String -> String -> String -> IO ()
 s_d regSour dir file = appendFile file $ "\n\t\ts.d " ++ regSour ++ ", " ++ dir
 
 swl :: String -> String -> String -> IO ()
-swl regSour dir file = appendFile file $ "\n\t\tswl" ++ regSour ++ ", " ++ dir
+swl regSour dir file = appendFile file $ "\n\t\tswl " ++ regSour ++ ", " ++ dir
 
 swr :: String -> String -> String -> IO ()
-swr regSour dir file = appendFile file $ "\n\t\tswr" ++ regSour ++ ", " ++ dir
+swr regSour dir file = appendFile file $ "\n\t\tswr " ++ regSour ++ ", " ++ dir
 
 -- aritmetic
 
@@ -677,14 +680,13 @@ div_d result reg1 reg2 file =
 -- jumps
 
 
-b :: String -> String -> IO ()
-b label file = appendFile file $ "\n\t\tb " ++ label
-
 beqz :: String -> String -> String -> IO ()
-beqz comp label file = appendFile file $ "\n\t\tbeqz " ++ comp ++ ", " ++ show label
+beqz comp label file = appendFile file $ "\n\t\tbeqz " ++ comp ++ ", " ++ label
 
-jr :: String -> String -> IO ()
-jr reg file = appendFile file $ "\n\t\tjr " ++ reg
+b, jal, jr :: String -> String -> IO ()
+b   label file = appendFile file $ "\n\t\tb " ++ label
+jal dir   file = appendFile file $ "\n\t\tjal " ++ dir
+jr  reg   file = appendFile file $ "\n\t\tjr " ++ reg
 
 
 -- data transfer

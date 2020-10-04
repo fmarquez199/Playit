@@ -69,6 +69,7 @@ main = do
           
           if null errs then do
             createDirectoryIfMissing True "./output/"
+            -- rm file and create new one
             writeFile dataFilePath $ "# Assemble " ++ show checkedFile ++ "\n##"
             appendFile dataFilePath "\n\t.data\nboolTrue: .asciiz \"Win\"\n"
             appendFile dataFilePath "boolFalse: .asciiz \"Lose\"\n"
@@ -111,4 +112,5 @@ main = do
             genFinalCode (tail tac) inter color ("./output/" ++ outputFile)
             -- close outputFile
           else
+            -- print st >>
             mapM_ putStrLn errs

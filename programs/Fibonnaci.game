@@ -1,19 +1,30 @@
 world %Fibonnaci%:
-  Power primero = 1
-  Power segundo = 2
+  Power a = 0
+  Power b = 1
+  Power c
 
-  Power limite = joystick ~Dime un numero~
-  Power n
+  Power n = joystick ~Dime un numero~
 
-
-  drop primero
-  drop segundo
-  play:
-    n = primero
-    primero = segundo
-    segundo = n + segundo
-    drop segundo
-    limite--
-  lock limite > 0
+  @play:
+  @  n--
+  @lock n >= 0
+  @.~
+  
+  controller Power i = 0 -> n - 1:
+    c = a + b
+    a = b
+    b = c
+    drop ~loop .i.~
+    drop i
+    drop ~loop .c.~
+    drop c
+    drop ~loop .a.~
+    drop a
+    drop ~loop .b.~
+    drop b
+    drop ~next~
   .~
+
+  drop ~Fibonnaci~
+  drop a
 .~
