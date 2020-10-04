@@ -430,9 +430,9 @@ activateCalled file = do
   sw   "$t8" "-48($sp)" file
   sw   "$t9" "-52($sp)" file
   s_d  "$f0" "-60($sp)" file
-  s_d  "$f1" "-68($sp)" file
-  s_d  "$f2" "-76($sp)" file
-  s_d  "$f3" "-84($sp)" file
+  s_d  "$f2" "-68($sp)" file
+  s_d  "$f4" "-76($sp)" file
+  s_d  "$f6" "-84($sp)" file
   addi "$sp" "$sp" "-84" file
 
 -- | Empila los registros que son responsabilidad del llamador.
@@ -495,9 +495,9 @@ activateCaller file = do
   lw   "$t8" "-48($sp)" file
   lw   "$t9" "-52($sp)" file
   l_d  "$f0" "-60($sp)" file
-  l_d  "$f1" "-68($sp)" file
-  l_d  "$f2" "-76($sp)" file
-  l_d  "$f3" "-84($sp)" file
+  l_d  "$f2" "-68($sp)" file
+  l_d  "$f4" "-76($sp)" file
+  l_d  "$f6" "-84($sp)" file
 
 
 ---- Auxs
