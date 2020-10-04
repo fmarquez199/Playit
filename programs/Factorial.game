@@ -8,12 +8,12 @@ monster recursivo(Power n) Power:
 
 monster iterativo(Power n) Power:
   Power factorial = 1
-  @Button:
-  @  | n == 0 || n == 1 } unlock 1
-  @  | n < 0 } unlock n
-  @.~
+  Button:
+    | n == 0 || n == 1 } unlock 1
+    | n < 0 } unlock n
+  .~
   Power i
-  controller i = 2 -> n + 1: @ Verificar offset de i aqui
+  controller i = 2 -> n: @ Verificar offset de i aqui
     factorial = factorial * i
   .~
   unlock factorial
@@ -34,10 +34,12 @@ world %Factorial%:
     Power way = joystick ~Calculo iterativamente .1. o recursivamente .0. ~
     Button:
       | way == 1 }
-        Power fi = kill iterativo(num)
+        Power fi
+        fi = kill iterativo(num)
         drop ~Iterativamente el factorial de ~, num, ~ es ~, fi
       | way == 0 }
-        Power fr = kill recursivo(num)
+        Power fr
+        fr = kill recursivo(num)
         drop ~Recursivamente el factorial de ~, num, ~ da ~, fr
       | notPressed }
         drop ~No escogiste un modo de calculo valido empieza otra vez~

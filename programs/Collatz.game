@@ -1,0 +1,18 @@
+world %Collatz%:
+  Power steps = 0
+  Power n = joystick ~Dime un numero positivo ~
+  play:
+    Button:
+      | n == 1 } gameOver
+    .~
+    steps++
+    Button:
+      | n % 2 == 0 }
+        n = n // 2
+      | notPressed }
+        n = n*3+1
+    .~
+  lock (n > 1)
+  .~
+  drop steps
+.~

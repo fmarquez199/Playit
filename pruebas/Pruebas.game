@@ -147,26 +147,8 @@ world %Pruebas%:
   @drop y
   @drop ~Este es otro string~
 
-@ Collaz
-  @Power steps = 0
-  @Power n = joystick ~Dime un numero positivo ~
-  @play:
-  @  Button:
-  @    | n == 1 } gameOver
-  @  .~
-  @  steps++
-  @  Button:
-  @    | n % 2 == 0 }
-  @      n = n // 2
-  @    | notPressed }
-  @      n = n*3+1
-  @  .~
-  @lock (n > 1)
-  @.~
-  @drop steps
 
-
-"'Ejemplos por implementar, arriba estan cosas probadas que funcionan'"
+"'Ejemplos por implementar en TAC, arriba estan cosas probadas que funcionan'"
 @ Listas
   @Kit of Power list = <<10, 21, 3>> :: (<<2>> :: <<0>>) @ This is a problem
   @Kit of Power list1 = <<4,2>>

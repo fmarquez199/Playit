@@ -67,9 +67,35 @@ genSubroutines = do
 
 
 genSubroutine :: (Id, Params, InstrSeq, Bool) -> TACMonad ()
-genSubroutine (s, _, is, isProc) = resetOffset >>
+genSubroutine (s, ps, is, isProc) = resetOffset >>
   tell [tacNewLabel $ tacLabel s] >> mapM_ genCode is >>
     when isProc (genReturn Nothing)
+
+{-  El problema es que en efecto cuando consulto el parámetro este no ha sido 
+apilado en vars, en ese caso lo apilo cuando paso los parámetros y es generando 
+la subrutina que tengo que tener cuidado
+-}
+getParams :: Id -> Params -> Int -> TACMonad ()
+getParams _ [] _ = return ()
+getParams id ps n = do
+  Operands{vars = vs, astST = st} <- get
+  let syms = getSymTab st
+      subParams = filter isPs $ extraInfo $ head $ fromJust $ M.lookup id syms
+      paramsLst = head $ map (\(Params x) -> x) subParams
+      (typ, name) = paramsLst !! n
+      width = getWidth typ
+      var = Var name typ
+  formal <- pushOffset width >>= newTemp typ width >>= genVar var
+  par <- genExpr $ fst $ head ps
+  tell [tacParam' par n formal]
+  if length ps > 1 then getParams id (tail ps) (n' typ) else return ()
+  where
+    isPs :: ExtraInfo -> Bool
+    isPs (Params _) = True
+    isPs _ = False
+
+    n' :: Type -> Int
+    n' typ = if typ == TFloat then n + 2 else n + 1
 
 
 -------------------------------------------------------------------------------
@@ -164,6 +190,7 @@ genAssig v e = case typeVar v of
         (rv, _, _) <- getOffset v'
         lv <- pushOffset 4 >>= newTemp TInt 4 >>= genVar v
         tell (tacAssign lv rv)
+        tell (tacAssign (tacLabel (show v ++ "_int")) rv)
       
       Read (Literal (Str s) _) _ -> do
         let 
@@ -192,6 +219,7 @@ genAssig v e = case typeVar v of
         tell [tacPrint rv rv] -- TODO: rv -> string a imprimir
         tell [tacRead (tacConstant (var, TInt)) (tacLabel varBuffer)]
         tell [tacDeref v' (tacLabel varBuffer)]
+        tell (tacAssign (tacLabel varBuffer) v')
 
       -- TODO!!: Fix params
       -- FuncCall (Call f params) _ -> do
@@ -207,7 +235,7 @@ genAssig v e = case typeVar v of
           var = show v 
           varBuffer = var ++ "_int"
 
-        liftIO $ _space varBuffer "4" dataFilePath
+        -- liftIO $ _space varBuffer "4" dataFilePath
 
         t <- genExpr e
         v' <- pushOffset 4 >>= newTemp TInt 4 >>= genVar v
@@ -218,9 +246,10 @@ genAssig v e = case typeVar v of
     case e of
       Literal (Floatt f) _ -> do
         v' <- pushOffset 8 >>= newTemp TFloat 8 >>= genVar v
-        let d = show v ++ "_float: .double " ++ show f ++ "\n"
-        liftIO $ appendFile dataFilePath d
-        tell (tacAssign v' (tacConstant (show f, TFloat)))
+        let varBuffer = show v ++ "_float"
+        liftIO $ _double varBuffer (show f)
+        -- tell (tacAssign v' (tacConstant (show f, TFloat)))
+        tell (tacAssign v' (tacLabel varBuffer))
       
       Variable v' _ -> do
         (rv, _, _) <- getOffset v'
@@ -260,7 +289,8 @@ genAssig v e = case typeVar v of
         t <- genExpr e
         v' <- pushOffset 8 >>= newTemp TFloat 8 >>= genVar v
         tell (tacAssign v' t)
-        tell (tacAssign (tacLabel var) t)
+        -- tell (tacAssign (tacLabel var) t)
+        tell (tacAssign (tacLabel varBuffer) t)
 
   t -> do
     -- isIndexVar var && isIndexExpr e -> do
@@ -348,7 +378,9 @@ genPrint :: [Expr] -> TACMonad ()
 genPrint [] = tell []
 genPrint [e] = 
   case e of
-    Literal (Str s) _ -> let strLabel = concat (words s) ++ "_str"
+    Literal (Str s) _ -> 
+      -- TODO!!: sustituir los espacios por _ en lugar de poner todo el str junto
+      let strLabel = concat (words s) ++ "_str"
       in do
         liftIO $ _asciiz strLabel s dataFilePath
         tell [tacPrint (tacConstant (s, TStr)) (tacLabel strLabel)]
@@ -704,6 +736,7 @@ forComparison :: Id -> Expr -> Expr -> TACOP -> TACMonad (Id, TACOP, TACOP, TACO
 forComparison n e1 e2 nextL = do
   begin   <- newLabel
   cont    <- continue
+  genAssig (Var n TInt) e1 -- 
   iterVar <- genExpr (Variable (Var n TInt) TInt)
   e1Temp  <- genExpr e1
   tell (tacAssign iterVar e1Temp)

@@ -1,20 +1,19 @@
-monster fibonnaci(Power primero, Power segundo, Power limite) Power:
+world %Fibonnaci%:
+  Power primero = 1
+  Power segundo = 2
+
+  Power limite = joystick ~Dime un numero~
+  Power n
+
+
   drop primero
   drop segundo
-  
-  Power n = primero
-  
   play:
-    drop primero + segundo
+    n = primero
     primero = segundo
     segundo = n + segundo
+    drop segundo
     limite--
   lock limite > 0
   .~
-  
-  unlock n
 .~
-
-world %Fibonnaci%:
-  drop ~Fibonnaci: ~, kill portalPowerToRunes(kill fibonnaci(1, 2, 5))
-.~ 
