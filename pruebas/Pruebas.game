@@ -20,13 +20,15 @@
 
 world %Pruebas%:
 
-  @Power x = 2
-  @Power y = 3
+  Power x = 1
+  Power y = 3
   @Skill f = 1'0
 
 
 @ Operaciones aritmeticas
-  @Power i0 = x + 1
+  Power i0
+  i0 = x + y
+  drop i0
   @Power i1 = x - 1
   @Power i2 = x * 1
   @Power i4 = x % 1
@@ -71,8 +73,9 @@ world %Pruebas%:
   @  gameOver
   @  Power i = 9
   @  keepPlaying
+  @  drop x
   @  x++
-  @lock (x < 10)
+  @lock (x < 6)
   @.~
 
 @  controller x = 0 -> 10: @ lock i % 2 == 0:
@@ -86,9 +89,7 @@ world %Pruebas%:
   @  i2 = i0 * i1
   @.~
 
-  @Power i
-
-  @controller i = 1 -> 5:
+  @controller Power i = 1 -> 5:
   @  drop i
   @.~
   
