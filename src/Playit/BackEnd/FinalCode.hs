@@ -11,6 +11,7 @@ import Control.Monad.IO.Class                (liftIO)
 import Data.List                             (subsequences)
 import Data.Maybe                            (isJust, fromJust)
 import Data.Strings                          (strSplit)
+import Data.String.Utils                     (strip, replace)
 import Playit.BackEnd.RegAlloc.GraphColoring (VertColorMap)
 import Playit.BackEnd.Types                  (TAC, TACOP, TACInfo(..), InterfGraph)
 import Playit.BackEnd.Utils                  {- (tacNewLabel, tacLabel) -}
@@ -181,19 +182,22 @@ genThreeOperandsOp tac i@(_, _, t) color file =
             comment ", Int" >> appendFile file $ inst ++ dest ++ reg1' ++ reg2
 
     op | op `elem` [Gt, Gte, Lt, Lte, Eq, Neq] ->
-      let 
-        rv2'  = fromJust rv2
-        dir   = tail . init $ show rv2'
-        rv1'  = show (fromJust rv1)
-        reg2' = 
-          if isJust $ tacInfo rv1 then reg1 ++ ", "
-          else 
-            if rv1' == "Win" then "1 " 
-            else if rv1' == "Lose" then "0 " 
-            else rv1' ++ ", "
-      in 
-        comment (", " ++ show op) file >>
-        appendFile file (inst ++ dest ++ reg2' ++ dir)
+      if isFloat $ tacType $ rv1 then
+        return ()
+      else
+        let 
+          rv2'  = fromJust rv2
+          dir   = tail . init $ show rv2'
+          rv1'  = show (fromJust rv1)
+          reg2' = 
+            if isJust $ tacInfo rv1 then reg1 ++ ", "
+            else
+              if rv1' == "Win" then "1 " 
+              else if rv1' == "Lose" then "0 " 
+              else rv1' ++ ", "
+        in 
+          comment (", " ++ show op) file >>
+          appendFile file (inst ++ dest ++ reg2' ++ dir)
     
     Call ->
       comment "\n\t\t# Subroutine call" file >> genJumps tac i color file >>
