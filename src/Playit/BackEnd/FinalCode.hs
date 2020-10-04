@@ -254,27 +254,39 @@ genJumps tac (_, _, t) color file = do
 
 
 genParam :: TAC -> InterfGraph -> VertColorMap -> String -> IO ()
-genParam tac (_, _, getReg) colorGraph file =
-  let 
-    param    = tacRvalue1 tac
-    paramOp   = tacInfo param
-    Constant (paramNum, _) = fromJust $ tacRvalue2 tac
-    regSour  = 
-      if isJust paramOp then makeReg colorGraph (getReg' getReg $ tacInfo param)
-      else show $ fromJust param
-  in
-  comment ("\n\t\t# Param: " ++ show tac) file >>
+genParam tac (_, _, getReg) colorGraph file = 
+  case tacLvalue tac of
+    Nothing ->
+      let 
+        param    = tacRvalue1 tac
+        paramOp   = tacInfo param
+        Constant (paramNum, _) = fromJust $ tacRvalue2 tac
+        regSour  = 
+          if isJust paramOp then makeReg colorGraph (getReg' getReg $ tacInfo param)
+          else show $ fromJust param
+      in
+      comment ("\n\t\t# Param: " ++ show tac) file >>
 
-    if isFloat $ tacType param then 
-      if paramNum < "4" then mov_d ("$f" ++ show (2 * (read paramNum :: Int) - 50)) regSour file
+        if isFloat $ tacType param then 
+          if paramNum < "4" then mov_d ("$f" ++ show (2 * (read paramNum :: Int) - 50)) regSour file
+          else
+            -- offset
+            comment ", to stack" file >> addi "$sp" "$sp" "-8" file >> sw regSour "($sp)" file
+        else
+          if paramNum < "4" then move ("$a" ++ paramNum) regSour file
+          else
+            -- offset
+            comment ", to stack" file >> addi "$sp" "$sp" "-4" file >> sw regSour "($sp)" file
+
+    _ -> -- Param actual pos formal
+      let 
+        param = show $ fromJust $ tacRvalue1 tac
+        arg   = makeReg colorGraph $ getReg' getReg $ tacInfo $ tacRvalue2 tac
+      in 
+      if isFloat $ tacType $ tacLvalue tac then 
+        mov_d arg ("$f" ++ param)
       else
-        -- offset
-        comment ", to stack" file >> addi "$sp" "$sp" "-8" file >> sw regSour "($sp)" file
-    else
-      if paramNum < "4" then move ("$a" ++ paramNum) regSour file
-      else
-        -- offset
-        comment ", to stack" file >> addi "$sp" "$sp" "-4" file >> sw regSour "($sp)" file
+        move arg ("$a" ++ param)
 
 
 genSyscalls :: TAC -> InterfGraph -> VertColorMap -> String -> IO ()
