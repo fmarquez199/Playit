@@ -436,7 +436,7 @@ genPrint [e] =
       TFloat -> tell [tacPrint (tacConstant (show v, TFloat)) (tacLabel (show v ++ "_float"))]
       TStr -> tell [tacPrint (tacConstant (show v, TStr)) (tacLabel (show v ++ "_str"))]
       TBool -> do
-        var <- pushOffset 1 >>= newTemp TBool >>= genVar v
+        var <- pushOffset 1 >>= newTemp TBool 1 >>= genVar v
         nextL  <- newLabel
         trueL  <- newLabel
         falseL <- newLabel
