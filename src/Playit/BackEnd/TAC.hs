@@ -531,11 +531,19 @@ genBoolExpr e trueL falseL =
   -- Functions
   -- Ternary operator
   -- 
-  -- TODO!!: falls
-    -- Variable var _ -> do
-    --   cond <- pushOffset 1 >>= newTemp TBool 1 >>= genVar var
-    --   tell (tacIf cond trueL)
-    --   tell [tacNewLabel falseL)
+    Variable var _ -> do
+      let 
+        isTrueNotFall  = not $ isFall trueL
+        isFalseNotFall = not $ isFall falseL
+        
+      cond <- pushOffset 1 >>= newTemp TBool 1 >>= genVar var
+      if isTrueNotFall && isFalseNotFall then do
+        tell (tacBin T.Eq cond (tacConstant ("Win", TBool)) trueL)
+        tell (tacGoto falseL)
+      else if isTrueNotFall then
+        tell (tacBin T.Eq cond (tacConstant ("Win", TBool)) trueL)
+      else when isFalseNotFall $
+        tell (tacBin T.Eq cond (tacConstant ("Lose", TBool)) falseL)
 
     e -> error $ "\n\tUnexpected boolean expression:  " ++ show e ++ "\n"
 

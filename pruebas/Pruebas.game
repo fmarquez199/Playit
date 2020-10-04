@@ -20,8 +20,8 @@
 
 world %Pruebas%:
 
-  Power x = 2
-  Power y = 3
+  @Power x = 2
+  @Power y = 3
   @Skill f = 1'0
 
 
@@ -47,11 +47,12 @@ world %Pruebas%:
 @Rune low = .*x*
 
 @ Operaciones boleanas
-  @Battle b
+  Battle b @= Lose
   @b = !Win
   @b = Lose || Win
-  @b = Win && Lose
-@b = Win && b   @ caso no soportado en TAC
+@  b = Win && Lose
+@b = Lose || b
+@b = Lose && b
 @b = Win && 3 > 6
 @Battle p = 3 > 6
 @p = i5 < i2
@@ -61,7 +62,7 @@ world %Pruebas%:
   @Battle b1 = Win ? (3 == 6) : (3 > 6)
   @Skill f1 = Lose ? 6'0 : 3'0
 @Battle b2 = b ? (3 == 6) : (3 > 6)
-@Skill f2 = b ? 6'0 : 3'0 @ caso no soportado en TAC
+Skill f2 = b ? 6'0 : 3'0
 
 @  play:
   @  gameOver
