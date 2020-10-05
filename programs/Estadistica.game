@@ -64,7 +64,7 @@ world %Estadistica%:
         @drop ~El maximo es ~, max
         drop ~El promedio es ~, prom
         drop ~La varianza es ~, var
-        @drop ~La desviacion estandar es ~, kill sqrt(var)
+        drop ~La desviacion estandar es ~, kill sqrt(var)
     .~
   lock Win
   .~

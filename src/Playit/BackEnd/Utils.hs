@@ -364,12 +364,12 @@ pushVariable var temp = do
 pushSubroutine :: Id -> Params -> Bool -> TACMonad ()
 pushSubroutine s ps isProc = do
   state@Operands{subs = subroutines, astST = st, corr = corr} <- get
-  let 
+  let
     ast = getAST . extraInfo . head . fromJust $ lookupInSymTab s st
     newSubr = (s, ps, ast, isProc)
     fst4 (x,_,_,_) = x
     keepCorr = not $ elem s (map fst4 subroutines)
-  if keepCorr then 
+  if keepCorr then
     put state{corr = keepCorr, subs = newSubr : subroutines}
   else do
     put state{corr = False}

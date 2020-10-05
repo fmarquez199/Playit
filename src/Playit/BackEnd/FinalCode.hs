@@ -51,7 +51,7 @@ genFinalCode tac g c file = do
         else prologue file
     
     -- TODO:
-    -- busca el label en .data que corresponda, si x = # [1,2] -> en TAC guardar 
+    -- busca el label en .data que corresponda, si x = # [1,2] -> en TAC guardar
     -- el array en .data y colocarle un nombre y tu tam
     -- Length -> genLength tacInstr
 

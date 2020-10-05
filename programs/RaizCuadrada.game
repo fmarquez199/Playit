@@ -1,0 +1,48 @@
+monster abs(Skill f) Skill:
+  Skill zero = 0'0
+  Button:
+    | f > zero } unlock f
+  .~
+  unlock -f
+.~
+
+"'
+def heron(n, error):
+    prev, new = 1.0, 0.5 * (1 + n)
+    while abs(new - prev) > error:
+        prev, new = new, 0.5 * (new + n/new)
+    return new
+
+Taken from: https://stackoverflow.com/questions/16619201/heron-method-in-python
+'"
+monster sqrt(Skill f) Skill:
+  Skill prev = 1'0
+  Skill half = 0'5
+  Skill new = half * (prev + f)
+  Skill err = 0'000001
+  play:
+    prev = new
+    new = half * (new + f / new)
+  lock kill abs(new - prev) <= err
+  .~
+  unlock new
+.~
+
+world %RaizCuadrada%:
+  play:
+    Power act = joystick ~Quieres calcular una raiz cuadrada .1. o salir .0.~
+    Button:
+      | act == 0 } gameOver
+    .~
+    Skill num = joystick ~Dime un numero no negativo~
+    Skill const = 0'0
+    Button:
+      | num < const } drop ~Numero negativo intenta de nuevo~
+      | notPressed }
+        Skill root = kill sqrt(num)
+        drop ~El la raiz de~, num, ~es~, root
+    .~
+  lock Win
+  .~
+  drop ~I am Groot~
+.~
