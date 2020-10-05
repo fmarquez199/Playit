@@ -15,10 +15,13 @@ def heron(n, error):
 Taken from: https://stackoverflow.com/questions/16619201/heron-method-in-python
 '"
 monster sqrt(Skill f) Skill:
-  Skill prev = 1'0, new = 0'5 * (1'0 + f)
-  controller Power i = 0 -> 1000 lock kill abs(new - prev) <= 0'000001:
+  Skill prev = 1'0
+  Skill half = 0'5
+  Skill new = half * (prev + f)
+  Skill err = 0'000001
+  controller Power i = 0 -> 1000 lock kill abs(new - prev) <= err:
     prev = new
-    new = 0'5 * (new + f / new)
+    new = half * (new + f / new)
   .~
   unlock new
 .~
@@ -31,37 +34,36 @@ world %Estadistica%:
     .~
     Skill n = joystick ~Dime la cantidad de muestras ~
     Skill const = 1'0
-    Skill dato = joystick ~Dime el dato~
+    Skill sum = joystick ~Dime el dato~
     Button:
       | n < const }
         drop ~No tienes muestras empecemos de nuevo~
         keepPlaying
       | n == const }
         drop ~Tienes una sola muestra~
-        drop ~El promedio el maximo y el minimo es~, dato
+        drop ~El promedio el maximo y el minimo es~, sum
         drop ~La varianza y la desviacion estandar son 0~
       | notPressed }
-        Skill sum = dato
-        @Skill sqSum = dato * dato
-        @Skill min = dato
-        @Skill max = dato
+        Skill sqSum = sum * sum
+        @Skill min = sum
+        @Skill max = sum
         Skill contador = 1'0
         play:
           contador = contador + const
           Skill d = joystick ~Dime el siguiente dato~
           @min = (min > d) ? d : min
           @max = (max < d) ? d : max
+          sqSum = sqSum + sum * sum
           sum = sum + d
-          @sqSum = sqSum + d * d
         lock contador < n
         .~
         Skill prom = sum / n
-        @Skill var = (sqSum - sum * sum / n) / (n - const)
+        Skill var = (sqSum - sum * prom) / (n - const)
         drop ~Tienes ~, n, ~ datos.~
         @drop ~El minimo es ~, min
         @drop ~El maximo es ~, max
         drop ~El promedio es ~, prom
-        @drop ~La varianza es ~, var
+        drop ~La varianza es ~, var
         @drop ~La desviacion estandar es ~, kill sqrt(var)
     .~
   lock Win

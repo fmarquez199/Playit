@@ -25,8 +25,8 @@ world %Pruebas%:
   @Skill f = 5'4
 
 @ Operaciones aritmeticas
-  Skill f = joystick ~Dime un entero~
-  drop f
+  Power i = (-5 * 6 // 3 + 4)
+  drop i
   @Battle p0 = f == f
   @Battle p1 = f != f
   @Battle p2 = f <= f

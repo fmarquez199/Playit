@@ -19,6 +19,7 @@ import Playit.BackEnd.RegAlloc.InterferenceGraph
 import Playit.BackEnd.RegAlloc.LiveVariables
 import Playit.BackEnd.FinalCode
 import Playit.BackEnd.TAC
+import Playit.BackEnd.Utils              (copyOpt)
 import Playit.BackEnd.Types              (Operands(vars), RegAlloc(bLiveVars))
 import Playit.FrontEnd.Errors            (lexerErrors, showLexerErrors)
 import Playit.FrontEnd.Lexer             (alexScanTokens)
@@ -81,6 +82,7 @@ main = do
             -- putStrLn $ "\nActual scope:" ++ show (stScope state)
             -- putStrLn $ "\nOffSets: " ++ show (offSets state)
             -- putStrLn $ "\nActual offset: " ++ show (actOffS state)
+            -- let tac = reverse $ copyOpt $ reverse tac'
             mapM_ print tac
             let (fg@(graph, getNodeFromVertex, getVertexFromKey), leaders) = genFlowGraph tac
                 nodes = map getNodeFromVertex (vertices graph)

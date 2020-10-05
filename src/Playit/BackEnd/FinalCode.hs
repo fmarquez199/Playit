@@ -92,7 +92,7 @@ genAssign tac (_, _, getReg) colorGraph file = do
             reg1 = makeReg colorGraph $ getReg' getReg rv1Info
             mov  = if isFloat $ tacType lval then mov_d else move
           in
-          comment (", var: " ++ show rv1) file >> mov dest reg1 file
+            comment (", var: " ++ show rv1) file >> mov dest reg1 file
         else           
           let 
             i    = show (fromJust rv1)
@@ -217,7 +217,7 @@ genThreeOperandsOp tac i@(_, _, t) color file =
 
     Call ->
       comment "\n\t\t# Subroutine call" file >> genJumps tac i color file >>
-      addi dest "$v0" "0" file
+      if elem 'f' dest then mtc1_d "$v0" dest file else addi dest "$v0" "0" file
     Get -> 
       -- x = y[i]
       comment ", Get" file >> add reg1 reg1 reg2 file >> lw  dest reg1 file
@@ -271,7 +271,7 @@ genJumps tac (_, _, t) color file = do
             --return a value into a register
             _ -> 
               let retVal = makeReg color $ getReg' t $ tacInfo $ tacRvalue1 tac
-              in comment ", return var" file >> move "$v0" retVal file >> epilogue file
+              in comment ", return var" file >> if elem 'f' retVal then mfc1_d "$v0" retVal file else move "$v0" retVal file >> epilogue file
     _ -> do
       let
         goto = show' (tacOperand tac)
@@ -307,8 +307,8 @@ genParam tac (_, _, getReg) colorGraph file =
       in
       comment ("\n\t\t# Param: " ++ show tac) file >>
 
-        if isFloat $ tacType param then 
-          if paramNum < "4" then mov_d ("$f" ++ show (2 * (read paramNum :: Int) - 50)) regSour file
+        if isFloat $ tacType param then
+          if paramNum < "4" then mov_d ("$f" ++ show (2 * (read paramNum :: Int))) regSour file
           else
             -- offset
             comment ", to stack" file >> addi "$sp" "$sp" "-8" file >> sw regSour "($sp)" file
@@ -479,7 +479,7 @@ activateCalled file = do
   s_d  "$f2" "-64($sp)" file
   s_d  "$f4" "-72($sp)" file
   s_d  "$f6" "-80($sp)" file
-  addi "$sp" "$sp" "-80" file
+  addi "$sp" "$sp" "-88" file
   jr   "$ra"             file
 
 -- | Empila los registros que son responsabilidad del llamador.
@@ -526,7 +526,7 @@ epilogue file = do
 activateCaller :: String -> IO ()
 activateCaller file = do
   appendFile file "\nactivate_caller:"
-  addi "$sp" "$sp" "80" file
+  addi "$sp" "$sp" "88" file
   lw   "$a0" "0($sp)" file
   lw   "$a1" "-4($sp)" file
   lw   "$a2" "-8($sp)" file

@@ -28,11 +28,12 @@ dataFilePath = "./output/data.asm"
 tacInitState :: SymTab -> Operands
 tacInitState = Operands M.empty temps M.empty [] brk cont 0 False False []
   where
-    retnReg  = Temp "_return" TInt (4, 4)  -- $v0, offset fijo?
-    nullReg  = Temp "_null" TInt (4, 4)    -- $zero, offset fijo?
+    -- retnReg  = Temp "_return" TInt (4, 4)  -- $v0, offset fijo?
+    -- nullReg  = Temp "_null" TInt (4, 4)    -- $zero, offset fijo?
     cont     = tacLabel "cont"
     brk      = tacLabel "brk"
-    temps    = M.fromList [(retnReg, False), (nullReg, False)]
+    -- temps    = M.fromList [(retnReg, False), (nullReg, False)]
+    temps    = M.empty
 
 
 genTAC :: Instr -> TACMonad ()
@@ -62,6 +63,7 @@ genSubroutines :: TACMonad ()
 genSubroutines = do
   state <- get
   mapM_ genSubroutine (subs state)
+  liftIO $ putStrLn $ show $ subs state
   when (callM state) (resetOffset >> malloc)
   when (callF state) (resetOffset >> free)
 
@@ -255,7 +257,7 @@ genAssig v e = case typeVar v of
           varBuffer = var ++ "_float"
 
         liftIO $ _space varBuffer "8" dataFilePath
-        
+
         lv <- pushOffset 8 >>= newTemp TFloat 8 >>= genVar v
         tell (tacAssign lv rv)
         tell (tacAssign (tacLabel (show v ++ "_float")) rv)
@@ -702,13 +704,12 @@ genUnOp op e tOp = do
 -- TODO: Listas
 genBinOp :: BinOp -> Type -> TACOP -> TACOP -> TACMonad TACOP
 genBinOp op tOp rv1 rv2 = do
-  actO <- pushOffset (getWidth tOp)
-  lv   <- newTemp tOp (getWidth tOp) actO
+  lv <- pushOffset (getWidth tOp) >>= newTemp tOp (getWidth tOp)
+  tell (tacBin (binOpToTACOP op) lv rv1 rv2)  >> return lv
   
   -- case op of
   -- Aritmethics
   --  op ->
-  tell (tacBin (binOpToTACOP op) lv rv1 rv2)  >> return lv
   -- Lists
     -- Anexo  -> return (e1Code ++ e2Code ++ [T.ThreeAddressCode T.Anexo lvt e1Temp e2Temp], lvt)
     -- Concat -> return (e1Code ++ e2Code ++ [T.ThreeAddressCode T.Concat lvt e1Temp e2Temp], lvt)
