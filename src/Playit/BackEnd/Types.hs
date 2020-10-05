@@ -58,6 +58,7 @@ data Operands = Operands {
   brkL  :: TACOP,   -- brake label
   contL :: TACOP,   -- continue label
   base  :: OffSet,
+  corr :: Bool, -- dice si generar la subrutina para correcursion
   -- fp    :: OffSet,
   callF :: Bool, -- Dice si generar TAC para free
   callM :: Bool, -- Dice si generar TAC para malloc
@@ -67,7 +68,7 @@ data Operands = Operands {
 } deriving (Eq, Ord)
 
 instance Show Operands where
-  show (Operands vs ts ls lbs brk con b _ _ s st) = 
+  show (Operands vs ts ls lbs brk con b _ _ _ s st) = 
     "\n vars: " ++ show vs ++ "\n temps: " ++ show ts ++
     "\n lits: " ++ show ls ++ "\n labels: " ++ show lbs {- ++ -}
     -- "\n break: " ++ show brk ++ "\n continue: " ++ show con ++

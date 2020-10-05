@@ -110,10 +110,10 @@ genAssign tac (_, _, getReg) colorGraph file = do
         value = makeReg colorGraph $ getReg' getReg rv1Info
         store = if isFloat $ tacType rv1 then s_d else sw
       in
-        store value (show $ fromJust lval) file
+        comment (", var: " ++ show rv1Info) file >> store value (show $ fromJust lval) file
     else
       let value = show (fromJust rv1)
-      in sw value (show $ fromJust lval) file
+      in comment (", const: " ++ show rv1Info) file >> sw value (show $ fromJust lval) file
 
 
 -- TODO:

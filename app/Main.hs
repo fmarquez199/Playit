@@ -67,6 +67,8 @@ main = do
           -- mapM_ print tokens
           (ast, state@SymTabState{symTab = st}, errs) <- runRWST parseCode fileCode stInitState
           
+          -- print st
+
           if null errs then do
             createDirectoryIfMissing True "./output/"
             -- rm file and create new one
@@ -112,5 +114,4 @@ main = do
             genFinalCode (tail tac) inter color ("./output/" ++ outputFile)
             -- close outputFile
           else
-            -- print st >>
             mapM_ putStrLn errs

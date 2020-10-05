@@ -8,36 +8,60 @@
 @  Skill b
 @  Battle c
 @.~
-@boss b(Power num):
-@  drop num
-@.~
-@monster m(Skill s) Skill:
-@  unlock s + 1'5
-@.~
-monster m(Runes str) Runes:
-  unlock str
+boss dropit():
+  drop ~dropit proc~
+  Power act = joystick ~ salir .0. ? ~
+  Button:
+    | act == 0 } gameOver
+  .~
+  kill dropit2()
 .~
+boss dropit2():
+  drop ~dropit2 proc~
+  kill dropit2()
+.~
+monster power1(Power p) Power:
+  Power r
+  Power x
+  x = kill power2(p+x)
+  r = x + 1
+  drop ~ Dentro de power1 ~
+
+  unlock r
+.~
+monster power2(Power p) Power:
+  Power r
+  Power x
+  x = kill power1(p+x)
+  r = x * 2
+  drop ~ Dentro de power2 ~
+  
+  unlock r
+.~
+@monster string1(Runes str) Runes:
+@  unlock str
+@.~
 
 world %Pruebas%:
 
   Power x = 1
   Power y = 3
-  Skill f = 5'4
+  @Skill f = 5'4
 
 @ Operaciones aritmeticas
-  Power i = 1
-  Battle p0 = i == i
-  drop p0
-  Battle p1 = i != i
-  drop p1
-  Battle p2 = i <= i
-  drop p2
-  Battle p3 = i < i
-  drop p3
-  Battle p4 = i > i
-  drop p4
-  Battle p5 = i >= i
-  drop p5
+  @Power i = 1
+  @Battle p0 = i == i
+  @drop p0
+  @Battle p1 = i != i
+  @drop p1
+  @Battle p2 = i <= i
+  @drop p2
+  @Battle p3 = i < i
+  @drop p3
+  @Battle p4 = i > i
+  @drop p4
+  @Battle p5 = i >= i
+  @drop p5
   @Power i1 = x - 1
   @Power i2 = x * 1
   @Power i4 = x % 1
@@ -152,11 +176,13 @@ world %Pruebas%:
 
 @ Strings
   @Rune|}4{| x = |)*H*, *o*, *l*, *a*(|
-  Runes str = ~Hola, soy un string~
+  @Runes str = ~Hola, soy un string~
   @Runes x = str
   @drop str
   @drop ~Este es otro string~
-Runes s = kill m(str) @ not implemented
+@Runes s
+@s = kill m(str)
+@drop s
 
 @ Subrutinas
   @kill b(x)
@@ -165,6 +191,12 @@ Runes s = kill m(str) @ not implemented
   @Power|}x{| arr0    @ Err cuando init por defecto un arreglo
   @Power|}5{| arr1
   @x = kill m(arr1)
+
+@ Correcursion
+  @kill dropit()
+  x = kill power1(x + y)
+  drop ~ Despues de kill x es ~
+  drop x
 
 @ Arreglos
   @Power|}3{| array = |)2, 3, 4(|
