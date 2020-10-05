@@ -26,7 +26,7 @@ dataFilePath = "./output/data.asm"
 
 -- Colocar los temps de print, read y null al inicio?
 tacInitState :: SymTab -> Operands
-tacInitState = Operands M.empty temps M.empty [] brk cont 0 False False False []
+tacInitState = Operands M.empty temps M.empty [] brk cont 0 False False []
   where
     -- retnReg  = Temp "_return" TInt (4, 4)  -- $v0, offset fijo?
     -- nullReg  = Temp "_null" TInt (4, 4)    -- $zero, offset fijo?
@@ -37,8 +37,10 @@ tacInitState = Operands M.empty temps M.empty [] brk cont 0 False False False []
 
 
 genTAC :: Instr -> TACMonad ()
-genTAC ast = tell (tacCall Nothing "main" 0 ++ [tacNewLabel (tacLabel "main")]) >>
-          genCode ast >> genSubroutines
+genTAC ast = do
+  tell (tacCall Nothing "main" 0 ++ [tacNewLabel (tacLabel "main")])
+  genCode ast
+  genSubroutines
 
 -- 
 genCode :: Instr -> TACMonad ()
@@ -63,15 +65,19 @@ genSubroutines :: TACMonad ()
 genSubroutines = do
   state <- get
   mapM_ genSubroutine (subs state)
-  liftIO $ putStrLn $ show $ subs state
   when (callM state) (resetOffset >> malloc)
   when (callF state) (resetOffset >> free)
 
 
 genSubroutine :: (Id, Params, InstrSeq, Bool) -> TACMonad ()
-genSubroutine (s, ps, is, isProc) = resetOffset >>
-  tell [tacNewLabel $ tacLabel s] >> getParams s ps 0 >> mapM_ genCode is >>
-    when isProc (genReturn Nothing)
+genSubroutine (s, ps, is, isProc) = do
+  resetOffset
+  tell [tacNewLabel $ tacLabel s]
+  getParams s ps 0
+  mapM_ genCode is
+  state@Operands{corr = newSubrAdded, subs = (subr:_)} <- get
+  when newSubrAdded $ genSubroutine subr
+  when isProc (genReturn Nothing)
 
 {-  El problema es que en efecto cuando consulto el parámetro este no ha sido 
 apilado en vars, en ese caso lo apilo cuando paso los parámetros y es generando 
@@ -82,7 +88,7 @@ getParams _ [] _ = return ()
 getParams id ps n = do
   Operands{vars = vs, astST = st} <- get
   let syms = getSymTab st
-      subParams = filter isPs $ extraInfo $ head $ fromJust $ M.lookup id syms
+      subParams = filter isParam $ extraInfo $ head $ fromJust $ M.lookup id syms
       paramsLst = head $ map (\(Params x) -> x) subParams
       (typ, name) = paramsLst !! n
       width = getWidth typ
@@ -92,9 +98,9 @@ getParams id ps n = do
   tell [tacParam' par n formal]
   if length ps > 1 then getParams id (tail ps) (n' typ) else return ()
   where
-    isPs :: ExtraInfo -> Bool
-    isPs (Params _) = True
-    isPs _ = False
+    isParam :: ExtraInfo -> Bool
+    isParam (Params _) = True
+    isParam _ = False
 
     n' :: Type -> Int
     n' typ = if typ == TFloat then n + 2 else n + 1
@@ -178,7 +184,18 @@ genAssig v e = case typeVar v of
         
       -- TODO!!: 
       -- casos con EmptyVAlue -> read sin str para imprimir
-      -- funciones
+      -- Correcursion
+      -- TODO!!:
+      FuncCall (Call f params) _ -> do
+        let varLabel = show v ++ "_str"
+        pushSubroutine f params False
+        genParams (map fst params) 0
+        -- liftIO $ _space varLabel "120" dataFilePath
+        v' <- pushOffset 4 >>= newTemp TInt 4 >>= genVar v
+        tell (tacCall v' f $ length params)
+        -- tell [tacRef v' (tacLabel varLabel)]
+        tell (tacAssign (tacLabel varLabel) v')
+
       t -> error $ "NotImplementedError " ++ show t
 
 -- TODO: No guardar valores numericos en .data, ya se colocan en un temp para no mas accesos a mem
