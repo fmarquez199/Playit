@@ -1,0 +1,278 @@
+@ swap con pasaje por referencia, i.e.
+@ void swapi(var int a, var int b) { int t; t = a; a = b; b = t; }
+@ pero No puede escribir esta función usando apuntadores para simular pasaje por referencia.
+
+@ swap for ints
+boss swapP(Power x, Power y):
+  Power temp
+  temp = x
+  x    = y
+  y    = temp
+.~
+
+@ swap for floats
+boss swapS(Skill x, Skill y):
+  Skill temp
+  temp = x
+  x    = y
+  y    = temp
+.~
+
+@ swap for chars
+boss swapR(Rune x, Rune y):
+  Rune temp
+  temp = x
+  x    = y
+  y    = temp
+.~
+
+@ Particionado para ints
+monster partitionP(Power? array, Power l, Power h) Power:
+  Power x, i, j
+  x = puff array + h
+  i = l - 1
+
+  controller j = l -> h:
+    Button:
+    | (puff array + j) <= x }
+      i++
+      kill swapP(puff array + i, puff array + j)
+    .~
+    kill swapP(puff array + i + 1, puff array + h)
+  .~
+  unlock i + 1
+.~
+
+@ Particionado para floats
+monster partitionS(Skill? array, Power l, Power h) Power:
+  Power x, i, j
+  x = puff array + h
+  i = l - 1
+
+  controller j = l -> h:
+    Button:
+    | (puff array + j) <= x }
+      i++
+      kill swapS(puff array + i, puff array + j)
+    .~
+    kill swapS(puff array + i + 1, puff array + h)
+  .~
+  unlock i + 1
+.~
+
+@ Particionado para chars
+monster partitionR(Rune? array, Power l, Power h) Power:
+  Power x, i, j, p
+  x = puff array + h
+  i = l - 1
+
+  controller j = l -> h:
+    Button:
+    | (puff array + j) <= x }
+      i++
+      kill swapR(puff array + i, puff array + j)
+    .~
+    kill swapR(puff array + i + 1, puff array + h)
+  .~
+  p = i + 1
+  unlock p
+.~
+
+world %QuickSort%:
+  play:
+    @ Ask order: 1. ints, 2. floats, 3. chars, 0. exit
+    Power opt = joystick ~Que quieres ordenar? 1. Enteros. 2. Flotantes. 3. Caracteres. 0. Salir~
+    @ Ask how many (1 <= n <= 100)
+    Power n = joystick ~Longitud del arreglo. Del 1 al 100.~
+    Button:
+    | n < 0 || n > 100 }
+      drop ~El numero no esta dentro del rango. Vuelve a interntar.~
+      keepPlaying
+    .~
+    @ Ask for array elems
+    @Power i, p, x, j, top
+    Power i
+    Power p
+    Power x
+    Power j
+    Power top
+    Power l = 0
+    Power h = n - 1
+    @ quicksort
+    Button:
+    | opt == 0 } gameOver
+    | opt == 1 }
+      Power|}n{| arrayP
+      controller i = 0 -> n - 1:
+        x = joystick ~Elemento.~
+        arrayP|)i(| = x
+      .~
+      @ Aux stack
+      Power|}h - l + 1{| stackP
+      @ init stack
+      top = -1
+      @ push init values
+      top++
+      stackP|)top(| = l
+      top++
+      stackP|)top(| = h
+      @ keep popping from stack while is not empty
+      play:
+        @ pop h and l
+        h = stackP|)top(|
+        top--
+        l = stackP|)top(|
+        top--
+        @ Set pivot element at its correct position in sorted array
+        x = arrayP|)h(|
+        i = arrayP|)l - 1(|
+        controller j = l -> h - 1:
+          Button:
+          | arrayP|)j(| <= x }
+            i++
+            kill swapP(arrayP|)i(|, arrayP|)j(|)
+          .~
+        .~
+        kill swapP(arrayP|)i + 1(|, arrayP|)h(|)
+        p = i + 1
+        @ If there are elements on left side of pivot, then push left side to stack
+        Button:
+        | p - 1 > l }
+          top++
+          stackP|)top(| = l
+          top++
+          stackP|)top(| = p - 1
+        .~
+        @ If there are elements on right side of pivot, then push right side to stack
+        Button:
+        | p - 1 < h }
+          top++
+          stackP|)top(| = p + 1
+          top++
+          stackP|)top(| = h
+        .~
+      lock top >= 0
+      .~
+      @ Show sorted array
+      drop ~Arreglo ordenado.~
+      drop arrayP
+    
+    | opt == 2 }
+      Skill|}n{| arrayS
+      controller i = 0 -> n - 1:
+        x = joystick ~Elemento.~
+        arrayS|)i(| = x
+      .~
+      @ Aux stack
+      Skill|}h - l + 1{| stackS
+      @ init stack
+      top = -1
+      @ push init values
+      top++
+      stackS|)top(| = l
+      top++
+      stackS|)top(| = h
+      @ keep popping from stack while is not empty
+      play:
+        @ pop h and l
+        h = stackS|)top(|
+        top--
+        l = stackS|)top(|
+        top--
+        @ Set pivot element at its correct position in sorted array
+        x = arrayS|)h(|
+        i = arrayS|)l - 1(|
+        controller j = l -> h - 1:
+          Button:
+          | arrayS|)j(| <= x }
+            i++
+            kill swapP(arrayS|)i(|, arrayS|)j(|)
+          .~
+        .~
+        kill swapP(arrayS|)i + 1(|, arrayS|)h(|)
+        p = i + 1
+        @ If there are elements on left side of pivot, then push left side to stack
+        Button:
+        | p - 1 > l }
+          top++
+          stackS|)top(| = l
+          top++
+          stackS|)top(| = p - 1
+        .~
+        @ If there are elements on right side of pivot, then push right side to stack
+        Button:
+        | p - 1 < h }
+          top++
+          stackS|)top(| = p + 1
+          top++
+          stackS|)top(| = h
+        .~
+      lock top >= 0
+      .~
+      @ Show sorted array
+      drop ~Arreglo ordenado.~
+      drop arrayS
+    
+    | opt == 3 }
+      Rune|}n{| arrayR
+      controller i = 0 -> n - 1:
+        x = joystick ~Elemento.~
+        arrayR|)i(| = x
+      .~
+      @ Aux stack
+      Rune|}h - l + 1{| stackR
+      @ init stack
+      top = -1
+      @ push init values
+      top++
+      stackR|)top(| = l
+      top++
+      stackR|)top(| = h
+      @ keep popping from stack while is not empty
+      play:
+        @ pop h and l
+        h = stackR|)top(|
+        top--
+        l = stackR|)top(|
+        top--
+        @ Set pivot element at its correct position in sorted array
+        x = arrayR|)h(|
+        i = arrayR|)l - 1(|
+        controller j = l -> h - 1:
+          Button:
+          | arrayR|)j(| <= x }
+            i++
+            kill swapP(arrayR|)i(|, arrayR|)j(|)
+          .~
+        .~
+        kill swapP(arrayR|)i + 1(|, arrayR|)h(|)
+        p = i + 1
+        @ If there are elements on left side of pivot, then push left side to stack
+        Button:
+        | p - 1 > l }
+          top++
+          stackR|)top(| = l
+          top++
+          stackR|)top(| = p - 1
+        .~
+        @ If there are elements on right side of pivot, then push right side to stack
+        Button:
+        | p - 1 < h }
+          top++
+          stackR|)top(| = p + 1
+          top++
+          stackR|)top(| = h
+        .~
+      lock top >= 0
+      .~
+      @ Show sorted array
+      drop ~Arreglo ordenado.~
+      drop arrayR
+
+    | notPressed }
+      drop ~No escogiste ninguna opcion. Vuelve a intentar.~
+      keepPlaying
+    .~
+  lock Win
+  .~
+.~

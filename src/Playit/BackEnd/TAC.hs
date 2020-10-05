@@ -26,7 +26,7 @@ dataFilePath = "./output/data.asm"
 
 -- Colocar los temps de print, read y null al inicio?
 tacInitState :: SymTab -> Operands
-tacInitState = Operands M.empty temps M.empty [] brk cont 0 False False []
+tacInitState = Operands M.empty temps M.empty [] brk cont 0 False False False []
   where
     -- retnReg  = Temp "_return" TInt (4, 4)  -- $v0, offset fijo?
     -- nullReg  = Temp "_null" TInt (4, 4)    -- $zero, offset fijo?
