@@ -8,49 +8,50 @@
 @  Skill b
 @  Battle c
 @.~
-boss dropit():
-  drop ~dropit proc~
-  Power act = joystick ~ salir .0. ? ~
-  Button:
-    | act == 0 } gameOver
-  .~
-  kill dropit2()
-.~
-boss dropit2():
-  drop ~dropit2 proc~
-  kill dropit2()
-.~
-monster power1(Power p) Power:
-  Power r
-  Power x
-  x = kill power2(p+x)
-  r = x + 1
-  drop ~ Dentro de power1 ~
-
-  unlock r
-.~
-monster power2(Power p) Power:
-  Power r
-  Power x
-  x = kill power1(p+x)
-  r = x * 2
-  drop ~ Dentro de power2 ~
-  
-  unlock r
-.~
+@boss dropit():
+@  drop ~dropit proc~
+@  Power act = joystick ~ salir .0. ? ~
+@  Button:
+@    | act == 0 } gameOver
+@  .~
+@  kill dropit2()
+@.~
+@boss dropit2():
+@  drop ~dropit2 proc~
+@  kill dropit2()
+@.~
+@monster power1(Power p) Power:
+@  Power r
+@  Power x
+@  x = kill power2(p+x)
+@  r = x + 1
+@  drop ~ Dentro de power1 ~
+@
+@  unlock r
+@.~
+@monster power2(Power p) Power:
+@  Power r
+@  Power x
+@  x = kill power1(p+x)
+@  r = x * 2
+@  drop ~ Dentro de power2 ~
+@  
+@  unlock r
+@.~
 @monster string1(Runes str) Runes:
 @  unlock str
 @.~
 
 world %Pruebas%:
 
-  @Power x = 1
-  @Power y = 3
-  @Skill f = 5'4
+  Power x = 1
+  Power y = 3
+  Skill f = y / x
+  drop f
 
 @ Operaciones aritmeticas
-  Power i = (-5 * 6 // 3 + 4)
-  drop i
+  @Power i = (-5 * 6 // 3 + 4)
+  @drop i
   @Battle p0 = f == f
   @Battle p1 = f != f
   @Battle p2 = f <= f
@@ -117,7 +118,7 @@ world %Pruebas%:
 @  play:
   @  gameOver
   @  i0 = 9
-  @  keepPlaying  @ deberia saler del ciclo
+  @  keepPlaying
   @  Button:
   @    | x == 7 }
   @      x = x * y
@@ -190,9 +191,9 @@ world %Pruebas%:
 
 @ Correcursion
   @kill dropit()
-  x = kill power1(x + y)
-  drop ~ Despues de kill x es ~
-  drop x
+  @x = kill power1(x + y)
+  @drop ~ Despues de kill x es ~
+  @drop x
 
 @ Arreglos
   @Power|}3{| array = |)2, 3, 4(|
