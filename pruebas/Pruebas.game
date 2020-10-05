@@ -20,9 +20,9 @@ monster m(Runes str) Runes:
 
 world %Pruebas%:
 
-  Power x = 1
-  Power y = 3
-  Skill f = 5'4
+  @Power x = 1
+  @Power y = 3
+  @Skill f = 5'4
 
 @ Operaciones aritmeticas
   Skill f = 1'0
@@ -147,11 +147,11 @@ world %Pruebas%:
 
 @ Strings
   @Rune|}4{| x = |)*H*, *o*, *l*, *a*(|
-  Runes str = ~Hola, soy un string~
+  @Runes str = ~Hola, soy un string~
   @Runes x = str
   @drop str
   @drop ~Este es otro string~
-Runes s = kill m(str) @ not implemented
+@Runes s = kill m(str) @ not implemented
 
 @ Subrutinas
   @kill b(x)

@@ -8,7 +8,7 @@
 module Playit.BackEnd.FinalCode (genFinalCode) where
 
 import Control.Monad.IO.Class                (liftIO)
-import Data.List                             (subsequences)
+import Data.List                             (subsequences, elemIndex)
 import Data.Maybe                            (isJust, fromJust)
 import Data.Strings                          (strSplit)
 import Data.String.Utils                     (strip, replace)
@@ -184,7 +184,24 @@ genThreeOperandsOp tac i@(_, _, t) color file =
 
     op | op `elem` [Gt, Gte, Lt, Lte, Eq, Neq] ->
       if isFloat $ tacType $ rv1 then
-        return ()
+        let
+          comparators = [Gt, Gte, Lt, Lte, Eq, Neq]
+          (grt, lgl, n) = (elem op [Gt, Gte], elem op [Lt, Lte, Eq], op == Neq)
+          flag = (show $ fromJust $ elemIndex op comparators) ++ ", "
+          inst' =
+            if grt then
+              replace "bg" "c.l" $ replace " " (".d " ++ flag) inst
+            else
+              if lgl then
+                replace "b" "c." $ replace " " (".d " ++ flag) inst
+              else
+                "c.eq.d " ++ flag
+          label = flag ++ (replace "\"" "" $ show $ fromJust rv2)
+          branch = "\n\t\t" ++ (if n then "bc1f " else "bc1t ") ++ label
+          (r1, r2) = if grt then (reg1, dest) else (dest, reg1)
+        in
+          comment (", " ++ show op) file >>
+          appendFile file (inst' ++ r1 ++ ", " ++ r2 ++ branch)
       else
         let 
           rv2'  = fromJust rv2
@@ -198,7 +215,7 @@ genThreeOperandsOp tac i@(_, _, t) color file =
               else rv1' ++ ", "
         in 
           comment (", " ++ show op) file >>
-          appendFile file (inst ++ dest ++ reg2' ++ dir)
+          appendFile file (inst ++ dest' ++ reg2' ++ dir)
 
     Call ->
       comment "\n\t\t# Subroutine call" file >> genJumps tac i color file >>
