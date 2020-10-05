@@ -8,6 +8,7 @@
 module Playit.BackEnd.Utils where
 
 import Control.Monad.Trans.RWS     (tell, get, put)
+import Data.List                   (elemIndex, find)
 import Data.Maybe
 import Playit.BackEnd.Types
 import Playit.FrontEnd.SymbolTable (lookupInSymTab)
@@ -281,12 +282,19 @@ breakI = do
 
 -------------------------------------------------------------------------------
 newTemp :: Type -> Width -> OffSet -> TACMonad TACOP
-newTemp typ w o = do
+newTemp t w o = do
   state@Operands{temps = ts} <- get
-  let t = if typ == TFloat then Temp ("$t" ++ show (1 - M.size ts)) typ (o, w)
-      else Temp ("$t" ++ show (M.size ts - 2)) typ (o, w)
-  put state{temps = M.insert t True ts}
-  return $ tacVariable t
+  let freeTemps = filter (\(x, y) -> not y) $ M.toList ts
+  if null freeTemps then do
+    let
+      id = if t == TFloat then show (0 - M.size ts) else show (M.size ts - 0)
+      tp = Temp ('$':'t':id) t (o, w)
+    put state{temps = M.insert tp True ts}
+    return $ tacVariable tp
+  else do
+    let f x = if x then Nothing else Just True
+    put state{temps = M.update f (fst (head freeTemps)) ts}
+    return $ tacVariable $ fst $ head freeTemps
 -------------------------------------------------------------------------------
 
 
@@ -718,6 +726,10 @@ mtc1_d :: String -> String -> String -> IO ()
 mtc1_d regSour regDest file =
   appendFile file $ "\n\t\tmtc1.d " ++ regSour ++ ", " ++ regDest
 
+mfc1_d :: String -> String -> String -> IO ()
+mfc1_d regDest regSour file =
+  appendFile file $ "\n\t\tmfc1.d " ++ regDest ++ ", " ++ regSour
+
 mfhi :: String -> String -> IO ()
 mfhi regDest file = appendFile file $ "\n\t\tmfhi " ++ regDest
 
@@ -729,3 +741,33 @@ mfhi regDest file = appendFile file $ "\n\t\tmfhi " ++ regDest
 
 -- Mueve  el  contenido  de  los  registros  de  punto-flotante
 -- FRs1 y FRs1+1 hacia los registros Rd y Rd+1 de la CPU
+
+
+-------------------------------------------------------------------------------
+-- Maybe an Optimizator
+-------------------------------------------------------------------------------
+copyOpt :: [TAC] -> [TAC]
+copyOpt [tac] = [tac]
+copyOpt (t:ts) = case T.tacOperand t of
+  T.Assign -> do -- lvalue = rvalue1
+    if isJust x then
+      let
+        t1 = fromJust x
+        i = fromJust $ elemIndex t1 ts
+        (op, rv1, rv2) = (T.tacOperand t1, T.tacRvalue1 t1, T.tacRvalue2 t1)
+        t' = T.ThreeAddressCode op lv rv1 rv2
+      in t':(copyOpt $ (take i ts) ++ (drop (i + 1) ts))
+    else t:copyOpt ts
+  _ -> t:copyOpt ts
+  where
+    x :: Maybe TAC
+    x = find target ts
+
+    target :: TAC -> Bool
+    target (T.ThreeAddressCode _ l _ _) = l == rv
+
+    lv :: TACOP
+    lv = T.tacLvalue t
+
+    rv :: TACOP
+    rv = T.tacRvalue1 t

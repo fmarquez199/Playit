@@ -166,9 +166,11 @@ colorNode :: InterfGraph -> VertColorMap -> G.Vertex -> Color
 colorNode (g, nfv, vfk) cMap v =
   let notNeighColor = (`notElem` neighColors g cMap v)
   in if isFloat nfv v then
-    head $ filter notNeighColor [26..40]
+    let availables = filter notNeighColor [26..40] -- si es null => spill
+    in if null availables then error "Spills floats" else head $ availables
   else
-    head $ filter notNeighColor [8..25] -- si el filtrado es null => spill
+    let availables = filter notNeighColor [8..25] -- si es null => spill
+    in if null availables then error "Spills ints" else head $ availables
 
 -- | Color a node returning the updated color map.
 colorNodeInMap :: InterfGraph -> G.Vertex -> VertColorMap -> VertColorMap

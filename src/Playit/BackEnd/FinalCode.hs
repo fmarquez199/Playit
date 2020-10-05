@@ -7,10 +7,10 @@
 -}
 module Playit.BackEnd.FinalCode (genFinalCode) where
 
-import Control.Monad.IO.Class                (liftIO)
-import Data.List                             (subsequences)
+import Data.List                             (subsequences, elemIndex)
 import Data.Maybe                            (isJust, fromJust)
 import Data.Strings                          (strSplit)
+import Data.String.Utils                     (strip, replace, endswith)
 import Playit.BackEnd.RegAlloc.GraphColoring (VertColorMap)
 import Playit.BackEnd.Types                  (TAC, TACOP, TACInfo(..), InterfGraph)
 import Playit.BackEnd.Utils                  {- (tacNewLabel, tacLabel) -}
@@ -26,7 +26,6 @@ genFinalCode tac g c file = do
   let 
     tacInstr = head tac
     tacNext  = tail tac
-  
   case tacOperand tacInstr of
     -- Faltan And, Or
     -- Not supported Anexo, Concat
@@ -93,7 +92,7 @@ genAssign tac (_, _, getReg) colorGraph file = do
             reg1 = makeReg colorGraph $ getReg' getReg rv1Info
             mov  = if isFloat $ tacType lval then mov_d else move
           in
-          comment (", var: " ++ show rv1) file >> mov dest reg1 file
+            comment (", var: " ++ show rv1) file >> mov dest reg1 file
         else           
           let 
             i    = show (fromJust rv1)
@@ -176,29 +175,49 @@ genThreeOperandsOp tac i@(_, _, t) color file =
             else
               let code = (init inst) ++ ".d " ++ dest' ++ reg1' ++ reg2
               in
-              comment ", op != Div or rv2 is float. Se asume es float" file >>
-                appendFile file code
+                comment ", op != Div or rv2 is float. Se asume es float" file
+                >> appendFile file code
           else 
             comment ", Int" >> appendFile file $ inst ++ dest' ++ reg1' ++ reg2
 
     op | op `elem` [Gt, Gte, Lt, Lte, Eq, Neq] ->
-      let 
-        rv2'  = fromJust rv2
-        dir   = tail . init $ show rv2'
-        rv1'  = show (fromJust rv1)
-        reg2' = 
-          if isJust $ tacInfo rv1 then reg1 ++ ", "
-          else 
-            if rv1' == "Win" then "1 " 
-            else if rv1' == "Lose" then "0 " 
-            else rv1' ++ ", "
-      in 
-        comment (", " ++ show op) file >>
-        appendFile file (inst ++ dest' ++ reg2' ++ dir)
-    
+      if isFloat $ tacType $ rv1 then
+        let
+          comparators = [Gt, Gte, Lt, Lte, Eq, Neq]
+          (grt, lgl, n) = (elem op [Gt, Gte], elem op [Lt, Lte, Eq], op == Neq)
+          flag = (show $ fromJust $ elemIndex op comparators) ++ ", "
+          inst' =
+            if grt then
+              replace "bg" "c.l" $ replace " " (".d " ++ flag) inst
+            else
+              if lgl then
+                replace "b" "c." $ replace " " (".d " ++ flag) inst
+              else
+                "c.eq.d " ++ flag
+          label = flag ++ (replace "\"" "" $ show $ fromJust rv2)
+          branch = "\n\t\t" ++ (if n then "bc1f " else "bc1t ") ++ label
+          (r1, r2) = if grt then (reg1, dest) else (dest, reg1)
+        in
+          comment (", " ++ show op) file >>
+          appendFile file (inst' ++ r1 ++ ", " ++ r2 ++ branch)
+      else
+        let 
+          rv2'  = fromJust rv2
+          dir   = tail . init $ show rv2'
+          rv1'  = show (fromJust rv1)
+          reg2' = 
+            if isJust $ tacInfo rv1 then reg1 ++ ", "
+            else
+              if rv1' == "Win" then "1 " 
+              else if rv1' == "Lose" then "0 " 
+              else rv1' ++ ", "
+        in 
+          comment (", " ++ show op) file >>
+          appendFile file (inst ++ dest' ++ reg2' ++ dir)
+
     Call ->
       comment "\n\t\t# Subroutine call" file >> genJumps tac i color file >>
-      addi dest "$v0" "0" file
+      if elem 'f' dest then mtc1_d "$v0" dest file else addi dest "$v0" "0" file
     Get -> 
       -- x = y[i]
       comment ", Get" file >> add reg1 reg1 reg2 file >> lw  dest reg1 file
@@ -215,25 +234,21 @@ genTwoOperandsOp :: TAC -> InterfGraph -> VertColorMap -> String -> IO ()
 genTwoOperandsOp tac (_, _, getReg) color file = do
   comment ("\n\t\t# 2 Operands operation: " ++ show tac) file
   let
-    inst = show' (tacOperand tac) ++ " "
+    inst = show' (tacOperand tac)
     dest = (makeReg color $ getReg' getReg $ tacInfo $ tacLvalue tac) ++ ", "
+    float = isFloat $ tacType $ tacRvalue1 tac
+    inst' = if float then replace "w" ".d " inst else inst
   
-  -- TODO: Primero se deberia verificar si es float o no
+  -- TODO: Primero se deberia verificar si es float o no (Ya se hizo no?)
   case tacInfo $ tacRvalue1 tac of
     Nothing ->
-      let 
-        label = show (fromJust $ tacRvalue1 tac)
-        float = isFloat $ tacType $ tacRvalue1 tac
-        inst' = if float then (init inst) ++ ".d " else inst -- TODO!!: check, gen lw not l.d
-      in 
-        comment ", const" file >> appendFile file (inst' ++ dest ++ label)
-    _ -> 
+      let label = show (fromJust $ tacRvalue1 tac)
+      in comment ", const" file >> appendFile file (inst' ++ dest ++ label)
+    _ ->
       let
-        float = isFloat $ tacType $ tacRvalue1 tac
-        inst' = if float then (init inst) ++ ".d " else inst
         reg1 = makeReg color $ getReg' getReg $ tacInfo $ tacRvalue1 tac
         code = inst' ++ dest ++ reg1
-      in 
+      in
         comment ", var" file >> appendFile file code
 
 
@@ -256,10 +271,10 @@ genJumps tac (_, _, t) color file = do
             --return a value into a register
             _ -> 
               let retVal = makeReg color $ getReg' t $ tacInfo $ tacRvalue1 tac
-              in comment ", return var" file >> move "$v0" retVal file >> epilogue file
+              in comment ", return var" file >> if elem 'f' retVal then mfc1_d "$v0" retVal file else move "$v0" retVal file >> epilogue file
     _ -> do
       let
-        goto = show' (tacOperand tac) ++ " "
+        goto = show' (tacOperand tac)
         dest = (tail . init $ show (fromJust $ tacRvalue2 tac))
       if isJust $ tacRvalue1 tac then
         if isCall $ tacOperand tac then do
@@ -292,8 +307,8 @@ genParam tac (_, _, getReg) colorGraph file =
       in
       comment ("\n\t\t# Param: " ++ show tac) file >>
 
-        if isFloat $ tacType param then 
-          if paramNum < "4" then mov_d ("$f" ++ show (2 * (read paramNum :: Int) - 50)) regSour file
+        if isFloat $ tacType param then
+          if paramNum < "4" then mov_d ("$f" ++ show (2 * (read paramNum :: Int))) regSour file
           else
             -- offset
             comment ", to stack" file >> addi "$sp" "$sp" "-8" file >> sw regSour "($sp)" file
@@ -464,7 +479,7 @@ activateCalled file = do
   s_d  "$f2" "-64($sp)" file
   s_d  "$f4" "-72($sp)" file
   s_d  "$f6" "-80($sp)" file
-  addi "$sp" "$sp" "-80" file
+  addi "$sp" "$sp" "-88" file
   jr   "$ra"             file
 
 -- | Empila los registros que son responsabilidad del llamador.
@@ -511,7 +526,7 @@ epilogue file = do
 activateCaller :: String -> IO ()
 activateCaller file = do
   appendFile file "\nactivate_caller:"
-  addi "$sp" "$sp" "80" file
+  addi "$sp" "$sp" "88" file
   lw   "$a0" "0($sp)" file
   lw   "$a1" "-4($sp)" file
   lw   "$a2" "-8($sp)" file
@@ -568,6 +583,7 @@ tacType :: TACOP -> Maybe Type
 tacType (Just (Constant (_, t))) = Just t
 tacType (Just (Id (TACVar s _))) = Just $ symType s
 tacType (Just (Id (Temp _ t _))) = Just t
+tacType (Just (Label s)) = if endswith "_str" s then Just TStr else if endswith "_int" s then Just TInt else Just TFloat
 tacType _ = Nothing
 
 -- |

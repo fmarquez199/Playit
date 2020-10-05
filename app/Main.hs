@@ -19,6 +19,7 @@ import Playit.BackEnd.RegAlloc.InterferenceGraph
 import Playit.BackEnd.RegAlloc.LiveVariables
 import Playit.BackEnd.FinalCode
 import Playit.BackEnd.TAC
+import Playit.BackEnd.Utils              (copyOpt)
 import Playit.BackEnd.Types              (Operands(vars), RegAlloc(bLiveVars))
 import Playit.FrontEnd.Errors            (lexerErrors, showLexerErrors)
 import Playit.FrontEnd.Lexer             (alexScanTokens)
@@ -83,6 +84,7 @@ main = do
             -- putStrLn $ "\nActual scope:" ++ show (stScope state)
             -- putStrLn $ "\nOffSets: " ++ show (offSets state)
             -- putStrLn $ "\nActual offset: " ++ show (actOffS state)
+            -- let tac = reverse $ copyOpt $ reverse tac'
             mapM_ print tac
             let (fg@(graph, getNodeFromVertex, getVertexFromKey), leaders) = genFlowGraph tac
                 nodes = map getNodeFromVertex (vertices graph)
@@ -103,8 +105,8 @@ main = do
             let outputFile = last (strSplitAll "/" (fst (strSplit "." checkedFile))) ++ ".asm"
             d <- readFile dataFilePath
             let
-              db s = strStartsWith (last s) ".double"
-              w s = strStartsWith (last s) ".space" || strStartsWith (last s) ".word"
+              db s = strStartsWith (last s) ".space 8" || strStartsWith (last s) ".double"
+              w s = strStartsWith (last s) ".space 4" || strStartsWith (last s) ".word"
               o s = strStartsWith (last s) ".asciiz" 
               double = unlines $ nub $ map (strJoin ": ") $ filter db (map (strSplitAll ": ") $ tail $ lines d)
               four = unlines $ nub $ map (strJoin ": ") $ filter w (map (strSplitAll ": ") $ tail $ lines d)

@@ -42,9 +42,9 @@ createInitSymTab st = SymTabState {
     symbols   = ["Power", "Skill", "Rune", "Runes", "Battle", "Inventory",
         "Items", "Kit of", "Win", "Lose", "DeathZone", "portalRunesToRune",
         "portalRuneToRunes", "portalPowerToRunes", "portalSkillToRunes",
-        "portalRunesToPower", "portalRunesToSkill"]
+        "portalRunesToPower", "portalRunesToSkill", "absSkill", "absPower"]
     info      = [power, skill, rune, runes, battle, inventory, items, listOf,
-        win, lose, apt, portalSC, portalCS, portalIS, portalFS,
+        win, lose, apt, portalSC, portalCS, portalIS, portalFS, askl, abspow,
         portalSI, portalSF]
     power     = SymbolInfo "Power" TInt 0 Types []
     skill     = SymbolInfo "Skill" TFloat 0 Types []
@@ -63,6 +63,8 @@ createInitSymTab st = SymTabState {
     portalSI  = SymbolInfo "portalRunesToPower" TInt 0 Functions [Params [(TStr,"runes")]]
     portalSC  = SymbolInfo "portalRunesToRune" TChar 0 Functions [Params [(TStr,"runes")]]
     portalSF  = SymbolInfo "portalRunesToSkill" TFloat 0 Functions [Params [(TStr,"runes")]]
+    askl = SymbolInfo "absSkill" TFloat 0 Functions [Params [(TFloat,"skill")]]
+    abspow = SymbolInfo "absPower" TInt 0 Functions [Params [(TInt,"power")]]
     st'       = insertSymbols symbols info st
 -------------------------------------------------------------------------------
 
