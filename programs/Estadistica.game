@@ -1,7 +1,3 @@
-monster sq(Skill f) Skill:
-  unlock f * f
-.~
-
 monster abs(Skill f) Skill:
   Button:
     | f > 0'0 } unlock f
@@ -29,39 +25,46 @@ monster sqrt(Skill f) Skill:
 
 world %Estadistica%:
   play:
-    Runes act = joystick ~Hacemos estadistica (e) o salimos (x): ~
+    Power act = joystick ~Hacemos estadistica .1. o salimos .0.~
     Button:
-      | act == ~x~ } gameOver
+      | act == 0 } gameOver
     .~
-    Power n = joystick ~Dime la cantidad de muestras: ~
+    Skill n = joystick ~Dime la cantidad de muestras ~
+    Skill const = 1'0
+    Skill dato = joystick ~Dime el dato~
     Button:
-      | n < 1 }
-        drop ~No tienes muestras, empecemos de nuevo.~
+      | n < const }
+        drop ~No tienes muestras empecemos de nuevo~
         keepPlaying
-      | n == 1 }
-        Skill dato = joystick ~Dime el dato: ~
-        drop ~Tienes una (1) sola muestra.~
-        drop ~El promedio, el maximo y el minimo es: ~, dato
-        drop ~La varianza y la desviacion estandar son cero (0).~
+      | n == const }
+        drop ~Tienes una sola muestra~
+        drop ~El promedio el maximo y el minimo es~, dato
+        drop ~La varianza y la desviacion estandar son 0~
       | notPressed }
-        Skill dato = joystick ~Dime el primer dato: ~
-        Skill sum = dato, sqSum = kill sq(dato), min = dato, max = dato
-        controller Power i = 1 -> n:
-          dato = kill portalRunesToSkill(joystick ~Dime el siguiente dato: ~)
-          sum = sum + dato
-          sqSum = sqSum + kill sq(dato)
-          min = min > dato ? dato : min
-          max = max < dato ? dato : max
+        Skill sum = dato
+        @Skill sqSum = dato * dato
+        @Skill min = dato
+        @Skill max = dato
+        Skill contador = 1'0
+        play:
+          contador = contador + const
+          Skill d = joystick ~Dime el siguiente dato~
+          @min = (min > d) ? d : min
+          @max = (max < d) ? d : max
+          sum = sum + d
+          @sqSum = sqSum + d * d
+        lock contador < n
         .~
-        Skill var = (sqSum - kill sq(sum) / n) / (n - 1)
+        Skill prom = sum / n
+        @Skill var = (sqSum - sum * sum / n) / (n - const)
         drop ~Tienes ~, n, ~ datos.~
-        drop ~El minimo es ~, min
-        drop ~El maximo es ~, max
-        drop ~El promedio es ~, sum / n
-        drop ~La varianza es ~, var
-        drop ~La desviacion estandar es ~, kill sqrt(var)
+        @drop ~El minimo es ~, min
+        @drop ~El maximo es ~, max
+        drop ~El promedio es ~, prom
+        @drop ~La varianza es ~, var
+        @drop ~La desviacion estandar es ~, kill sqrt(var)
     .~
   lock Win
   .~
-  drop ~Bye, bye~
+  drop ~Bye~
 .~

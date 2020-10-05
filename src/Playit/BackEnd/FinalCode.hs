@@ -7,11 +7,10 @@
 -}
 module Playit.BackEnd.FinalCode (genFinalCode) where
 
-import Control.Monad.IO.Class                (liftIO)
 import Data.List                             (subsequences, elemIndex)
 import Data.Maybe                            (isJust, fromJust)
 import Data.Strings                          (strSplit)
-import Data.String.Utils                     (strip, replace)
+import Data.String.Utils                     (strip, replace, endswith)
 import Playit.BackEnd.RegAlloc.GraphColoring (VertColorMap)
 import Playit.BackEnd.Types                  (TAC, TACOP, TACInfo(..), InterfGraph)
 import Playit.BackEnd.Utils                  {- (tacNewLabel, tacLabel) -}
@@ -27,7 +26,6 @@ genFinalCode tac g c file = do
   let 
     tacInstr = head tac
     tacNext  = tail tac
-  
   case tacOperand tacInstr of
     -- Faltan And, Or
     -- Not supported Anexo, Concat
@@ -177,8 +175,8 @@ genThreeOperandsOp tac i@(_, _, t) color file =
             else
               let code = (init inst) ++ ".d " ++ dest' ++ reg1' ++ reg2
               in
-              comment ", op != Div or rv2 is float. Se asume es float" file >>
-                appendFile file code
+                comment ", op != Div or rv2 is float. Se asume es float" file
+                >> appendFile file code
           else 
             comment ", Int" >> appendFile file $ inst ++ dest' ++ reg1' ++ reg2
 
@@ -236,25 +234,21 @@ genTwoOperandsOp :: TAC -> InterfGraph -> VertColorMap -> String -> IO ()
 genTwoOperandsOp tac (_, _, getReg) color file = do
   comment ("\n\t\t# 2 Operands operation: " ++ show tac) file
   let
-    inst = show' (tacOperand tac) ++ " "
+    inst = show' (tacOperand tac)
     dest = (makeReg color $ getReg' getReg $ tacInfo $ tacLvalue tac) ++ ", "
+    float = isFloat $ tacType $ tacRvalue1 tac
+    inst' = if float then replace "w" ".d " inst else inst
   
-  -- TODO: Primero se deberia verificar si es float o no
+  -- TODO: Primero se deberia verificar si es float o no (Ya se hizo no?)
   case tacInfo $ tacRvalue1 tac of
     Nothing ->
-      let 
-        label = show (fromJust $ tacRvalue1 tac)
-        float = isFloat $ tacType $ tacRvalue1 tac
-        inst' = if float then (init inst) ++ ".d " else inst -- TODO!!: check, gen lw not l.d
-      in 
-        comment ", const" file >> appendFile file (inst' ++ dest ++ label)
-    _ -> 
+      let label = show (fromJust $ tacRvalue1 tac)
+      in comment ", const" file >> appendFile file (inst' ++ dest ++ label)
+    _ ->
       let
-        float = isFloat $ tacType $ tacRvalue1 tac
-        inst' = if float then (init inst) ++ ".d " else inst
         reg1 = makeReg color $ getReg' getReg $ tacInfo $ tacRvalue1 tac
         code = inst' ++ dest ++ reg1
-      in 
+      in
         comment ", var" file >> appendFile file code
 
 
@@ -280,7 +274,7 @@ genJumps tac (_, _, t) color file = do
               in comment ", return var" file >> move "$v0" retVal file >> epilogue file
     _ -> do
       let
-        goto = show' (tacOperand tac) ++ " "
+        goto = show' (tacOperand tac)
         dest = (tail . init $ show (fromJust $ tacRvalue2 tac))
       if isJust $ tacRvalue1 tac then
         if isCall $ tacOperand tac then do
@@ -589,6 +583,7 @@ tacType :: TACOP -> Maybe Type
 tacType (Just (Constant (_, t))) = Just t
 tacType (Just (Id (TACVar s _))) = Just $ symType s
 tacType (Just (Id (Temp _ t _))) = Just t
+tacType (Just (Label s)) = if endswith "_str" s then Just TStr else if endswith "_int" s then Just TInt else Just TFloat
 tacType _ = Nothing
 
 -- |

@@ -250,6 +250,12 @@ genAssig v e = case typeVar v of
       
       Variable v' _ -> do
         (rv, _, _) <- getOffset v'
+        let
+          var = show v
+          varBuffer = var ++ "_float"
+
+        liftIO $ _space varBuffer "8" dataFilePath
+        
         lv <- pushOffset 8 >>= newTemp TFloat 8 >>= genVar v
         tell (tacAssign lv rv)
         tell (tacAssign (tacLabel (show v ++ "_float")) rv)
@@ -263,7 +269,7 @@ genAssig v e = case typeVar v of
         liftIO $ _space varBuffer "8" dataFilePath
         liftIO $ _asciiz floatLabel s dataFilePath
 
-        v' <- pushOffset 8 >>= newTemp TInt 8 >>= genVar v
+        v' <- pushOffset 8 >>= newTemp TFloat 8 >>= genVar v
         tell [tacPrint (tacConstant (s, TFloat)) (tacLabel floatLabel)]
         tell [tacRead (tacConstant (var, TFloat)) (tacLabel varBuffer)]
         tell [tacDeref v' (tacLabel varBuffer)]
@@ -276,7 +282,7 @@ genAssig v e = case typeVar v of
 
         liftIO $ _space varBuffer "8" dataFilePath
 
-        v' <- pushOffset 8 >>= newTemp TInt 8 >>= genVar v
+        v' <- pushOffset 8 >>= newTemp TFloat 8 >>= genVar v
         tell [tacPrint rv rv] -- TODO: rv -> string a imprimir
         tell [tacRead (tacConstant (var, TFloat)) (tacLabel varBuffer)]
         tell [tacDeref v' (tacLabel varBuffer)]
@@ -287,7 +293,7 @@ genAssig v e = case typeVar v of
           var = show v 
           varBuffer = var ++ "_float"
 
-        -- liftIO $ _space varBuffer "8" dataFilePath
+        liftIO $ _space varBuffer "8" dataFilePath
 
         t <- genExpr e
         v' <- pushOffset 8 >>= newTemp TFloat 8 >>= genVar v

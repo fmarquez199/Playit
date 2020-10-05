@@ -101,8 +101,8 @@ main = do
             let outputFile = last (strSplitAll "/" (fst (strSplit "." checkedFile))) ++ ".asm"
             d <- readFile dataFilePath
             let
-              db s = strStartsWith (last s) ".double"
-              w s = strStartsWith (last s) ".space" || strStartsWith (last s) ".word"
+              db s = strStartsWith (last s) ".space 8" || strStartsWith (last s) ".double"
+              w s = strStartsWith (last s) ".space 4" || strStartsWith (last s) ".word"
               o s = strStartsWith (last s) ".asciiz" 
               double = unlines $ nub $ map (strJoin ": ") $ filter db (map (strSplitAll ": ") $ tail $ lines d)
               four = unlines $ nub $ map (strJoin ": ") $ filter w (map (strSplitAll ": ") $ tail $ lines d)
