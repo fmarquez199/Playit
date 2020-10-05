@@ -113,7 +113,7 @@ main = do
               one = unlines $ nub $ map (strJoin ": ") $ filter o (map (strSplitAll ": ") $ tail $ lines d)
               d' = ".data\n" ++ double ++ four ++ one ++ "\n\t\t.text\n"
             writeFile ("./output/" ++ outputFile) d'
-            genFinalCode (tail tac) inter color ("./output/" ++ outputFile)
+            -- genFinalCode (tail tac) inter color ("./output/" ++ outputFile)
             -- close outputFile
           else
             mapM_ putStrLn errs
