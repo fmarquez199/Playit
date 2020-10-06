@@ -203,9 +203,9 @@ world %Pruebas%:
 
 @ Correcursion
   @kill dropit()
-  x = kill power1(x + y)
+  @x = kill power1(x + y)
   drop ~ Despues de kill x es ~
-  drop x
+  @drop x
   @kill a()
 
 @ Arreglos

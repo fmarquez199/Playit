@@ -10,6 +10,7 @@ module Playit.BackEnd.TAC (tacInitState, genTAC, dataFilePath) where
 import Control.Monad.IO.Class      (liftIO)
 import Control.Monad               (when, unless, void)
 import Control.Monad.Trans.RWS     (ask, tell, get, put)
+import Data.List                   (intercalate)
 import Data.List.Utils             (replace)
 import Data.Maybe                  (fromJust, isNothing)
 import Playit.BackEnd.Utils    
@@ -436,8 +437,11 @@ genPrint [] = tell []
 genPrint [e] = 
   case e of
     Literal (Str s) _ -> 
-      -- TODO!!: sustituir los espacios por _ en lugar de poner todo el str junto
-      let strLabel = concat (words s) ++ "_str"
+      let 
+        removeChars = ['?','!','@','#','$','%','&','*','(',')','[',']','{','}',
+          ',','<','>','=','-','/','\\','~','|','`','\'',':',';','\"']
+        cleanStr = filter (\x -> not $ elem x removeChars)
+        strLabel = intercalate "_" (words s) ++ "_str"
       in do
         liftIO $ _asciiz strLabel s dataFilePath
         tell [tacPrint (tacConstant (s, TStr)) (tacLabel strLabel)]
