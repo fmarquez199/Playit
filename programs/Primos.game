@@ -1,31 +1,51 @@
 monster primo(Power n) Battle:
   Button:
-  | n < 2 } unlock Lose
+  | n < 1 } unlock Lose
+  | n == 2 } unlock Win
   .~
   Power divisor = 2
   play:
     Button:
-      | n % divisor == 0 } unlock Lose
+    | n % divisor == 0 } 
+      unlock Lose
+      gameOver
     .~
     divisor++
   lock divisor <= n
   .~
   unlock Win
 .~
-
+"'
+boss primos(Power maxn):
+  Power x = 2
+  play:
+    Button:
+    | kill primo(x) }
+      drop x
+      maxn--
+      x++
+      keepPlaying
+    .~
+    x++
+  lock maxn != 0
+  .~
+.~
+'"
 world %Primos%:
-  Power max = joystick ~Indica cuantos primos quieres~
+  Power max = joystick ~Indica cuantos primos quieres.~
   Button:
-    | max <= 0 } drop ~Esta bien si no deseas ninguno~
-    | notPressed }
-      play:
-        Button:
-          | kill primo(max) }
-            drop max
-        .~
+  | max <= 0 } drop ~Esta bien si no deseas ninguno, me voy.~
+  | notPressed } @ kill primos(max)
+    Power i = 2
+    play:
+      Button:
+      | kill primo(i) } @ gen 2 func/labels primo
+        drop i
         max--
-      lock max < 0
       .~
+      i++
+    lock max != 0
+    .~
   .~
   drop ~Chau~
 .~
