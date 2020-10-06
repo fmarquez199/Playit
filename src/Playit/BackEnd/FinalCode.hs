@@ -389,7 +389,7 @@ genSyscalls tac (_, _, t) color file =
         case strSplit "_" out of
           (_, "int")   -> comment ", Int" file >> li "$v0" "1" file >> lw  "$a0"  out file
           (_, "float") -> comment ", Double" file >> li "$v0" "3" file >> l_d "$f12" out file
-          (_, "strFunc") -> comment ", String" file >> li "$v0" "4" file >> lw "$a0" out file
+          -- (_, "strFunc") -> comment ", String" file >> li "$v0" "4" file >> lw "$a0" out file
           _            -> comment ", String" file >> li "$v0" "4" file >> la  "$a0"  out file
 
         syscall file

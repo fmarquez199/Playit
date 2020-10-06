@@ -451,8 +451,8 @@ genForEach n e is nextL = do
 -- TODO!!: el label para la condicion no es correcto
 genForWhile :: Id -> Expr -> Expr -> Expr -> InstrSeq -> TACOP -> TACMonad ()
 genForWhile n e1 e2 cond is nextL = do
-  iteration <- forComparison n e1 e2 nextL
-  genBoolExpr cond fall nextL
+  iteration@(_,_,cont,_) <- forComparison n e1 e2 nextL
+  genBoolExpr cond fall cont
   forInstrs is nextL iteration
 
 
