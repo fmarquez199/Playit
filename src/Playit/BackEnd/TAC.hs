@@ -26,7 +26,7 @@ dataFilePath = "./output/data.asm"
 
 -- Colocar los temps de print, read y null al inicio?
 tacInitState :: SymTab -> Operands
-tacInitState = Operands M.empty temps M.empty [] brk cont 0 False False []
+tacInitState = Operands M.empty temps M.empty [] brk cont 0 False False False []
   where
     -- retnReg  = Temp "_return" TInt (4, 4)  -- $v0, offset fijo?
     -- nullReg  = Temp "_null" TInt (4, 4)    -- $zero, offset fijo?
@@ -76,6 +76,7 @@ genSubroutine (s, ps, is, isProc) = do
   getParams s ps 0
   mapM_ genCode is
   state@Operands{corr = newSubrAdded, subs = (subr:_)} <- get
+  -- liftIO $ putStrLn $ show (subs state)
   when newSubrAdded $ genSubroutine subr
   when isProc (genReturn Nothing)
 
@@ -465,6 +466,38 @@ genPrint [e] =
         tell [tacNewLabel falseL]
         tell [tacPrint var (tacLabel "boolFalse")]
         tell [tacNewLabel nextL]
+
+    FuncCall s@(Call id ps) t -> do
+      let
+        args = id ++ (show $ map (show . fst) ps)
+        tac = replace "," "." $ replace "\"" "" $ replace "]" ".." $ args
+        lbl = replace "[" ".." $ tac
+      liftIO $ putStrLn $ lbl
+      temp <- genFuncCall s t
+      case t of
+        TInt -> do
+          liftIO $ _space lbl "4" dataFilePath
+          tell (tacAssign (tacLabel (lbl ++ "_int")) temp)
+          tell [tacPrint temp (tacLabel (lbl ++ "_int"))]
+        TFloat -> do
+          liftIO $ _space lbl "8" dataFilePath
+          tell (tacAssign (tacLabel (lbl ++ "_float")) temp)
+          tell [tacPrint temp (tacLabel (lbl ++ "_float"))]
+        TStr -> do
+          liftIO $ _space lbl "80" dataFilePath
+          tell (tacAssign (tacLabel (lbl ++ "_str")) temp)
+          tell [tacPrint temp (tacLabel (lbl ++ "_str"))]
+        TBool -> do
+          nextL  <- newLabel
+          trueL  <- newLabel
+          falseL <- newLabel
+          genBoolExpr e trueL falseL
+          tell [tacNewLabel trueL]
+          tell [tacPrint temp (tacLabel "boolTrue")]
+          tell (tacGoto nextL)
+          tell [tacNewLabel falseL]
+          tell [tacPrint temp (tacLabel "boolFalse")]
+          tell [tacNewLabel nextL]
 
     _ -> tell []
 genPrint (e:es) = genPrint [e] >> genPrint es
