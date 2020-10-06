@@ -318,6 +318,36 @@ genAssig v e = case typeVar v of
         tell (tacAssign v' t)
         -- tell (tacAssign (tacLabel var) t)
         tell (tacAssign (tacLabel varBuffer) t)
+
+  TChar -> do
+    let varBuffer = show v ++ "_char"
+    lv <- pushOffset 1 >>= newTemp TChar 1 >>= genVar v
+    case e of
+      Literal (Character c) _ -> do
+        liftIO $ _byte varBuffer [c] dataFilePath
+        tell (tacAssign lv (tacLabel varBuffer) )
+        tell (tacAssign (tacLabel varBuffer) lv) -- TODO: quitar para no acceder a memoria
+      Variable v' _ -> do
+        (rv, _, _) <- getOffset v'
+        liftIO $ _space varBuffer "1" dataFilePath
+        tell (tacAssign lv rv)
+        tell (tacAssign (tacLabel (show v ++ "_char")) rv)
+
+      Read (Literal (Str s) _) _ -> do
+        let charLabel  = show v ++ "_prompt"
+        liftIO $ _space varBuffer "1" dataFilePath
+        liftIO $ _asciiz charLabel s dataFilePath
+        tell [tacPrint (tacConstant (s, TChar)) (tacLabel charLabel)]
+        tell [tacRead (tacConstant (show v, TChar)) (tacLabel varBuffer)]
+        tell [tacDeref lv (tacLabel varBuffer)]
+      
+      Read (Variable v' _) _ -> do
+        (rv, _, _) <- getOffset v'
+        liftIO $ _space varBuffer "1" dataFilePath
+        tell [tacPrint rv rv] -- TODO: rv -> string a imprimir
+        tell [tacRead (tacConstant (show v, TChar)) (tacLabel varBuffer)]
+        tell [tacDeref lv (tacLabel varBuffer)]
+        tell (tacAssign (tacLabel varBuffer) lv)
 -- 
   t -> do
     -- isIndexVar var && isIndexExpr e -> do
@@ -465,6 +495,39 @@ genPrint [e] =
         tell [tacNewLabel falseL]
         tell [tacPrint var (tacLabel "boolFalse")]
         tell [tacNewLabel nextL]
+      TChar -> tell [tacPrint (tacConstant (show v, TChar)) (tacLabel (show v ++ "_char"))]
+
+    FuncCall s@(Call id ps) t -> do
+      let
+        args = id ++ (show $ map (show . fst) ps)
+        tac = replace "," "." $ replace "\"" "" $ replace "]" ".." $ args
+        lbl = replace "[" ".." $ tac
+      liftIO $ putStrLn $ lbl
+      temp <- genFuncCall s t
+      case t of
+        TInt -> do
+          liftIO $ _space lbl "4" dataFilePath
+          tell (tacAssign (tacLabel (lbl ++ "_int")) temp)
+          tell [tacPrint temp (tacLabel (lbl ++ "_int"))]
+        TFloat -> do
+          liftIO $ _space lbl "8" dataFilePath
+          tell (tacAssign (tacLabel (lbl ++ "_float")) temp)
+          tell [tacPrint temp (tacLabel (lbl ++ "_float"))]
+        TStr -> do
+          liftIO $ _space lbl "80" dataFilePath
+          tell (tacAssign (tacLabel (lbl ++ "_str")) temp)
+          tell [tacPrint temp (tacLabel (lbl ++ "_str"))]
+        TBool -> do
+          nextL  <- newLabel
+          trueL  <- newLabel
+          falseL <- newLabel
+          genBoolExpr e trueL falseL
+          tell [tacNewLabel trueL]
+          tell [tacPrint temp (tacLabel "boolTrue")]
+          tell (tacGoto nextL)
+          tell [tacNewLabel falseL]
+          tell [tacPrint temp (tacLabel "boolFalse")]
+          tell [tacNewLabel nextL]
 
     _ -> tell []
 genPrint (e:es) = genPrint [e] >> genPrint es
