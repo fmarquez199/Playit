@@ -13,16 +13,16 @@ monster div(Power a, Power b) Power:
   play:
     a = a - b
     q++
-  lock x >= b
+  lock a >= b
   .~
   unlock q
 .~
 
-monster mult2(Power u, Power v) Power:
-  monster impar(Power k) Battle:
-    unlock k % 2 != 0
-  .~
+monster impar(Power k) Battle:
+  unlock k % 2 != 0
+.~
 
+monster mult2(Power u, Power v) Power:
   Power z2 = 0
   play:
     Button:
@@ -31,8 +31,9 @@ monster mult2(Power u, Power v) Power:
     u = u // 2
     v = v * 2
   lock u != 0
-  unlock z2
   .~
+  unlock z2
+.~
 
 monster gcd(Power x, Power y) Power:
   play:

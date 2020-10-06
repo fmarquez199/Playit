@@ -1,6 +1,6 @@
 world %Collatz%:
   Power steps = 0
-  Power n = joystick ~Dime un numero positivo ~
+  Power n = joystick ~ Dime un numero positivo ~
   play:
     Button:
       | n == 1 } gameOver

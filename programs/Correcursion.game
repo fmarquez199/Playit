@@ -3,7 +3,7 @@ monster par(Power n1) Battle:
     | n1 == 0 } unlock Win
     | n1 == 1 } unlock Lose
     | notPressed } 
-    @ unlock (kill impar(n - 1)) Esto no agarra bien el tipo de retorno de la 
+    @ unlock (kill impar(n - 1)) @ Esto no agarra bien el tipo de retorno de la 
     @ promesa y por eso da type error. Deberia inferir que es el tipo de retorno 
     @ de esta funcion y cuando se defina se checkea que sea asi
       Battle r = kill impar(n1 - 1)
@@ -37,14 +37,14 @@ boss respuesta2(Battle p2):
 
 world %Correcursion%:
   play:
-    Power n = joystick ~Dime un entero~
-    drop ~Que quieres determinar~
-    Power opts = joystick ~paridad .1. disparidad .2. o salir .0.~
+    drop ~Determinar paridad, disparidad de un entero~
+    Power n = joystick ~Escribe un numero~
+    Power opts = joystick ~1. paridad, 2. disparidad, 0. salir ~
     Button:
       | opts == 0 } gameOver
       | opts == 1 } kill respuesta1(kill par(n))
       | opts == 2 } kill respuesta2(kill impar(n))
-      | notPressed } drop ~No me dijiste nada T.T~
+      | notPressed } drop ~No me dijiste nada que valga la pena~
     .~
   lock Win
   .~

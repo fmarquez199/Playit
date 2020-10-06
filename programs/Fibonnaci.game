@@ -1,7 +1,7 @@
 world %Fibonnaci%:
   Power a = 0
   Power b = 1
-  Power c
+  Power c = 0
 
   Power n = joystick ~Dime un numero~
 
@@ -14,15 +14,15 @@ world %Fibonnaci%:
     c = a + b
     a = b
     b = c
-    drop ~loop .i.~
-    drop i
-    drop ~loop .c.~
-    drop c
-    drop ~loop .a.~
-    drop a
-    drop ~loop .b.~
-    drop b
-    drop ~next~
+    @drop ~loop .i.~
+    @drop i
+    @drop ~loop .c.~
+    @drop c
+    @drop ~loop .a.~
+    @drop a
+    @drop ~loop .b.~
+    @drop b
+    @drop ~next~
   .~
 
   drop ~Fibonnaci~
