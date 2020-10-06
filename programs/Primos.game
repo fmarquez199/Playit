@@ -1,10 +1,14 @@
 monster primo(Power n) Battle:
+  Button:
+  | n < 2 } unlock Lose
+  .~
   Power divisor = 2
   play:
     Button:
       | n % divisor == 0 } unlock Lose
     .~
-  lock divisor * divisor <= n
+    divisor++
+  lock divisor <= n
   .~
   unlock Win
 .~
@@ -14,15 +18,13 @@ world %Primos%:
   Button:
     | max <= 0 } drop ~Esta bien si no deseas ninguno~
     | notPressed }
-      Power num = 2
       play:
         Button:
-          | kill primo(num) }
-            drop num
-            max--
-          | notPressed } num++
+          | kill primo(max) }
+            drop max
         .~
-      lock max > 0
+        max--
+      lock max < 0
       .~
   .~
   drop ~Chau~
