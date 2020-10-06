@@ -111,7 +111,7 @@ data Instr  =
   For Id Expr Expr InstrSeq Type           |
   ForEach Id Expr InstrSeq Type            |
   ForWhile Id Expr Expr Expr InstrSeq Type |
-  Free Id Type                             | -- TODO: Cambiar Id por una Var?
+  Free Id Type                             | -- TODO: Cambiar Id por Expr, ayuda en TAC
   IF [(Expr, InstrSeq)] Type               |
   Print [Expr] Type                        |
   ProcCall Subroutine Type                 |

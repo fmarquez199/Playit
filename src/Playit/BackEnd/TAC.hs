@@ -10,6 +10,7 @@ module Playit.BackEnd.TAC (tacInitState, genTAC, dataFilePath) where
 import Control.Monad.IO.Class      (liftIO)
 import Control.Monad               (when, unless, void)
 import Control.Monad.Trans.RWS     (ask, tell, get, put)
+import Data.List                   (intercalate)
 import Data.List.Utils             (replace)
 import Data.Maybe                  (fromJust, isNothing)
 import Playit.BackEnd.Utils    
@@ -481,8 +482,12 @@ genPrint [] = tell []
 genPrint [e] = 
   case e of
     Literal (Str s) _ -> 
-      -- TODO!!: sustituir los espacios por _ en lugar de poner todo el str junto
-      let strLabel = concat (words s) ++ "_str"
+      -- !!
+      let 
+        removeChars = ['?','!','@','#','$','%','&','*','(',')','[',']','{','}',
+          ',','<','>','=','-','/','\\','~','|','`','\'',':',';','\"']
+        cleanStr = filter (\x -> not $ elem x removeChars) s
+        strLabel = intercalate "_" (words cleanStr) ++ "_str"
       in do
         liftIO $ _asciiz strLabel s dataFilePath
         tell [tacPrint (tacConstant (s, TStr)) (tacLabel strLabel)]
@@ -515,6 +520,7 @@ genPrint [e] =
       tell [tacPrint (tacConstant (show c, TChar)) (tacLabel litLabel)]
     
     Literal (ArrLst ls) t -> do
+      -- !!:
       let 
         arr      = show ls
         arrLabel = "array" ++ replace "," "" (init $ tail arr) ++ "_str"
@@ -874,7 +880,6 @@ genArrayList (elem:elems) width index arrTemp = do
 
 
 -- TODO: width del tipo string
--- Creo que no llega hasta aqui, en genAssig toco sus casos
 -- TODO: integrar aqui lo que hay en genAssig y asi esta en un solo sitio
 genRead :: TACMonad TACOP
 genRead = do

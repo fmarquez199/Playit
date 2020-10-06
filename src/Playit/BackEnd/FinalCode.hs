@@ -50,7 +50,7 @@ genFinalCode tac g c file = do
         if "main: " == l then return ()
         else prologue file
     
-    -- TODO:
+    -- TODO!!:
     -- busca el label en .data que corresponda, si x = # [1,2] -> en TAC guardar
     -- el array en .data y colocarle un nombre y tu tam
     Length -> genLength tacInstr g c file
@@ -109,7 +109,7 @@ genAssign tac (_, _, getReg) colorGraph file = do
             comment (", const: " ++ show rv1) file >> load dest imm file
   else
     -- cuando se refiere a asignar un valor en el .data
-    -- TODO: Quitar
+    -- TODO: Quitar, en algun momento futuro
     comment ", store in mem" file >>
     if isJust rv1Info then
       let 
@@ -146,7 +146,7 @@ genThreeOperandsOp tac i@(_, _, t) color file =
       -- TODO: Primero se deberia verificar si es float o no
       case tacInfo rv2 of
         Nothing ->
-          -- TODO: cuando es float la inst no es la correcta
+          -- TODO!!: check, cuando es float la inst no es la correcta
           let code = inst ++ dest' ++ reg1' ++ show (fromJust rv2) 
           in comment ", const" file >> appendFile file code
         _ ->
@@ -422,7 +422,7 @@ genSyscalls tac (_, _, t) color file =
             -- swr "$f0" label file
             s_d "$f0" label file
           
-          -- TODO!!: check
+          -- TODO!!: check, me late que hay algo que no cuadra
           (_, "str") -> do
             comment ", String" file
             la "$a0" label file

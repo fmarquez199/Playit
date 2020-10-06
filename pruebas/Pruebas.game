@@ -188,7 +188,8 @@ world %Pruebas%:
   @Runes str = ~Hola, soy un string~
   @Runes x = str
   @drop str
-  @drop ~Este es otro string~
+  Runes str = ~Aqui voy, mira! no se muestran @?; cosas asi en el label'~
+  drop ~Aqui voy, mira! no se muestran @?; cosas asi en el label'~
 @Runes s
 @s = kill m(str)
 @drop s

@@ -117,7 +117,8 @@ checkAssig tLval expr p fileCode
   | isArray tLval && isArray tExpr =
     -- Si son arrays y arrays del mismo tipo 
     --- TODO:  Faltaría verificar que tienen el mismo tamaño para arrays con expresiones no literales
-    --          Ejemplo Power|)2(|  ==  Power|)1+1(|
+    --          Power|)2(|  ==  Power|)1+1(|
+    --          Power|)n(|  ==  Power|)i(|
     if isJust tarrays && e1 == e2 then "" else msg
   
   | otherwise = msg
