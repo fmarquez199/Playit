@@ -262,7 +262,14 @@ genTwoOperandsOp tac (_, _, getReg) color file = do
     inst = show' (tacOperand tac)
     dest = (makeReg color $ getReg' getReg $ tacInfo $ tacLvalue tac) ++ ", "
     float = isFloat $ tacType $ tacRvalue1 tac
-    inst' = if float then replace "w" ".d " inst else inst
+    inst' =
+      if float then
+        if tacOperand tac == Minus then
+          replace " " ".d " inst
+        else
+          replace "w" ".d" inst
+      else
+        inst
   
   -- TODO: Primero se deberia verificar si es float o no (Ya se hizo no?)
   case tacInfo $ tacRvalue1 tac of
