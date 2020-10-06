@@ -40,24 +40,24 @@
 @  Runes r = ~ Estoy en string1! \n~
 @  unlock r
 @.~
-@boss a():
-@  drop ~Estoy en a.~
-@  kill b()
-@.~
-@boss b():
-@  drop ~Estoy en b.~
-@  kill c()
-@.~
-@boss c():
-@  drop ~Estoy en c.~
-@  kill a()
-@.~
+boss a():
+  drop ~Estoy en a.~
+  kill b()
+.~
+boss b():
+  drop ~Estoy en b.~
+  kill c()
+.~
+boss c():
+  drop ~Estoy en c.~
+  kill a()
+.~
 
 world %Pruebas%:
 
-  Power x = 1
+  @Power x = 1
   @Power y = 3
-  Skill f = 5'4
+  @Skill f = 5'4
 @Power i @ Empty value
 
 @ Operaciones aritmeticas
@@ -95,10 +95,10 @@ world %Pruebas%:
 @Rune low = .*x*
 
 @ Operaciones boleanas
-  Battle p0 = f == f
+  @Battle p0 = f == f
   @Battle p1 = f != f
   @Battle p2 = f <= f
-  Battle p3 = f < f
+  @Battle p3 = f < f
   @Battle p4 = f > f
   @Battle p5 = f >= f
   @drop p0, p1, p2, p3, p4, p5
@@ -108,8 +108,8 @@ world %Pruebas%:
   @b = Lose || Win
   @b = Win && Lose
   @b = Lose || b
-  Battle b = p0 && p3
-  drop b
+  @Battle b = p0 && p3
+  @drop b
   @b = i5 < i2
 @b = Win && 3 > 6
 @b = 3 > 6
@@ -209,7 +209,7 @@ world %Pruebas%:
   @x = kill power1(x + y)
   @drop ~ Despues de kill x es ~
   @drop x
-  @kill a()
+  kill a()
 
 @ Arreglos. not supported final code
   @Power|}3{| array = |)2, 3, 4(|

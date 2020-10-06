@@ -3,21 +3,21 @@ monster par(Power n1) Battle:
     | n1 == 0 } unlock Win
     | n1 == 1 } unlock Lose
     | notPressed } 
+      Battle r1 = kill impar(n1 - 1)
+      unlock r1
+  .~
+.~
     @ unlock (kill impar(n - 1)) @ Esto no agarra bien el tipo de retorno de la 
     @ promesa y por eso da type error. Deberia inferir que es el tipo de retorno 
     @ de esta funcion y cuando se defina se checkea que sea asi
-      Battle r = kill impar(n1 - 1)
-      unlock r
-  .~
-.~
 
 monster impar(Power n2) Battle:
   Button:
     | n2 == 0 } unlock Lose
     | n2 == 1 } unlock Win
     | notPressed } 
-      Battle r = kill par(n2 - 1)
-      unlock r
+      Battle r2 = kill par(n2 - 1)
+      unlock r2
   .~
 .~
 

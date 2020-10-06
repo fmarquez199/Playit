@@ -380,9 +380,15 @@ pushSubroutine s ps isProc = do
     ast = getAST . extraInfo . head . fromJust $ lookupInSymTab s st
     newSubr = (s, ps, ast, isProc)
     fst4 (x,_,_,_) = x
-    keepCorr = (not $ elem s (map fst4 subroutines)) || corr
+    notInSubs = not $ elem s (map fst4 subroutines) 
+    keepCorr = notInSubs || corr
+  liftIO $ print $ "newSubr: "++show s
+  liftIO $ print $ "corr: "++show corr
+  liftIO $ print $ "keepCorr: "++show keepCorr
+  liftIO $ print $ "subs: "++show subroutines
   if keepCorr then
-    put state{corr = keepCorr, subs = newSubr : subroutines}
+    if notInSubs then put state{corr = keepCorr, subs = newSubr : subroutines}
+    else put state{corr = not keepCorr}
   else do
     put state{corr = False}
 -------------------------------------------------------------------------------
