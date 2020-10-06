@@ -316,6 +316,7 @@ genJumps tac (_, _, t) color file = do
         if isCall $ tacOperand tac then do
           let code = goto ++ show (fromJust $ tacRvalue1 tac)
           
+        -- TODO: check secuencia de activacion, por el jal
           comment ", Call Subroutines" file
           comment "\n\t\t# Activate Called" file
           jal "activate_called" file
@@ -501,7 +502,7 @@ genSyscalls tac (_, _, t) color file =
     
     sysc -> comment ("\n\t# Syscall not supported: "++show sysc++"\n") file
 
-
+-- TODO: check secuencia de activacion
 -- | Empila los registros que son responsabilidad del llamado.
 -- * Antes de pasar control a la subrutina
 -- 

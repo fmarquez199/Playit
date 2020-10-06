@@ -27,7 +27,7 @@ boss swapR(Rune x, Rune y):
 .~
 
 @ Particionado para ints
-monster partitionP(Power puff array, Power l, Power h) Power:
+monster partitionP(Power? array, Power l, Power h) Power:
   @Power x, i, j  @ no las declara? la suma mas adelante no la agarra
   Power x
   Power i
@@ -47,7 +47,7 @@ monster partitionP(Power puff array, Power l, Power h) Power:
 .~
 
 @ Particionado para floats
-monster partitionS(Skill puff array, Power l, Power h) Power:
+monster partitionS(Skill? array, Power l, Power h) Power:
   @Power x, i, j
   Power x
   Power i
@@ -67,7 +67,7 @@ monster partitionS(Skill puff array, Power l, Power h) Power:
 .~
 
 @ Particionado para chars
-monster partitionR(Rune puff array, Power l, Power h) Power:
+monster partitionR(Rune? array, Power l, Power h) Power:
   @Power x, i, j
   Power x
   Power i
