@@ -184,9 +184,9 @@ genAssig v e = case typeVar v of
         tell [tacRead (tacConstant (var, TStr)) (tacLabel varLabel)]
         tell [tacRef lv (tacLabel varLabel)]
         
-      -- TODO!!: casos con EmptyVAlue -> read sin str para imprimir
+      -- TODO: casos con EmptyVAlue -> read sin str para imprimir
       
-      -- TODO!!: make it work, se esta guardando la mem retornada en el label
+      -- TODO: make it work, se esta guardando la mem retornada en el label
       FuncCall (Call f params) _ -> do
         let varLabel = show v ++ "_str"
         pushSubroutine f params False
@@ -778,8 +778,7 @@ genLiteral l typeL {- _dataLabel -} =
   casos bloques anidados que acceden a los ids
   Param Id Type Ref
   Field Var Id Type
-  
-  TODO!!: Index  Var Expr Type
+  Index  Var Expr Type
 -}
 genVar :: Var -> TACOP -> TACMonad TACOP
 genVar var temp =

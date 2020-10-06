@@ -149,15 +149,18 @@ genThreeOperandsOp tac i@(_, _, t) color file =
       -- TODO: Primero se deberia verificar si es float o no
       case tacInfo rv2 of
         Nothing ->
-          -- TODO!!: check, cuando es float la inst no es la correcta
-          let code = inst ++ dest' ++ reg1' ++ show (fromJust rv2) 
+          -- TODO: cuando es float la inst no es la correcta
+          let 
+            inst' = if isFloat $ tacType lv then (init inst) ++ ".d " else inst
+            -- reg2' = colocar el innmediato en un reg float temp
+            code = inst' ++ dest' ++ reg1' ++ show (fromJust rv2) 
           in comment ", const" file >> appendFile file code
         _ ->
           let 
             reg2 = makeReg color $ getReg' t $ tacInfo rv2
           in 
           comment ", var" file >>
-          if isFloat $ tacType $ tacLvalue tac then do
+          if isFloat $ tacType lv then do
             comment ", Float" file
 
             if op == Div && not (isFloat $ tacType rv1) then do

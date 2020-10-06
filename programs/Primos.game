@@ -1,19 +1,21 @@
 monster primo(Power n) Battle:
+  Battle esPrimo = Win
   Button:
-  | n < 1 } unlock Lose
-  | n == 2 } unlock Win
+  | n < 1 } esPrimo = Lose
+  @| n == 2 } unlock Win  @deberia retornar pero sige
   .~
   Power divisor = 2
   play:
     Button:
     | n % divisor == 0 } 
-      unlock Lose
+      esPrimo = Lose
       gameOver
     .~
     divisor++
   lock divisor <= n
   .~
-  unlock Win
+
+  unlock esPrimo
 .~
 "'
 boss primos(Power maxn):
@@ -37,14 +39,19 @@ world %Primos%:
   | max <= 0 } drop ~Esta bien si no deseas ninguno, me voy.~
   | notPressed } @ kill primos(max)
     Power i = 2
+    @Battle esPrimo = Lose
     play:
+      @esPrimo = kill primo(i)
       Button:
       | kill primo(i) } @ gen 2 func/labels primo
+      @| esPrimo }
         drop i
         max--
+        @keepPlaying
+      @| notPressed } i++
       .~
       i++
-    lock max != 0
+    lock max > 0
     .~
   .~
   drop ~Chau~
