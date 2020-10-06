@@ -248,7 +248,7 @@ genAssig v e = case typeVar v of
           var = show v 
           varBuffer = var ++ "_int"
 
-        -- liftIO $ _space varBuffer "4" dataFilePath
+        liftIO $ _space varBuffer "4" dataFilePath
 
         t <- genExpr e
         v' <- pushOffset 4 >>= newTemp TInt 4 >>= genVar v
@@ -351,29 +351,37 @@ genAssig v e = case typeVar v of
 
   TArray (Literal (Integer i) _) t -> do
     let
-      varBuffer = show v ++ "_array"
-      arrayWidth =  4 + i * getWidth t
+      varBuffer = show v ++ ".array_str"
+      elemWidth = getWidth t
+      arrayWidth =  4 + i * elemWidth
     lv <- pushOffset arrayWidth >>= newTemp t arrayWidth >>= genVar v
+    liftIO $ putStrLn varBuffer
+    liftIO $ _space varBuffer (show (i * elemWidth)) dataFilePath
+    liftIO $ _word ('l':'e':'n':show v) (show i) dataFilePath
     case e of
-      Literal (ArrLst es) _ -> do
-        liftIO $ _word ('l':'e':'n':show v) (show i) dataFilePath
-        asigArray lv es i
+      Literal (ArrLst es) _ -> asigArray lv es 1
         where
           asigArray :: TACOP -> [Literal] -> Int -> TACMonad ()
-          asigArray lv es i = if null es then tell [] else do
+          asigArray lv es k = if null es then tell [] else do
             l <- genLiteral (head es) t
-            tell (tacSet lv (tacConstant (show i, TInt)) l)
-            asigArray lv (tail es) (i + 1)
+            temp <- pushOffset elemWidth >>= newTemp t elemWidth
+            tell (tacAssign temp (tacConstant (show k, TInt)))
+            tell (tacBin T.Mult temp temp (tacConstant ("4", TInt)))
+            tell [tacRef lv (tacLabel varBuffer)]
+            tell (tacSet' temp lv)
+            asigArray lv (tail es) (k + 1)
 
-      ArrayList es _ -> do
-        liftIO $ _word ('l':'e':'n':show v) (show i) dataFilePath
-        asigArray lv es i
+      ArrayList es _ -> asigArray lv es 1
         where
           asigArray :: TACOP -> [Expr] -> Int -> TACMonad ()
-          asigArray lv es i = if null es then tell [] else do
+          asigArray lv es k = if null es then tell [] else do
             l <- genExpr (head es)
-            tell (tacSet lv (tacConstant (show i, TInt)) l)
-            asigArray lv (tail es) (i + 1)
+            temp <- pushOffset elemWidth >>= newTemp t elemWidth
+            tell (tacAssign temp (tacConstant (show k, TInt)))
+            tell (tacBin T.Mult temp temp (tacConstant ("4", TInt)))
+            tell [tacRef lv (tacLabel varBuffer)]
+            tell (tacSet' temp lv)
+            asigArray lv (tail es) (k + 1)
 
       Variable v' _ -> do
         (rv, _, width) <- getOffset v'
@@ -766,18 +774,20 @@ genVar var temp =
       tacVar <- pushVariable (getRefVar var) temp
       tell (tacUn T.Deref temp tacVar) >> return temp
     -- Field v f t -> return()
-    -- Index v e t -> do
-    --   index   <- genExpr e
-    --   arrTemp <- 
+    Index v e _ -> do
+      i <- genExpr e
+      tacVar <- pushVariable v temp
+      tell [tacRef temp tacVar]
+      tell (tacBin T.Mult i i (tacConstant ("4", TInt)))
+      tell (tacGet temp temp i) >> return temp
     _     -> pushVariable var temp
 
 
 -- Prolog con New
 genUnOp :: UnOp -> Expr -> Type -> TACMonad TACOP
 genUnOp op e tOp = do
-  rv   <- genExpr e
-  actO <- pushOffset (getWidth tOp)
-  lv   <- newTemp tOp (getWidth tOp) actO
+  rv <- genExpr e
+  lv <- pushOffset (getWidth tOp) >>= newTemp tOp (getWidth tOp)
   
   case op of
     Length   -> tell (tacUn T.Length lv rv) >> return lv

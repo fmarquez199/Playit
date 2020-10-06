@@ -54,8 +54,8 @@
 
 world %Pruebas%:
 
-  Power x = 1
-  Power y = 3
+  @Power x = 1
+  @Power y = 3
   @Skill f = 5'4
 
 @ Operaciones aritmeticas
@@ -203,14 +203,15 @@ world %Pruebas%:
 
 @ Correcursion
   @kill dropit()
-  x = kill power1(x + y)
-  drop ~ Despues de kill x es ~
-  drop x
+  @x = kill power1(x + y)
+  @drop ~ Despues de kill x es ~
+  @drop x
   @kill a()
 
 @ Arreglos
   Power|}3{| array = |)2, 3, 4(|
-  @Power len = #array
+  Power len = #array
+  drop len, array|)0(|
   @array|)0(| = 0
   @x = array|)0(|
 

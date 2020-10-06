@@ -53,7 +53,7 @@ genFinalCode tac g c file = do
     -- TODO:
     -- busca el label en .data que corresponda, si x = # [1,2] -> en TAC guardar
     -- el array en .data y colocarle un nombre y tu tam
-    -- Length -> genLength tacInstr
+    Length -> genLength tacInstr g c file
 
     Assign -> genAssign tacInstr g c file
     Param  -> genParam tacInstr g c file 
@@ -67,6 +67,13 @@ genFinalCode tac g c file = do
   
   genFinalCode tacNext g c file
 
+
+genLength :: TAC -> InterfGraph -> VertColorMap -> String -> IO ()
+genLength tac (_, _, getReg) colorGraph file =
+  let
+    dest = makeReg colorGraph $ getReg' getReg $ tacInfo $ tacLvalue tac
+    reg1 = makeReg colorGraph $ getReg' getReg $ tacInfo $ tacRvalue1 tac
+  in lw dest ('(':reg1 ++ ")") file
 
 -- TODO!!: Chars
 genAssign :: TAC -> InterfGraph -> VertColorMap -> String -> IO ()
@@ -218,13 +225,10 @@ genThreeOperandsOp tac i@(_, _, t) color file =
     Call ->
       comment "\n\t\t# Subroutine call" file >> genJumps tac i color file >>
       if elem 'f' dest then mtc1_d "$v0" dest file else addi dest "$v0" "0" file
-    Get -> 
-      -- x = y[i]
-      comment ", Get" file >> add reg1 reg1 reg2 file >> lw  dest reg1 file
-    Set -> 
-      -- x[i] = y
-      comment ", Set" file >>
-        add dest dest reg1 file >> sw dest ("0(" ++ init reg2 ++ ")") file
+    Get -> comment ", Get" file >> add reg1 reg1 reg2 file >> -- x = y[i]
+      lw dest ("0(" ++ reg1 ++ ")") file
+    Set -> -- x[i] = y
+      comment ", Set" file >> sw dest ("0(" ++ reg1 ++ ")") file
     o -> 
       comment ("\n\t\t# Operand not supported yet: " ++ show o) file
 
