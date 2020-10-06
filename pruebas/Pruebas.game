@@ -188,7 +188,8 @@ world %Pruebas%:
   @Runes str = ~Hola, soy un string~
   @Runes x = str
   @drop str
-  @drop ~Este es otro string~
+  Runes str = ~Aqui voy, mira! no se muestran @?; cosas asi en el label'~
+  drop ~Aqui voy, mira! no se muestran @?; cosas asi en el label'~
 @Runes s
 @s = kill m(str)
 @drop s
@@ -204,12 +205,12 @@ world %Pruebas%:
 @ Correcursion
   @kill dropit()
   @x = kill power1(x + y)
-  drop ~ Despues de kill x es ~
+  @drop ~ Despues de kill x es ~
   @drop x
   @kill a()
 
 @ Arreglos
-  Power|}3{| array = |)2, 3, 4(|
+  @Power|}3{| array = |)2, 3, 4(|
   @Power len = #array
   @array|)0(| = 0
   @x = array|)0(|

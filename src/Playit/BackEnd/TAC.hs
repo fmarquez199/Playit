@@ -474,11 +474,12 @@ genPrint [] = tell []
 genPrint [e] = 
   case e of
     Literal (Str s) _ -> 
+      -- !!
       let 
         removeChars = ['?','!','@','#','$','%','&','*','(',')','[',']','{','}',
           ',','<','>','=','-','/','\\','~','|','`','\'',':',';','\"']
-        cleanStr = filter (\x -> not $ elem x removeChars)
-        strLabel = intercalate "_" (words s) ++ "_str"
+        cleanStr = filter (\x -> not $ elem x removeChars) s
+        strLabel = intercalate "_" (words cleanStr) ++ "_str"
       in do
         liftIO $ _asciiz strLabel s dataFilePath
         tell [tacPrint (tacConstant (s, TStr)) (tacLabel strLabel)]
@@ -511,6 +512,7 @@ genPrint [e] =
       tell [tacPrint (tacConstant (show c, TChar)) (tacLabel litLabel)]
     
     Literal (ArrLst ls) t -> do
+      -- !!:
       let 
         arr      = show ls
         arrLabel = "array" ++ replace "," "" (init $ tail arr) ++ "_str"
