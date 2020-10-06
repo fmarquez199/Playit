@@ -59,6 +59,7 @@ instance (SymEntryCompatible a, Show a, Show b) => Show (ThreeAddressCode a b) w
 -- Pointer operations
   show (ThreeAddressCode Ref (Just x) (Just y) Nothing)     = "\t" ++ show x ++ " := &" ++ show y
   show (ThreeAddressCode Deref (Just x) (Just y) Nothing)   = "\t" ++ show x ++ " := *" ++ show y
+  show (ThreeAddressCode Malloc (Just var) (Just size) Nothing) = "\t" ++ show var ++ " := malloc(" ++ show size ++ ")"
 -- Access for records and unions
   show (ThreeAddressCode Access (Just x) (Just r) (Just f)) = "\t" ++ show x ++ " := " ++ show r ++ "." ++ show f
 -- Input/Output
@@ -158,6 +159,8 @@ data Operation =
   Ref               |
   -- | x:= *y (lw)
   Deref             |
+  -- | make syscall 9 to allocate size of memory
+  Malloc            |
 
 -- Access for records and unions
   -- | x:= r.field

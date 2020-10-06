@@ -1,15 +1,18 @@
 world %ForWhile%:
-  controller Power i = 1 -> 10 lock i % 2 == 0: @ i se genera doble en el TAC
+  Power i = 0
+  controller i = 1 -> 10 lock i % 2 == 0: @ asig i se genera doble en el TAC
+  @controller Power i = 1 -> 10 lock i % 2 == 0: 
+    @ asig i se genera doble en el TAC. Scope interno, no se puede usar fuera
   @  gameOver
   @  keepPlaying
-  @  Button:
-  @    | i == 7 }
-  @      x = i * y
-  @      gameOver
-  @    | i == 4 } keepPlaying
-  @  .~
+    Button:
+  @  | i == 7 }
+  @    x = i * y
+  @    gameOver
+     | i == 4 } keepPlaying
+    .~
     drop i
   @  x = i
   .~
-  @drop i
+  drop i
 .~

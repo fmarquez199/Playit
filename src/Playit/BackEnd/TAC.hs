@@ -401,6 +401,9 @@ genAssig v e = case typeVar v of
 
 -- 
   t -> do
+    let 
+      isPointer (TPointer _) = True
+      isPointer _ = False
     -- isIndexVar var && isIndexExpr e -> do
     -- if isIndexVar var then tell (tacSet vTemp index eTemp)
     -- else   
@@ -415,8 +418,11 @@ genAssig v e = case typeVar v of
       vTemp <- pushOffset w >>= newTemp (typeE e) w >>= genVar v
       -- pushLiteral eTemp vTemp
       tell (tacAssign vTemp eTemp)
-    else
-      void (genVar v eTemp)
+    else do
+      vTemp <- genVar v eTemp
+      when (isPointer t) $ do
+        liftIO $ _space (show v ++ "_ptr") "4" dataFilePath
+        tell (tacAssign (tacLabel (show v ++ "_ptr")) vTemp)
 
 
 -- 
@@ -448,7 +454,6 @@ genForEach n e is nextL = do
   tell [tacNewLabel nextL]
 
 -- for con condicion
--- TODO!!: el label para la condicion no es correcto
 genForWhile :: Id -> Expr -> Expr -> Expr -> InstrSeq -> TACOP -> TACMonad ()
 genForWhile n e1 e2 cond is nextL = do
   iteration@(_,_,cont,_) <- forComparison n e1 e2 nextL
@@ -540,6 +545,7 @@ genPrint [e] =
       TFloat -> tell [tacPrint (tacConstant (show v, TFloat)) (tacLabel (show v ++ "_float"))]
       TStr -> tell [tacPrint (tacConstant (show v, TStr)) (tacLabel (show v ++ "_str"))]
       TChar -> tell [tacPrint (tacConstant (show v, TChar)) (tacLabel (show v ++ "_char"))]
+      -- TODO:
       -- TArray n _ -> tell [tacPrint (tacConstant (show v, TChar)) (tacLabel (show v ++ "_arr"))]
       TBool -> do 
         -- TODO: no es necesario jumping code, se imprime es el valor de la var
@@ -554,8 +560,8 @@ genPrint [e] =
         tell [tacNewLabel falseL]
         tell [tacPrint var (tacLabel "boolFalse")]
         tell [tacNewLabel nextL]
-      -- Apuntadores
-      -- TPointer _ -> 
+      -- TODO: Apuntadores
+      TPointer t -> tell [tacPrint (tacConstant (show v, TPointer t)) (tacLabel (show v ++ "_ptr"))]
       t -> error $ "\n\tCan't print this variable's type yet: " ++ show t ++ "\n"
 
     FuncCall s@(Call id ps) t -> do
@@ -790,7 +796,8 @@ genVar var temp =
     Desref _ t -> do
       tacVar <- pushVariable (getRefVar var) temp
       tell (tacUn T.Deref temp tacVar) >> return temp
-    -- Field v f t -> return()
+    -- TODO: Field v f t -> return()
+    -- TODO: Indexacion
     Index v e _ -> do
       i <- genExpr e
       tacVar <- pushVariable v temp
@@ -800,7 +807,7 @@ genVar var temp =
     _     -> pushVariable var temp
 
 
--- Prolog con New
+-- Prologo con New
 genUnOp :: UnOp -> Expr -> Type -> TACMonad TACOP
 genUnOp op e tOp = do
   rv <- genExpr e
@@ -810,11 +817,14 @@ genUnOp op e tOp = do
     Length   -> tell (tacUn T.Length lv rv) >> return lv
     Negative -> tell (tacUn T.Minus lv rv)  >> return lv
     New      -> do
-      tell [tacParam rv 0]
-      tell (tacCall lv "malloc" 1)
+      -- summon (IdType type)
+      -- tell [tacParam rv 0]
+      -- tell (tacCall lv "malloc" 1)
       -- prólogo
-      state <- get
-      put state{callM = True}
+      -- state <- get
+      -- put state{callM = True}
+      -- rv = Just $ T.Constant (show (getWidth t), TInt)
+      tell [tacMalloc lv rv]
       return lv
     charOp   -> do
       l0 <- newLabel
@@ -960,17 +970,3 @@ genParams (p:ps) n = do
   tell $ [tacParam param n]
   genParams ps $ n + 1
 -------------------------------------------------------------------------------
-
-
---  containsErrorString :: String -> Bool
---  containsErrorString x = x =~ "ERROR" :: Bool
-
---  fileContainsErrorString fileName = do
---     s <- readFile fileName
---     return $ containsErrorString s
-
-
--- isLabelInData :: String -> String -> IO Bool
--- isLabelInData label file = do
---   _data <- readFile file
---   return (label =~ label :: Bool)

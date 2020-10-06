@@ -63,6 +63,7 @@ genFinalCode tac g c file = do
       if lv then genThreeOperandsOp tacInstr g c file
       else       genJumps tacInstr g c file
     -- Access
+    Malloc -> genSyscalls tacInstr g c file
     o -> comment ("\n\t\t# Operand not supported yet: " ++ show o) file
   
   genFinalCode tacNext g c file
@@ -360,6 +361,8 @@ genParam tac (_, _, getReg) colorGraph file =
 genSyscalls :: TAC -> InterfGraph -> VertColorMap -> String -> IO ()
 genSyscalls tac (_, _, t) color file = 
   let
+    lv  = tacLvalue tac
+    rv1 = tacRvalue1 tac
     rv2 = tacRvalue2 tac
   in
   case tacOperand tac of
@@ -390,6 +393,7 @@ genSyscalls tac (_, _, t) color file =
           (_, "int")   -> comment ", Int" file >> li "$v0" "1" file >> lw  "$a0"  out file
           (_, "float") -> comment ", Double" file >> li "$v0" "3" file >> l_d "$f12" out file
           -- (_, "strFunc") -> comment ", String" file >> li "$v0" "4" file >> lw "$a0" out file
+          (_, "ptr") -> comment ", Pointer" file >> li "$v0" "34" file >> la "$a0" out file -- el cod de servicio cambia dependiendo de que hay dentro
           _            -> comment ", String" file >> li "$v0" "4" file >> la  "$a0"  out file
 
         syscall file
@@ -459,7 +463,7 @@ genSyscalls tac (_, _, t) color file =
           t -> comment (", ?, " ++ show tac) file
         
     Exit -> comment "\n\t\t# Exit" file >> li "$v0" "10" file >> syscall file
-    _    -> -- syscall 9
+    Malloc -> do -- syscall 9
       {-
         * sbrk (allocate heap memory) | $a0 = number of bytes to allocate | $v0 contains address of allocated memory 
         ##### Crear jugadores
@@ -473,13 +477,22 @@ genSyscalls tac (_, _, t) color file =
               syscall
               
               sw $v0, jugadores	# Enlazo el jugador 1 a la lista y se establece como el primero de la lista
-                      #( no necesariamente es el primero que va a jugar)
-              move $t0, $v0		# Actualizo el jugador actual con el primero insertado
-              li $t1, 0		# Inicializo el numero de jugadores
+                                #( no necesariamente es el primero que va a jugar)
+              move $t0, $v0		  # Actualizo el jugador actual con el primero insertado
+              li $t1, 0		      # Inicializo el numero de jugadores
       -}
-      let arg = makeReg color $ getReg' t $ tacInfo $ tacRvalue1 tac
-      in comment "\n\t\t# Ask for memory" file >>
-        move "$a0" arg file >> li "$v0" "9" file >> syscall file
+      let 
+        Constant (size, _) = fromJust rv1
+        reg = makeReg color $ getReg' t $ tacInfo lv
+
+      comment "\n\t\t# Ask for memory" file
+      li "$a0" size file 
+      li "$v0" "9" file 
+      syscall file
+      comment "\n\t\t# Store address in lv" file
+      move reg "$v0" file
+    
+    sysc -> comment ("\n\t# Syscall not supported: "++show sysc++"\n") file
 
 
 -- | Empila los registros que son responsabilidad del llamado.
@@ -601,7 +614,7 @@ getReg' getReg tacInfo =
 -- 
 tacInfo :: TACOP -> Maybe TACInfo
 tacInfo (Just (Id tac)) = Just tac
--- Constant (String, Type) = -- buscar en lits del state de TAC, el temp donde esta
+-- Constant (String, Type) = -- TODO: buscar en lits del state de TAC, el temp donde esta, para syscall 9 me sirve el String
 -- Label String
 tacInfo _ = Nothing
 
