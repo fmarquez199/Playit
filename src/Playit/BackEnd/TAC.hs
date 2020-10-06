@@ -148,7 +148,8 @@ genAssig v e = case typeVar v of
 
         v' <- pushOffset 4 >>= newTemp TInt 4 >>= genVar v
         -- tell tacAssign vTemp eTemp litLabel
-        tell [tacRef v' (tacLabel litLabel)]
+        tell [tacRef v' (tacLabel litLabel)] -- retorna memoria
+        -- tell (tacAssign v' (tacLabel litLabel)) -- retorna el string
       
       Variable v' _ -> do
         (rv, offset, width) <- getOffset v'
@@ -185,18 +186,18 @@ genAssig v e = case typeVar v of
         
       -- TODO!!: casos con EmptyVAlue -> read sin str para imprimir
       
-      -- Correcursion
+      -- TODO!!: make it work, se esta guardando la mem retornada en el label
       FuncCall (Call f params) _ -> do
         let varLabel = show v ++ "_str"
         pushSubroutine f params False
         genParams (map fst params) 0
-        -- liftIO $ _space varLabel "120" dataFilePath
+        liftIO $ _space varLabel "120" dataFilePath
         v' <- pushOffset 4 >>= newTemp TInt 4 >>= genVar v
         tell (tacCall v' f $ length params)
-        -- tell [tacRef v' (tacLabel varLabel)]
+        -- tell [tacDeref v' (tacLabel varLabel)]
         tell (tacAssign (tacLabel varLabel) v')
 
-      t -> error $ "NotImplementedError " ++ show t
+      t -> error $ "\n\tNot implemented for " ++ show t ++ " (Strings)\n"
 
 -- TODO: No guardar valores numericos en .data, ya se colocan en un temp para no mas accesos a mem
   TInt -> do
@@ -350,6 +351,8 @@ genAssig v e = case typeVar v of
         tell [tacDeref lv (tacLabel varBuffer)]
         tell (tacAssign (tacLabel varBuffer) lv)
 
+      t -> error $ "\n\tNot implemented for " ++ show t ++ " (Chars)\n"
+
   TArray (Literal (Integer i) _) t -> do
     let
       varBuffer = show v ++ "_array"
@@ -380,6 +383,8 @@ genAssig v e = case typeVar v of
         (rv, _, width) <- getOffset v'
         temp <- pushOffset width >>= newTemp t width
         copyArray lv rv temp i
+
+      -- TODO!!: Funciones ??
 
       e' -> do
         liftIO $ putStrLn $ show e'

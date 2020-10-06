@@ -74,7 +74,7 @@ main = do
             createDirectoryIfMissing True "./output/"
             -- rm file and create new one
             writeFile dataFilePath $ "# Assemble " ++ show checkedFile ++ "\n##"
-            appendFile dataFilePath "\n\t.data\nboolTrue: .asciiz \"Win\"\n"
+            appendFile dataFilePath "\nboolTrue: .asciiz \"Win\"\n"
             appendFile dataFilePath "boolFalse: .asciiz \"Lose\"\n"
             appendFile dataFilePath "newLine: .asciiz \"\\n\"\n"
             (_, state, tac) <- runRWST (genTAC ast) ast (tacInitState (symTab state))
@@ -104,6 +104,7 @@ main = do
             -- putStrLn $ "Ahora el código final en " ++ checkedFile
             let outputFile = last (strSplitAll "/" (fst (strSplit "." checkedFile))) ++ ".asm"
             d <- readFile dataFilePath
+            -- TODO!!: al eliminar labels, eliminar el primero y dejar el ultimo
             let
               db s = strStartsWith (last s) ".space 8" || strStartsWith (last s) ".double"
               w s = strStartsWith (last s) ".space 4" || strStartsWith (last s) ".word"
@@ -111,7 +112,9 @@ main = do
               double = unlines $ nub $ map (strJoin ": ") $ filter db (map (strSplitAll ": ") $ tail $ lines d)
               four = unlines $ nub $ map (strJoin ": ") $ filter w (map (strSplitAll ": ") $ tail $ lines d)
               one = unlines $ nub $ map (strJoin ": ") $ filter o (map (strSplitAll ": ") $ tail $ lines d)
-              d' = ".data\n" ++ double ++ four ++ one ++ "\n\t\t.text\n"
+              d' = "# Assemble " ++ show checkedFile ++ "\n##\n\t.data\n" ++ 
+                double ++ four ++ one ++ "\n\t\t.text\n"
+            
             writeFile ("./output/" ++ outputFile) d'
             genFinalCode (tail tac) inter color ("./output/" ++ outputFile)
             -- close outputFile

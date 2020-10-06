@@ -36,9 +36,10 @@
 @  
 @  unlock r
 @.~
-@monster string1(Runes str) Runes:
-@  unlock str
-@.~
+monster string1() Runes:
+  Runes r = ~ Estoy en string1! \n~
+  unlock r
+.~
 @boss a():
 @  drop ~Estoy en a.~
 @  kill b()
@@ -54,8 +55,8 @@
 
 world %Pruebas%:
 
-  Power x = 1
-  Power y = 3
+  @Power x = 1
+  @Power y = 3
   @Skill f = 5'4
 
 @ Operaciones aritmeticas
@@ -184,14 +185,15 @@ world %Pruebas%:
   @drop getnull
 
 @ Strings
-  @Rune|}4{| x = |)*H*, *o*, *l*, *a*(|
-  @Runes str = ~Hola, soy un string~
+  Runes str = ~Hola, soy un string~
   @Runes x = str
   @drop str
-  Runes str = ~Aqui voy, mira! no se muestran @?; cosas asi en el label'~
-  drop ~Aqui voy, mira! no se muestran @?; cosas asi en el label'~
+  @Runes str = ~Aqui voy, mira! no se muestran @?; cosas asi en el label'~
+  @drop ~Aqui voy, mira! no se muestran @?; cosas asi en el label'~
+@Rune|}4{| x = |)*H*, *o*, *l*, *a*(|
+@Runes s = kill string1() @ asi no se genera el label en .data
 @Runes s
-@s = kill m(str)
+@s= kill string1() @ y asi hay que init s y entonces los labels no quedan bien
 @drop s
 
 @ Subrutinas

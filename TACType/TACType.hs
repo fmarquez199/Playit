@@ -44,6 +44,7 @@ instance (SymEntryCompatible a, Show a, Show b) => Show (ThreeAddressCode a b) w
   show (ThreeAddressCode NewLabel (Just l) Nothing Nothing) = show l ++ ": "
 -- Calling functions
   show (ThreeAddressCode Param Nothing (Just p) _)          = "\tparam " ++ show p
+  show (ThreeAddressCode Param (Just arg) _ _)              = "\targ " ++ show arg
   show (ThreeAddressCode Call Nothing (Just f) (Just n))    = "\tcall " ++ show f ++ ", " ++ show n
   show (ThreeAddressCode Call (Just x) (Just f) (Just n))   = "\t" ++ show x ++ " := call " ++ show f ++ ", " ++ show n
   show (ThreeAddressCode Return Nothing Nothing Nothing)    = "\treturn" 

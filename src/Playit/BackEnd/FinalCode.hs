@@ -97,7 +97,9 @@ genAssign tac (_, _, getReg) colorGraph file = do
           let 
             i    = show (fromJust rv1)
             imm  = if i == "True" then "1" else if i == "False" then "0" else i
-            load = if elem '_' i then l_d else li
+            load = if elem "_float" $ subsequences i then l_d 
+                  else if elem "_str" $ subsequences i then lw
+                  else li
           in 
             comment (", const: " ++ show rv1) file >> load dest imm file
   else
@@ -217,7 +219,8 @@ genThreeOperandsOp tac i@(_, _, t) color file =
 
     Call ->
       comment "\n\t\t# Subroutine call" file >> genJumps tac i color file >>
-      if elem 'f' dest then mtc1_d "$v0" dest file else addi dest "$v0" "0" file
+      comment "\n\t\t# Save return value" file >>
+      if elem 'f' dest then mtc1_d "$v0" dest file else move dest "$v0" file
     Get -> 
       -- x = y[i]
       comment ", Get" file >> add reg1 reg1 reg2 file >> lw  dest reg1 file
@@ -271,7 +274,10 @@ genJumps tac (_, _, t) color file = do
             --return a value into a register
             _ -> 
               let retVal = makeReg color $ getReg' t $ tacInfo $ tacRvalue1 tac
-              in comment ", return var" file >> if elem 'f' retVal then mfc1_d "$v0" retVal file else move "$v0" retVal file >> epilogue file
+              in 
+              comment ", return var" file >> 
+              if elem 'f' retVal then mfc1_d "$v0" retVal file 
+              else move "$v0" retVal file >> epilogue file
     _ -> do
       let
         goto = show' (tacOperand tac)
@@ -361,6 +367,7 @@ genSyscalls tac (_, _, t) color file =
         case strSplit "_" out of
           (_, "int")   -> comment ", Int" file >> li "$v0" "1" file >> lw  "$a0"  out file
           (_, "float") -> comment ", Double" file >> li "$v0" "3" file >> l_d "$f12" out file
+          (_, "strFunc") -> comment ", String" file >> li "$v0" "4" file >> lw "$a0" out file
           _            -> comment ", String" file >> li "$v0" "4" file >> la  "$a0"  out file
 
         syscall file
