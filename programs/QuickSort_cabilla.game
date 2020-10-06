@@ -1,0 +1,175 @@
+@ swap con pasaje por referencia, i.e.
+@ void swapi(var int a, var int b) { int t; t = a; a = b; b = t; }
+@ pero No puede escribir esta función usando apuntadores para simular pasaje por referencia.
+
+@ swap for ints
+boss swapP(Power x, Power y):
+  Power temp
+  temp = x
+  x    = y
+  y    = temp
+.~
+
+@ swap for floats
+boss swapS(Skill x, Skill y):
+  Skill temp
+  temp = x
+  x    = y
+  y    = temp
+.~
+
+@ swap for chars
+boss swapR(Rune x, Rune y):
+  Rune temp
+  temp = x
+  x    = y
+  y    = temp
+.~
+
+@ Particionado para ints
+monster partitionP(Power puff array, Power l, Power h) Power:
+  @Power x, i, j  @ no las declara? la suma mas adelante no la agarra
+  Power x
+  Power i
+  Power j
+  x = puff array + h
+  i = l - 1
+
+  controller j = l -> h:
+    Button:
+    | (puff array + j) <= x }
+      i++
+      kill swapP(puff array + i, puff array + j)
+    .~
+    kill swapP(puff array + i + 1, puff array + h)
+  .~
+  unlock i + 1
+.~
+
+@ Particionado para floats
+monster partitionS(Skill puff array, Power l, Power h) Power:
+  @Power x, i, j
+  Power x
+  Power i
+  Power j
+  x = puff array + h
+  i = l - 1
+
+  controller j = l -> h:
+    Button:
+    | (puff array + j) <= x }
+      i++
+      kill swapS(puff array + i, puff array + j)
+    .~
+    kill swapS(puff array + i + 1, puff array + h)
+  .~
+  unlock i + 1
+.~
+
+@ Particionado para chars
+monster partitionR(Rune puff array, Power l, Power h) Power:
+  @Power x, i, j
+  Power x
+  Power i
+  Power j
+  x = puff array + h
+  i = l - 1
+
+  controller j = l -> h:
+    Button:
+    | (puff array + j) <= x }
+      i = i + 1
+      @ i++, no la ve declarada
+      kill swapR(puff array + i, puff array + j)
+    .~
+    kill swapR(puff array + i + 1, puff array + h)
+  .~
+  unlock i + 1
+.~
+
+@ Quicksort para ints
+boss quicksortP(Power? array, Power l, Power h):
+  Button:
+  | l < h }
+    Power p
+    p = kill partitionP(array,l,h)
+    kill quicksortP(array,l,p - 1)
+    kill quicksortP(array,p - 1,h)
+  .~
+.~
+
+@ Quicksort para floats
+boss quicksortS(Skill? array, Power l, Power h):
+  Button:
+  | l < h }
+    Power p
+    p = kill partitionS(array,l,h)
+    kill quicksortS(array,l,p - 1)
+    kill quicksortS(array,p - 1,h)
+  .~
+.~
+
+@ Quicksort para chars
+boss quicksortR(Rune? array, Power l, Power h):
+  Button:
+  | l < h }
+    Power p
+    p = kill partitionR(array,l,h)
+    kill quicksortR(array,l,p - 1)
+    kill quicksortR(array,p - 1,h)
+  .~
+.~
+
+world %QuickSort%:
+  play:
+    @ Ask order: 1. ints, 2. floats, 3. chars, 0. exit
+    Power opt = joystick ~Que quieres ordenar? 1. Enteros. 2. Flotantes. 3. Caracteres. 0. Salir~
+    @ Ask how many (1 <= n <= 100)
+    Power n = joystick ~Longitud del arreglo. Del 1 al 100.~
+    Button:
+    | n < 0 || n > 100 }
+      drop ~El numero no esta dentro del rango. Vuelve a interntar.~
+      keepPlaying
+    .~
+    @ Ask for array elems
+    Power i
+    @ quicksort
+    Button:
+    | opt == 0 } gameOver
+    | opt == 1 } 
+      Power|}n{| arrayP
+      controller i = 0 -> n - 1:
+        arrayP|)i(| = joystick ~Elemento.~
+      .~
+      kill quicksortP(arrayP,0,n - 1)
+      @ Show sorted array
+      drop ~Arreglo ordenado.~
+      drop arrayP
+
+    | opt == 2 } 
+      Skill|}n{| arrayS
+      controller i = 0 -> n - 1:
+        arrayS|)i(| = joystick ~Elemento.~
+      .~
+      kill quicksortS(arrayS,0,n - 1)
+      @ Show sorted array
+      drop ~Arreglo ordenado.~
+      drop arrayS
+
+    | opt == 3 } 
+      Power|}n{| arrayR
+      controller i = 0 -> n - 1:
+        arrayR|)i(| = joystick ~Elemento.~
+      .~
+      kill quicksortR(arrayR,0,n - 1)
+      @ Show sorted array
+      drop ~Arreglo ordenado.~
+      drop arrayR
+
+    | notPressed }
+      drop ~No escogiste ninguna opcion. Vuelve a intentar.~
+      keepPlaying
+    .~
+  lock Win
+  .~
+.~
