@@ -11,3 +11,5 @@ src/Playit/*.o
 src/Playit/*.hi
 Playit.cabal
 output/*
+*.o
+*.hi
