@@ -604,6 +604,13 @@ _asciiz name str file = appendFile file $ "\n" ++ name ++ ": .asciiz " ++ show s
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
+-- | Generates the code for '.byte' data
+-- 
+_byte :: String -> String -> String -> IO ()
+_byte name num file = appendFile file $ "\n" ++ name ++ ": .byte " ++ num
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
 -- | Generates the code for '.word' data
 -- 
 _word :: String -> String -> String -> IO ()
