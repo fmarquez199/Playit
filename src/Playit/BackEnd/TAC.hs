@@ -827,7 +827,6 @@ genArrayList (elem:elems) width index arrTemp = do
 
 
 -- TODO: width del tipo string
--- Creo que no llega hasta aqui, en genAssig toco sus casos
 -- TODO: integrar aqui lo que hay en genAssig y asi esta en un solo sitio
 genRead :: TACMonad TACOP
 genRead = do

@@ -131,7 +131,7 @@ updatePromiseInExpr name (Binary op e1 e2 tb) t = Binary op ne1 ne2 ntb
           fromMaybe TError (getTLists [tE1,tE2])
       x | isAritOp x ->
         if tE1 == TPDummy || tE2 == TPDummy then TPDummy
-        -- TODO : Faltan inferencias aquí para e2 o e1 si el otro es concreto
+        -- TODO: Faltan inferencias aquí para e2 o e1 si el otro es concreto
         else
           if (tE1 == TInt || tE2 == TFloat) && tE2 == tE1 then tE1 
           else TError
@@ -370,7 +370,7 @@ addLateChecks name e lpos lids = do
 --       Concat -> fromMaybe TError (getTLists [tE1,tE2])      
 --       x | isAritOp x && (tE1 == TPDummy || tE2 == TPDummy) ->
 --           TDummy
---           -- TODO : Faltan inferencias aquí para e2 o e1 si el otro es concreto
+--           -- TODO: Faltan inferencias aquí para e2 o e1 si el otro es concreto
 --         | isAritOp x && (tE1 == TInt || tE1 == TFloat) && tE2 == tE1 -> tE1
 --         | otherwise -> TError
 --       _   -> tb
@@ -493,7 +493,7 @@ checkExprCalls promise tr = do
     put state{proms = map modifyTypePromise promises}
     return newcheck
 
-  -- TODO :Eliminar solo si se actualiza a un tipo concreto
+  -- TODO: Eliminar solo si se actualiza a un tipo concreto
   state'@SymTabState{proms = promises} <- get
   let 
     modifyTypePromise prom = 
@@ -563,7 +563,7 @@ checkExprForEach promise tr = do
     put state'{proms = map modifyTypePromise promises}
     return newcheck
 
-  -- TODO :Eliminar solo si se actualiza a un tipo concreto
+  -- TODO: Eliminar solo si se actualiza a un tipo concreto
   state''@SymTabState{proms = promises} <- get
   let 
     modifyTypePromise prom = 
@@ -623,7 +623,7 @@ checkExpr promise tr = do
     put state{proms = map modifyTypePromise promises}
     return newcheck
 
-  -- TODO :Eliminar solo si se actualiza a un tipo concreto
+  -- TODO: Eliminar solo si se actualiza a un tipo concreto
   state'@SymTabState{proms = promises} <- get
   let 
     modifyTypePromise prom = 
