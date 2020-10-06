@@ -9,22 +9,22 @@ world %Fibonnaci%:
   @  n--
   @lock n >= 0
   @.~
+
+  drop ~Fibonnaci~
+  drop a
+  drop b
   
   controller Power i = 0 -> n - 1:
     c = a + b
     a = b
     b = c
+    drop c
     @drop ~loop .i.~
     @drop i
     @drop ~loop .c.~
-    @drop c
     @drop ~loop .a.~
     @drop a
     @drop ~loop .b.~
-    @drop b
     @drop ~next~
   .~
-
-  drop ~Fibonnaci~
-  drop a
 .~

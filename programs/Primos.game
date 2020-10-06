@@ -1,58 +1,39 @@
-monster primo(Power n) Battle:
-  Battle esPrimo = Win
+boss primos(Power m):
   Button:
-  | n < 1 } esPrimo = Lose
-  @| n == 2 } unlock Win  @deberia retornar pero sige
-  .~
-  Power divisor = 2
-  play:
-    Button:
-    | n % divisor == 0 } 
-      esPrimo = Lose
-      gameOver
-    .~
-    divisor++
-  lock divisor <= n
-  .~
-
-  unlock esPrimo
-.~
-"'
-boss primos(Power maxn):
-  Power x = 2
-  play:
-    Button:
-    | kill primo(x) }
-      drop x
-      maxn--
-      x++
-      keepPlaying
-    .~
-    x++
-  lock maxn != 0
-  .~
-.~
-'"
-world %Primos%:
-  Power max = joystick ~Indica cuantos primos quieres.~
-  Button:
-  | max <= 0 } drop ~Esta bien si no deseas ninguno, me voy.~
-  | notPressed } @ kill primos(max)
-    Power i = 2
-    @Battle esPrimo = Lose
-    play:
-      @esPrimo = kill primo(i)
-      Button:
-      | kill primo(i) } @ gen 2 func/labels primo
-      @| esPrimo }
-        drop i
-        max--
-        @keepPlaying
-      @| notPressed } i++
+    | m > 1 }
+      Power candidato = 2
+      play:
+        Button:
+          | kill primo(candidato) }
+            drop candidato
+            m--
+        .~
+      candidato++
+      lock m > 1
       .~
-      i++
-    lock max > 0
+  .~
+.~
+
+monster primo(Power p) Battle:
+  Power divisor = 2
+  Battle isPrime = Win
+  play:
+    Button:
+      | p % divisor == 0 }
+        isPrime = Lose
+        unlock isPrime
+      | notPressed } divisor++
     .~
+  lock divisor * divisor < p
+  .~
+  unlock isPrime
+.~
+
+world %Primos%:
+  Power max = joystick ~Indica cuantos primos quieres~
+  Button:
+    | max < 1 } drop ~Esta bien si no deseas ninguno~
+    | notPressed } kill primos(max)
   .~
   drop ~Chau~
 .~

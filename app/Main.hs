@@ -110,7 +110,7 @@ main = do
               color =  colorDsatur inter
             -- putStrLn $ "\nLive Vars: " ++ printLiveVars (toList (bLiveVars regAlloc))
             -- putStrLn $ "\nInterference Graph: " ++ printIGNodes igNodes
-            -- putStrLn $ "\nDSatur coloring: " ++ show color
+            putStrLn $ "\nDSatur coloring: " ++ show color
             -- putStrLn $ "Ahora el código final en " ++ checkedFile
             let outputFile = last (strSplitAll "/" (fst (strSplit "." checkedFile))) ++ ".asm"
             d <- readFile dataFilePath
