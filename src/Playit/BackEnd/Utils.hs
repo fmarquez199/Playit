@@ -7,6 +7,7 @@
 -}
 module Playit.BackEnd.Utils where
 
+import Control.Monad.IO.Class      (liftIO)
 import Control.Monad.Trans.RWS     (tell, get, put)
 import Data.List                   (elemIndex, find)
 import Data.Maybe
@@ -368,7 +369,7 @@ pushSubroutine s ps isProc = do
     ast = getAST . extraInfo . head . fromJust $ lookupInSymTab s st
     newSubr = (s, ps, ast, isProc)
     fst4 (x,_,_,_) = x
-    keepCorr = not $ elem s (map fst4 subroutines)
+    keepCorr = (not $ elem s (map fst4 subroutines)) || corr
   if keepCorr then
     put state{corr = keepCorr, subs = newSubr : subroutines}
   else do

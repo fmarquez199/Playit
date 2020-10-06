@@ -76,7 +76,7 @@ genSubroutine (s, ps, is, isProc) = do
   getParams s ps 0
   mapM_ genCode is
   state@Operands{corr = newSubrAdded, subs = (subr:_)} <- get
-  when newSubrAdded $ genSubroutine subr
+  when newSubrAdded $ put state{corr = False} >> genSubroutine subr
   when isProc (genReturn Nothing)
 
 {-  El problema es que en efecto cuando consulto el parámetro este no ha sido 
@@ -182,10 +182,9 @@ genAssig v e = case typeVar v of
         tell [tacRead (tacConstant (var, TStr)) (tacLabel varLabel)]
         tell [tacRef lv (tacLabel varLabel)]
         
-      -- TODO!!: 
-      -- casos con EmptyVAlue -> read sin str para imprimir
+      -- TODO!!: casos con EmptyVAlue -> read sin str para imprimir
+      
       -- Correcursion
-      -- TODO!!:
       FuncCall (Call f params) _ -> do
         let varLabel = show v ++ "_str"
         pushSubroutine f params False
@@ -453,6 +452,7 @@ genPrint [e] =
       TInt -> tell [tacPrint (tacConstant (show v, TInt)) (tacLabel (show v ++ "_int"))]
       TFloat -> tell [tacPrint (tacConstant (show v, TFloat)) (tacLabel (show v ++ "_float"))]
       TStr -> tell [tacPrint (tacConstant (show v, TStr)) (tacLabel (show v ++ "_str"))]
+      TArray n _ -> error $ "\n\tWhy i'm here? Print array: "++show e
       TBool -> do
         var <- pushOffset 1 >>= newTemp TBool 1 >>= genVar v
         nextL  <- newLabel
@@ -628,7 +628,7 @@ genNull = return $ tacVariable $ Temp "_null" TInt (4, 4)
   Union
   
   integrar lo que hay en genAssig
-  TODO!!: colocarlo en el .data, si es un array colocar su tam
+  TODO: colocarlo en el .data, si es un array colocar su tam
 -}
 -- import Text.Regex.Posix ((=~))
 genLiteral :: Literal -> Type -> {- String -> -} TACMonad TACOP

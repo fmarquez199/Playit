@@ -145,7 +145,8 @@ insertDeclarations ids t asigsPos = do
         let idsInScope = [i | i <- ids', index <- redefsIndexs, i == ids' !! index]
         in addToSymTab idsInScope (info ids')
 --
-  return $ reverse $ initialize (zip ids' asigs) t
+  -- return $ reverse $ initialize (zip ids' asigs) t -- para cuando soportemos init arrays por defecto
+  return asigs
 
 
 initialize :: [(Id,Instr)] -> Type -> InstrSeq
@@ -162,7 +163,7 @@ initialize ((n, assig):ids) t =
       TStr        -> assign (defaultBaseVal t) : initialize ids t
       -- TNew t'     -> 
       -- TList t'    -> 
-      tipo -> error $ "No se como inicializar esto todavia: " ++ show tipo
+      tipo -> error $ "\n\tNo se como inicializar esto todavia: " ++ show tipo ++ "\n"
   else
     assig : initialize ids t
 
@@ -177,7 +178,7 @@ defaultBaseVal TFloat = Literal (Floatt 0.0) TFloat
 defaultBaseVal TBool  = Literal (Boolean True) TBool
 defaultBaseVal TChar  = Literal (Character '\0') TChar
 defaultBaseVal TStr   = Literal (Str "") TStr
-defaultBaseVal t      = error $ "Esto no es un tipo basico: " ++ show t
+defaultBaseVal t      = error $ "\n\tEsto no es un tipo basico: " ++ show t ++ "\n"
 
 emptyAssig :: Instr -> Bool
 emptyAssig (Assig _ (Literal EmptyVal _) _) = True
@@ -185,8 +186,8 @@ emptyAssig _                                = False
 
 getSize :: Expr -> Int
 getSize (Literal (Integer n) _) = n
--- getSize (Variable var _)        = -- Buscar el valor de var, 0.o
-getSize e = error $ "Expresion para tamaño de arreglo incorrecta: " ++ show e
+-- getSize (Variable var _)        = -- TODO: Buscar el valor de var, 0.o
+getSize e = error $ "\n\tExpresion para tamaño de arreglo incorrecta: " ++ show e ++ "\n"
 -------------------------------------------------------------------------------
 
 

@@ -473,7 +473,6 @@ activateCalled file = do
   sw   "$t7" "-44($sp)" file
   sw   "$t8" "-48($sp)" file
   sw   "$t9" "-52($sp)" file
-  -- TODO!!: preguntar por alineacion
   alignFloats "act_called" file
   s_d  "$f0" "-56($sp)" file
   s_d  "$f2" "-64($sp)" file
@@ -541,7 +540,6 @@ activateCaller file = do
   lw   "$t7" "-44($sp)" file
   lw   "$t8" "-48($sp)" file
   lw   "$t9" "-52($sp)" file
-  -- TODO!!: preguntar por alineacion
   alignFloats "act_caller" file
   l_d  "$f0" "-56($sp)" file
   l_d  "$f2" "-64($sp)" file
@@ -560,7 +558,7 @@ makeReg colorGraph number =
 
 -- | Get reg (vertex/node) from color DSatur graph
 -- 
--- TODO!!: a veces da error con fromJust de Nothing
+-- TODO!!:
 getReg' :: (TACInfo -> Maybe G.Vertex) -> Maybe TACInfo -> G.Vertex
 getReg' _      Nothing = error "\n\t'tacInfo' is Nothing getReg'\n"
 getReg' getReg tacInfo = 
