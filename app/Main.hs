@@ -11,7 +11,7 @@ module Main where
 import Control.Monad                     (mapM_)
 import Control.Monad.Trans.RWS           (runRWST)
 import Control.Monad.Trans.State         (execStateT)
-import Data.List                          (nub)
+import Data.List                         (nub)
 import Data.Strings                      (strEndsWith, strSplit, strSplitAll, strStartsWith, strJoin)
 import Playit.BackEnd.RegAlloc.FlowGraph
 import Playit.BackEnd.RegAlloc.GraphColoring
@@ -45,6 +45,16 @@ checkExt []         = Left "\nError: no file given\n"
 checkExt (file:_:_) = Left "\nError: more than one file given\n"
 checkExt [file]     = if strEndsWith file ".game" then Right file
                       else  Left "\nError: extension for file not valid\n"
+
+f :: [String] -> [String]
+f ls = if null ls then [] else
+  (head ls):f (filter (notlabel (label (head ls))) ls)
+
+label :: String -> String
+label = (fst . strSplit ":")
+
+notlabel :: String -> String -> Bool
+notlabel l1 l2 = l1 /= label l2
 
 main :: IO ()
 main = do
@@ -108,14 +118,15 @@ main = do
             let
               db s = strStartsWith (last s) ".space 8" || strStartsWith (last s) ".double"
               w s = strStartsWith (last s) ".space 4" || strStartsWith (last s) ".word"
-              o s = strStartsWith (last s) ".asciiz" 
-              double = unlines $ nub $ map (strJoin ": ") $ filter db (map (strSplitAll ": ") $ tail $ lines d)
-              four = unlines $ nub $ map (strJoin ": ") $ filter w (map (strSplitAll ": ") $ tail $ lines d)
-              one = unlines $ nub $ map (strJoin ": ") $ filter o (map (strSplitAll ": ") $ tail $ lines d)
-              d' = "# Assemble " ++ show checkedFile ++ "\n##\n\t.data\n" ++ 
+              o s = strStartsWith (last s) ".asciiz"
+              d' = f (lines d)
+              double = unlines $ nub $ map (strJoin ": ") $ filter db (map (strSplitAll ": ") $ tail $ d')
+              four = unlines $ nub $ map (strJoin ": ") $ filter w (map (strSplitAll ": ") $ tail $ d')
+              one = unlines $ nub $ map (strJoin ": ") $ filter o (map (strSplitAll ": ") $ tail $ d')
+              d'' = "# Assemble " ++ show checkedFile ++ "\n##\n\t.data\n" ++ 
                 double ++ four ++ one ++ "\n\t\t.text\n"
             
-            writeFile ("./output/" ++ outputFile) d'
+            writeFile ("./output/" ++ outputFile) d''
             genFinalCode (tail tac) inter color ("./output/" ++ outputFile)
             -- close outputFile
           else
