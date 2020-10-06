@@ -44,7 +44,7 @@ world %Estadistica%:
         drop ~El promedio el maximo y el minimo es~, sum
         drop ~La varianza y la desviacion estandar son 0~
       | notPressed }
-        Skill sqSum = sum * sum
+        @Skill sqSum = sum * sum
         @Skill min = sum
         @Skill max = sum
         Skill contador = 1'0
@@ -53,18 +53,18 @@ world %Estadistica%:
           Skill d = joystick ~Dime el siguiente dato~
           @min = (min > d) ? d : min
           @max = (max < d) ? d : max
-          sqSum = sqSum + sum * sum
+          @sqSum = sqSum + sum * sum
           sum = sum + d
         lock contador < n
         .~
         Skill prom = sum / n
-        Skill var = (sqSum - sum * prom) / (n - const)
+        @Skill var = (sqSum - sum * prom) / (n - const)
         drop ~Tienes ~, n, ~ datos.~
         @drop ~El minimo es ~, min
         @drop ~El maximo es ~, max
         drop ~El promedio es ~, prom
-        drop ~La varianza es ~, var
-        drop ~La desviacion estandar es ~, kill sqrt(var)
+        @drop ~La varianza es ~, var
+        @drop ~La desviacion estandar es ~, kill sqrt(var)
     .~
   lock Win
   .~
