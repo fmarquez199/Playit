@@ -212,8 +212,9 @@ world %Pruebas%:
   @kill a()
 
 @ Arreglos
-  @Power|}3{| array = |)2, 3, 4(|
-  @Power len = #array
+  Power|}3{| array = |)2, 3, 4(|
+  Power len = #array
+  drop len, array|)0(|
   @array|)0(| = 0
   @x = array|)0(|
 
