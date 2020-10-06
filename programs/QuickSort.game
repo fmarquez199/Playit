@@ -26,58 +26,6 @@ boss swapR(Rune x, Rune y):
   y    = temp
 .~
 
-@ Particionado para ints
-monster partitionP(Power? array, Power l, Power h) Power:
-  Power x, i, j
-  x = puff array + h
-  i = l - 1
-
-  controller j = l -> h:
-    Button:
-    | (puff array + j) <= x }
-      i++
-      kill swapP(puff array + i, puff array + j)
-    .~
-    kill swapP(puff array + i + 1, puff array + h)
-  .~
-  unlock i + 1
-.~
-
-@ Particionado para floats
-monster partitionS(Skill? array, Power l, Power h) Power:
-  Power x, i, j
-  x = puff array + h
-  i = l - 1
-
-  controller j = l -> h:
-    Button:
-    | (puff array + j) <= x }
-      i++
-      kill swapS(puff array + i, puff array + j)
-    .~
-    kill swapS(puff array + i + 1, puff array + h)
-  .~
-  unlock i + 1
-.~
-
-@ Particionado para chars
-monster partitionR(Rune? array, Power l, Power h) Power:
-  Power x, i, j, p
-  x = puff array + h
-  i = l - 1
-
-  controller j = l -> h:
-    Button:
-    | (puff array + j) <= x }
-      i++
-      kill swapR(puff array + i, puff array + j)
-    .~
-    kill swapR(puff array + i + 1, puff array + h)
-  .~
-  p = i + 1
-  unlock p
-.~
-
 world %QuickSort%:
   play:
     @ Ask order: 1. ints, 2. floats, 3. chars, 0. exit
@@ -104,8 +52,8 @@ world %QuickSort%:
     | opt == 1 }
       Power|}n{| arrayP
       controller i = 0 -> n - 1:
-        x = joystick ~Elemento.~
-        arrayP|)i(| = x
+        Power e = joystick ~Elemento.~
+        arrayP|)i(| = e
       .~
       @ Aux stack
       Power|}h - l + 1{| stackP
@@ -157,6 +105,7 @@ world %QuickSort%:
       drop ~Arreglo ordenado.~
       drop arrayP
     
+    "'
     | opt == 2 }
       Skill|}n{| arrayS
       controller i = 0 -> n - 1:
@@ -164,7 +113,7 @@ world %QuickSort%:
         arrayS|)i(| = x
       .~
       @ Aux stack
-      Skill|}h - l + 1{| stackS
+      Power|}h - l + 1{| stackS
       @ init stack
       top = -1
       @ push init values
@@ -180,8 +129,8 @@ world %QuickSort%:
         l = stackS|)top(|
         top--
         @ Set pivot element at its correct position in sorted array
-        x = arrayS|)h(|
-        i = arrayS|)l - 1(|
+        xS = arrayS|)h(|
+        iS = arrayS|)l - 1(|
         controller j = l -> h - 1:
           Button:
           | arrayS|)j(| <= x }
@@ -268,9 +217,9 @@ world %QuickSort%:
       @ Show sorted array
       drop ~Arreglo ordenado.~
       drop arrayR
-
+    '"
     | notPressed }
-      drop ~No escogiste ninguna opcion. Vuelve a intentar.~
+      drop ~No escogiste ninguna opcion valida. Vuelve a intentar.~
       keepPlaying
     .~
   lock Win
