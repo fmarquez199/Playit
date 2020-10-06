@@ -239,6 +239,12 @@ copyStr lv rv t i n = if i > n then tell [] else do
   tell (tacSet lv (tacConstant (show i, TInt)) t)
   copyStr lv rv t (i + 1) n
 
+copyArray :: TACOP -> TACOP -> TACOP -> Int -> TACMonad ()
+copyArray lv rv temp i = if i < 0 then tell [] else do
+  tell (tacGet temp rv (tacConstant (show i, TInt)))
+  tell (tacSet lv (tacConstant (show i, TInt)) temp)
+  copyArray lv rv temp (i - 1)
+
 -------------------------------------------------------------------------------
 lenArray :: Expr -> Int
 lenArray (ArrayList ls _) = length ls

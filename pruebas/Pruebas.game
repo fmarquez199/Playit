@@ -175,13 +175,13 @@ world %Pruebas%:
   @drop getf
   @Runes gets = joystick ~Un String~
   @drop gets
-@Runes gets
-@gets = joystick ~Un String~
-@drop gets
-@Runes getc = joystick ~Un Char~
-@drop getc
-@Runes getnull = joystick
-@drop getnull
+  @Runes gets
+  @gets = joystick ~Un String~
+  @drop gets
+  @Runes getc = joystick ~Un Char~
+  @drop getc
+  @Runes getnull = joystick
+  @drop getnull
 
 @ Strings
   @Rune|}4{| x = |)*H*, *o*, *l*, *a*(|
@@ -209,7 +209,7 @@ world %Pruebas%:
   @kill a()
 
 @ Arreglos
-  @Power|}3{| array = |)2, 3, 4(|
+  Power|}3{| array = |)2, 3, 4(|
   @Power len = #array
   @array|)0(| = 0
   @x = array|)0(|

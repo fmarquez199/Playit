@@ -144,10 +144,8 @@ insertDeclarations ids t asigsPos = do
       else
         let idsInScope = [i | i <- ids', index <- redefsIndexs, i == ids' !! index]
         in addToSymTab idsInScope (info ids')
---
-  -- return $ reverse $ initialize (zip ids' asigs) t -- para cuando soportemos init arrays por defecto
   return asigs
-
+--
 
 initialize :: [(Id,Instr)] -> Type -> InstrSeq
 initialize [] _               = []
