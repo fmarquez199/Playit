@@ -388,10 +388,10 @@ pushSubroutine s ps isProc = do
     fst4 (x,_,_,_) = x
     notInSubs = not $ elem s (map fst4 subroutines) 
     keepCorr = notInSubs || corr
-  liftIO $ print $ "newSubr: "++show s
-  liftIO $ print $ "corr: "++show corr
-  liftIO $ print $ "keepCorr: "++show keepCorr
-  liftIO $ print $ "subs: "++show subroutines
+  -- liftIO $ print $ "newSubr: "++show s
+  -- liftIO $ print $ "corr: "++show corr
+  -- liftIO $ print $ "keepCorr: "++show keepCorr
+  -- liftIO $ print $ "subs: "++show subroutines
   if keepCorr then
     if notInSubs then put state{corr = keepCorr, subs = newSubr : subroutines}
     else put state{corr = not keepCorr}
