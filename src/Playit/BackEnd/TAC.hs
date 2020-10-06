@@ -350,6 +350,43 @@ genAssig v e = case typeVar v of
         tell [tacRead (tacConstant (show v, TChar)) (tacLabel varBuffer)]
         tell [tacDeref lv (tacLabel varBuffer)]
         tell (tacAssign (tacLabel varBuffer) lv)
+
+  TArray (Literal (Integer i) _) t -> do
+    let
+      varBuffer = show v ++ "_array"
+      arrayWidth =  4 + i * getWidth t
+    lv <- pushOffset arrayWidth >>= newTemp t arrayWidth >>= genVar v
+    case e of
+      Literal (ArrLst es) _ -> do
+        liftIO $ _word ('l':'e':'n':show v) (show i) dataFilePath
+        asigArray lv es i
+        where
+          asigArray :: TACOP -> [Literal] -> Int -> TACMonad ()
+          asigArray lv es i = if null es then tell [] else do
+            l <- genLiteral (head es) t
+            tell (tacSet lv (tacConstant (show i, TInt)) l)
+            asigArray lv (tail es) (i + 1)
+
+      ArrayList es _ -> do
+        liftIO $ _word ('l':'e':'n':show v) (show i) dataFilePath
+        asigArray lv es i
+        where
+          asigArray :: TACOP -> [Expr] -> Int -> TACMonad ()
+          asigArray lv es i = if null es then tell [] else do
+            l <- genExpr (head es)
+            tell (tacSet lv (tacConstant (show i, TInt)) l)
+            asigArray lv (tail es) (i + 1)
+
+      Variable v' _ -> do
+        (rv, _, width) <- getOffset v'
+        temp <- pushOffset width >>= newTemp t width
+        copyArray lv rv temp i
+
+      e' -> do
+        liftIO $ putStrLn $ show e'
+        eTemp <- genExpr e'
+        tell (tacAssign lv eTemp)
+
 -- 
   t -> do
     -- isIndexVar var && isIndexExpr e -> do
@@ -481,6 +518,7 @@ genPrint [e] =
     Literal _ _ -> tell [] -- Register [Expr]
 
     Variable v _ -> case typeVar v of
+      TInt -> tell [tacPrint (tacConstant (show v, TInt)) (tacLabel (show v ++ "_int"))]
       TFloat -> tell [tacPrint (tacConstant (show v, TFloat)) (tacLabel (show v ++ "_float"))]
       TStr -> tell [tacPrint (tacConstant (show v, TStr)) (tacLabel (show v ++ "_str"))]
       TBool -> do

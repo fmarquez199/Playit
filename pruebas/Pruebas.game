@@ -166,8 +166,8 @@ world %Pruebas%:
   @drop getf
   @Runes gets = joystick ~Un String~
   @drop gets
-  Rune getc = joystick ~Un Char~
-  drop getc
+  @Rune getc = joystick ~Un Char~
+  @drop getc
 @Runes getnull = joystick
 @drop getnull
 
@@ -196,7 +196,7 @@ world %Pruebas%:
   @drop x
 
 @ Arreglos
-  @Power|}3{| array = |)2, 3, 4(|
+  Power|}3{| array = |)2, 3, 4(|
   @Power len = #array
   @array|)0(| = 0
   @x = array|)0(|
