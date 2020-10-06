@@ -20,11 +20,15 @@ monster sqrt(Skill f) Skill:
   Skill half = 0'5
   Skill new = half * (prev + f)
   Skill err = 0'000001
-  play:
+  controller Power i = 1 -> 5 lock kill abs(new - prev) <= err:
     prev = new
     new = half * (new + f / new)
-  lock kill abs(new - prev) <= err
   .~
+  @play:
+  @  prev = new
+  @  new = half * (new + f / new)
+  @lock kill abs(new - prev) <= err
+  @.~
   unlock new
 .~
 

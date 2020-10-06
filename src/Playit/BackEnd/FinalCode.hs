@@ -295,7 +295,7 @@ genJumps tac (_, _, t) color file = do
               let retVal = makeReg color $ getReg' t $ tacInfo $ tacRvalue1 tac
               in 
               comment ", return var" file >> 
-              if elem 'f' retVal then mfc1_d "$v0" retVal file 
+              if elem 'f' retVal then mfc1_d "$v0" retVal file >> epilogue file
               else move "$v0" retVal file >> epilogue file
     _ -> do
       let
