@@ -353,51 +353,51 @@ genAssig v e = case typeVar v of
 
       t -> error $ "\n\tNot implemented for " ++ show t ++ " (Chars)\n"
 
-  TArray (Literal (Integer i) _) t -> do
-    let
-      varBuffer = show v ++ ".array_str"
-      elemWidth = getWidth t
-      arrayWidth =  4 + i * elemWidth
-    lv <- pushOffset arrayWidth >>= newTemp t arrayWidth >>= genVar v
-    liftIO $ putStrLn varBuffer
-    liftIO $ _space varBuffer (show (i * elemWidth)) dataFilePath
-    liftIO $ _word ('l':'e':'n':show v) (show i) dataFilePath
-    case e of
-      Literal (ArrLst es) _ -> asigArray lv es 1
-        where
-          asigArray :: TACOP -> [Literal] -> Int -> TACMonad ()
-          asigArray lv es k = if null es then tell [] else do
-            l <- genLiteral (head es) t
-            temp <- pushOffset elemWidth >>= newTemp t elemWidth
-            tell (tacAssign temp (tacConstant (show k, TInt)))
-            tell (tacBin T.Mult temp temp (tacConstant ("4", TInt)))
-            tell [tacRef lv (tacLabel varBuffer)]
-            tell (tacSet' temp lv)
-            asigArray lv (tail es) (k + 1)
+  -- TArray (Literal (Integer i) _) t -> do
+    -- let
+    --   varBuffer = show v ++ "_array"
+    --   elemWidth = getWidth t
+    --   arrayWidth =  4 + i * elemWidth
+    -- lv <- pushOffset arrayWidth >>= newTemp t arrayWidth >>= genVar v
+    -- liftIO $ putStrLn varBuffer
+    -- liftIO $ _space varBuffer (show (i * elemWidth)) dataFilePath
+    -- liftIO $ _word ('l':'e':'n':show v) (show i) dataFilePath
+    -- case e of
+    --   Literal (ArrLst es) _ -> asigArray lv es 1
+    --     where
+    --       asigArray :: TACOP -> [Literal] -> Int -> TACMonad ()
+    --       asigArray lv es k = if null es then tell [] else do
+    --         l <- genLiteral (head es) t
+    --         temp <- pushOffset elemWidth >>= newTemp t elemWidth
+    --         tell (tacAssign temp (tacConstant (show k, TInt)))
+    --         tell (tacBin T.Mult temp temp (tacConstant ("4", TInt)))
+    --         tell [tacRef lv (tacLabel varBuffer)]
+    --         tell (tacSet' temp lv)
+    --         asigArray lv (tail es) (k + 1)
 
-      ArrayList es _ -> asigArray lv es 1
-        where
-          asigArray :: TACOP -> [Expr] -> Int -> TACMonad ()
-          asigArray lv es k = if null es then tell [] else do
-            l <- genExpr (head es)
-            temp <- pushOffset elemWidth >>= newTemp t elemWidth
-            tell (tacAssign temp (tacConstant (show k, TInt)))
-            tell (tacBin T.Mult temp temp (tacConstant ("4", TInt)))
-            tell [tacRef lv (tacLabel varBuffer)]
-            tell (tacSet' temp lv)
-            asigArray lv (tail es) (k + 1)
+    --   ArrayList es _ -> asigArray lv es 1
+    --     where
+    --       asigArray :: TACOP -> [Expr] -> Int -> TACMonad ()
+    --       asigArray lv es k = if null es then tell [] else do
+    --         l <- genExpr (head es)
+    --         temp <- pushOffset elemWidth >>= newTemp t elemWidth
+    --         tell (tacAssign temp (tacConstant (show k, TInt)))
+    --         tell (tacBin T.Mult temp temp (tacConstant ("4", TInt)))
+    --         tell [tacRef lv (tacLabel varBuffer)]
+    --         tell (tacSet' temp lv)
+    --         asigArray lv (tail es) (k + 1)
 
-      Variable v' _ -> do
-        (rv, _, width) <- getOffset v'
-        temp <- pushOffset width >>= newTemp t width
-        copyArray lv rv temp i
+    --   Variable v' _ -> do
+    --     (rv, _, width) <- getOffset v'
+    --     temp <- pushOffset width >>= newTemp t width
+    --     copyArray lv rv temp i
 
-      -- TODO!!: Funciones ??
+    --   -- TODO!!: Funciones ??
 
-      e' -> do
-        liftIO $ putStrLn $ show e'
-        eTemp <- genExpr e'
-        tell (tacAssign lv eTemp)
+    --   e' -> do
+    --     liftIO $ putStrLn $ show e'
+    --     eTemp <- genExpr e'
+    --     tell (tacAssign lv eTemp)
 
 -- 
   t -> do
@@ -448,6 +448,7 @@ genForEach n e is nextL = do
   tell [tacNewLabel nextL]
 
 -- for con condicion
+-- TODO!!: el label para la condicion no es correcto
 genForWhile :: Id -> Expr -> Expr -> Expr -> InstrSeq -> TACOP -> TACMonad ()
 genForWhile n e1 e2 cond is nextL = do
   iteration <- forComparison n e1 e2 nextL
@@ -538,8 +539,10 @@ genPrint [e] =
       TInt -> tell [tacPrint (tacConstant (show v, TInt)) (tacLabel (show v ++ "_int"))]
       TFloat -> tell [tacPrint (tacConstant (show v, TFloat)) (tacLabel (show v ++ "_float"))]
       TStr -> tell [tacPrint (tacConstant (show v, TStr)) (tacLabel (show v ++ "_str"))]
-      TArray n _ -> error $ "\n\tWhy i'm here? Print array: "++show e
-      TBool -> do
+      TChar -> tell [tacPrint (tacConstant (show v, TChar)) (tacLabel (show v ++ "_char"))]
+      -- TArray n _ -> tell [tacPrint (tacConstant (show v, TChar)) (tacLabel (show v ++ "_arr"))]
+      TBool -> do 
+        -- TODO: no es necesario jumping code, se imprime es el valor de la var
         var <- pushOffset 1 >>= newTemp TBool 1 >>= genVar v
         nextL  <- newLabel
         trueL  <- newLabel
@@ -551,7 +554,9 @@ genPrint [e] =
         tell [tacNewLabel falseL]
         tell [tacPrint var (tacLabel "boolFalse")]
         tell [tacNewLabel nextL]
-      TChar -> tell [tacPrint (tacConstant (show v, TChar)) (tacLabel (show v ++ "_char"))]
+      -- Apuntadores
+      -- TPointer _ -> 
+      t -> error $ "\n\tCan't print this variable's type yet: " ++ show t ++ "\n"
 
     FuncCall s@(Call id ps) t -> do
       let
@@ -584,6 +589,7 @@ genPrint [e] =
           tell [tacNewLabel falseL]
           tell [tacPrint temp (tacLabel "boolFalse")]
           tell [tacNewLabel nextL]
+        t -> error $ "\n\tCan't print this function's type yet: " ++ show t ++ "\n"
 
     _ -> tell []
 genPrint (e:es) = genPrint [e] >> genPrint es
@@ -772,7 +778,8 @@ genLiteral l typeL {- _dataLabel -} =
   casos bloques anidados que acceden a los ids
   Param Id Type Ref
   Field Var Id Type
-  Index  Var Expr Type
+  
+  TODO!!: Index  Var Expr Type
 -}
 genVar :: Var -> TACOP -> TACMonad TACOP
 genVar var temp =

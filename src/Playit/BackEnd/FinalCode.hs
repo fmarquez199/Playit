@@ -29,7 +29,7 @@ genFinalCode tac g c file = do
   case tacOperand tacInstr of
     -- Faltan And, Or
     -- Not supported Anexo, Concat
-    x | x `elem` [Add, Sub, Mult, Div, Mod, Gt, Gte, Lt, Lte, Eq, Neq, Get, Set] ->
+    x | x `elem` [Add, Sub, Mult, Div, Mod, Gt, Gte, Lt, Lte, Eq, Neq, And, Or, Get, Set] ->
       
       comment ("\n\t\t# 3 Operands operation: " ++ show tacInstr) file >>
       genThreeOperandsOp tacInstr g c file
@@ -131,10 +131,11 @@ genAssign tac (_, _, getReg) colorGraph file = do
 genThreeOperandsOp :: TAC -> InterfGraph -> I.IntMap Int -> String -> IO ()
 genThreeOperandsOp tac i@(_, _, t) color file =
   let
+    lv   = tacLvalue tac
     rv1  = tacRvalue1 tac
     rv2  = tacRvalue2 tac
     inst = show' (tacOperand tac)
-    dest = makeReg color $ getReg' t $ tacInfo $ tacLvalue tac
+    dest = makeReg color $ getReg' t $ tacInfo lv
     dest' = dest ++ ", "
     reg1 = makeReg color $ getReg' t $ tacInfo rv1
     reg2 = makeReg color $ getReg' t $ tacInfo rv2
@@ -189,7 +190,7 @@ genThreeOperandsOp tac i@(_, _, t) color file =
           else 
             comment ", Int" >> appendFile file $ inst ++ dest' ++ reg1' ++ reg2
 
-    op | op `elem` [Gt, Gte, Lt, Lte, Eq, Neq] ->
+    op | op `elem` [Gt, Gte, Lt, Lte, Eq, Neq, And, Or] ->
       if isFloat $ tacType $ rv1 then
         let
           comparators = [Gt, Gte, Lt, Lte, Eq, Neq]
@@ -228,13 +229,18 @@ genThreeOperandsOp tac i@(_, _, t) color file =
       comment "\n\t\t# Subroutine call" file >> genJumps tac i color file >>
       comment "\n\t\t# Save return value" file >>
       if elem 'f' dest then mtc1_d "$v0" dest file else move dest "$v0" file
-    Get -> 
+    Get -> do
       -- x = y[i]
-      comment ", Get" file >> add reg1 reg1 reg2 file >> lw  dest reg1 file
-    Set -> 
+      -- putStrLn $ "\nGet, lv: "++show lv++"rv1: "++show rv1++", rv2: "++show rv2++"\n"
+      comment ", Get" file
+      add reg1 reg1 reg2 file
+      lw dest ("0(" ++ reg1 ++ ")")  file
+    Set -> do
       -- x[i] = y
-      comment ", Set" file >>
-        add dest dest reg1 file >> sw dest ("0(" ++ init reg2 ++ ")") file
+      -- putStrLn $ "\nSet, lv: "++show lv++"rv1: "++show rv1++", rv2: "++show rv2++"\n"
+      comment ", Set" file
+      add dest dest reg1 file
+      sw dest ("0(" ++ init reg2 ++ ")") file
 -- =======
     -- Get -> comment ", Get" file >> add reg1 reg1 reg2 file >> -- x = y[i]
     --   lw dest ("0(" ++ reg1 ++ ")") file
@@ -592,7 +598,7 @@ getReg' getReg tacInfo =
 -- 
 tacInfo :: TACOP -> Maybe TACInfo
 tacInfo (Just (Id tac)) = Just tac
--- Constant (String, Type) | 
+-- Constant (String, Type) = -- buscar en lits del state de TAC, el temp donde esta
 -- Label String
 tacInfo _ = Nothing
 

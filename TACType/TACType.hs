@@ -52,6 +52,7 @@ instance (SymEntryCompatible a, Show a, Show b) => Show (ThreeAddressCode a b) w
 -- Array operators
   show (ThreeAddressCode Get (Just x) (Just y) (Just i))    = "\t" ++ show x ++ " := " ++ show y ++ "[" ++ show i ++ "]"
   show (ThreeAddressCode Set (Just x) (Just i) (Just y))    = "\t" ++ show x ++ "[" ++ show i ++ "] := " ++ show y
+  show (ThreeAddressCode Set (Just x) (Just i) Nothing)     = "\t" ++ show x ++ "[" ++ show i ++ "] "
   show (ThreeAddressCode Anexo (Just x) (Just y) (Just z))  = "\t" ++ show x ++ " := " ++ show y ++ " : " ++ show z
   show (ThreeAddressCode Concat (Just x) (Just y) (Just z)) = "\t" ++ show x ++ " := " ++ show y ++ " ++ " ++ show z
   show (ThreeAddressCode Length (Just x) (Just y) _)        = "\t" ++ show x ++ " := #" ++ show y
