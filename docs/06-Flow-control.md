@@ -7,7 +7,7 @@
     - [**Indetermined**](#indetermined)
     - [**Loop break**](#loop-break)
     - [**Skip current iteration**](#skip-current-iteration)
-    - [**Alter current execution**](#alter-current-execution-(*Under-development*)) (*Under development*)
+    - [**Alter current execution**](#alter-current-execution-under-development) (*Under development*)
 
 ---
 ---
@@ -147,7 +147,7 @@ hacer checkpoint antes iteracion para que puedas revivir
   - [**Conditional**](05-Instructions.md/#conditional)
   - [**Loops**](05-Instructions.md/#loops)
   - [**Input/Output**](05-Instructions.md/#inputoutput)
-  - [**Map**](05-Instructions.md/#map-(*Under-development*)) (*Under development*)
+  - [**Map**](05-Instructions.md/#map-under-development) (*Under development*)
 - [**Subroutines**](07-Subroutines.md/#subroutines)
   - [**Functions**](07-Subroutines.md/#functions)
   - [**Procedures**](07-Subroutines.md/#procedures)

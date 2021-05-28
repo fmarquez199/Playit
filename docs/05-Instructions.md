@@ -6,7 +6,7 @@
   - [**Conditional**](#conditional)
   - [**Loops**](#loops)
   - [**Input/Output**](#inputoutput)
-  - [**Map**](#map-(*Under-development*)) (*Under development*)
+  - [**Map**](#map-under-development) (*Under development*)
 
 ---
 ---
@@ -129,7 +129,7 @@ muestra todas las declaraciones hechas (vars, monsters, bosses, inventory, items
     - [**Indetermined**](06-Flow-control.md/#indetermined)
     - [**Loop break**](06-Flow-control.md/#loop-break)
     - [**Skip current iteration**](06-Flow-control.md/#skip-current-iteration)
-    - [**Alter current execution**](06-Flow-control.md/#alter-current-execution-(*Under-development*)) (*Under development*)
+    - [**Alter current execution**](06-Flow-control.md/#alter-current-execution-under-development) (*Under development*)
 - [**Subroutines**](07-Subroutines.md/#subroutines)
   - [**Functions**](07-Subroutines.md/#functions)
   - [**Procedures**](07-Subroutines.md/#procedures)
