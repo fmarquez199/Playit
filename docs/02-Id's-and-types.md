@@ -190,10 +190,10 @@ Multidimensional lists are supported.
 >
 > Initialization:
 >
->> *Record id* **`equip`** **`{`** *value of field1, ..., value of fieldN* **`}`**. 
+>> *Record's variable* **`equip`** *id* **`{`** *value of field1, ..., value of fieldN* **`}`**. 
 Note this overwrites the values that you could have assigned when declaring the record.
 >
->> *Record id* **`spawn`** *field id* **`equip`** *value*
+>> *Record's variable* **`spawn`** *field id* **`equip`** *value*
 
 Each field of the record corresponds to a scalar or compound type previously 
 defined in the program and are defined in **Playit**. Each instance of a record 
