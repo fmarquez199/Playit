@@ -9,15 +9,18 @@
 -}
 
 module Playit.FrontEnd.Lexer (
-    Token(..),
-    -- AlexPosn(..), 
-    alexScanTokens,
+  MyToken(..),
+  LexerResult(..), 
+  alexScanTokens,
 ) where
 
-import Playit.FrontEnd.Types
+import           Playit.FrontEnd.Types
+import           Playit.Utils
+import qualified Data.ByteString.Lazy       as BL
+import qualified Data.ByteString.Lazy.Char8 as BLC
 }
 
-%wrapper "posn"
+%wrapper "monadUserState-bytestring"
 
 -- Characters set
 $digits    = [0-9]
@@ -43,332 +46,236 @@ $char_id   = [$digits $abc \_ \']
 @float    = $digits+ \' $digits+
 @comments = \"\' ( . # [\'\"] | \n)* \'\"
 @comment  = \@ [. # \n]*
-@error    = .
 
+-- token :: (AlexInput -> Int64 -> token) -> AlexAction token
 tokens :-
 
   ([$white # \n])+    ;
-  @endLine            { tok (\(AlexPn _ f c) tk -> TkEndLine tk (f,c)) }
+  @endLine            { makeToken TkEndLine }
 
   -- Reserved words
   
   -- Definition of the program begin
-  world               { tok (\(AlexPn _ f c) tk -> TkWORLD tk (f,c)) }
+  world               { makeToken TkWORLD }
   -- Simple types
-  Battle              { tok (\(AlexPn _ f c) tk -> TkBATTLE tk (f,c)) }
-  Power               { tok (\(AlexPn _ f c) tk -> TkPOWER tk (f,c)) }
-  Skill               { tok (\(AlexPn _ f c) tk -> TkSKILL tk (f,c)) }
-  Rune                { tok (\(AlexPn _ f c) tk -> TkRUNE tk (f,c)) }
-  Runes               { tok (\(AlexPn _ f c) tk -> TkRUNES tk (f,c)) }
+  Battle              { makeToken TkBATTLE }
+  Power               { makeToken TkPOWER  }
+  Skill               { makeToken TkSKILL  }
+  Rune                { makeToken TkRUNE   }
+  Runes               { makeToken TkRUNES  }
   -- Compund types
-  "Kit of"            { tok (\(AlexPn _ f c) tk -> TkKitOf tk (f,c)) }
-  Inventory           { tok (\(AlexPn _ f c) tk -> TkINVENTORY tk (f,c)) }
-  Items               { tok (\(AlexPn _ f c) tk -> TkITEMS tk (f,c)) }
-  spawn               { tok (\(AlexPn _ f c) tk -> TkSPAWN tk (f,c)) }
-  summon              { tok (\(AlexPn _ f c) tk -> TkSUMMON tk (f,c)) }
+  "Kit of"            { makeToken TkKitOf     }
+  Inventory           { makeToken TkINVENTORY }
+  Items               { makeToken TkITEMS     }
+  spawn               { makeToken TkSPAWN     }
+  summon              { makeToken TkSUMMON    }
   -- If statement
-  Button              { tok (\(AlexPn _ f c) tk -> TkBUTTON tk (f,c)) }
-  notPressed          { tok (\(AlexPn _ f c) tk -> TkNotPressed tk (f,c)) }
+  Button              { makeToken TkBUTTON     }
+  notPressed          { makeToken TkNotPressed }
   -- Subroutines
-  kill                { tok (\(AlexPn _ f c) tk -> TkKILL tk (f,c)) }
-  boss                { tok (\(AlexPn _ f c) tk -> TkBOSS tk (f,c)) }
-  monster             { tok (\(AlexPn _ f c) tk -> TkMONSTER tk (f,c)) }
-  unlock              { tok (\(AlexPn _ f c) tk -> TkUNLOCK tk (f,c)) }
+  kill                { makeToken TkKILL    }
+  boss                { makeToken TkBOSS    }
+  monster             { makeToken TkMONSTER }
+  unlock              { makeToken TkUNLOCK  }
   -- Iterations
-  controller          { tok (\(AlexPn _ f c) tk -> TkCONTROLLER tk (f,c)) }
-  play                { tok (\(AlexPn _ f c) tk -> TkPLAY tk (f,c)) }
-  lock                { tok (\(AlexPn _ f c) tk -> TkLOCK tk (f,c)) }
-  gameOver            { tok (\(AlexPn _ f c) tk -> TkGameOver tk (f,c)) }
-  keepPlaying         { tok (\(AlexPn _ f c) tk -> TkKeepPlaying tk (f,c)) }
+  farm                { makeToken TkFARM        }
+  dungeon             { makeToken TkDUNGEON     }
+  cleared             { makeToken TkCLEARED     }
+  gameOver            { makeToken TkGameOver    }
+  keepPlaying         { makeToken TkKeepPlaying }
   -- I/O
-  joystick            { tok (\(AlexPn _ f c) tk -> TkJOYSTICK tk (f,c)) }
-  drop                { tok (\(AlexPn _ f c) tk -> TkDROP tk (f,c)) }
+  joystick            { makeToken TkJOYSTICK }
+  drop                { makeToken TkDROP     }
   -- Pointers
-  DeathZone           { tok (\(AlexPn _ f c) tk -> TkDeathZone tk (f,c)) }
-  free                { tok (\(AlexPn _ f c) tk -> TkFREE tk (f,c)) }
-  puff                { tok (\(AlexPn _ f c) tk -> TkPUFF tk (f,c)) }
+  DeathZone           { makeToken TkDeathZone }
+  free                { makeToken TkFREE      }
+  puff                { makeToken TkPUFF      }
 
   -- Boolean literals
-  Win                 { tok (\(AlexPn _ f c) tk -> TkWIN tk (f,c)) }
-  Lose                { tok (\(AlexPn _ f c) tk -> TkLOSE tk (f,c)) }
+  Win                 { makeToken TkWIN  }
+  Lose                { makeToken TkLOSE }
 
   -- Ids
-  @programs           { tok (\(AlexPn _ f c) tk -> TkProgramName tk (f,c)) }
-  @id                 { tok (\(AlexPn _ f c) tk -> TkID tk (f,c)) }
-  @id_type            { tok (\(AlexPn _ f c) tk -> TkIDType tk (f,c)) }
+  @programs           { makeToken TkProgramName }
+  @id                 { makeToken TkID          }
+  @id_type            { makeToken TkIDType      }
 
   -- Characters
-  @char               { createTkCHARACTER }
-  @strings            { createTkSTRING }
+  @char               { makeToken TkCHARACTER }
+  @strings            { makeToken TkSTRINGS   }
   
   -- Numeric literals
-  $digits+            { createTkINT }
-  @float              { createTkFLOAT }
+  $digits+            { makeToken TkINT   }
+  @float              { makeToken TkFLOAT }
 
   -- Symbols
 
   -- End of block
-  ".~"                { tok (\(AlexPn _ f c) tk -> TkFIN tk (f,c)) }
+  ".~"                { makeToken TkFIN }
   -- Numeric operators
-  "+"                 { tok (\(AlexPn _ f c) tk -> TkADD tk (f,c)) }
-  "-"                 { tok (\(AlexPn _ f c) tk -> TkMIN tk (f,c)) }
-  "*"                 { tok (\(AlexPn _ f c) tk -> TkMULT tk (f,c)) }
-  "/"                 { tok (\(AlexPn _ f c) tk -> TkDIV tk (f,c)) }
-  "//"                { tok (\(AlexPn _ f c) tk -> TkDivEntera tk (f,c)) }
-  "%"                 { tok (\(AlexPn _ f c) tk -> TkMOD tk (f,c)) }
-  "++"                { tok (\(AlexPn _ f c) tk -> TkINCREMENT tk (f,c)) }
-  "--"                { tok (\(AlexPn _ f c) tk -> TkDECREMENT tk (f,c)) }
-  "#"                 { tok (\(AlexPn _ f c) tk -> TkLEN tk (f,c)) }
+  "+"                 { makeToken TkADD       }
+  "-"                 { makeToken TkMIN       }
+  "*"                 { makeToken TkMULT      }
+  "/"                 { makeToken TkDIV       }
+  "//"                { makeToken TkDivEntera }
+  "%"                 { makeToken TkMOD       }
+  "level up"          { makeToken TkINCREMENT }
+  "use item"          { makeToken TkDECREMENT }
+  "#"                 { makeToken TkLEN       }
   -- Comparison operators
-  "||"                { tok (\(AlexPn _ f c) tk -> TkOR tk (f,c)) }
-  "&&"                { tok (\(AlexPn _ f c) tk -> TkAND tk (f,c)) }
-  "<="                { tok (\(AlexPn _ f c) tk -> TkLessEqual tk (f,c)) }
-  "<"                 { tok (\(AlexPn _ f c) tk -> TkLessThan tk (f,c)) }
-  ">="                { tok (\(AlexPn _ f c) tk -> TkGreaterEqual tk (f,c)) }
-  ">"                 { tok (\(AlexPn _ f c) tk -> TkGreaterThan tk (f,c)) }
-  "=="                { tok (\(AlexPn _ f c) tk -> TkEQUAL tk (f,c)) }
-  "!="                { tok (\(AlexPn _ f c) tk -> TkNotEqual tk (f,c)) }
-  "!"                 { tok (\(AlexPn _ f c) tk -> TkNOT tk (f,c)) }
+  "||"                { makeToken TkOR           }
+  "&&"                { makeToken TkAND          }
+  "<="                { makeToken TkLessEqual    }
+  "<"                 { makeToken TkLessThan     }
+  ">="                { makeToken TkGreaterEqual }
+  ">"                 { makeToken TkGreaterThan  }
+  "=="                { makeToken TkEQUAL        }
+  "!="                { makeToken TkNotEqual     }
+  "!"                 { makeToken TkNOT          }
   -- Chars operators
-  "^"                 { tok (\(AlexPn _ f c) tk -> TkUPPER tk (f,c)) }
-  "."                 { tok (\(AlexPn _ f c) tk -> TkLOWER tk (f,c)) }
+  "buff"              { makeToken TkUPPER }
+  "debuff"            { makeToken TkLOWER }
   -- Pointers
-  "?"                 { tok (\(AlexPn _ f c) tk -> TkREF tk (f,c)) }
+  "?"                 { makeToken TkREF }
   -- Lists
-  "<<"                { tok (\(AlexPn _ f c) tk -> TkOpenList tk (f,c)) }
-  ">>"                { tok (\(AlexPn _ f c) tk -> TkCloseList tk (f,c)) }
-  "|>"                { tok (\(AlexPn _ f c) tk -> TkOpenListIndex tk (f,c)) }
-  "<|"                { tok (\(AlexPn _ f c) tk -> TkCloseListIndex tk (f,c)) }
-  ":"                 { tok (\(AlexPn _ f c) tk -> TkANEXO tk (f,c)) }
-  "::"                { tok (\(AlexPn _ f c) tk -> TkCONCAT tk (f,c)) }
+  "<<"                { makeToken TkOpenList       }
+  ">>"                { makeToken TkCloseList      }
+  "|>"                { makeToken TkOpenListIndex  }
+  "<|"                { makeToken TkCloseListIndex }
+  ":"                 { makeToken TkANEXO          }
+  "::"                { makeToken TkCONCAT         }
   -- Arrays
-  "|}"                { tok (\(AlexPn _ f c) tk -> TkOpenArray tk (f,c)) }
-  "{|"                { tok (\(AlexPn _ f c) tk -> TkCloseArray tk (f,c)) }
-  "|)"                { tok (\(AlexPn _ f c) tk -> TkOpenArrayIndex tk (f,c)) }
-  "(|"                { tok (\(AlexPn _ f c) tk -> TkCloseArrayIndex tk (f,c)) }
+  "|}"                { makeToken TkOpenArray       }
+  "{|"                { makeToken TkCloseArray      }
+  "|)"                { makeToken TkOpenArrayIndex  }
+  "(|"                { makeToken TkCloseArrayIndex }
   -- Registers inicialization
-  "{"                 { tok (\(AlexPn _ f c) tk -> TkOpenBrackets tk (f,c)) }
-  "}"                 { tok (\(AlexPn _ f c) tk -> TkCloseBrackets tk (f,c)) }
+  "{"                 { makeToken TkOpenBrackets  }
+  "}"                 { makeToken TkCloseBrackets }
   -- Determined iterations
-  "<-"                { tok (\(AlexPn _ f c) tk -> TkIN tk (f,c)) }
-  "->"                { tok (\(AlexPn _ f c) tk -> TkTO tk (f,c)) }
+  in                  { makeToken TkIN }
+  until               { makeToken TkTO }
   -- Guards
-  "|"                 { tok (\(AlexPn _ f c) tk -> TkGUARD tk (f,c)) }
+  "|"                 { makeToken TkGUARD }
   -- Assig
-  "="                 { tok (\(AlexPn _ f c) tk -> TkASSIG tk (f,c)) }
+  equip               { makeToken TkASSIG }
   -- Exprs
-  "("                 { tok (\(AlexPn _ f c) tk -> TkOpenParenthesis tk (f,c)) }
-  ")"                 { tok (\(AlexPn _ f c) tk -> TkCloseParenthesis tk (f,c)) }
-  ","                 { tok (\(AlexPn _ f c) tk -> TkCOMA tk (f,c)) }
+  "("                 { makeToken TkOpenParenthesis  }
+  ")"                 { makeToken TkCloseParenthesis }
+  ","                 { makeToken TkCOMA             }
   -- Comments
-  "\"'"               { tok (\(AlexPn _ f c) tk -> TkOpenComments tk (f,c)) }
-  "'\""               { tok (\(AlexPn _ f c) tk -> TkCloseComments tk (f,c)) }
-  '@'                 { tok (\(AlexPn _ f c) tk -> TkCOMMENT tk (f,c)) }
+  "\"'"               { makeToken TkOpenComments  }
+  "'\""               { makeToken TkCloseComments }
+  '@'                 { makeToken TkCOMMENT       }
   @comments           ;
   @comment            ;
   -- Invalid characters
-  @error              { tok (\(AlexPn _ f c) err -> TkError err (f,c)) }
+  .                   { lexError }
 
 {
--------------------------------------------------------------------------------
--------------------------------------------------------------------------------
---                             Create tokens
--------------------------------------------------------------------------------
--------------------------------------------------------------------------------
-
-tok :: (AlexPosn -> Id -> Token) -> AlexPosn -> Id -> Token
-tok f p tk = f p tk
-
-createTkINT (AlexPn _ f c) tk = TkINT tk (f,c) (read tk :: Int)
-
-createTkCHARACTER (AlexPn _ f c) tk = TkCHARACTER tk (f,c) (toChar tk)
-    where
-      toChar c = (read (map (\x-> if x == '*' then '\'' else x) c)::Char)
-
-createTkFLOAT (AlexPn _ f c) tk = TkFLOAT tk (f,c) (toFloat tk)
-    where
-      toFloat f = (read (map (\x-> if x == '\'' then '.' else x) f)::Float)
-
-createTkSTRING (AlexPn _ f c) tk = TkSTRINGS tk  (f,c) (tail $ init tk)
-  -- where
-  --   toString s = tail $ init $ s
-
--------------------------------------------------------------------------------
--------------------------------------------------------------------------------
---                              Data type Token
--------------------------------------------------------------------------------
--------------------------------------------------------------------------------
+-- -----------------------------------------------------------------------------
+-- -----------------------------------------------------------------------------
+--                                Tokens
+-- -----------------------------------------------------------------------------
+-- -----------------------------------------------------------------------------
 
 data Token = 
-  TkEndLine          { getTk :: Id, getPos :: Pos }                  |
-  TkWORLD            { getTk :: Id, getPos :: Pos }                  |
-  TkBATTLE           { getTk :: Id, getPos :: Pos }                  |
-  TkPOWER            { getTk :: Id, getPos :: Pos }                  |
-  TkSKILL            { getTk :: Id, getPos :: Pos }                  |
-  TkRUNE             { getTk :: Id, getPos :: Pos }                  |
-  TkRUNES            { getTk :: Id, getPos :: Pos }                  |
-  TkKitOf            { getTk :: Id, getPos :: Pos }                  |
-  TkINVENTORY        { getTk :: Id, getPos :: Pos }                  |
-  TkITEMS            { getTk :: Id, getPos :: Pos }                  |
-  TkSPAWN            { getTk :: Id, getPos :: Pos }                  |
-  TkSUMMON           { getTk :: Id, getPos :: Pos }                  |
-  TkBUTTON           { getTk :: Id, getPos :: Pos }                  |
-  TkNotPressed       { getTk :: Id, getPos :: Pos }                  |
-  TkKILL             { getTk :: Id, getPos :: Pos }                  |
-  TkBOSS             { getTk :: Id, getPos :: Pos }                  |
-  TkMONSTER          { getTk :: Id, getPos :: Pos }                  |
-  TkUNLOCK           { getTk :: Id, getPos :: Pos }                  |
-  TkCONTROLLER       { getTk :: Id, getPos :: Pos }                  |
-  TkPLAY             { getTk :: Id, getPos :: Pos }                  |
-  TkLOCK             { getTk :: Id, getPos :: Pos }                  |
-  TkGameOver         { getTk :: Id, getPos :: Pos }                  |
-  TkKeepPlaying      { getTk :: Id, getPos :: Pos }                  |
-  TkJOYSTICK         { getTk :: Id, getPos :: Pos }                  |
-  TkDROP             { getTk :: Id, getPos :: Pos }                  |
-  TkDeathZone        { getTk :: Id, getPos :: Pos }                  |
-  TkFREE             { getTk :: Id, getPos :: Pos }                  |
-  TkPUFF             { getTk :: Id, getPos :: Pos }                  |
-  TkWIN              { getTk :: Id, getPos :: Pos }                  |
-  TkLOSE             { getTk :: Id, getPos :: Pos }                  |
-  TkProgramName      { getTk :: Id, getPos :: Pos }                  |
-  TkID               { getTk :: Id, getPos :: Pos }                  |
-  TkIDType           { getTk :: Id, getPos :: Pos }                  |
-  TkCHARACTER        { getTk :: Id, getPos :: Pos, getTkChar ::Char }   |
-  TkSTRINGS          { getTk :: Id, getPos :: Pos, getTkStr  ::String } |
-  TkINT              { getTk :: Id, getPos :: Pos, getTkInt  ::Int }    |
-  TkFLOAT            { getTk :: Id, getPos :: Pos, getTkFloat::Float }  |
-  TkFIN              { getTk :: Id, getPos :: Pos }                  |
-  TkADD              { getTk :: Id, getPos :: Pos }                  |
-  TkMIN              { getTk :: Id, getPos :: Pos }                  |
-  TkMULT             { getTk :: Id, getPos :: Pos }                  |
-  TkDIV              { getTk :: Id, getPos :: Pos }                  |
-  TkDivEntera        { getTk :: Id, getPos :: Pos }                  |
-  TkMOD              { getTk :: Id, getPos :: Pos }                  |
-  TkINCREMENT        { getTk :: Id, getPos :: Pos }                  |
-  TkDECREMENT        { getTk :: Id, getPos :: Pos }                  |
-  TkLEN              { getTk :: Id, getPos :: Pos }                  |
-  TkOR               { getTk :: Id, getPos :: Pos }                  |
-  TkAND              { getTk :: Id, getPos :: Pos }                  |
-  TkLessEqual        { getTk :: Id, getPos :: Pos }                  |
-  TkLessThan         { getTk :: Id, getPos :: Pos }                  |
-  TkGreaterEqual     { getTk :: Id, getPos :: Pos }                  |
-  TkGreaterThan      { getTk :: Id, getPos :: Pos }                  |
-  TkEQUAL            { getTk :: Id, getPos :: Pos }                  |
-  TkNotEqual         { getTk :: Id, getPos :: Pos }                  |
-  TkNOT              { getTk :: Id, getPos :: Pos }                  |
-  TkUPPER            { getTk :: Id, getPos :: Pos }                  |
-  TkLOWER            { getTk :: Id, getPos :: Pos }                  |
-  TkOpenList         { getTk :: Id, getPos :: Pos }                  |
-  TkCloseList        { getTk :: Id, getPos :: Pos }                  |
-  TkOpenListIndex    { getTk :: Id, getPos :: Pos }                  |
-  TkCloseListIndex   { getTk :: Id, getPos :: Pos }                  |
-  TkANEXO            { getTk :: Id, getPos :: Pos }                  |
-  TkCONCAT           { getTk :: Id, getPos :: Pos }                  |
-  TkOpenArray        { getTk :: Id, getPos :: Pos }                  |
-  TkCloseArray       { getTk :: Id, getPos :: Pos }                  |
-  TkOpenArrayIndex   { getTk :: Id, getPos :: Pos }                  |
-  TkCloseArrayIndex  { getTk :: Id, getPos :: Pos }                  |
-  TkOpenBrackets     { getTk :: Id, getPos :: Pos }                  |
-  TkCloseBrackets    { getTk :: Id, getPos :: Pos }                  |
-  TkIN               { getTk :: Id, getPos :: Pos }                  |
-  TkTO               { getTk :: Id, getPos :: Pos }                  |
-  TkREF              { getTk :: Id, getPos :: Pos }                  |
-  TkGUARD            { getTk :: Id, getPos :: Pos }                  |
-  TkASSIG            { getTk :: Id, getPos :: Pos }                  |
-  TkOpenParenthesis  { getTk :: Id, getPos :: Pos }                  |
-  TkCloseParenthesis { getTk :: Id, getPos :: Pos }                  |
-  TkCOMA             { getTk :: Id, getPos :: Pos }                  |
-  TkOpenComments     { getTk :: Id, getPos :: Pos }                  |
-  TkCloseComments    { getTk :: Id, getPos :: Pos }                  |
-  TkCOMMENT          { getTk :: Id, getPos :: Pos }                  |
-  TkError            { getTk :: Id, getPos :: Pos }
+  TkEndLine         |
+  TkWORLD           |
+  TkBATTLE          | TkPOWER      | TkSKILL | TkRUNE  | TkRUNES  |
+  TkKitOf           | TkINVENTORY  | TkITEMS | TkSPAWN | TkSUMMON |
+  TkBUTTON          | TkNotPressed |
+  TkKILL            | TkBOSS       | TkMONSTER | TkUNLOCK   |
+  TkFARM            | TkDUNGEON    | TkCLEARED | TkGameOver | TkKeepPlaying |
+  TkJOYSTICK        | TkDROP       |
+  TkDeathZone       | TkFREE       | TkPUFF |
+  TkWIN             | TkLOSE       |
+  TkProgramName     | TkID         | TkIDType |
+  TkCHARACTER       | TkSTRINGS    |
+  TkINT             | TkFLOAT      |
+  TkFIN             |
+  TkADD             | TkMIN   | TkMULT | TkDIV | TkDivEntera | TkMOD | TkINCREMENT | TkDECREMENT | TkLEN |
+  TkOR              | TkAND   | TkLessEqual | TkLessThan | TkGreaterEqual | TkGreaterThan | TkEQUAL | TkNotEqual | TkNOT |
+  TkUPPER           | TkLOWER |
+  TkREF             |
+  TkOpenList        | TkCloseList     | TkOpenListIndex  | TkCloseListIndex  | TkANEXO | TkCONCAT |
+  TkOpenArray       | TkCloseArray    | TkOpenArrayIndex | TkCloseArrayIndex |
+  TkOpenBrackets    | TkCloseBrackets |
+  TkIN              | TkTO            |
+  TkGUARD           |
+  TkASSIG           |
+  TkOpenParenthesis | TkCloseParenthesis | TkCOMA    |
+  TkOpenComments    | TkCloseComments    | TkCOMMENT |
+  TkError
   
   deriving (Eq)
 
-showTk :: Id -> Pos -> String
-showTk tk p = "(" ++ tk ++ "), pos " ++ show p
-
 instance Show Token where
-  show (TkEndLine tk p)          = "(\\n), pos " ++ show p
-  show (TkWORLD tk p)            = showTk tk p
-  show (TkBATTLE tk p)            = showTk tk p
-  show (TkPOWER tk p)            = showTk tk p
-  show (TkSKILL tk p)            = showTk tk p
-  show (TkRUNE tk p)             = showTk tk p
-  show (TkRUNES tk p)            = showTk tk p
-  show (TkKitOf tk p)            = showTk tk p
-  show (TkINVENTORY tk p)        = showTk tk p
-  show (TkITEMS tk p)            = showTk tk p
-  show (TkSPAWN tk p)            = showTk tk p
-  show (TkSUMMON tk p)           = showTk tk p
-  show (TkBUTTON tk p)           = showTk tk p
-  show (TkNotPressed tk p)       = showTk tk p
-  show (TkKILL tk p)             = showTk tk p
-  show (TkBOSS tk p)             = showTk tk p
-  show (TkMONSTER tk p)          = showTk tk p
-  show (TkUNLOCK tk p)           = showTk tk p
-  show (TkCONTROLLER tk p)       = showTk tk p
-  show (TkPLAY tk p)             = showTk tk p
-  show (TkLOCK tk p)             = showTk tk p
-  show (TkGameOver tk p)         = showTk tk p
-  show (TkKeepPlaying tk p)      = showTk tk p
-  show (TkJOYSTICK tk p)         = showTk tk p
-  show (TkDROP tk p)             = showTk tk p
-  show (TkDeathZone tk p)        = showTk tk p
-  show (TkFREE tk p)             = showTk tk p
-  show (TkPUFF tk p)             = showTk tk p
-  show (TkWIN tk p)              = showTk tk p
-  show (TkLOSE tk p)             = showTk tk p
-  show (TkProgramName tk p)      = showTk tk p
-  show (TkID tk p)               = "Identifier \"" ++ tk ++ "\", pos " ++ show p
-  show (TkIDType tk p)           = "Type identifier \"" ++ tk ++ "\", pos " ++ show p
-  show (TkCHARACTER tk p _)      = "Character '" ++ tk ++ "', pos " ++ show p
-  show (TkSTRINGS tk p _)        = "String \"" ++ tk ++ "\", pos " ++ show p
-  show (TkINT tk p _)            = "Integer " ++ tk ++ ", pos " ++ show p
-  show (TkFLOAT tk p _)          = "Float " ++ tk ++ ", pos " ++ show p
-  show (TkFIN tk p)              = showTk tk p
-  show (TkADD tk p)              = showTk tk p
-  show (TkMIN tk p)              = showTk tk p
-  show (TkMULT tk p)             = showTk tk p
-  show (TkDIV tk p)              = showTk tk p
-  show (TkDivEntera tk p)        = showTk tk p
-  show (TkMOD tk p)              = showTk tk p
-  show (TkINCREMENT tk p)        = showTk tk p
-  show (TkDECREMENT tk p)        = showTk tk p
-  show (TkLEN tk p)              = showTk tk p
-  show (TkOR tk p)               = showTk tk p
-  show (TkAND tk p)              = showTk tk p
-  show (TkLessEqual tk p)        = showTk tk p
-  show (TkLessThan tk p)         = showTk tk p
-  show (TkGreaterEqual tk p)     = showTk tk p
-  show (TkGreaterThan tk p)      = showTk tk p
-  show (TkEQUAL tk p)            = showTk tk p
-  show (TkNotEqual tk p)         = showTk tk p
-  show (TkNOT tk p)              = showTk tk p
-  show (TkUPPER tk p)            = showTk tk p
-  show (TkLOWER tk p)            = showTk tk p
-  show (TkOpenList tk p)         = showTk tk p
-  show (TkCloseList tk p)        = showTk tk p
-  show (TkOpenListIndex tk p)    = showTk tk p
-  show (TkCloseListIndex tk p)   = showTk tk p
-  show (TkANEXO tk p)            = showTk tk p
-  show (TkCONCAT tk p)           = showTk tk p
-  show (TkOpenArray tk p)        = showTk tk p
-  show (TkCloseArray tk p)       = showTk tk p
-  show (TkOpenArrayIndex tk p)   = showTk tk p
-  show (TkCloseArrayIndex tk p)  = showTk tk p
-  show (TkOpenBrackets tk p)     = showTk tk p
-  show (TkCloseBrackets tk p)    = showTk tk p
-  show (TkIN tk p)               = showTk tk p
-  show (TkTO tk p)               = showTk tk p
-  show (TkREF tk p)              = showTk tk p
-  show (TkGUARD tk p)            = showTk tk p
-  show (TkASSIG tk p)            = showTk tk p
-  show (TkOpenParenthesis tk p)  = showTk tk p
-  show (TkCloseParenthesis tk p) = showTk tk p
-  show (TkCOMA tk p)             = showTk tk p
-  show (TkOpenComments tk p)     = showTk tk p
-  show (TkCloseComments tk p)    = showTk tk p
-  show (TkCOMMENT tk p)          = showTk tk p
-  show (TkError tk p)            = tk
+  show _ = BLC.unpack $ BL.concat [red, italic, bold, underline]
+
+data MyToken = MyToken
+  {
+    tkA     :: Token,         -- ^ Token abstraction
+    tkInput :: BL.ByteString, -- ^ Input readed from source
+    tkPos   :: Pos            -- ^ Position of input
+  }
+  deriving (Eq)
+
+instance Show MyToken where
+  show t = BLC.unpack $ BL.concat [(BLC.pack . show $ tkA t), tkInput t, nocolor]
+  
+-- -----------------------------------------------------------------------------
+-- -----------------------------------------------------------------------------
+--                             Create tokens
+-- -----------------------------------------------------------------------------
+-- -----------------------------------------------------------------------------
+
+data LexerResult   = LexerResult {errs :: [Error], tokens :: [MyToken]}
+type AlexUserState = LexerResult
+
+-- -----------------------------------------------------------------------------
+-- AlexAction = AlexInput -> Int64 -> Alex
+-- AlexAction = (AlexPosn, Char, ByteString, Int64) -> Int64 -> Either String (AlexState, a)
+-- AlexAction = ((AlexPn !Int !Int !Int), Char, ByteString, Int64) -> Int64 -> Either String (AlexState, AlexUserState)
+makeToken :: Token -> AlexAction AlexUserState
+makeToken token ((AlexPn _ r c), prevChar, inputStr, bytesConsumedSoFar) len = do
+  let
+    str = BL.take len inputStr
+    input = case token of
+      TkCHARACTER -> BL.tail $ BL.init str
+      TkSTRINGS   -> BL.tail $ BL.init str
+      TkFLOAT     -> BL.pack $ BL.head str : BL.head (BLC.pack ".") : BL.last str : []
+      TkEndLine   -> BL.empty
+      _           -> str
+    tk = MyToken token input (r, c)
+  -- Add token to state, get + put
+  Alex $ 
+    \s@AlexState{alex_ust = ust} ->
+      Right (s{alex_ust = LexerResult (errs ust) (tk : tokens ust)}, ())
+  alexMonadScan
+
+-- -----------------------------------------------------------------------------
+lexError :: AlexAction AlexUserState
+lexError ((AlexPn _ r c), prevChar, inputStr, bytesConsumedSoFar) len = do
+  let
+    str = BL.take len inputStr
+    err = Error str (r, c)
+  Alex $ 
+    \s@AlexState{alex_ust = ust} ->
+      Right (s{alex_ust = LexerResult (err : errs ust) (tokens ust)}, ())
+  alexMonadScan
+
+-- -----------------------------------------------------------------------------
+-- This isn't on the documentation
+alexEOF :: Alex AlexUserState
+alexEOF = Alex $ \s@AlexState{alex_ust = ust} -> Right (s, ust)
+
+alexInitUserState :: AlexUserState
+alexInitUserState = LexerResult [] []
+
+alexScanTokens :: BL.ByteString -> LexerResult
+alexScanTokens source =
+  case runAlex source alexMonadScan of
+    Left msg  -> LexerResult [Error (BLC.pack msg) (-1,-1)] [MyToken TkError (BLC.pack "Alex error") (-1,-1)]
+    Right ust -> ust
 }
