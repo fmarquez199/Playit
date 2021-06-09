@@ -9,17 +9,33 @@
 module Playit.FrontEnd.Errors where
 
 
-import Control.Monad.Trans.RWS
-import Data.List.Split         (splitOn)
-import Playit.FrontEnd.Lexer
-import Playit.FrontEnd.Types
+import           Control.Monad.Trans.RWS
+import           Data.List.Split         (splitOn)
 
+import           Playit.FrontEnd.Lexer
+import           Playit.FrontEnd.Types
+import           Playit.Utils
+
+import qualified Data.ByteString.Lazy       as BL
+import qualified Data.ByteString.Lazy.Char8 as BLC
+
+
+-- data ErrCategory = LexError | SemError
+
+-- data CompilerErr = CompilerErr
+--   {
+--     category :: ErrCategory,
+--     cErrors  :: [Error]
+--   }
 
 
 -------------------------------------------------------------------------------
--- | Code line of the error
+-- | Row of the error
 errorLine :: String -> Int -> String
 errorLine code l = (splitOn "\n" code !! max 0 (l - 1)) ++ "\n"
+
+-- errRow :: BL.ByteString -> Int -> BL.ByteString
+-- errRow code r = BL.concat [BL.split 10 code !! max 0 (r-1), newLine]
 -------------------------------------------------------------------------------
 
 
@@ -27,6 +43,10 @@ errorLine code l = (splitOn "\n" code !! max 0 (l - 1)) ++ "\n"
 -- | Ruler to specify the column of the error
 errorRuler :: Int -> String
 errorRuler c = "\t\x1b[1;93m" ++ replicate (c-1) '.' ++ "\x1b[5;31m^\x1b[0m\n"
+
+errorRuler' :: Int -> BL.ByteString
+errorRuler' c = BL.concat 
+  [tab, yellow', BL.replicate (fromIntegral c - 1) 46, tilt, BLC.pack "^", nocolor, newLine]
 -------------------------------------------------------------------------------
     
 
@@ -36,6 +56,11 @@ errorMsg :: String -> FileCodeReader -> Pos -> String
 errorMsg msg (file,code) (l,c) = "\n\n\x1b[1;36m" ++ msg ++ "\x1b[94m: " ++
   file ++ ":\n" ++ "\x1b[93m|\n| " ++ show l ++ "\t\x1b[0;96m" ++
   errorLine code l ++ errorRuler c
+
+errorMsg' :: BL.ByteString -> (BL.ByteString, [BL.ByteString]) -> Pos -> BL.ByteString
+errorMsg' msg (file, code) (r,c) = BL.concat
+  [newLine, cyan, msg, blue, twoDots, file, twoDots, newLine, yellow, pipeline,
+   newLine, pipeline, BLC.pack (show r), tab, cyan', code !! r, errorRuler' c]
 -------------------------------------------------------------------------------
 
 
@@ -47,35 +72,12 @@ errorMsg msg (file,code) (l,c) = "\n\n\x1b[1;36m" ++ msg ++ "\x1b[94m: " ++
 
 
 -------------------------------------------------------------------------------
--- | Determines if there's error tokens and return its positions
-lexerErrors :: [Token] -> (Bool, [Pos])
-lexerErrors [] = (False, [(-1::Int, -1::Int)])
-lexerErrors (TkError _ p:tks) = (True, p : map isError tks)
-lexerErrors (_:tks) = lexerErrors tks
--------------------------------------------------------------------------------
-
-
--------------------------------------------------------------------------------
--- | Get the position of a error token
-isError :: Token -> Pos
-isError (TkError _ p) = p
-isError _ = (-1::Int, -1::Int)
--------------------------------------------------------------------------------
-
-
--------------------------------------------------------------------------------
--- | Show the one's token error message
-tkError :: FileCodeReader -> Pos -> String
-tkError = errorMsg "\x1b[1;94m¡¡¡PLAYIT FATALITY!!!\n"
--------------------------------------------------------------------------------
-
-
--------------------------------------------------------------------------------
 -- | Show all lexical errors
-showLexerErrors :: FileCodeReader -> [Pos] -> String
-showLexerErrors _ [] = ""
-showLexerErrors fileCode ((-1, -1):pos) = showLexerErrors fileCode pos
-showLexerErrors fileCode (p:pos) = concat $ tkError fileCode p : [showLexerErrors fileCode pos]
+showLexerErrors :: [Error] -> (BL.ByteString, BL.ByteString) -> IO ()
+showLexerErrors [] _                          = BL.putStr newLine
+showLexerErrors (Error err p : errs) fileCode =
+  let msg = BL.concat [BLC.pack "Bug found ", err]
+  in BLC.putStrLn (errorMsg' msg fileCode p) >> showLexerErrors errs fileCode
 -------------------------------------------------------------------------------
 
 
@@ -92,7 +94,7 @@ parseError :: [Token] -> MonadSymTab a
 parseError [] =  error "\n\n\x1b[1;91mInvalid Program\n\n"
 parseError (tk:tks) =  do
   fileCode <- ask
-  error $ errorMsg "Parse error" fileCode (getPos tk)
+  error $ errorMsg "Parse error" fileCode (0,0)
 -------------------------------------------------------------------------------
 
 
@@ -100,7 +102,7 @@ parseError (tk:tks) =  do
 tellParserError :: String -> Token -> MonadSymTab ()
 tellParserError msg tk = do
   fileCode <- ask
-  let pos = (fst $ getPos tk, snd (getPos tk) + length (getTk tk))
+  let pos = (0, 0 + length "")
   tell [errorMsg msg fileCode pos]
 -------------------------------------------------------------------------------
 
@@ -110,7 +112,7 @@ tellParserError msg tk = do
 errorProg :: String -> InstrSeq -> Token -> Int -> MonadSymTab Instr
 errorProg msg instrs tk n = do
   fileCode <- ask
-  let pos = (fst $ getPos tk, snd (getPos tk) + n * length (getTk tk))
+  let pos = (0, 0 + n * length "")
   tell [errorMsg msg fileCode pos]
   return $ Program (reverse instrs) TError
 -------------------------------------------------------------------------------
@@ -135,13 +137,13 @@ errorIf msg cases tk = tellParserError msg tk >> return (IF cases TError)
 
 -------------------------------------------------------------------------------
 errorFor :: String -> Id -> Expr -> Expr -> InstrSeq -> Token -> MonadSymTab Instr
-errorFor msg var e1 e2 i tk =
-  tellParserError msg tk >> return (For var e1 e2 i TError)
+errorFor msg var e1 e2 i tk = tellParserError msg tk >> return (For var e1 e2 i TError)
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
-errorForWhile :: String -> Id -> Expr -> Expr -> Expr -> InstrSeq -> Token -> MonadSymTab Instr
+errorForWhile :: String -> Id -> Expr -> Expr -> Expr -> InstrSeq -> Token 
+              -> MonadSymTab Instr
 errorForWhile msg var e1 e2 e3 i tk =
   tellParserError msg tk >> return (ForWhile var e1 e2 e3 i TError)
 -------------------------------------------------------------------------------
@@ -149,8 +151,7 @@ errorForWhile msg var e1 e2 e3 i tk =
 
 -------------------------------------------------------------------------------
 errorForEach :: String -> Id -> Expr -> InstrSeq -> Token -> MonadSymTab Instr
-errorForEach msg var e i tk =
-  tellParserError msg tk >> return (ForEach var e i TError)
+errorForEach msg var e i tk = tellParserError msg tk >> return (ForEach var e i TError)
 -------------------------------------------------------------------------------
 
 
