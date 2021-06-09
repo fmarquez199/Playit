@@ -8,12 +8,16 @@
 -}
 module Playit.Utils where
 
+import           Data.List (intercalate)
 import qualified Data.ByteString.Lazy       as BL
 import qualified Data.ByteString.Lazy.Char8 as BLC
--- import           Data.List (intercalate)
 
--- joinWithCommas :: (Show a) => [a] -> String
--- joinWithCommas = intercalate ", " . map show
+
+-- joinWith :: (Show a) => String -> (a -> [String]) -> [a] -> String
+-- joinWith s f = intercalate s . f
+
+joinWith :: (Show a) => String -> [a] -> String
+joinWith s = intercalate s . map show
 
 newLine :: BL.ByteString
 newLine = BLC.pack "\n"
