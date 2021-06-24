@@ -7,17 +7,18 @@
  *  Francisco Javier    12-11163
  *  Natascha Gamboa     12-11250
 -}
+module Playit.FrontEnd.Lexer
+  ( Token(..)
+  , TokenKind(..)
+  , LexerResult(..)
+  , alexScanTokens
+  ) where
 
-module Playit.FrontEnd.Lexer (
-  MyToken(..),
-  LexerResult(..), 
-  alexScanTokens,
-) where
-
-import           Playit.FrontEnd.Types
-import           Playit.Utils
 import qualified Data.ByteString.Lazy       as BL
 import qualified Data.ByteString.Lazy.Char8 as BLC
+
+import qualified Playit.Errors              as E
+import qualified Playit.Utils               as U
 }
 
 %wrapper "monadUserState-bytestring"
@@ -27,7 +28,7 @@ $digits    = [0-9]
 $abc_minus = [a-z]
 $abc_mayus = [A-Z]
 $abc       = [a-zA-Z]
-$symbols   = [\! \" \# \$ \% \& \' \( \) \* \+ \, \- \. \/ \: \; \< \= \> \? \@
+$symbols   = [\! \# \$ \% \& \' \( \) \* \+ \, \- \. \/ \: \; \< \= \> \? \@ '"'
           \[ \\ \] \^ \_ \` \{ \| \} \~ '\0' '\t' '\n' '\\' '\'' '\"' '\~' '\*']
 $valids    = [$digits $abc $symbols  $white]
 $char_text = [$valids # [\* \~ \\]]
@@ -39,12 +40,13 @@ $char_id   = [$digits $abc \_ \']
 @text     = @chars*
 @char     = "*" @chars "*"
 @strings  = \~ @text \~
-@id_type  = $abc_mayus $char_id*
+@tStruct  = $abc_mayus $char_id*
 @id       = $abc_minus $char_id*
 @programs = \% $char_id+ \%
 @endLine  = ($white* \n)+ 
 @float    = $digits+ \' $digits+
-@comments = \"\' ( . # [\'\"] | \n)* \'\"
+@comments = \" \' ( . # [\' \"] | \n)* \' \"
+-- Close "
 @comment  = \@ [. # \n]*
 
 -- token :: (AlexInput -> Int64 -> token) -> AlexAction token
@@ -69,20 +71,26 @@ tokens :-
   Items               { makeToken TkITEMS     }
   spawn               { makeToken TkSPAWN     }
   summon              { makeToken TkSUMMON    }
+  -- Assig
+  equip               { makeToken TkASSIG }
   -- If statement
   Button              { makeToken TkBUTTON     }
   notPressed          { makeToken TkNotPressed }
+  quest               { makeToken TkQUEST      }
+  loot                { makeToken TkLOOT       }
   -- Subroutines
   kill                { makeToken TkKILL    }
   boss                { makeToken TkBOSS    }
   monster             { makeToken TkMONSTER }
   unlock              { makeToken TkUNLOCK  }
-  -- Iterations
+  -- Loops
   farm                { makeToken TkFARM        }
   dungeon             { makeToken TkDUNGEON     }
   cleared             { makeToken TkCLEARED     }
   gameOver            { makeToken TkGameOver    }
   keepPlaying         { makeToken TkKeepPlaying }
+  in                  { makeToken TkIN          }
+  until               { makeToken TkUntil       }
   -- I/O
   joystick            { makeToken TkJOYSTICK }
   drop                { makeToken TkDROP     }
@@ -95,10 +103,10 @@ tokens :-
   Win                 { makeToken TkWIN  }
   Lose                { makeToken TkLOSE }
 
-  -- Ids
+  -- Ids, define reserved words first
   @programs           { makeToken TkProgramName }
   @id                 { makeToken TkID          }
-  @id_type            { makeToken TkIDType      }
+  @tStruct            { makeToken TkTStruct     }
 
   -- Characters
   @char               { makeToken TkCHARACTER }
@@ -152,13 +160,8 @@ tokens :-
   -- Registers inicialization
   "{"                 { makeToken TkOpenBrackets  }
   "}"                 { makeToken TkCloseBrackets }
-  -- Determined iterations
-  in                  { makeToken TkIN }
-  until               { makeToken TkTO }
   -- Guards
   "|"                 { makeToken TkGUARD }
-  -- Assig
-  equip               { makeToken TkASSIG }
   -- Exprs
   "("                 { makeToken TkOpenParenthesis  }
   ")"                 { makeToken TkCloseParenthesis }
@@ -173,24 +176,24 @@ tokens :-
   .                   { lexError }
 
 {
--- -----------------------------------------------------------------------------
--- -----------------------------------------------------------------------------
---                                Tokens
--- -----------------------------------------------------------------------------
--- -----------------------------------------------------------------------------
+{-
+ * -----------------------------------------------------------------------------
+ *                                  Tokens
+ * -----------------------------------------------------------------------------
+-}
 
-data Token = 
+data TokenKind = 
   TkEndLine         |
   TkWORLD           |
-  TkBATTLE          | TkPOWER      | TkSKILL | TkRUNE  | TkRUNES  |
-  TkKitOf           | TkINVENTORY  | TkITEMS | TkSPAWN | TkSUMMON |
-  TkBUTTON          | TkNotPressed |
+  TkBATTLE          | TkPOWER      | TkSKILL   | TkRUNE     | TkRUNES  |
+  TkKitOf           | TkINVENTORY  | TkITEMS   | TkSPAWN    | TkSUMMON |
+  TkBUTTON          | TkNotPressed | TkQUEST   | TkLOOT     |
   TkKILL            | TkBOSS       | TkMONSTER | TkUNLOCK   |
   TkFARM            | TkDUNGEON    | TkCLEARED | TkGameOver | TkKeepPlaying |
   TkJOYSTICK        | TkDROP       |
   TkDeathZone       | TkFREE       | TkPUFF |
   TkWIN             | TkLOSE       |
-  TkProgramName     | TkID         | TkIDType |
+  TkProgramName     | TkID         | TkTStruct |
   TkCHARACTER       | TkSTRINGS    |
   TkINT             | TkFLOAT      |
   TkFIN             |
@@ -201,81 +204,91 @@ data Token =
   TkOpenList        | TkCloseList     | TkOpenListIndex  | TkCloseListIndex  | TkANEXO | TkCONCAT |
   TkOpenArray       | TkCloseArray    | TkOpenArrayIndex | TkCloseArrayIndex |
   TkOpenBrackets    | TkCloseBrackets |
-  TkIN              | TkTO            |
+  TkIN              | TkUntil            |
   TkGUARD           |
   TkASSIG           |
   TkOpenParenthesis | TkCloseParenthesis | TkCOMA    |
   TkOpenComments    | TkCloseComments    | TkCOMMENT |
   TkError
   
-  deriving (Eq)
+  deriving (Eq, Ord)
+
+instance Show TokenKind where
+  show tk = (BLC.unpack . BL.concat) [U.red, U.italic, U.bold, U.underline]
+
+data Token = Token
+  { tkToken :: !TokenKind
+  , tkInput :: !BL.ByteString -- ^ Input readed from source
+  , tkPosn  :: !U.Position    -- ^ Position of input
+  } deriving(Ord)
 
 instance Show Token where
-  show _ = BLC.unpack $ BL.concat [red, italic, bold, underline]
+  show token = (BLC.unpack . BL.concat)
+    [(BLC.pack . show $ tkToken token), tkInput token, U.nocolor]
 
-data MyToken = MyToken
-  {
-    tkA     :: Token,         -- ^ Token abstraction
-    tkInput :: BL.ByteString, -- ^ Input readed from source
-    tkPos   :: Pos            -- ^ Position of input
-  }
-  deriving (Eq)
+instance Eq Token where
+  tk1 == tk2 = (tkToken tk1 == tkToken tk2) && (tkInput tk1 == tkInput tk2)
 
-instance Show MyToken where
-  show t = BLC.unpack $ BL.concat [(BLC.pack . show $ tkA t), tkInput t, nocolor]
-  
--- -----------------------------------------------------------------------------
--- -----------------------------------------------------------------------------
---                             Create tokens
--- -----------------------------------------------------------------------------
--- -----------------------------------------------------------------------------
 
-data LexerResult   = LexerResult {errs :: [Error], tokens :: [MyToken]}
+{-
+ * -----------------------------------------------------------------------------
+ *                               Token creation
+ * -----------------------------------------------------------------------------
+-}
+
+data LexerResult   = LexerResult {lrErrors :: [E.Error], lrTokens :: [Token]}
 type AlexUserState = LexerResult
+
 
 -- -----------------------------------------------------------------------------
 -- AlexAction = AlexInput -> Int64 -> Alex
 -- AlexAction = (AlexPosn, Char, ByteString, Int64) -> Int64 -> Either String (AlexState, a)
 -- AlexAction = ((AlexPn !Int !Int !Int), Char, ByteString, Int64) -> Int64 -> Either String (AlexState, AlexUserState)
-makeToken :: Token -> AlexAction AlexUserState
+makeToken :: TokenKind -> AlexAction AlexUserState
 makeToken token ((AlexPn _ r c), prevChar, inputStr, bytesConsumedSoFar) len = do
   let
     str = BL.take len inputStr
     input = case token of
       TkCHARACTER -> BL.tail $ BL.init str
       TkSTRINGS   -> BL.tail $ BL.init str
-      TkFLOAT     -> BL.pack $ BL.head str : BL.head (BLC.pack ".") : BL.last str : []
+      TkFLOAT     -> BL.pack $ BL.head str : 46 : BL.last str : [] -- '.' == 46 in Word8
       TkEndLine   -> BL.empty
       _           -> str
-    tk = MyToken token input (r, c)
+    tk = Token token input (r, c)
   -- Add token to state, get + put
   Alex $ 
     \s@AlexState{alex_ust = ust} ->
-      Right (s{alex_ust = LexerResult (errs ust) (tk : tokens ust)}, ())
+      Right (s{alex_ust = LexerResult (lrErrors ust) (tk : lrTokens ust)}, ())
   alexMonadScan
+
 
 -- -----------------------------------------------------------------------------
 lexError :: AlexAction AlexUserState
 lexError ((AlexPn _ r c), prevChar, inputStr, bytesConsumedSoFar) len = do
   let
     str = BL.take len inputStr
-    err = Error str (r, c)
+    err = E.Error str [BLC.pack "lexer error context here"] (r, c)
   Alex $ 
     \s@AlexState{alex_ust = ust} ->
-      Right (s{alex_ust = LexerResult (err : errs ust) (tokens ust)}, ())
+      Right (s{alex_ust = LexerResult (err : lrErrors ust) (lrTokens ust)}, ())
   alexMonadScan
 
--- -----------------------------------------------------------------------------
--- This isn't on the documentation
-alexEOF :: Alex AlexUserState
-alexEOF = Alex $ \s@AlexState{alex_ust = ust} -> Right (s, ust)
 
+-- -----------------------------------------------------------------------------
 alexInitUserState :: AlexUserState
 alexInitUserState = LexerResult [] []
 
 alexScanTokens :: BL.ByteString -> LexerResult
 alexScanTokens source =
   case runAlex source alexMonadScan of
-    Left msg  -> LexerResult [Error (BLC.pack msg) (-1,-1)] [MyToken TkError (BLC.pack "Alex error") (-1,-1)]
     Right ust -> ust
+    Left msg  -> LexerResult [E.Error (BLC.pack msg) [BLC.pack "Alex error"] (-1,-1)] 
+                             [Token TkError (BLC.pack "Alex error") (-1,-1)]
+
+
+-- -----------------------------------------------------------------------------
+-- This isn't on the documentation
+alexEOF :: Alex AlexUserState
+alexEOF = Alex $ \s@AlexState{alex_ust = ust} -> Right (s, ust)
+
 }

@@ -24,6 +24,7 @@ import System.IO                 as Import (IOMode(..), readFile, openFile, writ
 import System.Exit               as Import (exitFailure, exitSuccess)
 import System.FilePath           as Import (takeExtension)
 
+import Playit.Errors             as Import
 import Playit.FrontEnd           as Import
 -- import Playit.BackEnd            as Import
 import Playit.Utils              as Import

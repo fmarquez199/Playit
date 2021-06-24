@@ -9,10 +9,10 @@
 module Playit.FrontEnd (module FrontEnd) where
 
 import Playit.FrontEnd.AST         as FrontEnd
-import Playit.FrontEnd.CheckAST    as FrontEnd
 import Playit.FrontEnd.Errors      as FrontEnd
 import Playit.FrontEnd.Lexer       as FrontEnd
 import Playit.FrontEnd.Parser      as FrontEnd
-import Playit.FrontEnd.SymbolTable as FrontEnd
-import Playit.FrontEnd.Types       as FrontEnd
+import Playit.FrontEnd.ParserM  as FrontEnd
+import Playit.FrontEnd.SymTable as FrontEnd
+import Playit.FrontEnd.Syntax       as FrontEnd
 import Playit.FrontEnd.Utils       as FrontEnd
