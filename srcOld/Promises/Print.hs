@@ -10,7 +10,7 @@ module Playit.FrontEnd.Promises.Print where
 
 
 import Playit.FrontEnd.Types
-import Playit.FrontEnd.Promises.Types
+import Playit.FrontEnd.Promises.TypesOld
 
 
 printPromiseParam :: [(Type,Pos)] -> IO ()

@@ -43,7 +43,7 @@ import Playit.FrontEnd.Types
 
     funcion1()(-> Int) + funcion2()(-> Int)
 -}
-updateExpr :: Expr -> Type -> MonadSymTab Expr
+updateExpr :: Expr -> Type -> S.ParserM Expr
 updateExpr (Unary op e TPDummy) t = do
   ne <- updateExpr e t
   return (Unary op ne (typeE ne))
@@ -74,7 +74,7 @@ updateExpr (Binary Concat e1 e2 _) tl@(TList t) = do
 --   return (Binary op ne1 ne2 TBool)
 
 updateExpr (FuncCall (Call name args) tf) t = do
-  SymTabState{symTab = st} <- get
+  S.ParserS{symTab = st} <- get
   let
     nt  = if t == TNull then TPointer TDummy else t
     info = fromJust $ lookupInSymTab name st
@@ -121,7 +121,7 @@ updatePromiseInExpr name (Binary op e1 e2 tb) t = Binary op ne1 ne2 ntb
     ne2        = updatePromiseInExpr name e2 t
     tE1        = typeE ne1
     tE2        = typeE ne2
-    isAritOp x = x `elem` [Add, Minus, Mult, Division]
+    isAritOp x = x `elem` [Add, Minus, Mult, Div]
     ntb        = case op of -- TODO: Falta caso  concatenación
       Anexo  -> fromMaybe TError (getTLists [TList tE1,tE2])
       Concat -> 
@@ -166,7 +166,7 @@ updatePromiseInExpr name (ArrayList expr (TList _)) t = ArrayList nexpr nta
       Nothing -> TError
 
 updatePromiseInExpr _ l@(Literal _ _) _  = l
-updatePromiseInExpr _ v@(Variable _ _) _ = v
+updatePromiseInExpr _ v@(Rval _ _) _ = v
 updatePromiseInExpr _ Null _             = Null
 updatePromiseInExpr _ e _                = error $ "e : " ++ show e
 -------------------------------------------------------------------------------
@@ -174,9 +174,9 @@ updatePromiseInExpr _ e _                = error $ "e : " ++ show e
 
 -------------------------------------------------------------------------------
 -- | Le asigna a una funcion promesa el tipo de retorno pasado como argumento.
-updatePromise :: Id -> Type -> Type -> MonadSymTab Type
+updatePromise :: Id -> Type -> Type -> S.ParserM Type
 updatePromise name t tf = do
-  state@SymTabState{proms = promises} <- get
+  state@S.ParserS{proms = promises} <- get
   let promise = getPromise name promises
 
   if isJust promise then do
@@ -202,9 +202,9 @@ updatePromise name t tf = do
 
 
 -------------------------------------------------------------------------------
-updateInfoSubroutine:: Id -> Category -> [(Type,Id)] -> Type -> MonadSymTab ()
+updateInfoSubroutine:: Id -> Category -> [(Type,Id)] -> Type -> S.ParserM ()
 updateInfoSubroutine name cat p t = do
-  state@SymTabState{proms = promises} <- get
+  state@S.ParserS{proms = promises} <- get
   fileCode <- ask
   let paramsF = reverse p
       promise = getPromise name promises
@@ -250,7 +250,7 @@ updateInfoSubroutine name cat p t = do
 -- | Dada una expresion en donde aparecen llamadas a funciones con tipo de retorno
 -- indeterminados, se buscan todas esas llamadas y se les agrega una expresion
 -- que se debe chequear cuando se actualizen los datos de las llamadas a la funcion
-addLateCheck :: Expr -> Expr -> [Pos] -> [Id] -> MonadSymTab ()
+addLateCheck :: Expr -> Expr -> [Pos] -> [Id] -> S.ParserM ()
 addLateCheck (Binary _ e1 e2 _) e lpos lids =
   addLateCheck e1 e lpos lids >> addLateCheck e2 e lpos lids
 
@@ -294,9 +294,9 @@ getRelatedPromises _                          = []
 
 
 -------------------------------------------------------------------------------
-addLateCheckForEach :: Id -> Id -> Expr -> Pos -> [Id] -> MonadSymTab ()
+addLateCheckForEach :: Id -> Id -> Expr -> Pos -> [Id] -> S.ParserM ()
 addLateCheckForEach idp idvar expr p ids = do
-  state@SymTabState{symTab = st, currS = s, proms = promises} <- get
+  state@S.ParserS{symTab = st, currS = s, proms = promises} <- get
   let
     infos   = lookupInScopes [s] idvar st
     promise = getPromise idp promises
@@ -326,9 +326,9 @@ addLateCheckForEach idp idvar expr p ids = do
 -------------------------------------------------------------------------------
 -- | Actualiza una promesa agregandole un check que se realizara cuando se
 -- actualize su tipo de retorno
-addLateChecks :: Id -> Expr -> [Pos] -> [Id] -> MonadSymTab ()
+addLateChecks :: Id -> Expr -> [Pos] -> [Id] -> S.ParserM ()
 addLateChecks name e lpos lids = do
-  state@SymTabState{proms = promises} <- get
+  state@S.ParserS{proms = promises} <- get
   let
     promise = getPromise name promises
 
@@ -364,7 +364,7 @@ addLateChecks name e lpos lids = do
 --     ne2        = updatePromiseInExpr name e2 t
 --     tE1        = typeE ne1
 --     tE2        = typeE ne2
---     isAritOp x = x `elem` [Add, Minus, Mult, Division]
+--     isAritOp x = x `elem` [Add, Minus, Mult, Div]
 --     ntb        = case op of -- TODO: Falta caso  concatenación
 --       Anexo  -> fromMaybe TError (getTLists [TList tE1,tE2])
 --       Concat -> fromMaybe TError (getTLists [tE1,tE2])      
@@ -397,16 +397,16 @@ addLateChecks name e lpos lids = do
 --       Nothing -> TError
 
 -- updatePromiseInExpr _ l@(Literal _ _) _  = l
--- updatePromiseInExpr _ v@(Variable _ _) _ = v
+-- updatePromiseInExpr _ v@(Rval _ _) _ = v
 -- updatePromiseInExpr _ Null _             = Null
 -- updatePromiseInExpr _ e _                = error $ "e : " ++ show e
 -------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
-getParamsSubroutineFromSymtab :: Id -> MonadSymTab [(Type, Id)]
+getParamsSubroutineFromSymtab :: Id -> S.ParserM [(Type, Id)]
 getParamsSubroutineFromSymtab name = do
-  SymTabState{symTab = st} <- get
+  S.ParserS{symTab = st} <- get
   let
     symInfos = lookupInScopes [1,0] name st
 
@@ -432,7 +432,7 @@ getParamsSubroutineFromSymtab name = do
 
 
 -------------------------------------------------------------------------------
-checkExprCalls :: Promise -> Type -> MonadSymTab ()
+checkExprCalls :: Promise -> Type -> S.ParserM ()
 checkExprCalls promise tr = do 
   fileCode <- ask
   let 
@@ -442,7 +442,7 @@ checkExprCalls promise tr = do
     -- params :: [(Expr,Pos)]
   newcheck' <- forM checks $ \lcp@(LateCheckPromCall (Call idPromiseCall paramsCall) relatedIds) -> do
 
-    SymTabState{proms = promises} <- get
+    S.ParserS{proms = promises} <- get
     -- Obtenemos los parametros que se tienen definidos para la función  
     defParamsCall <- getParamsSubroutineFromSymtab idPromiseCall
 
@@ -482,7 +482,7 @@ checkExprCalls promise tr = do
     when (all (\(t,_) -> t/=TError) nparams && any (\(t,_) -> not $ isRealType t) defParamsCall) $
       updatePromiseArgTypes (fromJust $ getPromise idPromiseCall promises) nparams
       
-    state@SymTabState{proms = promises} <- get
+    state@S.ParserS{proms = promises} <- get
     let 
       lnp2           = concat lnp
       lnpids         = map (\p -> (promiseId p, p)) lnp2
@@ -494,7 +494,7 @@ checkExprCalls promise tr = do
     return newcheck
 
   -- TODO: Eliminar solo si se actualiza a un tipo concreto
-  state'@SymTabState{proms = promises} <- get
+  state'@S.ParserS{proms = promises} <- get
   let 
     modifyTypePromise prom = 
       if promiseId prom == name then 
@@ -507,7 +507,7 @@ checkExprCalls promise tr = do
 
 
 -------------------------------------------------------------------------------
-checkExprForEach :: Promise -> Type -> MonadSymTab ()
+checkExprForEach :: Promise -> Type -> S.ParserM ()
 checkExprForEach promise tr = do 
   fileCode <- ask
   let 
@@ -515,7 +515,7 @@ checkExprForEach promise tr = do
     checks  = forEachLateCheck promise
 
   newcheck' <- forM checks $ \lcp@(LateCheckPromForE e1 idvar tvar pexpr lids1) -> do
-    state@SymTabState{symTab = st, currS = s} <- get
+    state@S.ParserS{symTab = st, currS = s} <- get
     let
       newcheck = LateCheckPromForE (updatePromiseInExpr name e1 tr) idvar tvar pexpr lids1
       ne1      = expr newcheck
@@ -537,7 +537,7 @@ checkExprForEach promise tr = do
             in
               put state{symTab = newSymTab}
 
-    state'@SymTabState{proms = promises} <- get
+    state'@S.ParserS{proms = promises} <- get
 
     lnp <- forM lids1 $ \idpl -> do
       let
@@ -564,7 +564,7 @@ checkExprForEach promise tr = do
     return newcheck
 
   -- TODO: Eliminar solo si se actualiza a un tipo concreto
-  state''@SymTabState{proms = promises} <- get
+  state''@S.ParserS{proms = promises} <- get
   let 
     modifyTypePromise prom = 
       if promiseId prom == name then 
@@ -581,7 +581,7 @@ checkExprForEach promise tr = do
 -- Se actualiza el tipo de la llamada a la funcion de la promesa en sus expresiones latechecks
 -- 
 -- si se actualizó la promesa a un tipo concreto se eliminan sus latechecks
-checkExpr :: Promise -> Type-> MonadSymTab ()
+checkExpr :: Promise -> Type-> S.ParserM ()
 checkExpr promise tr = do
   fileCode <- ask
   let 
@@ -591,7 +591,7 @@ checkExpr promise tr = do
 
   newcheck' <- forM checks $ \(LateCheckPromS e1 lpos1 lids1) -> do
 
-    state@SymTabState{proms = promises} <- get
+    state@S.ParserS{proms = promises} <- get
     let
       newcheck = LateCheckPromS (updatePromiseInExpr name e1 tr) lpos1 lids1
       ne1 = expr newcheck
@@ -624,7 +624,7 @@ checkExpr promise tr = do
     return newcheck
 
   -- TODO: Eliminar solo si se actualiza a un tipo concreto
-  state'@SymTabState{proms = promises} <- get
+  state'@S.ParserS{proms = promises} <- get
   let 
     modifyTypePromise prom = 
       if promiseId prom == name then 
@@ -637,18 +637,18 @@ checkExpr promise tr = do
 
 
 -------------------------------------------------------------------------------
-checkUnaryExpr :: UnOp -> Expr -> Type -> Pos -> MonadSymTab ()
+checkUnaryExpr :: UnOp -> Expr -> Type -> Pos -> S.ParserM ()
 checkUnaryExpr op e t p = do
   fileCode <- ask
   let 
     te = typeE e
 
-  if op == Length then
+  if op == Len then
     unless (isArray te || isList te) $
       when (te `notElem` [TError,TPDummy]) $
         tell [arrLstErrorMsg te fileCode p]
   else 
-    when (op == Negative) $
+    when (op == Negate) $
       unless (te == TInt || te == TFloat) $
         when (te `notElem` [TError,TPDummy]) $
           tell [aritErrorMsg te fileCode p]
@@ -656,16 +656,16 @@ checkUnaryExpr op e t p = do
 
 
 -------------------------------------------------------------------------------
-checkBinaryExpr :: BinOp -> Expr -> Pos-> Expr -> Pos -> MonadSymTab ()
+checkBinaryExpr :: BinOp -> Expr -> Pos-> Expr -> Pos -> S.ParserM ()
 checkBinaryExpr op e1 p1 e2 p2 = do
   fileCode <- ask
   let
     tE1     = typeE e1
     tE2     = typeE e2
-    eqOps   = [Eq, NotEq]
-    compOps = [Eq, NotEq, GreaterEq, LessEq, Greater, Less]
-    aritOps = [Add, Minus, Mult, Division]
-    aritInt = [DivEntera, Module]
+    eqOps   = [Eq, Neq]
+    compOps = [Eq, Neq, Gte, Lte, Gt, Lt]
+    aritOps = [Add, Minus, Mult, Div]
+    aritInt = [IntDiv, Mod]
     boolOps = [And, Or]
 
   if tE1 /= tE2 then -- Si son distintos los tipos de las funciones
@@ -793,7 +793,7 @@ checkBinaryExpr op e1 p1 e2 p2 = do
 
 -------------------------------------------------------------------------------
 -- | Checkea que la expresion sea correcta
-checkLateCheck :: Expr -> [Pos] -> MonadSymTab ()
+checkLateCheck :: Expr -> [Pos] -> S.ParserM ()
 checkLateCheck (Binary op e1 e2 _) pos =
   let 
     tE1 = typeE e1
@@ -860,13 +860,13 @@ Actualiza el tipo de los argumentos de una promesa a una versión más especific
 Solo se debería llamar cuando no se tiene un tipo concreto para los argumentos
 y se acaba de inferir un tipo más especifico. Ejemplo, puntero a algo -> puntero a entero
 -}
-updatePromiseArgTypes :: Promise -> [(Type,Pos)] -> MonadSymTab ()
+updatePromiseArgTypes :: Promise -> [(Type,Pos)] -> S.ParserM ()
 updatePromiseArgTypes promise nparams  = do
   let  
     name      = promiseId promise
     extraInfo = Params [(t,show i)| ((t,_),i) <- zip nparams [1..]]
 
-  state@SymTabState{proms = promises} <- get
+  state@S.ParserS{proms = promises} <- get
   let 
     modifyTypePromise prom = 
       if promiseId prom == name then 
@@ -881,9 +881,9 @@ updatePromiseArgTypes promise nparams  = do
   updateExtraInfoProm name (promiseCat promise) [extraInfo]
 
 
-addLateCheckCall :: Id -> Subroutine -> [Id] -> MonadSymTab ()
+addLateCheckCall :: Id -> Subroutine -> [Id] -> S.ParserM ()
 addLateCheckCall id call relatedIds = do
-  state@SymTabState{proms = promises} <- get
+  state@S.ParserS{proms = promises} <- get
   let  
     promise = fromJust $ getPromise id promises
 
@@ -898,9 +898,9 @@ addLateCheckCall id call relatedIds = do
   -- Actualizamos los tipos de los argumentos en la promesa
   put state{proms = map modifyTypePromise promises}
 
-updatePromiseLateChecksCalls :: Subroutine -> [(Type,Pos)] ->MonadSymTab ()
+updatePromiseLateChecksCalls :: Subroutine -> [(Type,Pos)] ->S.ParserM ()
 updatePromiseLateChecksCalls callf@(Call namef params) nparams = do
-  SymTabState{proms = promises} <- get
+  S.ParserS{proms = promises} <- get
   let
     exprs       = map fst params
     relatedIds  = map getRelatedPromises exprs
