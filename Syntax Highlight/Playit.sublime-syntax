@@ -134,7 +134,7 @@ contexts:
     #   scope: punctuation.separator.annotation.variable.playit
     
     # Asignacion
-    - match: '=(?!=)'
+    - match: \b(equip)\b
       scope: keyword.operator.assignment.playit
 
   line_statements:
@@ -244,11 +244,11 @@ contexts:
       scope: keyword.operator.pointer.playit
 
     # Algo pasa porque todavia no se toma bien que muestre un caracter
-    # - match: \b(\buff)\b
-    #   scope: keyword.operator.uppercase.playit
+    - match: \b(buff)\b
+      scope: keyword.operator.uppercase.playit
 
-    # - match: \b(\debuff)\b
-    #   scope: keyword.operator.lowercase.playit
+    - match: \b(debuff)\b
+      scope: keyword.operator.lowercase.playit
 
   lists:
     - match: '<<'
