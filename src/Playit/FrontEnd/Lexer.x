@@ -99,6 +99,10 @@ tokens :-
   free                { makeToken TkFREE      }
   puff                { makeToken TkPUFF      }
 
+  -- Chars operators
+  buff                { makeToken TkUPPER     }
+  debuff              { makeToken TkLOWER     }
+
   -- Boolean literals
   Win                 { makeToken TkWIN  }
   Lose                { makeToken TkLOSE }
@@ -140,9 +144,6 @@ tokens :-
   "=="                { makeToken TkEQUAL        }
   "!="                { makeToken TkNotEqual     }
   "!"                 { makeToken TkNOT          }
-  -- Chars operators
-  "buff"              { makeToken TkUPPER }
-  "debuff"            { makeToken TkLOWER }
   -- Pointers
   "?"                 { makeToken TkREF }
   -- Lists
