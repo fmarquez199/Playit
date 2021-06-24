@@ -31,7 +31,7 @@ variables:
 # @text     = @chars*
 # @char     = "*" @chars "*"
 # @strings  = \~ @text \~
-# @id_type  = $abc_mayus $char_id*
+# @tStruct  = $abc_mayus $char_id*
 # @id       = $abc_minus $char_id*
 # @programs = \% $char_id+ \%
 # @comments = \"\' ( . # [\'\"] | \n)* \'\"
@@ -233,7 +233,7 @@ contexts:
     - match: <\=|>\=|\=\=|<|>|\!\=
       scope: keyword.operator.comparison.playit
 
-    - match: \+|\-|\*|/|//|%|\+\+|\-\-|#
+    - match: \+|\-|\*|/|//|%|# # |level up\+\+|use item\-\-
       scope: keyword.operator.arithmetic.playit
 
     - match: \&\&|\!|\|\|
@@ -244,10 +244,10 @@ contexts:
       scope: keyword.operator.pointer.playit
 
     # Algo pasa porque todavia no se toma bien que muestre un caracter
-    # - match: \b(\^)\b
+    # - match: \b(\buff)\b
     #   scope: keyword.operator.uppercase.playit
 
-    # - match: \b(\.)\b
+    # - match: \b(\debuff)\b
     #   scope: keyword.operator.lowercase.playit
 
   lists:
