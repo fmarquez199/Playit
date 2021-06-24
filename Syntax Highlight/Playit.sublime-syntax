@@ -97,8 +97,8 @@ contexts:
           scope: punctuation.definition.comment.end.playit
           pop: true
 
+  # Falta que no tome el .~
   strings:
-    # Falta que no tome el .~
     - match: '~'
       scope: punctuation.definition.string.begin.playit
       push:
@@ -110,15 +110,15 @@ contexts:
           pop: true
 
   # characters:
-  #   - match: '\*'
-  #     scope: punctuation.definition.character.begin.playit
-  #     push:
-  #       - meta_scope: character.quoted.single.playit
-  #       - match: '\\.'
-  #         scope: constant.character.escape.playit
-  #       - match: $|\*
-  #         scope: punctuation.definition.character.end.playit
-  #         pop: true
+    # - match: '\*'
+    #   scope: punctuation.definition.character.begin.playit
+    #   push:
+    #     - meta_scope: character.quoted.single.playit
+    #     - match: '\\.'
+    #       scope: constant.character.escape.playit
+    #     - match: $|\*
+    #       scope: punctuation.definition.character.end.playit
+    #       pop: true
 
   constants:
     - match: \b(DeathZone|Win|Lose)\b
@@ -156,12 +156,15 @@ contexts:
     - match: \b(kill)\b
       scope: keyword.procedure.call.playit
 
+    - match: \b(free)\b
+      scope: keyword.free.variable.playit
+
   block_statements:
-    - match: \b(Button|notPressed|controller|play|lock)\b
+    - match: \b(Button|notPressed|farm|dungeon|cleared|)\b
       scope: keyword.control.flow.playit
 
     # For var = 0 -> 10: ... .~
-    # - match: \b(async +)?(controller)\b
+    # - match: \b(async +)?(farm)\b
       # captures:
       #   1: storage.modifier.async.playit
       #   2: keyword.control.loop.for.playit
@@ -170,7 +173,7 @@ contexts:
         
         # - include: line-continuation-or-pop
         
-        # - match: \b\=\b
+        # - match: \b(equip)\b
         #   scope: keyword.control.loop.for.from.playit
         #   set:
         #     - meta_content_scope: meta.statement.loop.for.playit
@@ -190,7 +193,7 @@ contexts:
         # - include: target-list
     
     # While
-    # - match: \bplay\b
+    # - match: \bdungeon\b
       # scope: keyword.control.loop.while.playit
       # push:
         
@@ -202,7 +205,7 @@ contexts:
         #   pop: true
         
         # - include: expression-in-a-statement
-        # lock expr \n .~
+        # cleared expr \n .~
     
   methods:
     - match: \b(boss|monster)\b
@@ -249,6 +252,9 @@ contexts:
 
     - match: \b(debuff)\b
       scope: keyword.operator.lowercase.playit
+
+    - match: \b(spawn)\b
+      scope: keyword.operator.access.playit
 
   lists:
     - match: '<<'
