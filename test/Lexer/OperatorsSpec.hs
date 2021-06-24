@@ -1,7 +1,9 @@
 module OperatorsSpec where
 
 import Test.Hspec
+
 import Playit.FontEnd.Lexer
+
 
 spec :: Spec
 spec = describe "Lexer.operators" $ do

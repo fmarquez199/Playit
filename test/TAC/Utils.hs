@@ -2,14 +2,18 @@ module Utils where
 
 import Test.Hspec
 import Control.Monad.RWS
-import Playit.FrontEnd.Lexer       (alexScanTokens)
-import Playit.FrontEnd.Parser      (parse)
-import Playit.FrontEnd.SymbolTable (stInitState)
-import Playit.FrontEnd.Types
-import Playit.BackEnd.TAC          (gen,tacInitState)
-import Playit.BackEnd.Utils        (tacConstant,tacVariable,tacLabel,tacGoto)
+
+import Playit.FrontEnd.Lexer     (alexScanTokens)
+import Playit.FrontEnd.Parser    (parse)
+import Playit.FrontEnd.SymbTable (stInitState)
+import Playit.FrontEnd.Syntax
+
+import Playit.BackEnd.TAC        (gen, tacInitState)
+import Playit.BackEnd.Utils      (tacConstant, tacVariable, tacLabel, tacGoto)
 import Playit.BackEnd.Types
-import qualified TACType           as T
+
+import qualified TACType         as T
+
 
 runTestForValidTAC :: String -> [TAC] -> IO ()
 runTestForValidTAC program genTAC = do
@@ -17,7 +21,7 @@ runTestForValidTAC program genTAC = do
     tokens   = alexScanTokens program
     fileCode = ("TestValidTAC.game", program)
 
-  (ast, SymTabState{symTab = st}, _) <- runRWST (parse tokens) fileCode stInitState
+  (ast, S.ParserS{symTab = st}, _) <- runRWST (parse tokens) fileCode stInitState
   (_, _, tac) <- runRWST (gen ast) ast (tacInitState st)
   tac `shouldBe` genTAC
 

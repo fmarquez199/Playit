@@ -2,10 +2,12 @@ module Playit.ParserSpec (spec) where
 
 import Test.Hspec
 import Control.Monad.Trans.RWS
+
+import Playit.Lexer     (alexScanTokens, Token(..))
 import Playit.Parser
-import Playit.SymbolTable(stInitState)
-import Playit.Lexer(alexScanTokens, Token)
-import Playit.Types
+import Playit.SymbTable (stInitState)
+import Playit.Syntax
+
 
 spec :: Spec
 spec = do
