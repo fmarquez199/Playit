@@ -7,7 +7,7 @@
   - [**Booleans**](#booleans)
   - [**Integers**](#integers)
   - [**Floating point numbers**](#floating-point-numbers)
-- [**Data types. Composite**](#data-types-composite)
+- [**Data types. Composed**](#data-types-composite)
   - [**Arrays**](#arrays)
   - [**Strings**](#strings)
   - [**Lists**](#lists)
@@ -107,7 +107,7 @@ They are **64 bit (8 B)** data in memory represented according to the standard
 
 ---
 ---
-# **Data types. Composite**
+# **Data types. Composed**
 
 ## **Arrays**
 
