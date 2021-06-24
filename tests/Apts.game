@@ -1,5 +1,0 @@
-world %Apuntadores%:
-  Power puff apt1 = summon Power
-  @puff apt1 = 50
-  drop apt1
-.~

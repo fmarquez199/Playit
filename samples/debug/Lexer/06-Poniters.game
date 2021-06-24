@@ -1,0 +1,12 @@
+world %Pointers%:
+
+  Power puff apt1 equip summon Power
+  puff apt1 equip 50
+  drop apt1
+
+  Rune|}3{| puff apt2
+  puff apt2 equip |)*a*, *b*, *4*(|
+
+  free apt1
+  free apt2
+.~

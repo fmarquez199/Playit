@@ -1,0 +1,7 @@
+world %Assignments%:
+  
+  Power x
+  x equip 10
+
+  Skill y equip 1'5, z
+.~

@@ -1,0 +1,10 @@
+boss procedure():
+.~
+monster function(Power p, Rune c) Power:
+
+  unlock p
+.~
+world %Subroutines%:
+
+  kill procedure()
+.~

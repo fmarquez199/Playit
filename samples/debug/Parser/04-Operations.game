@@ -1,0 +1,51 @@
+world %Operations%:
+
+@ Operaciones aritmeticas
+
+  Power x equip 5
+
+  Power i1 equip x - 4
+  Power i2 equip x + 2
+  Power i3 equip x * 2
+  Power i4 equip x % 1
+  Power i5 equip x // 1
+
+  Skill f equip 1'5
+
+  Skill f1 equip f / f
+  Skill f2 equip x / 2'5
+  
+
+@ Operaciones unarias
+
+  Power x2
+  x2 equip -x
+  
+  Skill f equip -5'2
+
+  Rune   c equip *4*
+  Rune  up equip buff *x*
+  Rune low equip debuff c
+
+@ Operaciones boleanas
+  
+  Battle b
+
+  b equip f == f
+  b equip f != f
+  b equip f <= f
+  b equip f < f
+  b equip f > f
+  b equip f >= f
+  b equip !Win
+  b equip Lose || Win
+  b equip Win && b
+
+  b equip b && x > 6
+
+@ Operador ternario
+  
+  Skill f3 equip b ? f1 : 3'7
+  
+  Battle b1 equip Win ? (3 == x) : (x > 6)
+.~

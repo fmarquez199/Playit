@@ -1,0 +1,9 @@
+Inventory Record:
+.~
+Items Union:
+.~
+world %Structs%:
+
+  Record inv equip Record {10 , 1'8, Lose}
+  Power elem equip inv spawn a
+.~

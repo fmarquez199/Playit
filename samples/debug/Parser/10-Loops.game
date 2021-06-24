@@ -1,0 +1,26 @@
+world %Loops%:
+
+  Power x equip joystick ~Un Entero:~
+
+  dungeon:
+    Button:
+      | x == 4 } gameOver
+    .~
+    drop x
+    x++
+  cleared (x < 10)
+  .~
+
+
+  farm Power i equip 1 until 10 lock i % 2 == 0:
+    Button:
+      | i == 4 } keepPlaying
+    .~
+    drop i
+    x = i
+  .~
+
+  farm Rune i in |)2, 3, 10, 15, 20(|:
+  .~
+
+.~

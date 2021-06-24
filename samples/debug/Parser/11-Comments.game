@@ -1,0 +1,9 @@
+world %Comments%:
+  "'
+    Multiple lines comment
+  '"
+
+  Rune c @ Single line comment
+
+  Kit of Skill l "' equip << 5 >>'", l2
+.~

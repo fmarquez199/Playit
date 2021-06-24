@@ -1,0 +1,8 @@
+world %Lists%:
+  
+  Power x
+  
+  Kit of Power list1 equip <<4,2>>
+  Kit of Power empty equip << >>
+  list1|>-(((x)))<| equip 10
+.~

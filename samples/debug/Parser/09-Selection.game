@@ -1,0 +1,12 @@
+world %Selection%:
+  
+  Power x
+  
+  Button:
+    | x < 3      } x equip 10
+    | x == 1     } x equip 12
+    | Lose       } x equip 0
+    | Win        } x equip 30
+    | notPressed } x equip 720
+  .~
+.~

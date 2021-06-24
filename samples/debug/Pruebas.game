@@ -1,0 +1,114 @@
+@boss dropit():
+@  drop ~dropit proc~
+@  Power act = joystick ~ salir .0. ? ~
+@  Button:
+@    | act == 0 } gameOver
+@  .~
+@  kill dropit2()
+@.~
+@boss dropit2():
+@  drop ~dropit2 proc~
+@  kill dropit2()
+@.~
+@monster power1(Power p) Power:
+@  Power r, x
+@  x = kill power2(p+x)
+@  r = x + 1
+@  drop ~ Dentro de power1 ~
+@
+@  unlock r
+@.~
+@monster power2(Power p) Power:
+@  Power r, x
+@  x = kill power1(p+x)
+@  r = x * 2
+@  drop ~ Dentro de power2 ~
+@  
+@  unlock r
+@.~
+@monster string1() Runes:
+@  Runes r = ~ Estoy en string1! \n~
+@  unlock r
+@.~
+@boss a():
+@  drop ~Estoy en a.~
+@  kill b()
+@.~
+@boss b():
+@  drop ~Estoy en b.~
+@  kill c()
+@.~
+@boss c():
+@  drop ~Estoy en c.~
+@  kill a()
+@.~
+
+world %Pruebas%:
+
+@Power  y1 = -5 @ neg en assembler requiere 2 registros
+
+@  play:
+  @  gameOver
+  @  i0 = 9
+  @  keepPlaying
+  @  Button:
+  @    | x == 7 }
+  @      x = x * y
+  @      gameOver
+  @    | x == 4 } 
+  @      x++ @ para que no haya loop infinito
+  @      keepPlaying
+  @  .~
+  @  drop x
+  @  x++
+  @lock (x < 10)
+  @.~
+@
+
+@  Button: @ Se admitia sin ninguna condicion? creo que no
+  @.~
+
+@ I/O
+  @Power geti = joystick ~Un Entero~
+  @drop geti
+  @Skill getf = joystick ~Un flotante~
+  @drop getf
+  @Runes gets = joystick ~Un String~
+  @drop gets
+  @Runes gets
+  @gets = joystick ~Un String~
+  @drop gets
+  @Runes getc = joystick ~Un Char~
+  @drop getc
+  @Runes getnull = joystick
+  @drop getnull
+
+@ Strings
+  @Runes str = ~Aqui voy, mira! no se muestran @?; cosas asi en el label'~
+  @drop ~Aqui voy, mira! no se muestran @?; cosas asi en el label'~
+  @Runes s = kill string1() @ asi no se genera el label en .data
+  @s= kill string1() @ y asi hay que init s y entonces los labels no quedan bien
+
+@Power|}x{| arr0    @ Err cuando init por defecto un arreglo
+
+@ Correcursion
+  @kill dropit()
+  @x = kill power1(x + y)
+  @drop ~ Despues de kill x es ~
+  @drop x
+  @kill a()
+
+@ Arreglos. not supported final code
+
+  @ see push variable in backend utils, fromjust = nothing
+  @controller Power e <- |)2, 3(|:
+  @  drop e
+  @.~
+
+
+"'Por implementar en TAC'"
+@ Listas
+  @Kit of Power list = <<10, 21, 3>> :: (<<2>> :: <<0>>) @ This is a problem
+
+@ Registros
+.~

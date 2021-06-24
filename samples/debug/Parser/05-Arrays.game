@@ -1,0 +1,16 @@
+world %Arrays%:
+
+  Power x equip 5
+  
+  Power|}3{| array1 equip |)2, 3, 4(|
+  Power|}x{| array2 equip |)2, 3, 4, 10, 1(|
+  
+  Power len equip #array1
+  array1|)0(| equip 0
+  x equip array2|)3(|
+  
+@ Strings
+
+  Rune|}4{| str1 equip |)*H*, *o*, *l*, *a*(|
+  Runes str2 equip ~Hola, soy un string! @.@ ^.^~
+.~
