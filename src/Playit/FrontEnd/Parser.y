@@ -169,9 +169,9 @@ ProgramWrapper :: { S.Instruction }
 PROGRAM :: { S.Instruction }
     -- Checkeo aquí porque en main también se crean promesas (aunque es más un error de nosotros)
   : ChekedDefs world program ":" EndLn InstrSeq EndLn ".~" PopScope { % AST.nodeProgram $6 }
-  | ChekedDefs world program ":" EndLn ".~" PopScope                { % AST.nodeProgram [] }
-  | world program ":" EndLn InstrSeq EndLn ".~"  PopScope           { % AST.nodeProgram $5 }
-  | world program ":" EndLn ".~" PopScope                           { S.Instruction (S.Program []) S.TVoid }
+  | ChekedDefs world program ":" EndLn                ".~" PopScope { % AST.nodeProgram [] }
+  |            world program ":" EndLn InstrSeq EndLn ".~" PopScope { % AST.nodeProgram $5 }
+  |            world program ":" EndLn                ".~" PopScope { S.Instruction (S.Program []) S.TVoid }
 
 
 -- -----------------------------------------------------------------------------
@@ -192,8 +192,8 @@ Definitions :: { () }
 
 Definition :: { () }
   : DefineSubroutine PopScope { }
-  | DefineRecord PopScope     { }
-  | DefineUnion PopScope      { }
+  | DefineRecord     PopScope { }
+  | DefineUnion      PopScope { }
 
 
 EndLn :: { () }
@@ -208,7 +208,7 @@ EndLn :: { () }
 
 InstrSeq :: { S.InstrSeq }
   : InstrSeq EndLn INSTR  { $3 : $1 }
-  | INSTR                    { [$1]    }
+  | INSTR                 { [$1]    }
 
 INSTR :: { S.Instruction }
   : DECLARATION              { S.Instruction (S.Decl $1) S.TVoid   }

@@ -124,7 +124,7 @@ playit = do
           let
             parseCode = I.parse $ I.fromRight lexerR lexer
           
-          (ast, state@I.ParserS{I.psSymTab = st}, errs) <- I.runRWST parseCode fileCode I.stInitState
+          (ast, state@I.ParserS{I.psSymTab = st}, errs) <- I.runRWST parseCode fileCode I.pInitState
           
           if not $ null errs then print ast >> print errs -- I.mapM_ putStrLn errs
           else

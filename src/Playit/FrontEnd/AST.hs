@@ -35,6 +35,8 @@ module Playit.FrontEnd.AST
     , defineTStruct
   ) where
 
+import Control.Monad.Trans.RWS (get)
+
 import qualified Data.ByteString.Lazy.Char8 as BLC
 
 import qualified Playit.Utils               as U
@@ -50,12 +52,13 @@ import qualified Playit.FrontEnd.TypeCheck  as TC
 -------------------------------------------------------------------------------
 -- | Creates whole statements block
 nodeProgram :: S.InstrSeq -> Pars.ParserM S.Instruction
-nodeProgram is = return $ S.Instruction (S.Program (reverse is)) S.TVoid
-{-   Prom.checkPromises >> get >>= (\s -> if Pars.psError s
-  then return $ S.Program (reverse is) TError
-  else return $ S.Program (reverse is) TVoid
-  )
+nodeProgram is =
+{-   Prom.checkPromises >> get >>= (\s ->
 -}
+  get >>= (\s -> if Pars.psError s
+                  then return $ S.Instruction (S.Program (reverse is)) S.TError
+                  else return $ S.Instruction (S.Program (reverse is)) S.TVoid
+  )
 
 -- -----------------------------------------------------------------------------
 -- Check initializations types and insert the ids in the symbol table

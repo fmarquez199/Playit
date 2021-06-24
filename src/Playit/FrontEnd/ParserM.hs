@@ -4,21 +4,21 @@ module Playit.FrontEnd.ParserM
   , SymTab(..)
   , Symbol(..)
   , Category(..)
+  , pInitState
   , parseError
   )where
 
 import Control.Monad.Trans.RWS (RWST(..), ask)
 
--- import qualified Control.Monad.Trans.RWS    as RWS
-import qualified Data.ByteString.Lazy   as BL
+import qualified Data.ByteString.Lazy       as BL
 import qualified Data.ByteString.Lazy.Char8 as BLC
-import qualified Data.Map               as Map
+import qualified Data.Map                   as Map
 
-import qualified Playit.Errors          as E
-import qualified Playit.Utils           as U
+import qualified Playit.Errors              as E
+import qualified Playit.Utils               as U
 
-import qualified Playit.FrontEnd.Lexer     as Lex
-import qualified Playit.FrontEnd.Syntax as S
+import qualified Playit.FrontEnd.Lexer      as Lex
+import qualified Playit.FrontEnd.Syntax     as S
 
 
 -- Parser State
@@ -151,6 +151,22 @@ data LateCheckPromise
   deriving (Eq, Ord,Show)
 
 -- data PromiseExtraI = PromiseExtraI{}
+
+
+-- -----------------------------------------------------------------------------
+-- | Initial state with prelude
+pInitState :: ParserS
+pInitState = createInitState (SymTab Map.empty)
+
+createInitState :: SymTab -> ParserS
+createInitState st = ParserS
+  { psSymTab      = st
+  , psStaticChain = [1,0]
+  , psScope       = 1
+  , psPromises    = []
+  , psError       = False
+  }
+  
 
 -------------------------------------------------------------------------------
 -- | Show the first parser error
