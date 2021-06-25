@@ -35,7 +35,7 @@ data ParserS = ParserS
 -- Parser Reader
 -- (filename, Source code in lines/rows)
 data ParserR = ParserR
-  { prFilename :: !BL.ByteString
+  { prFilename :: String
   , prCode     :: ![BL.ByteString]
   }
 

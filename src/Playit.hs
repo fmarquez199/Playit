@@ -67,13 +67,13 @@ glitches = Glitches
 
 
 -- -----------------------------------------------------------------------------
-runLexer :: (BL.ByteString, BL.ByteString) -> Either (IO ()) [I.Token]
-runLexer (filename, code) =
+runLexer :: String -> BL.ByteString -> Either (IO ()) [I.Token]
+runLexer filename code =
   let
-    I.LexerResult errs tokens = I.alexScanTokens code
+    I.LexerResult errs tokens = I.alexScanTokens filename code
   in
     if null errs then Right $ reverse tokens
-    else Left (I.showLexerErrors errs (filename, BL.split 10 code))
+                 else Left (mapM_ print errs)
 
 -- play 
 -- play = -- run MARS, execute .asm
@@ -113,8 +113,8 @@ playit = do
       if BL.all (== 10) code || BL.null code then noGameBuilt glitches
       else
         -- FrontEnd
-        let fileCode = I.ParserR (BLC.pack game') (BL.split 10 code)
-            lexer    = runLexer (BLC.pack game', code)
+        let fileCode = I.ParserR game' (BL.split 10 code)
+            lexer    = runLexer game' code
             lexerL   = print "lexer fromLeft fail"
             lexerR   = [I.Token I.TkError (BLC.pack "lexer fromRight fail") (-1,-1)]
         in
