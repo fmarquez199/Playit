@@ -1,5 +1,6 @@
 module Playit.FrontEnd.ParserM
   ( ParserM(..)
+  , ParserR(..)
   , ParserS(..)
   , SymTab(..)
   , Symbol(..)
@@ -27,12 +28,16 @@ data ParserS = ParserS
   , psStaticChain :: [U.Scope] -- ^ Active scopes
   , psScope       :: U.Scope   -- ^ Current scope
   , psPromises    :: [Promise] -- ^ Subroutines promises
+  , psInLoop      :: Bool      -- ^ To know if break/continue its used inside a loop
   , psError       :: Bool      -- ^ Program has errors
   }
 
 -- Parser Reader
 -- (filename, Source code in lines/rows)
-type ParserR = (BL.ByteString, [BL.ByteString])
+data ParserR = ParserR
+  { prFilename :: !BL.ByteString
+  , prCode     :: ![BL.ByteString]
+  }
 
 type ParserM a = RWST ParserR [E.Error] ParserS IO a
 
@@ -164,6 +169,7 @@ createInitState st = ParserS
   , psStaticChain = [1,0]
   , psScope       = 1
   , psPromises    = []
+  , psInLoop      = False
   , psError       = False
   }
   

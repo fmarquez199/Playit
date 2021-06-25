@@ -59,8 +59,8 @@ import qualified Playit.FrontEnd.TypeCheck  as TC
   for               { Lex.Token Lex.TkFARM _ _             }
   do                { Lex.Token Lex.TkDUNGEON _ _          }
   while             { Lex.Token Lex.TkCLEARED _ _          }
-  break             { Lex.Token Lex.TkGameOver _ _         }
-  continue          { Lex.Token Lex.TkKeepPlaying _ _      }
+  break             { Lex.Token Lex.TkGameOver _ $$        }
+  continue          { Lex.Token Lex.TkKeepPlaying _ $$     }
   -- I/O
   input             { Lex.Token Lex.TkJOYSTICK _ _         }
   print             { Lex.Token Lex.TkDROP _ _             }
@@ -171,7 +171,7 @@ PROGRAM :: { S.Instruction }
   : ChekedDefs world program ":" EndLn InstrSeq EndLn ".~" PopScope { % AST.nodeProgram $6 }
   | ChekedDefs world program ":" EndLn                ".~" PopScope { % AST.nodeProgram [] }
   |            world program ":" EndLn InstrSeq EndLn ".~" PopScope { % AST.nodeProgram $5 }
-  |            world program ":" EndLn                ".~" PopScope { S.Instruction (S.Program []) S.TVoid }
+  |            world program ":" EndLn                ".~" PopScope { S.Program []         }
 
 
 -- -----------------------------------------------------------------------------
@@ -211,17 +211,17 @@ InstrSeq :: { S.InstrSeq }
   | INSTR                 { [$1]    }
 
 INSTR :: { S.Instruction }
-  : DECLARATION              { S.Instruction (S.Decl $1) S.TVoid   }
-  | ASSIGNMENT               { $1                                  }
-  | SELECTION                { $1                                  }
-  | PushScope WHILE PopScope { $2                                  }
-  | PushScope FOR PopScope   { $2                                  }
-  | ProcCall                 { $1                                  }
-  | OUT                      { $1                                  }
-  | FREE                     { $1                                  }
-  | return EXPR              { S.Instruction (S.Return $2) S.TVoid } -- TODO: check tipo para regreso de func
-  | break                    { S.Instruction S.Break S.TVoid       }
-  | continue                 { S.Instruction S.Continue S.TVoid    }
+  : DECLARATION              { S.Decl $1                        }
+  | ASSIGNMENT               { $1                               }
+  | SELECTION                { $1                               }
+  | PushScope WHILE PopScope { $2                               }
+  | PushScope FOR PopScope   { $2                               }
+  | ProcCall                 { $1                               }
+  | OUT                      { $1                               }
+  | FREE                     { $1                               }
+  | return EXPR              { AST.nodeReturn $2                }
+  | break                    { % AST.nodeControlLoop S.Break $1 }
+  | continue                 { % AST.nodeControlLoop S.Continue $1 }
 
 
 -- -----------------------------------------------------------------------------
@@ -281,27 +281,27 @@ WHILE :: { S.Instruction }
 
 -- -----------------------------------------------------------------------------
 FOR :: { S.Instruction }
-  : for IterVar "->" EXPR ":" EndLn InstrSeq EndLn ".~" { S.Instruction S.Continue S.TVoid }
+  : for IterVar "->" EXPR ":" EndLn InstrSeq EndLn ".~" { S.Continue }
     {- %
       let (varIter, e1) = $2 in AST.nodeFor varIter e1 $4 (reverse $7)
     -}
-  | for IterVar "->" EXPR ":" EndLn ".~" { S.Instruction S.Continue S.TVoid }
+  | for IterVar "->" EXPR ":" EndLn ".~" { S.Continue }
     {- %
       let (varIter, e1) = $2 in AST.nodeFor varIter e1 $4 []
     -}
-  | for IterVar "->" EXPR while EXPR ":" EndLn InstrSeq EndLn ".~" { S.Instruction S.Continue S.TVoid }
+  | for IterVar "->" EXPR while EXPR ":" EndLn InstrSeq EndLn ".~" { S.Continue }
     {- %
       let (varIter, e1) = $2 in AST.nodeForWhile varIter e1 $4 $6 (reverse $9)
     -}
-  | for IterVar "->" EXPR while EXPR ":" EndLn ".~" { S.Instruction S.Continue S.TVoid }
+  | for IterVar "->" EXPR while EXPR ":" EndLn ".~" { S.Continue }
     {- %
       let (varIter, e1) = $2 in AST.nodeForWhile varIter e1 $4 $6 []
     -}
-  | ForEach ":" EndLn InstrSeq EndLn ".~" { S.Instruction S.Continue S.TVoid }
+  | ForEach ":" EndLn InstrSeq EndLn ".~" { S.Continue }
     {- %
       let (varIter, e1) = $2 in AST.nodeForEach varIter e1 (reverse $5)
     -}
-  | ForEach ":" EndLn ".~" { S.Instruction S.Continue S.TVoid }
+  | ForEach ":" EndLn ".~" { S.Continue }
     {- %
       let (varIter, e1) = $2 in AST.nodeForEach varIter e1 []
     -}

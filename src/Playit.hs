@@ -113,7 +113,7 @@ playit = do
       if BL.all (== 10) code || BL.null code then noGameBuilt glitches
       else
         -- FrontEnd
-        let fileCode = (BLC.pack game', BL.split 10 code)
+        let fileCode = I.ParserR (BLC.pack game') (BL.split 10 code)
             lexer    = runLexer (BLC.pack game', code)
             lexerL   = print "lexer fromLeft fail"
             lexerR   = [I.Token I.TkError (BLC.pack "lexer fromRight fail") (-1,-1)]
@@ -126,9 +126,9 @@ playit = do
           
           (ast, state@I.ParserS{I.psSymTab = st}, errs) <- I.runRWST parseCode fileCode I.pInitState
           
-          if not $ null errs then print ast >> print errs -- I.mapM_ putStrLn errs
+          if I.psError state then print errs -- I.mapM_ putStrLn errs
           else
-            print ast
+            print ast >> print (I.psInLoop state) >> print (I.psError state)
         {-    -- BackEnd
             (_, state, tac) <- I.runRWST (I.genTAC ast) ast (I.tacInitState st)
             let

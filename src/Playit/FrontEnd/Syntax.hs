@@ -169,14 +169,6 @@ instance Show Subroutine where
 -- Instruction sequence
 type InstrSeq = [Instruction]
 
-data Instruction = Instruction
-  { instr     :: InstrKind
-  , instrType :: Type
-  } deriving (Eq, Ord)
-
-instance Show Instruction where
-  show is = show (instr is)
-
 data Initialization = Initialization -- tal ves cambiar 'id' por 'var', seria una asignacion?
   { initId   :: Id
   , initExpr :: Expression
@@ -201,7 +193,7 @@ data Guard = Guard
 instance Show Guard where
   show (Guard e is) = "\n  | " ++ show e ++ " }\n  " ++ concatMap show is
 
-data InstrKind
+data Instruction
   = Program   InstrSeq
   | Decl      Declaration
   | Assig     Var Expression
@@ -221,7 +213,7 @@ data InstrKind
 tabs tab i = U.joinWith tab i
 endB = "\n  .~\n"
 
-instance Show InstrKind where
+instance Show Instruction where
   show (Program p)            = "\nworld:\n" ++ concatMap show p ++ ".~\n"
   show (Decl d)               = "  " ++ show d ++ "\n"
   show (Assig v e)            = "  " ++ show v ++ " equip " ++ show e ++ "\n"
