@@ -17,4 +17,4 @@ import qualified Playit.FrontEnd.ParserM    as Pars
 notInLoop :: U.Position -> Pars.ParserM ()
 notInLoop posn@(r, _) = do
   Pars.ParserR{Pars.prCode = code} <- ask
-  tell [E.Error (BLC.pack "You are not in a loop") [code !! r] posn]
+  tell [E.Error (BLC.pack "You are not in a loop") [code !! max 0 (r - 1)] posn]
