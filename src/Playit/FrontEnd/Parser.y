@@ -44,9 +44,9 @@ import qualified Playit.FrontEnd.TypeCheck  as TC
   record            { Lex.Token Lex.TkINVENTORY _ _        }
   union             { Lex.Token Lex.TkITEMS _ _            }
   "."               { Lex.Token Lex.TkSPAWN _ _            }
-  new               { Lex.Token Lex.TkSUMMON _ _           }
+  new               { Lex.Token Lex.TkSUMMON _ $$          }
   -- Selection
-  if                { Lex.Token Lex.TkBUTTON _ _           }
+  if                { Lex.Token Lex.TkBUTTON _ $$          }
   else              { Lex.Token Lex.TkNotPressed _ _       }
   quest             { Lex.Token Lex.TkQUEST _ _            }
   loot              { Lex.Token Lex.TkLOOT _ _             }
@@ -62,7 +62,7 @@ import qualified Playit.FrontEnd.TypeCheck  as TC
   break             { Lex.Token Lex.TkGameOver _ $$        }
   continue          { Lex.Token Lex.TkKeepPlaying _ $$     }
   -- I/O
-  input             { Lex.Token Lex.TkJOYSTICK _ _         }
+  input             { Lex.Token Lex.TkJOYSTICK _ $$        }
   print             { Lex.Token Lex.TkDROP _ _             }
   -- Pointers
   null              { Lex.Token Lex.TkDeathZone _ _        }
@@ -242,7 +242,7 @@ INIT         :: { S.Initialization }
   | ID                                { S.Initialization $1 (S.Expression S.EmptyVal S.TDummy (Lex.tkPosn $ S.idTk $1)) }
 
 ID :: { S.Id }
-  : id        { {- % ST.getCurrentScope >>= -} S.Id $1 {- >>= return -} }
+  : id        { % ST.getCurrentScope >>= ST.insert (S.Id $1) {- >>= return -} }
 
 
 -- -----------------------------------------------------------------------------
@@ -254,7 +254,7 @@ ASSIGNMENT :: { S.Instruction }
 
 -- -----------------------------------------------------------------------------
 SELECTION :: { S.Instruction }
-  : if ":" EndLn Guards ".~" PopScope { AST.nodeSelection (reverse $4) (Lex.tkPosn $1) }
+  : if ":" EndLn Guards ".~" PopScope { AST.nodeSelection (reverse $4) $1 }
 
 Guards :: { [S.Guard] }
   : Guards PopScope Guard { $3 : $1 }
@@ -434,11 +434,12 @@ EXPR :: { S.Expression }
   
   | "|)" EXPRS "(|"         { % AST.nodeArray (reverse $2) $1 }
   | "<<" EXPRS ">>"         { % AST.nodeList  (reverse $2) $1 }
-  | "<<" ">>"               { % AST.nodeList  [] $1 }
-  | new TYPE                { S.Expression (S.Unary S.New S.PtrInit) (S.TPointer $2) (Lex.tkPosn $1) }
+  | "<<" ">>"               { % AST.nodeList  [] $1           }
+ 
+  | new TYPE                { % AST.nodeNew $2 $1             }
 
   | input EXPR %prec input  { % AST.nodeRead $2 $1                                  }
-  | input                   { % AST.nodeRead (S.Expression S.EmptyVal S.TStr (Lex.tkPosn $1)) $1 }
+  | input                   { % AST.nodeRead (S.Expression S.EmptyVal S.TStr $1) $1 }
 
   -- Unary operators
   | "#" EXPR                       { % AST.nodeUnary S.Len       $2 S.TVoid $1 }
@@ -448,7 +449,7 @@ EXPR :: { S.Expression }
   | lowerCase EXPR %prec lowerCase { % AST.nodeUnary S.LowerCase $2 S.TChar $1 }
   
   -- Literals
-  | Lvalue    { S.Expression (S.Rval $1) (S.varType $1)  (Lex.tkPosn . S.idTk $ S.varId $1) }
+  | Lvalue    { S.Expression (S.Rval $1) (S.varType $1)  (S.varPosn $1)            }
   | true      { S.Expression (S.Boolean $ Lex.tkInput $1) S.TBool  (Lex.tkPosn $1) }
   | false     { S.Expression (S.Boolean $ Lex.tkInput $1) S.TBool  (Lex.tkPosn $1) }
   | integer   { S.Expression (S.Integer $ Lex.tkInput $1) S.TInt   (Lex.tkPosn $1) }
@@ -468,8 +469,8 @@ Lvalue :: { S.Var }
   : Lvalue "." id          { % AST.nodeField $1 $3 }
   | Lvalue "|)" EXPR "(|"  { % AST.nodeIndex $1 $3 }
   | Lvalue "|>" EXPR "<|"  { % AST.nodeIndex $1 $3 }
-  | deref Lvalue         { % AST.nodeDeref $2    }
-  | deref "(" Lvalue ")" { % AST.nodeDeref $3    }
+  | deref Lvalue           { % AST.nodeDeref $2    }
+  | deref "(" Lvalue ")"   { % AST.nodeDeref $3    }
   | id                     { % AST.nodeVar $1      }
 
 -- Data types
