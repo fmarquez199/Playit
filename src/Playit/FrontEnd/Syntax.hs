@@ -61,7 +61,7 @@ data Type
   -- | FunctionT [Type] Type
   -- | ProcedureT [Type]
   -- | TypeList [Type]
-  deriving(Ord)
+  deriving (Ord)
 
 instance Eq Type where
   TInt        == TInt        = True
@@ -109,9 +109,10 @@ instance Show Type where
 -- | Program variables, records, unions and subroutines ids
 data Id = Id
   { idTk :: Lex.Token
+  -- , idPosn :: U.Position
   -- , idScope :: U.Scope
   -- , isOffset :: Int
-  } deriving(Ord)
+  } deriving (Ord)
 
 instance Show Id where
   show i = BLC.unpack $ Lex.tkInput (idTk i)
@@ -123,6 +124,7 @@ data Var = Var
   { varId   :: Id
   , var     :: VarKind
   , varType :: Type
+  , varPosn :: U.Position
   } deriving(Eq, Ord)
 
 instance Show Var where
