@@ -268,7 +268,7 @@ lexError :: AlexAction AlexUserState
 lexError ((AlexPn _ r c), prevChar, inputStr, bytesConsumedSoFar) len = do
   let
     str = BL.take len inputStr
-    err = E.Error (BLC.pack "Bug Found") [str] "filename" (r, c)
+    err = E.Error "Bug Found" [str] "filename" (r, c) -- TODO: filename here?
   Alex $ 
     \s@AlexState{alex_ust = ust} ->
       Right (s{alex_ust = LexerResult (err : lrErrors ust) (lrTokens ust)}, ())
@@ -283,7 +283,7 @@ alexScanTokens :: String -> BL.ByteString -> LexerResult
 alexScanTokens filename source =
   case runAlex source alexMonadScan of
     Right ust -> ust
-    Left msg  -> LexerResult [E.Error (BLC.pack msg) [BLC.pack "Alex error"] filename (-1,-1)] 
+    Left msg  -> LexerResult [E.Error msg [BLC.pack "Alex error"] filename (-1,-1)] 
                              [Token TkError (BLC.pack "Alex error") (-1,-1)]
 
 

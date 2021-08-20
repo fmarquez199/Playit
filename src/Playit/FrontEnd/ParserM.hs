@@ -9,7 +9,7 @@ module Playit.FrontEnd.ParserM
   , parseError
   )where
 
-import Control.Monad.Trans.RWS (RWST(..), ask)
+import Control.Monad.Trans.RWS (RWST(..), tell, ask)
 
 import qualified Data.ByteString.Lazy       as BL
 import qualified Data.ByteString.Lazy.Char8 as BLC
@@ -48,7 +48,7 @@ type ParserM a = RWST ParserR [E.Error] ParserS IO a
  *   Key: Id
  *   Value: Symbol
 -}
-newtype SymTab  = SymTab { unSymTab :: Map.Map S.Id [Symbol] } deriving (Eq, Ord)
+newtype SymTab  = SymTab { unSymTab :: Map.Map S.Id Symbol } deriving (Eq, Ord)
 
 instance Show SymTab where
   show (SymTab st) = header ++ info ++ symbols
@@ -56,12 +56,7 @@ instance Show SymTab where
       header       = "\n------------\n Symbol table \n------------\n"
       info         = "- Symbol | Related information \n------------\n"
       table        = Map.toList st
-      stWithScopes = Map.map (map symScope) st
-      symbols'     = map fst $ Map.toList $ Map.filter (any (>0)) stWithScopes
-      showInfo i   = if symScope i > 0 then show i else ""
-      showSt (k,v) =
-        if k `elem` symbols' then show k ++ " -> " ++ concatMap showInfo (reverse v) ++ "\n"
-        else ""
+      showSt (k,v) = if symScope v > 0 then show k ++ " -> " ++ show v ++ "\n" else ""
       symbols      = concatMap showSt table
 
 
@@ -177,8 +172,14 @@ createInitState st = ParserS
 -------------------------------------------------------------------------------
 -- | Show the first parser error
 parseError :: [Lex.Token] -> ParserM a
-parseError [] =  error "\n\n\x1b[1;91mInvalid Program\n\n"
+parseError []       =  fail "\n\n\x1b[1;91mInvalid Program\n\n"
 parseError (tk:tks) =  do
   fileCode <- ask
   -- error . show $ E.errorMsg' (BLC.pack "Parse error") fileCode (Lex.tkPosn tk)
-  error $ "Parse error: " ++ show tk ++ ". Pos: " ++ show (Lex.tkPosn tk)
+  -- error $ "Parse error: " ++ str ++ ". Pos: " ++ show (Lex.tkPosn tk)
+  let err = E.Error "Parse error" [Lex.tkInput tk] (prFilename fileCode) (Lex.tkPosn tk)
+      -- tkE = filter (\x -> not $ elem x (prCode fileCode)) (map Lex.tkInput tks)
+  tell [err]
+  -- parseError tks
+  fail (show err)
+  -- fail (show tks ++ "\n" ++ show tkE) -- tiene los tokens sin err

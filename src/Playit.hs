@@ -11,9 +11,9 @@ data CmdArgs = CmdArgs
   { game           :: String -- ^ Source code filename
   , play           :: Bool   -- ^ Runs the .game in MARS
   , previewGame    :: Bool   -- ^ Prints the source code in '.game' file
-  , showMyTokens   :: Bool   -- ^ Prints the recognized tokens
-  , showSymTable   :: Bool
+  , showTokens     :: Bool   -- ^ Prints the recognized tokens
   , showAST        :: Bool
+  , showSymTable   :: Bool
   , showTAC        :: Bool
   , showBlocks     :: Bool
   , showFlowGraph  :: Bool
@@ -29,8 +29,8 @@ cmdParser = CmdArgs
   <*> I.switch ( I.long "play"         <> I.short 'p' <> I.help "Runs the .game in MARS" )
   <*> I.switch ( I.long "game"         <> I.short 'g' <> I.help "Preview .game" )
   <*> I.switch ( I.long "tokens"       <> I.short 'k' <> I.help "Show tokens" )
-  <*> I.switch ( I.long "symtab"       <> I.short 's' <> I.help "Show symtable" )
   <*> I.switch ( I.long "ast"          <> I.short 'a' <> I.help "Show AST" )
+  <*> I.switch ( I.long "symtab"       <> I.short 's' <> I.help "Show symtable" )
   <*> I.switch ( I.long "tac"          <> I.short 't' <> I.help "Show three-address code" )
   <*> I.switch ( I.long "basic-blocks" <> I.short 'b' <> I.help "Show the basic blocks" )
   <*> I.switch ( I.long "flow-graph"   <> I.short 'f' <> I.help "Show flow graph and nodes" )
@@ -66,25 +66,16 @@ glitches = Glitches
   }
 
 
--- -----------------------------------------------------------------------------
-runLexer :: String -> BL.ByteString -> Either (IO ()) [I.Token]
-runLexer filename code =
-  let
-    I.LexerResult errs tokens = I.alexScanTokens filename code
-  in
-    if null errs then Right $ reverse tokens
-                 else Left (mapM_ print errs)
-
 -- play 
 -- play = -- run MARS, execute .asm
 
 
 -- -----------------------------------------------------------------------------
 f :: [String] -> [String]
-f ls = if null ls then [] else (head ls) : f (filter (notlabel (label (head ls))) ls)
+f ls = if null ls then [] else head ls : f (filter (notlabel (label (head ls))) ls)
   where
     label :: String -> String
-    label = (fst . I.strSplit ":")
+    label = fst . I.strSplit ":"
 
     notlabel :: String -> String -> Bool
     notlabel l1 l2 = l1 /= label l2
@@ -94,10 +85,11 @@ f ls = if null ls then [] else (head ls) : f (filter (notlabel (label (head ls))
 -- correr el parser aunque haya errores lexicos, para al final mandar todos los errores
 playit :: IO ()
 playit = do
-  let flags = I.info (cmdParser I.<**> I.helper) 
+  let flags = I.info (cmdParser I.<**> I.helper)
                 (  I.fullDesc <> I.progDesc "Build an entire .game"
                 <> I.header "playit - Compiler for Playit programming language")
   cmdArgs <- I.execParser flags
+
   let game' = game cmdArgs
   gameInstalled <- I.doesFileExist game'
 
@@ -107,28 +99,28 @@ playit = do
     else do
       handle <- I.openFile game' I.ReadMode
       code   <- BL.hGetContents handle
-      
+
 
       -- '\n' == 10 in Word8
       if BL.all (== 10) code || BL.null code then noGameBuilt glitches
-      else
+      else do
         -- FrontEnd
         let fileCode = I.ParserR game' (BL.split 10 code)
-            lexer    = runLexer game' code
-            lexerL   = print "lexer fromLeft fail"
-            lexerR   = [I.Token I.TkError (BLC.pack "lexer fromRight fail") (-1,-1)]
-        in
-        if I.isLeft lexer then I.fromLeft lexerL lexer >> return ()
-        else do
-          putStrLn . show $ I.fromRight lexerR lexer
-          let
-            parseCode = I.parse $ I.fromRight lexerR lexer
-          
-          (ast, state@I.ParserS{I.psSymTab = st}, errs) <- I.runRWST parseCode fileCode I.pInitState
-          
-          if I.psError state then print errs -- I.mapM_ putStrLn errs
-          else
-            print ast >> print (I.psInLoop state) >> print (I.psError state)
+            I.LexerResult errs tokens = I.alexScanTokens game' code
+            parser   = I.parse $ reverse tokens
+
+        I.when (previewGame cmdArgs) (BLC.putStr code)
+        I.when (showTokens cmdArgs) (I.mapM_ print $ reverse tokens)
+
+        I.mapM_ print errs
+
+        (ast, state@I.ParserS{I.psSymTab = st}, errs) <- I.runRWST parser fileCode I.pInitState
+
+        I.when (showAST cmdArgs) (print ast)
+        I.when (showSymTable cmdArgs) (print st)
+
+        I.when (I.psError state) (I.mapM_ print errs)
+
         {-    -- BackEnd
             (_, state, tac) <- I.runRWST (I.genTAC ast) ast (I.tacInitState st)
             let
@@ -164,11 +156,7 @@ playit = do
             I.writeFile ("./output/" ++ outputFile) d''
             I.genFinalCode (tail tac) inter color ("./output/" ++ outputFile)
             -- close outputFile
-        -}    
-            -- when (previewGame) print code
-            -- when (showMyTokens cmdArgs) mapM_ print (I.fromRight [I.Token I.TkError BL.empty (-1,-1)] lexer)
-            -- when (showshowSymTable cmdArgs) print st
-            -- when (showshowAST cmdArgs) print ast
+        -}
             -- when (showshowTac cmdArgs) mapM_ print (reverse $ I.copyOpt $ reverse tac)
               -- printPromises (proms state)
             -- when (showshowBlocks cmdArgs) print leaders -- putStrLn $ "\nNodes: " ++ I.printFGNodes nodes

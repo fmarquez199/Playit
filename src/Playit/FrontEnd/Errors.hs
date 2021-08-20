@@ -18,4 +18,4 @@ notInLoop :: U.Position -> Pars.ParserM ()
 notInLoop posn@(r, _) = do
   Pars.ParserR{Pars.prFilename = filename, Pars.prCode = code} <- ask
   -- break/continue statement not within loop
-  tell [E.Error (BLC.pack "You are not in a loop") [code !! max 0 (r - 1)] filename posn]
+  tell [E.Error "You are not in a loop" [code !! max 0 (r - 1)] filename posn]
