@@ -26,7 +26,7 @@ module Playit.FrontEnd.AST
     , nodeRead , nodePrint
     -- * Expressions
     -- ** Operations
-    , nodeBinary , nodeUnary , nodeAnexo , nodeConcatLists , nodeIfSimple
+    , nodeBinary , nodeUnary , nodeAnexo , nodeConcatLists , nodeIfSimple, nodeNew
     -- ** Sequence of items
     , nodeArray , nodeList , nodeStruct
     -- ** Variables types
@@ -98,22 +98,22 @@ typeDefaultValue = \case
 
 -- -----------------------------------------------------------------------------
 nodeVar :: Lex.Token -> Pars.ParserM S.Var
-nodeVar name = return $ S.Var (S.Id name) S.Variable S.TDummy
+nodeVar name = return $ S.Var (S.Id name) S.Variable S.TDummy (Lex.tkPosn name)
 
 
 -- -----------------------------------------------------------------------------
 nodeField :: S.Var -> Lex.Token -> Pars.ParserM S.Var
-nodeField var field = return $ S.Var (S.Id field) (S.Field (S.var var)) S.TDummy
+nodeField var field = return $ S.Var (S.Id field) (S.Field (S.var var)) S.TDummy (Lex.tkPosn field)
 
 
 -- -----------------------------------------------------------------------------
 nodeIndex :: S.Var -> S.Expression -> Pars.ParserM S.Var
-nodeIndex var index = return $ S.Var (S.varId var) (S.Index (S.var var) index) S.TDummy
+nodeIndex var index = return $ S.Var (S.varId var) (S.Index (S.var var) index) S.TDummy (S.varPosn var)
 
 
 -- -----------------------------------------------------------------------------
 nodeDeref :: S.Var -> Pars.ParserM S.Var
-nodeDeref var = return $ S.Var (S.varId var) (S.Deref (S.var var)) S.TDummy
+nodeDeref var = return $ S.Var (S.varId var) (S.Deref (S.var var)) S.TDummy (S.varPosn var)
 
 
 {-
@@ -127,11 +127,11 @@ nodeAssign lval e = return $ S.Assig lval e
 
 nodeIncrement :: S.Var -> Pars.ParserM S.Instruction
 nodeIncrement lval = return $
-  S.Assig lval (S.Expression (S.Binary S.Add (S.Rval lval) (S.Integer $ BLC.pack "1")) S.TInt (Lex.tkPosn . S.idTk $ S.varId lval) )
+  S.Assig lval (S.Expression (S.Binary S.Add (S.Rval lval) (S.Integer $ BLC.pack "1")) S.TInt (S.varPosn lval) )
 
 nodeDecrement :: S.Var -> Pars.ParserM S.Instruction
 nodeDecrement lval = return $
-  S.Assig lval (S.Expression (S.Binary S.Minus (S.Rval lval) (S.Integer $ BLC.pack "1")) S.TInt (Lex.tkPosn . S.idTk $ S.varId lval) )
+  S.Assig lval (S.Expression (S.Binary S.Minus (S.Rval lval) (S.Integer $ BLC.pack "1")) S.TInt (S.varPosn lval) )
 
 
 -- -----------------------------------------------------------------------------
@@ -182,7 +182,7 @@ nodeFree id' = return $ S.Free $ S.Id id'
 -}
 
 nodeParameter :: Lex.Token -> S.Type -> S.Ref -> Pars.ParserM S.Var
-nodeParameter name t ref = return $ S.Var (S.Id name) (S.Param ref) t
+nodeParameter name t ref = return $ S.Var (S.Id name) (S.Param ref) t (Lex.tkPosn name)
 
 
 -- -----------------------------------------------------------------------------
@@ -217,8 +217,8 @@ nodePrint es tk = return $ S.Print es
 
 
 -- -----------------------------------------------------------------------------
-nodeRead :: S.Expression -> Lex.Token -> Pars.ParserM S.Expression
-nodeRead e tk = return $ S.Expression (S.Read $ S.expr e) S.TRead (Lex.tkPosn tk)
+nodeRead :: S.Expression -> U.Position -> Pars.ParserM S.Expression
+nodeRead e p = return $ S.Expression (S.Read $ S.expr e) S.TRead p
 
 
 {-
@@ -254,6 +254,12 @@ nodeConcatLists l1 l2 tk = return $ S.Expression (S.ArrayList $ l1 : [l2]) (S.TL
 -- -----------------------------------------------------------------------------
 nodeIfSimple :: S.Expression -> S.Expression -> S.Expression -> Lex.Token -> Pars.ParserM S.Expression
 nodeIfSimple cond true false tk = return $ S.Expression (S.IfSimple (S.expr cond) (S.expr true) (S.expr false)) S.TVoid (Lex.tkPosn tk)
+
+
+-- -----------------------------------------------------------------------------
+-- Check tipo esta definido
+nodeNew :: S.Type -> U.Position -> Pars.ParserM S.Expression
+nodeNew t p = return $ S.Expression (S.Unary S.New S.PtrInit) (S.TPointer t) p
 
 
 -- -----------------------------------------------------------------------------
