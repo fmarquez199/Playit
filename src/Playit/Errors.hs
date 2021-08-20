@@ -19,7 +19,7 @@ import qualified Playit.Utils               as U
 
 -- -----------------------------------------------------------------------------
 data Error = Error
-  { errorMsg     :: BL.ByteString   -- ^ Invalid token, message
+  { errorMsg     :: String
   , errorContext :: [BL.ByteString] -- ^ Context of the error, portion of the source code
   , errorFile    :: String
   , errorPos     :: U.Position
@@ -27,7 +27,7 @@ data Error = Error
 
 instance Show Error where
   show (Error msg context file (r,c))
-    =  "\n\n\x1b[1;36m" ++ BLC.unpack msg ++ "\x1b[94m: " ++ file ++ ":"
+    =  "\n\n\x1b[1;36m" ++ msg ++ "\x1b[94m: " ++ file ++ ":"
     ++ concatMap (formatContex r) context
     ++ errorRuler c
 
