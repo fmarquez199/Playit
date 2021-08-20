@@ -1,6 +1,6 @@
 name:                Playit
 version:             0.1.0.0
-github:              "fmarquez199/CHask-"
+github:              "fmarquez199/Playit"
 license:             MIT
 author:              "manuelggonzalezm@gmail.com"
 maintainer:          "manuelggonzalezm@gmail.com"
@@ -17,7 +17,7 @@ extra-source-files:
 # To avoid duplicated efforts in documentation and dealing with the
 # complications of embedding Haddock markup inside cabal files, it is
 # common to point users to the README.md file.
-description:         Please see the README on GitHub at <https://github.com/fmarquez199/CHask-#readme>
+description:         Please see the README on GitHub at <https://github.com/fmarquez199/Playit#readme>
 
 dependencies:
 - base >= 4.7 && < 5
