@@ -1,4 +1,4 @@
-boss procedure():
+boss procedure(Power pp, Power pc):
 .~
 monster function(Power p, Rune c) Power:
 
@@ -6,5 +6,5 @@ monster function(Power p, Rune c) Power:
 .~
 world %Subroutines%:
 
-  kill procedure()
+  @ kill procedure()
 .~

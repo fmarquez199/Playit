@@ -7,7 +7,7 @@ world %Loops%:
       | x == 4 } gameOver
     .~
     drop x
-    x++
+    level up x
   cleared (x < 10)
   .~
 
@@ -17,7 +17,7 @@ world %Loops%:
       | i == 4 } keepPlaying
     .~
     drop i
-    x = i
+    x equip i
   .~
 
   farm Rune i in |)2, 3, 10, 15, 20(|:
