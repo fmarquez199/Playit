@@ -5,6 +5,7 @@ module Playit.FrontEnd.ParserM
   , SymTab(..)
   , Symbol(..)
   , Category(..)
+  , DefInfo(..)
   , pInitState
   , parseError
   )where
@@ -75,35 +76,37 @@ data Category
   | Variables
   deriving (Eq, Ord, Show)
 
--- Symbol extra information
-data ExtraInfo = ExtraInfo
-  { ast     :: S.InstrSeq
-  , params  :: [(S.Type, S.Id)]
-  , fromReg :: S.Id {- Bool que indica si esta activo(uniones) -} -- Reg / union al que pertenece el campo/variable
+-- Information related to subroutines and structs definitions
+data DefInfo = DefInfo
+  { instr :: S.InstrSeq       -- ^ Subroutines instruction sequence
+  , vars  :: [S.Id] -- S.Vars? -- ^ Subroutines parameters and? Structs fields?
+  -- , struct  :: S.Id {- Bool que indica si esta activo(uniones) -} -- Struct  al que pertenece el campo/variable
+  -- , fields  :: [S.Declaration]
   -- , ActiveField
-  } deriving (Eq, Ord)
+  }
+  | NoDef
+  deriving (Eq, Ord)
 
-instance Show ExtraInfo where
-  show (ExtraInfo ast p fr) =
-    "    AST:\n      " ++ U.joinWith "\t  " ast ++
-    "    Parameters: " ++ show p ++ "\n" ++
-    "    From struct: " ++ show fr
+instance Show DefInfo where
+  show NoDef         = ""
+  show (DefInfo i v) =
+    "\n    DefInfo:" ++
+    "\n    Vars: " ++ show v ++
+    "\n    Instr:\n      " ++ U.joinWith "\t  " i
 
 -- Representation of the symbol for symbol table
 data Symbol = Symbol
-  { symId        :: S.Id
-  , symType      :: S.Type
-  , symScope     :: U.Scope
-  , symCategory  :: Category
-  , symExtraInfo :: [ExtraInfo]
+  { symId       :: S.Id -- es realmente necesario???
+  , symType     :: S.Type
+  , symScope    :: U.Scope
+  , symCategory :: Category
+  , symDefInfo  :: DefInfo
   }
   deriving (Eq, Ord)
 
 instance Show Symbol where
   show (Symbol _ t s c ei) = 
-    "\n  Type: " ++ show t ++ " | Scope: " ++ show s ++ " | Category: "++ show c ++
-    if null ei then ""
-    else "\n    Extra:\n  " ++ U.joinWith "  " ei ++ "\n"
+    "\n  Type: " ++ show t ++ " | Scope: " ++ show s ++ " | Category: "++ show c ++ show ei
 
 
 -- -----------------------------------------------------------------------------

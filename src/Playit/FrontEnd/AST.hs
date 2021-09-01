@@ -10,7 +10,7 @@ module Playit.FrontEnd.AST
   ( -- * Program
     nodeProgram
     -- * Variables
-    , nodeDeclaration , nodeIdInit , nodeVar , nodeField , nodeIndex , nodeDeref
+    , nodeDeclaration , nodeIdInit , nodeLVal , nodeField , nodeIndex , nodeDeref
     -- * Instructions
     -- ** Assignments
     , nodeAssign , nodeIncrement , nodeDecrement
@@ -21,7 +21,7 @@ module Playit.FrontEnd.AST
     -- ** Pointers
     , nodeFree
     -- * Subroutines
-    , nodeParameter , nodeProcCall , nodeFuncCall , nodeCall, nodeReturn
+    , nodeProcCall , nodeFuncCall , nodeCall, nodeReturn
     -- * I/O
     , nodeRead , nodePrint
     -- * Expressions
@@ -36,6 +36,7 @@ module Playit.FrontEnd.AST
   ) where
 
 import Control.Monad.Trans.RWS (get, put, tell)
+import Control.Monad           (mapM_)
 
 import qualified Data.ByteString.Lazy.Char8 as BLC
 
@@ -43,7 +44,7 @@ import qualified Playit.Utils               as U
 
 import qualified Playit.FrontEnd.Errors     as E
 import qualified Playit.FrontEnd.Lexer      as Lex
-import qualified Playit.FrontEnd.ParserM    as Pars
+import qualified Playit.FrontEnd.ParserM    as PM
 -- import qualified Playit.FrontEnd.Promises  as Prom
 import qualified Playit.FrontEnd.SymTable   as ST
 import qualified Playit.FrontEnd.Syntax     as S
@@ -52,7 +53,7 @@ import qualified Playit.FrontEnd.TypeCheck  as TC
 
 -------------------------------------------------------------------------------
 -- | Creates whole statements block
-nodeProgram :: S.InstrSeq -> Pars.ParserM S.Instruction
+nodeProgram :: S.InstrSeq -> PM.ParserM S.Instruction
 nodeProgram is = {- Prom.checkPromises >> -} return $ S.Program (reverse is)
 
 {-
@@ -66,8 +67,9 @@ nodeProgram is = {- Prom.checkPromises >> -} return $ S.Program (reverse is)
 -- * si una expr en inits es empty value puedo ponerle su valor por defecto de una, 
 -- * no tendria que luego inicializar variables
 -- * en las funcs veo su tipo
-nodeDeclaration :: S.Type -> [S.Initialization] -> Pars.ParserM S.Declaration
-nodeDeclaration t inits = return $ S.Declaration t inits
+nodeDeclaration :: S.Type -> [S.Initialization] -> PM.ParserM S.Declaration
+nodeDeclaration t inits = mapM_ (ST.adjustType t . S.initId) inits >> return (S.Declaration t inits)
+
 
 nodeIdInit :: S.Id -> S.Expression -> S.Initialization
 nodeIdInit id' e = S.Initialization id' e
@@ -97,22 +99,22 @@ typeDefaultValue = \case
 
 
 -- -----------------------------------------------------------------------------
-nodeVar :: Lex.Token -> Pars.ParserM S.Var
-nodeVar name = return $ S.Var (S.Id name) S.Variable S.TDummy (Lex.tkPosn name)
+nodeLVal :: Lex.Token -> PM.ParserM S.Var
+nodeLVal name = return $ S.Var (S.Id (Lex.tkInput name) (Lex.tkPosn name)) S.Variable S.TDummy (Lex.tkPosn name)
 
 
 -- -----------------------------------------------------------------------------
-nodeField :: S.Var -> Lex.Token -> Pars.ParserM S.Var
-nodeField var field = return $ S.Var (S.Id field) (S.Field (S.var var)) S.TDummy (Lex.tkPosn field)
+nodeField :: S.Var -> Lex.Token -> PM.ParserM S.Var
+nodeField var field = return $ S.Var (S.Id (Lex.tkInput field) (Lex.tkPosn field)) (S.Field (S.var var)) S.TDummy (Lex.tkPosn field)
 
 
 -- -----------------------------------------------------------------------------
-nodeIndex :: S.Var -> S.Expression -> Pars.ParserM S.Var
+nodeIndex :: S.Var -> S.Expression -> PM.ParserM S.Var
 nodeIndex var index = return $ S.Var (S.varId var) (S.Index (S.var var) index) S.TDummy (S.varPosn var)
 
 
 -- -----------------------------------------------------------------------------
-nodeDeref :: S.Var -> Pars.ParserM S.Var
+nodeDeref :: S.Var -> PM.ParserM S.Var
 nodeDeref var = return $ S.Var (S.varId var) (S.Deref (S.var var)) S.TDummy (S.varPosn var)
 
 
@@ -122,14 +124,14 @@ nodeDeref var = return $ S.Var (S.varId var) (S.Deref (S.var var)) S.TDummy (S.v
  * -----------------------------------------------------------------------------
 -}
 
-nodeAssign :: S.Var -> S.Expression -> Pars.ParserM S.Instruction
+nodeAssign :: S.Var -> S.Expression -> PM.ParserM S.Instruction
 nodeAssign lval e = return $ S.Assig lval e
 
-nodeIncrement :: S.Var -> Pars.ParserM S.Instruction
+nodeIncrement :: S.Var -> PM.ParserM S.Instruction
 nodeIncrement lval = return $
   S.Assig lval (S.Expression (S.Binary S.Add (S.Rval lval) (S.Integer $ BLC.pack "1")) S.TInt (S.varPosn lval) )
 
-nodeDecrement :: S.Var -> Pars.ParserM S.Instruction
+nodeDecrement :: S.Var -> PM.ParserM S.Instruction
 nodeDecrement lval = return $
   S.Assig lval (S.Expression (S.Binary S.Minus (S.Rval lval) (S.Integer $ BLC.pack "1")) S.TInt (S.varPosn lval) )
 
@@ -138,41 +140,41 @@ nodeDecrement lval = return $
 nodeSelection :: [S.Guard] -> U.Position -> S.Instruction
 nodeSelection guards p = S.Selection guards
 
-nodeGuard :: S.Expression -> S.InstrSeq -> Pars.ParserM S.Guard
+nodeGuard :: S.Expression -> S.InstrSeq -> PM.ParserM S.Guard
 nodeGuard cond instrs = return $ S.Guard cond instrs
 
 
 -- -----------------------------------------------------------------------------
-nodeWhile :: S.Expression -> S.InstrSeq -> Pars.ParserM S.Instruction
+nodeWhile :: S.Expression -> S.InstrSeq -> PM.ParserM S.Instruction
 nodeWhile cond instrs = return $ S.While cond instrs
 
 
 -- -----------------------------------------------------------------------------
-nodeFor :: Pars.ParserM S.Instruction
+nodeFor :: PM.ParserM S.Instruction
 nodeFor = undefined
 
 
-nodeForWhile :: Pars.ParserM S.Instruction
+nodeForWhile :: PM.ParserM S.Instruction
 nodeForWhile = undefined
 
 
-nodeForEach :: Pars.ParserM S.Instruction
+nodeForEach :: PM.ParserM S.Instruction
 nodeForEach = undefined
 
 
 -- -----------------------------------------------------------------------------
-nodeControlLoop :: S.Instruction -> U.Position -> Pars.ParserM S.Instruction
+nodeControlLoop :: S.Instruction -> U.Position -> PM.ParserM S.Instruction
 nodeControlLoop i posn =
-  get >>= (\s@Pars.ParserS{Pars.psInLoop = inLoop, Pars.psError = err} ->
+  get >>= (\s@PM.ParserS{PM.psInLoop = inLoop, PM.psError = err} ->
     if inLoop && not err
-      then put s{ Pars.psError = err && inLoop } >> return i
-      else put s{ Pars.psError = err || not inLoop } >> E.notInLoop posn >> return i
+      then put s{ PM.psError = err && inLoop } >> return i
+      else put s{ PM.psError = err || not inLoop } >> E.notInLoop posn >> return i
   )
 
 
 -- -----------------------------------------------------------------------------
-nodeFree :: Lex.Token -> Pars.ParserM S.Instruction
-nodeFree id' = return $ S.Free $ S.Id id'
+nodeFree :: Lex.Token -> PM.ParserM S.Instruction
+nodeFree id' = return $ S.Free $ S.Id (Lex.tkInput id') (Lex.tkPosn id')
 
 
 {-
@@ -181,23 +183,18 @@ nodeFree id' = return $ S.Free $ S.Id id'
  * -----------------------------------------------------------------------------
 -}
 
-nodeParameter :: Lex.Token -> S.Type -> S.Ref -> Pars.ParserM S.Var
-nodeParameter name t ref = return $ S.Var (S.Id name) (S.Param ref) t (Lex.tkPosn name)
-
-
--- -----------------------------------------------------------------------------
-nodeProcCall :: S.Subroutine -> Pars.ParserM S.Instruction
+nodeProcCall :: S.Subroutine -> PM.ParserM S.Instruction
 nodeProcCall s = return $ S.ProcCall s
 
 
 -- -----------------------------------------------------------------------------
-nodeFuncCall :: S.Subroutine -> Pars.ParserM S.Expression
-nodeFuncCall s@(S.Call name _) = return $ S.Expression (S.FuncCall s) S.TVoid (Lex.tkPosn $ S.idTk name)
+nodeFuncCall :: S.Subroutine -> PM.ParserM S.Expression
+nodeFuncCall s@(S.Call name _) = return $ S.Expression (S.FuncCall s) S.TVoid (S.idPosn name)
 
 
 -- -----------------------------------------------------------------------------
-nodeCall :: Lex.Token -> S.Params -> Pars.ParserM S.Subroutine
-nodeCall name args = return $ S.Call (S.Id name) args
+nodeCall :: Lex.Token -> S.Args -> PM.ParserM S.Subroutine
+nodeCall name args = return $ S.Call (S.Id (Lex.tkInput name) (Lex.tkPosn name)) args
 
 
 -- -----------------------------------------------------------------------------
@@ -212,12 +209,12 @@ nodeReturn val = S.Return val
  * -----------------------------------------------------------------------------
 -}
 
-nodePrint :: [S.Expression] -> Lex.Token -> Pars.ParserM S.Instruction
+nodePrint :: [S.Expression] -> Lex.Token -> PM.ParserM S.Instruction
 nodePrint es tk = return $ S.Print es
 
 
 -- -----------------------------------------------------------------------------
-nodeRead :: S.Expression -> U.Position -> Pars.ParserM S.Expression
+nodeRead :: S.Expression -> U.Position -> PM.ParserM S.Expression
 nodeRead e p = return $ S.Expression (S.Read $ S.expr e) S.TRead p
 
 
@@ -227,58 +224,58 @@ nodeRead e p = return $ S.Expression (S.Read $ S.expr e) S.TRead p
  * -----------------------------------------------------------------------------
 -}
 
-nodeTArray :: S.Expression -> S.Type -> Pars.ParserM S.Type
+nodeTArray :: S.Expression -> S.Type -> PM.ParserM S.Type
 nodeTArray size t = return $ S.TArray size t
 
 
 -- -----------------------------------------------------------------------------
-nodeTStruct :: Lex.Token -> Pars.ParserM S.Type
-nodeTStruct tk = return $ S.TStruct (S.Struct (S.Id tk) S.Record [] 0)
+nodeTStruct :: Lex.Token -> PM.ParserM S.Type
+nodeTStruct tk = return $ S.TStruct (S.Struct (S.Id (Lex.tkInput tk) (Lex.tkPosn tk)) S.Record [] 0)
 
 
 -- -----------------------------------------------------------------------------
-nodeBinary :: S.BinOp -> S.Expression -> S.Expression -> Lex.Token -> Pars.ParserM S.Expression
+nodeBinary :: S.BinOp -> S.Expression -> S.Expression -> Lex.Token -> PM.ParserM S.Expression
 nodeBinary op le re tk = return $ S.Expression (S.Binary op (S.expr le) (S.expr re)) S.TVoid (Lex.tkPosn tk)
 
 
 -- -----------------------------------------------------------------------------
-nodeAnexo :: S.Expression -> S.Expression -> Lex.Token -> Pars.ParserM S.Expression
+nodeAnexo :: S.Expression -> S.Expression -> Lex.Token -> PM.ParserM S.Expression
 nodeAnexo h list tk = return $ S.Expression (S.ArrayList $ h : [list]) (S.TList S.TVoid) (Lex.tkPosn tk)
 
 
 -- -----------------------------------------------------------------------------
-nodeConcatLists :: S.Expression -> S.Expression -> Lex.Token -> Pars.ParserM S.Expression
+nodeConcatLists :: S.Expression -> S.Expression -> Lex.Token -> PM.ParserM S.Expression
 nodeConcatLists l1 l2 tk = return $ S.Expression (S.ArrayList $ l1 : [l2]) (S.TList S.TVoid) (Lex.tkPosn tk)
 
 
 -- -----------------------------------------------------------------------------
-nodeIfSimple :: S.Expression -> S.Expression -> S.Expression -> Lex.Token -> Pars.ParserM S.Expression
+nodeIfSimple :: S.Expression -> S.Expression -> S.Expression -> Lex.Token -> PM.ParserM S.Expression
 nodeIfSimple cond true false tk = return $ S.Expression (S.IfSimple (S.expr cond) (S.expr true) (S.expr false)) S.TVoid (Lex.tkPosn tk)
 
 
 -- -----------------------------------------------------------------------------
 -- Check tipo esta definido
-nodeNew :: S.Type -> U.Position -> Pars.ParserM S.Expression
+nodeNew :: S.Type -> U.Position -> PM.ParserM S.Expression
 nodeNew t p = return $ S.Expression (S.Unary S.New S.PtrInit) (S.TPointer t) p
 
 
 -- -----------------------------------------------------------------------------
-nodeStruct :: Lex.Token -> [S.Expression] -> Pars.ParserM S.Expression
+nodeStruct :: Lex.Token -> [S.Expression] -> PM.ParserM S.Expression
 nodeStruct tk es = return $ S.Expression (S.StructE es) S.TVoid (Lex.tkPosn tk)
 
 
 -- -----------------------------------------------------------------------------
-nodeArray :: [S.Expression] -> Lex.Token -> Pars.ParserM S.Expression
+nodeArray :: [S.Expression] -> Lex.Token -> PM.ParserM S.Expression
 nodeArray es tk = return $ S.Expression (S.ArrayList es) (S.TArray (S.Expression S.EmptyVal S.TInt (0,0)) S.TVoid) (Lex.tkPosn tk)
 
 
 -- -----------------------------------------------------------------------------
-nodeList :: [S.Expression] -> Lex.Token -> Pars.ParserM S.Expression
+nodeList :: [S.Expression] -> Lex.Token -> PM.ParserM S.Expression
 nodeList es tk = return $ S.Expression (S.ArrayList es) (S.TList S.TVoid) (Lex.tkPosn tk)
 
 
 -- -----------------------------------------------------------------------------
-nodeUnary :: S.UnOp -> S.Expression -> S.Type -> Lex.Token -> Pars.ParserM S.Expression
+nodeUnary :: S.UnOp -> S.Expression -> S.Type -> Lex.Token -> PM.ParserM S.Expression
 nodeUnary op e t tk = return $ S.Expression (S.Unary op $ S.expr e) t (Lex.tkPosn tk)
 
 
@@ -289,5 +286,5 @@ nodeUnary op e t tk = return $ S.Expression (S.Unary op $ S.expr e) t (Lex.tkPos
 -}
 
 -- -----------------------------------------------------------------------------
-defineTStruct :: Lex.Token -> S.Type -> Pars.ParserM S.Id
-defineTStruct tk t = return $ S.Id tk
+defineTStruct :: Lex.Token -> S.Type -> PM.ParserM S.Id
+defineTStruct tk t = return $ S.Id (Lex.tkInput tk) (Lex.tkPosn tk)

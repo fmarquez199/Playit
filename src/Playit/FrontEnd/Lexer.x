@@ -228,7 +228,7 @@ instance Show Token where
     [(BLC.pack . show $ tkToken token), tkInput token, U.nocolor]
 
 instance Eq Token where
-  tk1 == tk2 = (tkToken tk1 == tkToken tk2) && (tkInput tk1 == tkInput tk2)
+  Token tk1 in1 _ == Token tk2 in2 _ = tk1 == tk2 && in1 == in2
 
 
 {-

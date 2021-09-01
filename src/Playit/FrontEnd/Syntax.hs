@@ -82,7 +82,7 @@ instance Eq Type where
   TDummy      == TDummy      = True -- ??
   TPDummy     == TPDummy     = True -- ??
   TError      == TError      = True
-  _           == _             = False
+  _           == _           = False
 
 instance Show Type where
   show TInt             = "Power "
@@ -94,7 +94,7 @@ instance Show Type where
   show TUnion           = "Items "
   show (TArray size t)  = show t ++ "|}" ++ show size ++ "{| "
   show (TList t)        = "Kit of (" ++ show t ++ ") "
-  show (TStruct struct) = show . Lex.tkInput . idTk $ sName struct
+  show (TStruct struct) = show . idTk $ sName struct
   show (TPointer t)     = show t ++ "* "
   show TEmptyList       = "Empty Kit "
   show TNull            = "TNull*  "
@@ -108,17 +108,17 @@ instance Show Type where
 -- -----------------------------------------------------------------------------
 -- | Program variables, records, unions and subroutines ids
 data Id = Id
-  { idTk :: Lex.Token
-  -- , idPosn :: U.Position
+  { idTk   :: !BL.ByteString
+  , idPosn :: !U.Position
   -- , idScope :: U.Scope
   -- , isOffset :: Int
   } deriving (Ord)
 
 instance Show Id where
-  show i = BLC.unpack $ Lex.tkInput (idTk i)
+  show i = BLC.unpack $ idTk i
 
 instance Eq Id where
-  Id tk1 == Id tk2 = tk1 == tk2
+  Id tk1 _ == Id tk2 _ = tk1 == tk2
 
 data Var = Var
   { varId   :: Id
@@ -128,7 +128,7 @@ data Var = Var
   } deriving(Eq, Ord)
 
 instance Show Var where
-  show v = show (var v) ++ (BLC.unpack . Lex.tkInput . idTk $ varId v)
+  show v = show (var v) ++ (BLC.unpack . idTk $ varId v)
 
 -- instance Eq Var where
 --   Var var1 == Var var2 = varId var1 == varId var2 &&
@@ -157,11 +157,11 @@ instance Show VarKind where
 
 
 -- -----------------------------------------------------------------------------
--- Subroutine's parameters / arguments
-type Params = [Expression]
+-- Subroutine's arguments
+type Args = [Expression]
 
 -- Functions and Procedures
-data Subroutine = Call Id Params  deriving (Eq, Ord)
+data Subroutine = Call Id Args  deriving (Eq, Ord)
 
 instance Show Subroutine where
   show (Call n p) = show n ++ "(" ++ intercalate "," (map show p) ++ ")"

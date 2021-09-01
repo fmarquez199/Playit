@@ -16,7 +16,7 @@ import qualified Playit.Errors              as E
 
 import qualified Playit.FrontEnd.AST        as AST
 import qualified Playit.FrontEnd.Lexer      as Lex
-import qualified Playit.FrontEnd.ParserM    as Pars
+import qualified Playit.FrontEnd.ParserM    as PM
 import qualified Playit.FrontEnd.SymTable   as ST
 import qualified Playit.FrontEnd.Syntax     as S
 import qualified Playit.FrontEnd.TypeCheck  as TC
@@ -25,8 +25,8 @@ import qualified Playit.FrontEnd.TypeCheck  as TC
 
 %name        parse
 %tokentype { Lex.Token    }
-%error     { Pars.parseError }
-%monad     { Pars.ParserM }
+%error     { PM.parseError }
+%monad     { PM.ParserM }
 
 %token
   endLine           { Lex.Token Lex.TkEndLine _ _          }
@@ -207,26 +207,26 @@ EndLn :: { () }
 -}
 
 InstrSeq :: { S.InstrSeq }
-  : InstrSeq EndLn INSTR  { $3 : $1 }
-  | INSTR                 { [$1]    }
+  : InstrSeq EndLn INSTR     { $3 : $1 }
+  | INSTR                    { [$1]    }
 
 INSTR :: { S.Instruction }
-  : DECLARATION              { S.Decl $1                        }
-  | ASSIGNMENT               { $1                               }
-  | SELECTION                { $1                               }
-  | PushScope WHILE PopScope { $2                               }
-  | PushScope FOR PopScope   { $2                               }
-  | ProcCall                 { $1                               }
-  | OUT                      { $1                               }
-  | FREE                     { $1                               }
-  | return EXPR              { AST.nodeReturn $2                }
-  | break                    { % AST.nodeControlLoop S.Break $1 }
+  : DECLARATION              { S.Decl $1                           }
+  | ASSIGNMENT               { $1                                  }
+  | SELECTION                { $1                                  }
+  | PushScope WHILE PopScope { $2                                  }
+  | PushScope FOR PopScope   { $2                                  }
+  | ProcCall                 { $1                                  }
+  | OUT                      { $1                                  }
+  | FREE                     { $1                                  }
+  | return EXPR              { AST.nodeReturn $2                   }
+  | break                    { % AST.nodeControlLoop S.Break $1    }
   | continue                 { % AST.nodeControlLoop S.Continue $1 }
 
 
 -- -----------------------------------------------------------------------------
 DECLARATIONS :: { [S.Declaration] }
-  : DECLARATIONS EndLn DECLARATION { $3 : $1 }
+  : DECLARATIONS EndLn DECLARATION    { $3 : $1 }
   | DECLARATION                       { [$1]    }
 
 DECLARATION  :: { S.Declaration }
@@ -239,17 +239,17 @@ INITS        :: { [S.Initialization] }
 INIT         :: { S.Initialization }
   : ID "=" EXPR                       { AST.nodeIdInit $1 $3           }
   | ID "<-" EXPR                      { AST.nodeIdInit $1 $3           }
-  | ID                                { S.Initialization $1 (S.Expression S.EmptyVal S.TDummy (Lex.tkPosn $ S.idTk $1)) }
+  | ID                                { S.Initialization $1 (S.Expression S.EmptyVal S.TDummy (S.idPosn $1)) }
 
 ID :: { S.Id }
-  : id        { % ST.getCurrentScope >>= ST.insert (S.Id $1) {- >>= return -} }
+  : id        { % ST.getCurrentScope >>= ST.insert $1 S.TDummy PM.Variables }
 
 
 -- -----------------------------------------------------------------------------
 ASSIGNMENT :: { S.Instruction }
-  : Lvalue "=" EXPR            { % AST.nodeAssign $1 $3 }
-  | Lvalue "++"                { % AST.nodeIncrement $1 }
-  | Lvalue "--"                { % AST.nodeDecrement $1 }
+  : VAR "=" EXPR                { % AST.nodeAssign $1 $3 }
+  | VAR "++"                    { % AST.nodeIncrement $1 }
+  | VAR "--"                    { % AST.nodeDecrement $1 }
 
 
 -- -----------------------------------------------------------------------------
@@ -262,7 +262,7 @@ Guards :: { [S.Guard] }
 
 Guard :: { S.Guard }
   : "|" EXPR "}" EndLn PushScope InstrSeq EndLn { % AST.nodeGuard $2 (reverse $6) }
-  | "|" EXPR "}" PushScope InstrSeq EndLn          { % AST.nodeGuard $2 (reverse $5) }
+  | "|" EXPR "}" PushScope InstrSeq EndLn       { % AST.nodeGuard $2 (reverse $5) }
   | "|" else "}" EndLn PushScope InstrSeq EndLn
     {
       S.Guard (S.Expression (S.Boolean $ BLC.pack "True") S.TBool (Lex.tkPosn $2)) (reverse $6)
@@ -276,7 +276,7 @@ Guard :: { S.Guard }
 -- -----------------------------------------------------------------------------
 WHILE :: { S.Instruction }
   : do ":" EndLn InstrSeq EndLn while EXPR EndLn ".~" { % AST.nodeWhile $7 (reverse $4) }
-  | do ":" EndLn while EXPR EndLn ".~"                { % AST.nodeWhile $5 []           }
+  | do ":" EndLn                while EXPR EndLn ".~" { % AST.nodeWhile $5 []           }
 
 
 -- -----------------------------------------------------------------------------
@@ -308,7 +308,7 @@ FOR :: { S.Instruction }
 
 -- Add to symbol table the iteration variable with its initial value, before build the instruction tree
 IterVar :: { (S.Id, S.Expression ) }
-  : id "=" EXPR { (S.Id $1, S.Expression S.EmptyVal S.TVoid (Lex.tkPosn $1))}
+  : id "=" EXPR { (S.Id (Lex.tkInput $1) (Lex.tkPosn $1), S.Expression S.EmptyVal S.TVoid (Lex.tkPosn $1))}
     {- % do
       state@S.ParserS{symTab = st, currS = s} <- get
       let
@@ -324,7 +324,7 @@ IterVar :: { (S.Id, S.Expression ) }
       -- return $ assig (v, getPos $1) $3
       return (id, $3)
     -}
-  | TYPE id "=" EXPR { (S.Id $2, S.Expression S.EmptyVal S.TVoid (Lex.tkPosn $2))}
+  | TYPE id "=" EXPR { (S.Id (Lex.tkInput $2) (Lex.tkPosn $2), S.Expression S.EmptyVal S.TVoid (Lex.tkPosn $2))}
     {- % do
       state@S.ParserS{symTab = st, currS = s} <- get
       let
@@ -341,7 +341,7 @@ IterVar :: { (S.Id, S.Expression ) }
     -}
 
 ForEach :: { (S.Id, S.Expression ) }
-  : for id "<-" EXPR %prec "<-" { (S.Id $2, S.Expression S.EmptyVal S.TVoid (Lex.tkPosn $2))}
+  : for id "<-" EXPR %prec "<-" { (S.Id (Lex.tkInput $2) (Lex.tkPosn $2), S.Expression S.EmptyVal S.TVoid (Lex.tkPosn $2))}
     {- % do
       state@S.ParserS{symTab = st, currS = s} <- get
       let id = getTk $1
@@ -359,7 +359,7 @@ ForEach :: { (S.Id, S.Expression ) }
       -- return $ assig (v, getPos $1) $3
       return (id, $3)
     -}
-  | for TYPE id "<-" EXPR %prec "<-" { (S.Id $3, S.Expression S.EmptyVal S.TVoid (Lex.tkPosn $3))}
+  | for TYPE id "<-" EXPR %prec "<-" { (S.Id (Lex.tkInput $3) (Lex.tkPosn $3), S.Expression S.EmptyVal S.TVoid (Lex.tkPosn $3))}
     {- % do
       state@S.ParserS{symTab = st, currS = s} <- get
       let
@@ -449,7 +449,7 @@ EXPR :: { S.Expression }
   | lowerCase EXPR %prec lowerCase { % AST.nodeUnary S.LowerCase $2 S.TChar $1 }
   
   -- Literals
-  | Lvalue    { S.Expression (S.Rval $1) (S.varType $1)  (S.varPosn $1)            }
+  | VAR       { S.Expression (S.Rval $1) (S.varType $1)  (S.varPosn $1)            }
   | true      { S.Expression (S.Boolean $ Lex.tkInput $1) S.TBool  (Lex.tkPosn $1) }
   | false     { S.Expression (S.Boolean $ Lex.tkInput $1) S.TBool  (Lex.tkPosn $1) }
   | integer   { S.Expression (S.Integer $ Lex.tkInput $1) S.TInt   (Lex.tkPosn $1) }
@@ -465,13 +465,13 @@ EXPR :: { S.Expression }
  * -----------------------------------------------------------------------------
 -}
 
-Lvalue :: { S.Var }
-  : Lvalue "." id          { % AST.nodeField $1 $3 }
-  | Lvalue "|)" EXPR "(|"  { % AST.nodeIndex $1 $3 }
-  | Lvalue "|>" EXPR "<|"  { % AST.nodeIndex $1 $3 }
-  | deref Lvalue           { % AST.nodeDeref $2    }
-  | deref "(" Lvalue ")"   { % AST.nodeDeref $3    }
-  | id                     { % AST.nodeVar $1      }
+VAR :: { S.Var }
+  : VAR "." id          { % AST.nodeField $1 $3 }
+  | VAR "|)" EXPR "(|"  { % AST.nodeIndex $1 $3 }
+  | VAR "|>" EXPR "<|"  { % AST.nodeIndex $1 $3 }
+  | deref VAR           { % AST.nodeDeref $2    }
+  | deref "(" VAR ")"   { % AST.nodeDeref $3    }
+  | id                  { % AST.nodeLVal $1     }
 
 -- Data types
 TYPE :: { S.Type }
@@ -494,7 +494,7 @@ TYPE :: { S.Type }
 -}
 
 DefineSubroutine :: { () }
-  : Firma ":" EndLn InstrSeq EndLn ".~" { }
+  : Firma ":" EndLn InstrSeq EndLn ".~" { % ST.adjustDefInstr $1 $4 }
     {- %
       let ((id', category, p), tF) = $1
           allReturn               = filter isReturn $ concatMap getInstrSeq $4
@@ -526,13 +526,13 @@ DefineSubroutine :: { () }
 
 
 -- -----------------------------------------------------------------------------
-Firma :: { ((S.Id, Pars.Category), S.Type) }
-  : Name PushScope Params { ($1, S.TVoid) }
+Firma :: { S.Id }
+  : Name PushScope Params { % ST.adjustDefVars $1 $3 >> return $1}
     {- %
       let (name, category) = $1
       in updateInfoSubroutine name category $3 TVoid >> return ($1, TVoid)
     -}
-  | Name PushScope Params TYPE { ($1, S.TVoid) } 
+  | Name PushScope Params {- PopScope -} TYPE { % ST.adjustType $4 $1 >> ST.adjustDefVars $1 $3 >> return $1 } 
     {- %
       let (name, category) = $1
       in updateInfoSubroutine name category $3 $4 >> return ($1, $4)
@@ -541,13 +541,9 @@ Firma :: { ((S.Id, Pars.Category), S.Type) }
 
 -- -----------------------------------------------------------------------------
 -- Subroutine name, insert first into symbol table because of recursiveness
-Name :: { (S.Id, Pars.Category) }
-  : proc id { (S.Id $2, Pars.Procedures) }
-    {- % do
-      ST.defineSubroutine (getTk $2) Procedures (getPos $2)
-      return ((getTk $2), Procedures, (getPos $2))
-    -}
-  | func id { (S.Id $2, Pars.Functions) }
+Name :: { S.Id }
+  : proc id           { % ST.getCurrentScope >>= ST.insert $2 S.TVoid PM.Procedures }
+  | func id           { % ST.getCurrentScope >>= ST.insert $2 S.TDummy PM.Functions }
     {- % do
       ST.defineSubroutine (getTk $2) Functions (getPos $2)
       return ((getTk $2), Functions, (getPos $2))
@@ -556,17 +552,17 @@ Name :: { (S.Id, Pars.Category) }
 
 -------------------------------------------------------------------------------
 -- Subroutines parameters definitions
-Params ::{ [S.Var] }
-  : "(" DefineParams ")"     { $2 }
-  | "(" ")"                  { [] }
+Params ::{ [S.Id] }
+  : "(" DefineParams ")"        { $2 }
+  | "(" ")"                     { [] }
 
-DefineParams :: { [S.Var] }
-  : DefineParams "," Param          { $3 : $1 }
-  | Param                           { [$1] }
+DefineParams :: { [S.Id] }
+  : DefineParams "," Param      { $3 : $1 }
+  | Param                       { [$1]    }
 
-Param :: { S.Var }
-  : TYPE id       { % AST.nodeParameter $2 $1 S.Value }
-  | TYPE "?" id   { % AST.nodeParameter $3 $1 S.Reference }
+Param :: { S.Id }
+  : TYPE id            { % ST.getCurrentScope >>= ST.insert $2 $1 (PM.Parameters S.Value)     }
+  | TYPE "?" id        { % ST.getCurrentScope >>= ST.insert $3 $1 (PM.Parameters S.Reference) }
 
 
 -- -----------------------------------------------------------------------------
@@ -584,9 +580,9 @@ SubroutineCall :: { S.Subroutine }
 
 -- -----------------------------------------------------------------------------
 -- Arguments passed to subroutines
-Arguments :: { S.Params }
+Arguments :: { S.Args }
   : Arguments "," Argument  { $3 : $1 }
-  | Argument                { [$1] }
+  | Argument                { [$1]    }
 
 Argument :: { S.Expression }
   : EXPR                    { $1 }
